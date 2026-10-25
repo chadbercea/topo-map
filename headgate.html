@@ -10,11 +10,11 @@
 <style>
   :root {
     --bg: #04080a;
-    --line: #3fd0c0;
-    --major: #a8fff2;
-    --tan: #e2b97f;
-    --text: #bdf5ee;
-    --muted: #4f8f88;
+    --line: #e2b97f;
+    --major: #ffe2b8;
+    --teal: #3fd0c0;
+    --text: #f5e6cf;
+    --muted: #8f7a5a;
   }
   html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; color: var(--text);
     font: 12px/1.45 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em;
@@ -24,14 +24,14 @@
   #map.ready { opacity: 1; }
   #minor path { fill: none; stroke: var(--line); stroke-width: .8; vector-effect: non-scaling-stroke; }
   #major path { fill: none; stroke: var(--major); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
-  #tan { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; }
+  #lit { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; }
   #river { fill: none; stroke: var(--major); stroke-opacity: .5; stroke-width: 1; stroke-dasharray: 2 5;
     vector-effect: non-scaling-stroke; }
 
   .overlay { position: fixed; inset: 0; pointer-events: none; }
   #grid { background-image:
-      linear-gradient(rgba(63,208,192,.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(63,208,192,.06) 1px, transparent 1px);
+      linear-gradient(rgba(226,185,127,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(226,185,127,.06) 1px, transparent 1px);
     background-size: 80px 80px; background-position: center; }
   #vignette { background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.7) 100%); }
 
@@ -42,15 +42,15 @@
   #head a { color: var(--muted); pointer-events: auto; }
   #head a:hover { color: var(--major); }
   #status { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); white-space: nowrap;
-    color: #ffe2b8; font-size: 12px; letter-spacing: .24em; transition: opacity 1.2s; }
+    color: #a8fff2; font-size: 12px; letter-spacing: .24em; transition: opacity 1.2s; }
   #status.gone { opacity: 0; }
-  .retry { font: inherit; font-size: 10px; color: var(--text); background: none; border: 1px solid var(--tan);
+  .retry { font: inherit; font-size: 10px; color: var(--text); background: none; border: 1px solid var(--teal);
     padding: 4px 10px; margin-left: 10px; cursor: pointer; letter-spacing: .1em; pointer-events: auto; }
   @media (max-width: 760px) { .title { font-size: 18px; } }
 </style>
 </head>
 <body>
-<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic contour map of Twin Falls, Idaho. Touch the map and the contour lines light up tan.">
+<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic contour map of Twin Falls, Idaho. Touch the map and the contour lines light up teal.">
   <defs>
     <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
       <feGaussianBlur stdDeviation="1.6" result="b"/>
@@ -61,8 +61,8 @@
   <g id="major" filter="url(#glow)"></g>
   <path id="river"></path>
 </svg>
-<!-- The tan lines: drawn once, and shown only where the map has been touched. -->
-<canvas id="tan"></canvas>
+<!-- The teal lines: drawn once, and shown only where the map has been touched. -->
+<canvas id="lit"></canvas>
 <div id="grid" class="overlay"></div>
 <div id="vignette" class="overlay"></div>
 <div id="head" class="hud">
@@ -74,8 +74,8 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
-// Headgate (ILI-1086): the survey map's dark look, and the contour lines light up tan where you touch.
-// A touch blooms out from the finger, then settles to a faint tan afterglow that stays.
+// Headgate (ILI-1086): the survey map's dark look, and the contour lines light up teal where you touch.
+// A touch blooms out from the finger, then settles to a faint teal afterglow that stays.
 // The terrain loading and river tracing follow index.html.
 const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
 const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
@@ -88,9 +88,9 @@ const GAP = 18;         // px a drag moves between touches
 
 const $ = id => document.getElementById(id);
 const svg = $("map");
-const tan = $("tan"), tctx = tan.getContext("2d");
+const lit = $("lit"), tctx = lit.getContext("2d");
 let state = null, lines = null, spots = [], raf = 0, press = null, touched = false;
-let tanLines = null, settled = null;   // offscreen canvases: the tan lines, and the afterglow of settled touches
+let litLines = null, settled = null;   // offscreen canvases: the teal lines, and the afterglow of settled touches
 
 const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
 const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
@@ -219,25 +219,25 @@ function traceRiver() {
   $("river").setAttribute("d", "M" + pts.map(p => p.map(v => v.toFixed(1)).join(",")).join("L"));
 }
 
-// ---------- Touch: the lines light up tan ----------
+// ---------- Touch: the lines light up teal ----------
 function screenToGrid(x, y) {
   const m = svg.getScreenCTM();
   return [(x - m.e) / m.a, (y - m.f) / m.d];
 }
 
-// Draws the tan lines once at screen resolution, and the afterglow of every settled touch.
+// Draws the teal lines once at screen resolution, and the afterglow of every settled touch.
 function layout() {
   if (!state) return;
   const dpr = devicePixelRatio || 1, w = Math.round(innerWidth * dpr), h = Math.round(innerHeight * dpr);
   const m = svg.getScreenCTM();
-  tan.width = w; tan.height = h;
-  tanLines = Object.assign(document.createElement("canvas"), { width: w, height: h });
-  const c = tanLines.getContext("2d");
+  lit.width = w; lit.height = h;
+  litLines = Object.assign(document.createElement("canvas"), { width: w, height: h });
+  const c = litLines.getContext("2d");
   c.setTransform(dpr * m.a, 0, 0, dpr * m.d, dpr * m.e, dpr * m.f);
   c.lineJoin = "round";
-  c.strokeStyle = "#e2b97f"; c.lineWidth = 1.1 / m.a;
+  c.strokeStyle = "#3fd0c0"; c.lineWidth = 1.1 / m.a;
   for (const p of lines.minor) c.stroke(p);
-  c.strokeStyle = "#ffe2b8"; c.lineWidth = 1.8 / m.a; c.shadowColor = "#e2b97f"; c.shadowBlur = 6 * dpr;
+  c.strokeStyle = "#a8fff2"; c.lineWidth = 1.8 / m.a; c.shadowColor = "#3fd0c0"; c.shadowBlur = 6 * dpr;
   for (const p of lines.major) c.stroke(p);
   settled = Object.assign(document.createElement("canvas"), { width: w, height: h });
   for (const s of spots) if (s.done) spot(settled.getContext("2d"), s, 1, REST);
@@ -267,11 +267,11 @@ function kick() { if (!raf) raf = requestAnimationFrame(frame); }
 
 function frame(now) {
   raf = 0;
-  if (!tanLines) return;
+  if (!litLines) return;
   const dpr = devicePixelRatio || 1;
   let busy = false;
   tctx.globalCompositeOperation = "source-over";
-  tctx.clearRect(0, 0, tan.width, tan.height);
+  tctx.clearRect(0, 0, lit.width, lit.height);
   tctx.drawImage(settled, 0, 0);
   const blooms = [];
   for (const s of spots) {
@@ -283,17 +283,17 @@ function frame(now) {
     else { busy = true; spot(tctx, s, open, glow); }
     if (t < BLOOM * 2.5) blooms.push([s, open, 1 - t / (BLOOM * 2.5)]);
   }
-  // The mask, filled with the tan lines.
+  // The mask, filled with the teal lines.
   tctx.globalCompositeOperation = "source-in";
-  tctx.drawImage(tanLines, 0, 0);
-  // A soft tan glow on the ground under a fresh touch.
+  tctx.drawImage(litLines, 0, 0);
+  // A soft teal glow on the ground under a fresh touch.
   tctx.globalCompositeOperation = "source-over";
   const m = svg.getScreenCTM();
   for (const [s, open, a] of blooms) {
     const x = (m.a * s.gx + m.e) * dpr, y = (m.d * s.gy + m.f) * dpr, r = R * 1.3 * dpr * (.35 + .65 * open);
     const g = tctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, `rgba(226,185,127,${.35 * a})`);
-    g.addColorStop(1, "rgba(226,185,127,0)");
+    g.addColorStop(0, `rgba(63,208,192,${.35 * a})`);
+    g.addColorStop(1, "rgba(63,208,192,0)");
     tctx.fillStyle = g;
     tctx.fillRect(x - r, y - r, 2 * r, 2 * r);
   }
