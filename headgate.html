@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headgate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #241a10;
+    --ink: #fff6e6;
+    --panel: rgba(36,26,16,.78);
+    --gold: #ffcf3f;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; color: var(--ink);
+    font: 500 16px/1.3 "Fredoka", system-ui, sans-serif; -webkit-user-select: none; user-select: none; }
+  canvas, svg { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+  #map { opacity: 0; transition: opacity .6s; pointer-events: none; }
+  #map.ready { opacity: 1; }
+  #minor path { fill: none; stroke: rgba(48,30,14,.3); stroke-width: .8; vector-effect: non-scaling-stroke; }
+  #major path { fill: none; stroke: rgba(48,30,14,.55); stroke-width: 1.3; vector-effect: non-scaling-stroke; }
+  #fg { touch-action: none; cursor: crosshair; }
+
+  .hud { position: fixed; pointer-events: none; }
+  #title { top: 12px; left: 16px; padding: 6px 14px 8px; background: var(--panel); border-radius: 16px; }
+  #title b { display: block; font-size: 22px; font-weight: 600; letter-spacing: .05em; }
+  #title span { font-size: 13px; opacity: .75; }
+  #title a { color: inherit; pointer-events: auto; }
+  #coins { top: 12px; right: 16px; display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 8px;
+    background: var(--panel); border-radius: 999px; font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #coins i { width: 28px; height: 28px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fff2a8, var(--gold) 55%, #c98f10); box-shadow: inset 0 0 0 2px rgba(120,80,0,.4); }
+  #coins.bump { animation: bump .3s; }
+  @keyframes bump { 50% { transform: scale(1.15); } }
+  #hint { bottom: 24px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px);
+    box-sizing: border-box; padding: 10px 18px; background: var(--panel); border-radius: 18px; font-size: 17px; text-align: center; }
+  #hint button { font: inherit; color: var(--ink); background: none; border: 2px solid var(--gold); border-radius: 999px;
+    padding: 2px 12px; margin-left: 8px; cursor: pointer; pointer-events: auto; }
+  @media (prefers-reduced-motion: reduce) { #coins.bump { animation: none; } }
+</style>
+</head>
+<body>
+<canvas id="ground"></canvas>
+<svg id="map" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><g id="minor"></g><g id="major"></g></svg>
+<canvas id="fg" aria-label="Headgate. Draw ditches from the water. Water runs downhill, and wet land grows crops."></canvas>
+<div id="title" class="hud"><b>HEADGATE</b><span>Twin Falls, Idaho · <a href="./">map</a></span></div>
+<div id="coins" class="hud" aria-live="polite"><i></i><span id="coin-n">0</span></div>
+<div id="hint" class="hud" aria-live="polite">Loading the hills…</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+// Headgate (ILI-1083): draw a ditch from the water, water runs downhill, wet land turns green and grows crops,
+// and ripe crops give coins. The terrain loading and river tracing follow index.html.
+const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
+const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
+const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const TOL = 2;        // metres water can rise in a ditch (its depth) before it stops
+const STEP = .5;      // ditch sample spacing, grid cells
+const SPEED = 30;     // water front, grid cells per second
+const GROW = 4000;    // ms for a crop to ripen
+const SNAP = 24;      // px: how close to water a ditch has to start
+const WATER = "#4cb8ff";
+
+const $ = id => document.getElementById(id);
+const svg = $("map"), ground = $("ground"), fg = $("fg");
+const gctx = ground.getContext("2d"), fctx = fg.getContext("2d");
+let state = null, head = null, river = [];
+let base = null, greenCv = null, greenImg = null, target, wetAt, green, fieldCells = [];
+let ditches = [], crops = [], floats = [];
+let coins = 0, flowed = false, press = null, drawing = null, raf = 0, hintTimer = 0;
+
+const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
+const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+function loadImg(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// Same tile window as the map: zoom 13 on landscape screens, 12 on portrait.
+function tileWindow() {
+  const z = innerWidth >= innerHeight ? 13 : 12;
+  const rows = 3, cols = Math.max(3, Math.min(7, Math.ceil(rows * innerWidth / innerHeight)));
+  const W = cols * 256, H = rows * 256;
+  const ox = Math.round(lon2tile(LOC.lon, z) * 256 - W / 2);
+  const oy = Math.round(lat2tile(LOC.lat, z) * 256 - H / 2);
+  const ds = Math.max(1, Math.ceil(Math.sqrt(W * H / 320000)));
+  return { z, cols, W, H, ox, oy, ds, gw: Math.floor(W / ds), gh: Math.floor(H / ds) };
+}
+
+async function fetchElevation() {
+  const { z, cols, W, H, ox, oy, ds, gw, gh } = tileWindow();
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const jobs = [];
+  for (let ty = Math.floor(oy / 256); ty * 256 < oy + H; ty++) for (let tx = Math.floor(ox / 256); tx * 256 < ox + W; tx++) {
+    jobs.push(loadImg(`${TILE_URL}/${z}/${tx}/${ty}.png`).then(img => ctx.drawImage(img, tx * 256 - ox, ty * 256 - oy)));
+  }
+  await Promise.all(jobs);
+  const px = ctx.getImageData(0, 0, W, H).data;
+  const values = new Float64Array(gw * gh);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const i = ((y * ds) * W + x * ds) * 4;
+    values[y * gw + x] = px[i] * 256 + px[i + 1] + px[i + 2] / 256 - 32768;
+  }
+  return { values, z, cols, W, H, gw, gh, ds, ox, oy };
+}
+
+// Bilinear elevation. Points are in map space, where cell i spans [i, i + 1].
+function elev([px, py]) {
+  const { values: v, gw, gh } = state;
+  const x = clamp(px - .5, 0, gw - 1.001), y = clamp(py - .5, 0, gh - 1.001);
+  const x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0;
+  const a = v[y0 * gw + x0], b = v[y0 * gw + x0 + 1], c = v[(y0 + 1) * gw + x0], d = v[(y0 + 1) * gw + x0 + 1];
+  return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+}
+
+function screenToGrid(x, y) {
+  const m = svg.getScreenCTM();
+  return [clamp((x - m.e) / m.a, 0, state.gw), clamp((y - m.f) / m.d, 0, state.gh)];
+}
+
+function render(d) {
+  const { gw, gh } = d;
+  d3.blur2({ data: d.values, width: gw, height: gh }, 1);
+  let min = Infinity, max = -Infinity;
+  for (const v of d.values) { if (v < min) min = v; if (v > max) max = v; }
+  const step = LOC.step;
+  const contours = d3.contours().size([gw, gh]).thresholds(d3.range(Math.ceil(min / step) * step, max, step))(d.values);
+  const isMajor = v => Math.abs(v / (step * 5) - Math.round(v / (step * 5))) < 1e-6;
+  const path = d3.geoPath();
+  d3.select("#minor").selectAll("path").data(contours.filter(c => !isMajor(c.value))).join("path").attr("d", path);
+  d3.select("#major").selectAll("path").data(contours.filter(c => isMajor(c.value))).join("path").attr("d", path);
+  svg.setAttribute("viewBox", `0 0 ${gw} ${gh}`);
+
+  state = { ...d, min, max };
+  river = traceRiver();
+  head = findHeadgate();
+  buildBase();
+  const N = gw * gh;
+  target = new Float32Array(N); wetAt = new Float64Array(N).fill(Infinity); green = new Float32Array(N);
+  greenCv = document.createElement("canvas"); greenCv.width = gw; greenCv.height = gh;
+  greenImg = greenCv.getContext("2d").createImageData(gw, gh);
+  for (let j = 0; j < N; j++) { greenImg.data[j * 4] = 86; greenImg.data[j * 4 + 1] = 178; greenImg.data[j * 4 + 2] = 62; }
+  ditches = []; crops = []; floats = [];
+
+  svg.classList.add("ready");
+  sizeCanvases();
+  hint();
+}
+
+// The dusty ground: darker low in the canyon, lighter on the high ground, lit from the north-west so hills read.
+function buildBase() {
+  const { values: v, gw, gh, min, max } = state;
+  base = document.createElement("canvas"); base.width = gw; base.height = gh;
+  const ctx = base.getContext("2d"), img = ctx.createImageData(gw, gh);
+  const lo = [58, 40, 24], hi = [200, 164, 112];
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const i = y * gw + x, t = (v[i] - min) / (max - min || 1);
+    const dx = v[y * gw + Math.min(x + 1, gw - 1)] - v[y * gw + Math.max(x - 1, 0)];
+    const dy = v[Math.min(y + 1, gh - 1) * gw + x] - v[Math.max(y - 1, 0) * gw + x];
+    const sh = clamp(1 + (dx + dy) * .03, .55, 1.3);
+    for (let c = 0; c < 3; c++) img.data[i * 4 + c] = (lo[c] + (hi[c] - lo[c]) * t) * sh;
+    img.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
+// ---------- River: least-cost path through the elevation grid, east edge to west edge (as in index.html) ----------
+function traceRiver() {
+  const { values, gw, gh, min } = state, N = gw * gh;
+  const cost = new Float64Array(N);
+  for (let i = 0; i < N; i++) cost[i] = (values[i] - min + 1) ** 2.5;
+  const dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
+  const hk = [], hv = [];
+  const push = (k, v) => {
+    let i = hk.length; hk.push(k); hv.push(v);
+    while (i > 0) { const p = (i - 1) >> 1; if (hk[p] <= k) break; hk[i] = hk[p]; hv[i] = hv[p]; i = p; }
+    hk[i] = k; hv[i] = v;
+  };
+  const pop = () => {
+    const v = hv[0], k = hk.pop(), last = hv.pop(), n = hk.length;
+    if (n) {
+      let i = 0;
+      for (;;) {
+        let c = 2 * i + 1; if (c >= n) break;
+        if (c + 1 < n && hk[c + 1] < hk[c]) c++;
+        if (hk[c] >= k) break;
+        hk[i] = hk[c]; hv[i] = hv[c]; i = c;
+      }
+      hk[i] = k; hv[i] = last;
+    }
+    return v;
+  };
+  const edge = gw >> 2;
+  const isSource = (x, y) => x === gw - 1 || ((y === 0 || y === gh - 1) && x >= gw - edge);
+  const isTarget = (x, y) => x === 0 || ((y === 0 || y === gh - 1) && x < edge);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) if (isSource(x, y)) {
+    const i = y * gw + x; dist[i] = cost[i]; push(cost[i], i);
+  }
+  let end = -1;
+  while (hk.length) {
+    const d0 = hk[0], i = pop();
+    if (d0 > dist[i]) continue;
+    const x = i % gw, y = (i / gw) | 0;
+    if (isTarget(x, y)) { end = i; break; }
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue;
+      const j = ny * gw + nx, nd = d0 + cost[j] * (dx && dy ? Math.SQRT2 : 1);
+      if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(nd, j); }
+    }
+  }
+  if (end < 0) return [];
+  const raw = [];
+  for (let i = end; i >= 0; i = prev[i]) raw.push([i % gw, (i / gw) | 0]);
+  const W = 6, pts = [];
+  for (let i = 0; i < raw.length; i += 2) {
+    let sx = 0, sy = 0, n = 0;
+    for (let j = Math.max(0, i - W); j <= Math.min(raw.length - 1, i + W); j++) { sx += raw[j][0]; sy += raw[j][1]; n++; }
+    pts.push([sx / n + .5, sy / n + .5]);
+  }
+  return pts;
+}
+
+// The headgate: where the big canal brings water in from upstream (Milner Dam, off the map), on the highest
+// ground along the east edge of the screen, south of the canyon. The river is water too, but it sits at the
+// bottom of the canyon. The map is cropped to fill the screen, so the edge is the screen's, not the grid's.
+function findHeadgate() {
+  const { gw, gh } = state, m = svg.getScreenCTM();
+  const x = Math.min(gw - 8, (innerWidth - 60 - m.e) / m.a);
+  const top = Math.max(6, (90 - m.f) / m.d), bottom = Math.min(gh - 6, (innerHeight - 150 - m.f) / m.d);
+  const ry = river.length ? river.reduce((a, p) => Math.abs(p[0] - x) < Math.abs(a[0] - x) ? p : a)[1] : gh / 2;
+  const [y0, y1] = ry + 12 < bottom ? [ry + 12, bottom] : [top, ry - 12];
+  let best = null;
+  for (let y = Math.round(y0); y < y1; y++) { const z = elev([x, y + .5]); if (!best || z > best.z) best = { x, y: y + .5, z }; }
+  return best || { x, y: gh / 2, z: elev([x, gh / 2]) };
+}
+
+// ---------- Ditches and water ----------
+// Points every STEP cells along what the finger drew.
+function resample(raw) {
+  const out = [raw[0]];
+  let need = STEP;
+  for (let i = 1; i < raw.length; i++) {
+    let [ax, ay] = raw[i - 1];
+    const [bx, by] = raw[i];
+    let L = Math.hypot(bx - ax, by - ay);
+    while (L >= need) {
+      const t = need / L;
+      ax += (bx - ax) * t; ay += (by - ay) * t;
+      out.push([ax, ay]);
+      L -= need; need = STEP;
+    }
+    need -= L;
+  }
+  return out;
+}
+
+// The water level at p, if p is close enough to water: the headgate, the river, or a ditch that has water in it.
+function waterAt(p, self) {
+  const r = SNAP / svg.getScreenCTM().a;
+  let lvl = null;
+  const take = z => { if (lvl === null || z > lvl) lvl = z; };
+  const near = q => Math.hypot(p[0] - q[0], p[1] - q[1]) <= r;
+  if (near([head.x, head.y])) take(head.z);
+  for (const q of river) if (near(q)) take(elev(q));
+  for (const d of ditches) if (d !== self) for (let i = 0; i < d.wetN; i++) if (near(d.pts[i])) take(d.zw[i]);
+  return lvl;
+}
+
+// Water runs downhill: it follows the ditch while the ground keeps dropping, and stops where the ground rises
+// more than the ditch is deep.
+function flow(d, lvl) {
+  const n = d.pts.length;
+  d.zw = new Float32Array(n); d.stopped = false;
+  let run = lvl, i = 0;
+  for (; i < n; i++) {
+    const z = elev(d.pts[i]);
+    if (z > run + TOL) { d.stopped = true; break; }
+    run = Math.min(run, z); d.zw[i] = run;
+  }
+  d.wetN = i;
+}
+
+// Works out which ditches have water, in passes, so a ditch dug from another ditch gets water once its parent does.
+function recompute(now) {
+  for (const d of ditches) d.wetN = 0;
+  const wet = new Set();
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const d of ditches) {
+      if (wet.has(d)) continue;
+      let lvl = waterAt(d.pts[0], d);
+      if (lvl === null) {
+        // Dug towards the water? Turn it round so the water enters at the end that touches it.
+        lvl = waterAt(d.pts.at(-1), d);
+        if (lvl !== null) d.pts.reverse();
+      }
+      if (lvl === null) continue;
+      flow(d, lvl);
+      if (d.t0 === null) d.t0 = now;
+      wet.add(d); changed = true;
+    }
+  }
+  for (const d of ditches) if (!wet.has(d)) { d.t0 = null; d.wetN = 0; d.stopped = false; }
+  buildMoisture();
+  crops = crops.filter(c => target[(c.gy | 0) * state.gw + (c.gx | 0)] > .5);
+}
+
+const arrive = (d, i) => d.t0 + i * STEP / SPEED * 1000;
+
+// Where the land gets wet, and when the water gets there.
+function buildMoisture() {
+  const { gw, gh } = state;
+  target.fill(0); wetAt.fill(Infinity);
+  const stamp = (cx, cy, R, t) => {
+    for (let y = Math.max(0, Math.floor(cy - R)); y <= Math.min(gh - 1, Math.ceil(cy + R)); y++)
+      for (let x = Math.max(0, Math.floor(cx - R)); x <= Math.min(gw - 1, Math.ceil(cx + R)); x++) {
+        const dd = Math.hypot(x + .5 - cx, y + .5 - cy);
+        if (dd > R) continue;
+        const j = y * gw + x, v = 1 - .45 * dd / R;
+        if (v > target[j]) target[j] = v;
+        if (t < wetAt[j]) wetAt[j] = t;
+      }
+  };
+  for (const d of ditches) {
+    if (d.t0 === null) continue;
+    for (let i = 0; i < d.wetN; i += 2) stamp(d.pts[i][0], d.pts[i][1], 5, arrive(d, i));
+    const [ex, ey] = d.pts[Math.max(0, d.wetN - 1)];
+    if (d.stopped) stamp(ex, ey, 4, arrive(d, d.wetN));
+    else spill(ex, ey, arrive(d, d.wetN));
+  }
+  fieldCells = [];
+  for (let j = 0; j < target.length; j++) if (target[j] > .6) fieldCells.push(j);
+}
+
+// Water that reaches the end of a ditch pours out and spreads downhill, like a cup tipped on a slope.
+function spill(cx, cy, t0) {
+  const { gw, gh, values: v } = state, R = 12;
+  const sx = clamp(Math.floor(cx), 0, gw - 1), sy = clamp(Math.floor(cy), 0, gh - 1), s = sy * gw + sx;
+  const seen = new Set([s]), q = [s];
+  for (let h = 0; h < q.length; h++) {
+    const j = q[h], x = j % gw, y = (j / gw) | 0, dd = Math.hypot(x - sx, y - sy);
+    const val = 1 - .5 * dd / R;
+    if (val > target[j]) target[j] = val;
+    wetAt[j] = Math.min(wetAt[j], t0 + dd * 80);
+    for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+      if (nx < 0 || ny < 0 || nx >= gw || ny >= gh || q.length >= 500) continue;
+      const k = ny * gw + nx;
+      if (seen.has(k) || Math.hypot(nx - sx, ny - sy) > R || v[k] > v[j] + .5) continue;
+      seen.add(k); q.push(k);
+    }
+  }
+}
+
+function addDitch(raw) {
+  const pts = resample(raw);
+  if (pts.length < 4) return;
+  const d = { pts, t0: null, wetN: 0, zw: null, stopped: false };
+  ditches.push(d);
+  const now = performance.now();
+  recompute(now);
+  if (d.t0 === null) hint("Start your ditch at the water 💧", 3500);
+  else if (d.stopped) setTimeout(() => ditches.includes(d) && d.stopped &&
+    hint("Uphill! Water can't climb. Tap the ditch to fill it in.", 4500), arrive(d, d.wetN) - now);
+  else if (!flowed) { flowed = true; setTimeout(() => hint(), arrive(d, d.wetN) - now); }
+}
+
+// ---------- Hints ----------
+function hint(text, ms) {
+  clearTimeout(hintTimer);
+  $("hint").textContent = text || (flowed ? "Water runs downhill! Tap ripe crops for coins." : "Draw a ditch from the water 💧");
+  if (ms) hintTimer = setTimeout(() => hint(), ms);
+}
+
+// ---------- Drawing ----------
+function sizeCanvases() {
+  const dpr = devicePixelRatio || 1;
+  for (const c of [ground, fg]) { c.width = Math.round(innerWidth * dpr); c.height = Math.round(innerHeight * dpr); }
+  kick();
+}
+
+function kick() { if (!raf && state) raf = requestAnimationFrame(frame); }
+
+function frame(now) {
+  raf = 0;
+  const m = svg.getScreenCTM(), dpr = devicePixelRatio || 1;
+  let busy = updateGreen(now);
+  gctx.setTransform(1, 0, 0, 1, 0, 0);
+  gctx.clearRect(0, 0, ground.width, ground.height);
+  gctx.setTransform(dpr * m.a, 0, 0, dpr * m.d, dpr * m.e, dpr * m.f);
+  gctx.drawImage(base, 0, 0);
+  gctx.drawImage(greenCv, 0, 0);
+  if (drawTop(now, m, dpr)) busy = true;
+  if (busy) kick();
+}
+
+// Green fades in where the water has reached, and back out where it's gone.
+function updateGreen(now) {
+  const k = CALM ? 1 : .08, px = greenImg.data;
+  let busy = false, changed = false;
+  for (let j = 0; j < green.length; j++) {
+    const pending = target[j] > 0 && now < wetAt[j];
+    if (pending) busy = true;
+    const goal = pending ? 0 : target[j], g = green[j];
+    if (g === goal) continue;
+    let ng = g + (goal - g) * k;
+    if (Math.abs(goal - ng) < .01) ng = goal;
+    green[j] = ng; px[j * 4 + 3] = ng * 235;
+    busy = changed = true;
+  }
+  if (changed) greenCv.getContext("2d").putImageData(greenImg, 0, 0);
+  return busy;
+}
+
+function drawTop(now, m, dpr) {
+  const c = fctx, px = 1 / m.a;
+  let busy = false;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, fg.width, fg.height);
+  c.setTransform(dpr * m.a, 0, 0, dpr * m.d, dpr * m.e, dpr * m.f);
+  c.lineCap = c.lineJoin = "round";
+  const line = (pts, color, w) => {
+    if (pts.length < 2) return;
+    c.beginPath(); c.moveTo(...pts[0]);
+    for (let i = 1; i < pts.length; i++) c.lineTo(...pts[i]);
+    c.strokeStyle = color; c.lineWidth = w; c.stroke();
+  };
+  const dot = (p, r, color) => { c.beginPath(); c.arc(p[0], p[1], r, 0, Math.PI * 2); c.fillStyle = color; c.fill(); };
+
+  line(river, WATER, 3 * px);
+
+  for (const d of ditches) {
+    line(d.pts, "#5e4026", 8 * px);
+    line(d.pts, "#8f6a43", 5 * px);
+    if (d.t0 === null) continue;
+    const front = CALM ? d.wetN : Math.min(d.wetN, (now - d.t0) / 1000 * SPEED / STEP);
+    if (front < d.wetN) busy = true;
+    line(d.pts.slice(0, Math.ceil(front) + 1), WATER, 3.5 * px);
+    const age = now - arrive(d, d.wetN);
+    if (age < 0) continue;
+    const end = d.pts[Math.max(0, d.wetN - 1)], grow = CALM ? 1 : Math.min(1, age / 600);
+    if (grow < 1) busy = true;
+    if (d.stopped) { dot(end, 8 * px * grow, "rgba(76,184,255,.85)"); dot(end, 4 * px * grow, "#bfe8ff"); }
+    else dot(end, 5 * px * grow, WATER);
+  }
+
+  if (drawing) {
+    line(drawing, "rgba(94,64,38,.85)", 8 * px);
+    dot(drawing[0], 6 * px, waterAt(drawing[0]) !== null ? WATER : "#9a8d7c");
+  }
+
+  // The headgate.
+  dot([head.x, head.y], 13 * px, "#fff6e6");
+  dot([head.x, head.y], 10 * px, WATER);
+
+  // Screen space from here: labels, crops and coins.
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const S = (gx, gy) => [m.a * gx + m.e, m.d * gy + m.f];
+  const [hx, hy] = S(head.x, head.y);
+  c.font = '600 15px "Fredoka", system-ui, sans-serif';
+  c.textAlign = "center";
+  c.fillStyle = "#fff6e6";
+  c.strokeStyle = "rgba(36,26,16,.8)"; c.lineWidth = 4;
+  const label = (t, x, y) => { c.strokeText(t, x, y); c.fillText(t, x, y); };
+  label("WATER", hx, hy - 20);
+  if (!flowed && !ditches.some(d => d.t0 !== null)) {
+    const bob = CALM ? 0 : Math.sin(now / 300) * 4;
+    if (!CALM) busy = true;
+    label("start here ↓", hx, hy - 40 + bob);
+  }
+
+  for (const cr of crops) {
+    const s = clamp((now - cr.born) / GROW, 0, 1), [x, y] = S(cr.gx, cr.gy);
+    if (s < 1) busy = true;
+    c.save(); c.translate(x, y); c.scale(1.4, 1.4); c.translate(-x, -y);
+    const h = 5 + 8 * s;
+    c.beginPath(); c.moveTo(x, y + 6); c.lineTo(x, y + 6 - h);
+    c.strokeStyle = "#2f6b2a"; c.lineWidth = 2.5; c.stroke();
+    c.fillStyle = "#3f8f37";
+    c.beginPath(); c.ellipse(x - 3.5, y + 3 - h / 2, 3.5 * (.5 + s / 2), 2, -.6, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(x + 3.5, y + 1 - h / 2, 3.5 * (.5 + s / 2), 2, .6, 0, Math.PI * 2); c.fill();
+    if (s === 1) {
+      c.beginPath(); c.arc(x, y + 6 - h, 6, 0, Math.PI * 2);
+      c.fillStyle = "#ffcf3f"; c.fill();
+      c.strokeStyle = "#a8740c"; c.lineWidth = 1.5; c.stroke();
+    }
+    c.restore();
+  }
+
+  floats = floats.filter(f => now - f.t < 800);
+  for (const f of floats) {
+    const t = (now - f.t) / 800;
+    c.globalAlpha = 1 - t;
+    c.fillStyle = "#ffcf3f";
+    label("+1", f.x, f.y - 14 - 24 * t);
+    c.globalAlpha = 1;
+    busy = true;
+  }
+  return busy;
+}
+
+// ---------- Crops: they pop up on green land ----------
+setInterval(() => {
+  if (!state || document.hidden || !fieldCells.length) return;
+  const cap = Math.min(40, Math.floor(fieldCells.length / 50));
+  if (crops.length >= cap) return;
+  const a = svg.getScreenCTM().a;
+  for (let tries = 0; tries < 20; tries++) {
+    const j = fieldCells[Math.random() * fieldCells.length | 0];
+    if (green[j] < target[j] - .05) continue;
+    const gx = j % state.gw + .5, gy = ((j / state.gw) | 0) + .5;
+    if (crops.some(cr => Math.hypot(cr.gx - gx, cr.gy - gy) * a < 30)) continue;
+    if (ditches.some(d => d.pts.some(p => Math.hypot(p[0] - gx, p[1] - gy) * a < 9))) continue;
+    crops.push({ gx, gy, born: performance.now() });
+    kick();
+    return;
+  }
+}, 600);
+
+// ---------- Input: drag to dig, tap a ripe crop for a coin, tap a ditch to fill it in ----------
+function tap(x, y) {
+  const now = performance.now(), m = svg.getScreenCTM();
+  let best = null, bd = 26;
+  for (const cr of crops) {
+    if (now - cr.born < GROW) continue;
+    const d = Math.hypot(m.a * cr.gx + m.e - x, m.d * cr.gy + m.f - y);
+    if (d < bd) { bd = d; best = cr; }
+  }
+  if (best) {
+    coins++;
+    $("coin-n").textContent = coins;
+    const b = $("coins"); b.classList.remove("bump"); void b.offsetWidth; b.classList.add("bump");
+    floats.push({ x: m.a * best.gx + m.e, y: m.d * best.gy + m.f, t: now });
+    best.born = now;
+    return kick();
+  }
+  let hit = null, hd = 16;
+  for (const d of ditches) for (let i = 0; i < d.pts.length; i += 2) {
+    const dd = Math.hypot(m.a * d.pts[i][0] + m.e - x, m.d * d.pts[i][1] + m.f - y);
+    if (dd < hd) { hd = dd; hit = d; }
+  }
+  if (hit) { ditches.splice(ditches.indexOf(hit), 1); recompute(now); kick(); }
+}
+
+fg.addEventListener("pointerdown", e => {
+  if (!state || (e.pointerType === "mouse" && e.button !== 0)) return;
+  fg.setPointerCapture(e.pointerId);
+  press = { x: e.clientX, y: e.clientY };
+  drawing = null;
+});
+fg.addEventListener("pointermove", e => {
+  if (!press) return;
+  if (!drawing) {
+    if (Math.hypot(e.clientX - press.x, e.clientY - press.y) < 8) return;
+    drawing = [screenToGrid(press.x, press.y)];
+  }
+  const g = screenToGrid(e.clientX, e.clientY), last = drawing.at(-1);
+  if (Math.hypot(g[0] - last[0], g[1] - last[1]) >= .4) { drawing.push(g); kick(); }
+});
+fg.addEventListener("pointerup", () => {
+  if (!press) return;
+  if (drawing) addDitch(drawing); else tap(press.x, press.y);
+  press = drawing = null;
+  kick();
+});
+fg.addEventListener("pointercancel", () => { press = drawing = null; kick(); });
+
+async function load() {
+  $("hint").textContent = "Loading the hills…";
+  try {
+    render(await fetchElevation());
+  } catch {
+    $("hint").innerHTML = `Couldn't load the map.<button onclick="load()">Try again</button>`;
+  }
+}
+
+addEventListener("resize", sizeCanvases);
+load();
+</script>
+</body>
+</html>
