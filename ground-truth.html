@@ -101,8 +101,11 @@
   .card .claim { font-size: 11px; line-height: 1.5; }
   .card .acts { display: flex; gap: 6px; align-items: center; }
   .card.hot { background: rgba(226,185,127,.13); border-left-color: var(--major); }
-  .card.sent { border-left-color: var(--teal); }
-  .card.discarded { opacity: .4; }
+  .card.discarded { opacity: .45; }
+  /* Known true or false: the whole card says so. */
+  .card.ok { border-left: 3px solid var(--teal); background: rgba(63,208,192,.11); }
+  .card.bad { border-left: 3px solid var(--accent); background: rgba(255,106,61,.11); }
+  .card.bad .claim { text-decoration: line-through; text-decoration-color: rgba(255,106,61,.75); }
   .grade { display: inline-block; min-width: 14px; text-align: center; border: 1px solid rgba(226,185,127,.4); color: var(--text); }
   .btn { font: inherit; font-size: 9px; letter-spacing: .16em; color: var(--text); background: none; cursor: pointer;
     border: 1px solid rgba(226,185,127,.4); padding: 4px 8px; }
@@ -110,11 +113,19 @@
   .btn.send { border-color: var(--teal); color: var(--tealhi); }
   .btn.send:hover { background: rgba(63,208,192,.12); }
   .btn:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
-  .stamp { font-size: 9px; letter-spacing: .2em; padding: 1px 6px; border: 1px solid; margin-left: auto; }
-  .stamp.ok { color: var(--tealhi); border-color: var(--teal); }
-  .stamp.bad { color: var(--accent); border-color: var(--accent); }
+  .btn:disabled { opacity: .35; cursor: default; border-color: rgba(226,185,127,.4); color: var(--text); }
+  .stamp { font-size: 10px; font-weight: 600; letter-spacing: .16em; padding: 2px 8px; margin-left: auto; color: var(--bg); }
+  .stamp.ok { background: var(--teal); }
+  .stamp.bad { background: var(--accent); }
   .said { font-size: 9px; letter-spacing: .16em; color: var(--muted); }
-  .card.sent .said { color: var(--tealhi); }
+  .fed { font-size: 9px; font-weight: 600; letter-spacing: .14em; padding: 2px 6px; border: 1px solid; }
+  .fed.good { color: var(--tealhi); border-color: var(--teal); }
+  .fed.bad { color: var(--accent); border-color: var(--accent); }
+  .checking { font-size: 9px; letter-spacing: .16em; color: var(--major); }
+  .bar { height: 2px; background: rgba(226,185,127,.18); }
+  .bar i { display: block; height: 100%; width: 0; background: var(--major); }
+  #fed { font-size: 11px; font-weight: 600; letter-spacing: .1em; white-space: nowrap; }
+  #fed .g { color: var(--tealhi); } #fed .b { color: var(--accent); margin-left: 8px; }
 
   .clock { font-size: 22px; font-weight: 600; color: var(--major); font-variant-numeric: tabular-nums; letter-spacing: .06em; }
   #t-status { font-size: 12px; color: var(--tealhi); letter-spacing: .1em; min-height: 17px; }
@@ -196,6 +207,7 @@
   <div class="row hide-sm"><span class="label">WINDOW CLOSES</span><span class="label">T+06:00</span></div>
   <div id="t-status">STANDING BY</div>
   <div class="row"><div id="pips"></div><span id="fit" class="label">5/5 FIT</span></div>
+  <div class="row"><span class="label">INTEL FED</span><span id="fed"><span class="g">✓ 0 GOOD</span><span class="b">✗ 0 BAD</span></span></div>
   <div class="row"><span class="label">SENSOR SWEEPS</span><span id="sweeps">◆◆◆</span></div>
   <div id="recharge"><i></i></div>
   <div class="sect hide-sm"><span>COMMS</span></div>
@@ -209,7 +221,8 @@
   <p>You're their intel. Reports will come in. Some are true. Some are wrong, and some are planted.</p>
   <ul>
     <li><b>Send</b> what's true to ALPHA. They act on whatever you send, and nothing else.</li>
-    <li><b>Touch the map</b> to run a sensor sweep. It checks every report around it and finds what's hiding there. You have three, and they recharge slowly.</li>
+    <li><b>Check</b> a report and an analyst verifies it. It takes ten seconds, one report at a time.</li>
+    <li><b>Touch the map</b> to run a sensor sweep. It instantly checks every report around it and finds what's hiding there. You have three, and they recharge slowly.</li>
   </ul>
   <button class="btn go" id="begin">BEGIN</button>
   <div class="fine">LOADING ELEVATION DATA…</div>
@@ -239,6 +252,7 @@ const THREAT_R = 350;      // m: how close a patrol has to be to make contact
 const OBJ_R = 250;         // m: close enough to find the drone
 const SWEEP_R = 600;       // m: what a sensor sweep checks
 const SWEEPS = 3, RECHARGE = 25;
+const CHECK_TIME = 10;     // s for the analyst to verify one report
 const BLOOM = 450, SETTLE = 2600, REST = .35;   // the sweep light, as in headgate.html
 
 // Operation Dry Creek. The briefing's grid for the drone is stale: it's really at the jump site.
@@ -462,7 +476,7 @@ function plan(from, to, threats) {
 function newGame() {
   game = {
     T: 0, running: false, over: false, next: 0, cards: [], sent: [],
-    sweeps: SWEEPS, recharge: 0, spots: [],
+    sweeps: SWEEPS, recharge: 0, spots: [], checking: null,
     hostiles: OP.hostiles.map(h => ({ g: toGrid(h), hit: false, sensed: false })),
     team: { pos: toGrid(OP.lz), route: [], seg: 0, phase: "insert", wait: 0, resume: null, wia: [false, false, false, false, false],
       known: { threats: [], obj: toGrid(OP.brief) }, found: false },
@@ -549,31 +563,65 @@ function hot(c, on) {
 }
 
 function drawCard(c) {
-  const stamp = c.stamp ? `<span class="stamp ${c.stamp}">${c.stamp === "ok" ? "VERIFIED" : "FALSE"}</span>` : "";
-  const acts = c.state === "new"
-    ? `<button class="btn send">SEND → ALPHA</button><button class="btn drop">DISCARD</button>`
-    : `<span class="said">${c.state === "sent" ? "SENT TO ALPHA" : "DISCARDED"}</span>`;
-  c.el.className = `card ${c.state}`;
+  const stamp = c.stamp ? `<span class="stamp ${c.stamp}">${c.stamp === "ok" ? "✓ TRUE" : "✗ FALSE"}</span>` : "";
+  let acts;
+  if (c.state === "new" && game.checking === c) acts = `<span class="checking">ANALYST CHECKING…</span>`;
+  else if (c.state === "new") {
+    const check = c.stamp ? "" : `<button class="btn check"${game.checking ? ' disabled title="The analyst is busy"' : ""}>CHECK</button>`;
+    acts = `<button class="btn send">SEND → ALPHA</button>${check}<button class="btn drop">DISCARD</button>`;
+  } else if (c.state === "sent") acts = `<span class="fed ${c.truth ? "good" : "bad"}">${c.truth ? "✓ GOOD INTEL" : "✗ BAD INTEL"} SENT</span>`;
+  else acts = `<span class="said">DISCARDED</span>`;
+  // Known true or false: checked, swept, or sent (sending tells you what you fed them).
+  const known = c.stamp || (c.state === "sent" ? (c.truth ? "ok" : "bad") : null);
+  c.el.className = `card ${c.state}${known ? " " + known : ""}`;
   c.el.innerHTML = `<div class="meta"><span class="n">${pad(c.id)}</span><span>${c.src}</span>
       <span class="grade" title="Source reliability, A (best) to F">${c.grade}</span><span class="t">${clock(c.when)}</span></div>
-    <div class="claim"></div><div class="acts">${acts}${stamp}</div>`;
+    <div class="claim"></div><div class="acts">${acts}${stamp}</div>${game.checking === c ? '<div class="bar"><i></i></div>' : ""}`;
   c.el.querySelector(".claim").textContent = c.claim;
-  c.ping.className = `ping${c.stamp ? " " + c.stamp : ""}${c.state === "new" ? "" : " done"}`;
+  c.ping.className = `ping${known ? " " + known : ""}${c.state === "discarded" ? " done" : ""}`;
+  c.ping.querySelector(".id").textContent = pad(c.id) + (known === "ok" ? " ✓" : known === "bad" ? " ✗" : "");
   c.el.querySelector(".send")?.addEventListener("click", () => decide(c, "sent"));
   c.el.querySelector(".drop")?.addEventListener("click", () => decide(c, "discarded"));
+  c.el.querySelector(".check")?.addEventListener("click", () => check(c));
 }
 
 function decide(c, what) {
   if (!game.running || c.state !== "new") return;
   c.state = what;
+  if (game.checking === c) { game.checking = null; redrawOpen(); }
   drawCard(c);
   if (what !== "sent") return;
   game.sent.push(c);
+  updateTeamPanel();
   const t = game.team;
   if (t.found && c.kind === "obj") radio("ALPHA: Copy. We already have the drone.", "alpha");
   else radio(`ALPHA: Copy report ${pad(c.id)}.${t.phase === "move" || t.phase === "exfil" ? " Adjusting route." : ""}`, "alpha");
   replan();
 }
+
+// ---------- The analyst: one report at a time, verified after CHECK_TIME ----------
+function check(c) {
+  if (!game.running || game.checking || c.stamp || c.state !== "new") return;
+  game.checking = c;
+  c.checkT = 0;
+  redrawOpen();
+}
+
+function tickCheck(dt) {
+  const c = game.checking;
+  if (!c) return;
+  c.checkT += dt;
+  const bar = c.el.querySelector(".bar i");
+  if (bar) bar.style.width = `${Math.min(100, c.checkT / CHECK_TIME * 100)}%`;
+  if (c.checkT < CHECK_TIME) return;
+  c.stamp = c.truth ? "ok" : "bad";
+  game.checking = null;
+  radio(`ANALYST: Report ${pad(c.id)} is ${c.truth ? "TRUE" : "FALSE"}.`, c.truth ? "alpha" : "alert");
+  redrawOpen();
+}
+
+// Open reports' CHECK buttons depend on whether the analyst is free.
+function redrawOpen() { for (const o of game.cards) if (o.state === "new") drawCard(o); }
 
 // ---------- Sensor sweeps ----------
 function sweep(x, y) {
@@ -736,6 +784,8 @@ function placeMarks() {
 
 function updateTeamPanel() {
   const t = game.team, fit = 5 - t.wia.filter(Boolean).length;
+  const good = game.sent.filter(c => c.truth).length;
+  $("fed").innerHTML = `<span class="g">✓ ${good} GOOD</span><span class="b">✗ ${game.sent.length - good} BAD</span>`;
   $("pips").innerHTML = t.wia.map(w => `<span class="pip${w ? " wia" : ""}"></span>`).join("");
   $("fit").textContent = `${fit}/5 FIT`;
   $("sweeps").textContent = "◆".repeat(game.sweeps) + "◇".repeat(SWEEPS - game.sweeps);
@@ -800,6 +850,7 @@ function frame(now) {
       if (game.recharge >= RECHARGE) { game.sweeps++; game.recharge = 0; updateTeamPanel(); }
     } else game.recharge = 0;
     $("recharge").firstElementChild.style.width = `${game.sweeps < SWEEPS ? game.recharge / RECHARGE * 100 : 0}%`;
+    tickCheck(dt);
     stepTeam(dt);
     $("clock").textContent = clock(game.T);
   }
