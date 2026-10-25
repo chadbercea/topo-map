@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Added to an iPhone home screen, it opens full screen (Safari has no Fullscreen API for pages). -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Ground Truth</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -127,6 +131,7 @@
   #fed { font-size: 11px; font-weight: 600; letter-spacing: .1em; white-space: nowrap; }
   #fed .g { color: var(--tealhi); } #fed .b { color: var(--accent); margin-left: 8px; }
 
+  #fs { padding: 2px 6px; white-space: nowrap; }
   .clock { font-size: 22px; font-weight: 600; color: var(--major); font-variant-numeric: tabular-nums; letter-spacing: .06em; }
   #t-status { font-size: 12px; color: var(--tealhi); letter-spacing: .1em; min-height: 17px; }
   #t-status.alert { color: var(--accent); }
@@ -203,8 +208,8 @@
 </aside>
 
 <aside id="team" class="side" aria-label="Team ALPHA">
-  <div class="sect"><span>TEAM ALPHA</span><span class="clock" id="clock">T+00:00</span></div>
-  <div class="row hide-sm"><span class="label">WINDOW CLOSES</span><span class="label">T+06:00</span></div>
+  <div class="sect"><span>TEAM ALPHA</span><button class="btn" id="fs" title="Full screen (F)" aria-pressed="false" hidden>⛶ FULL SCREEN</button></div>
+  <div class="row"><span class="clock" id="clock">T+00:00</span><span class="label hide-sm" style="white-space:nowrap">WINDOW 06:00</span></div>
   <div id="t-status">STANDING BY</div>
   <div class="row"><div id="pips"></div><span id="fit" class="label">5/5 FIT</span></div>
   <div class="row"><span class="label">INTEL FED</span><span id="fed"><span class="g">✓ 0 GOOD</span><span class="b">✗ 0 BAD</span></span></div>
@@ -891,6 +896,24 @@ async function load() {
     fine.innerHTML = `ELEVATION FEED UNREACHABLE <button class="btn" onclick="load()">RETRY</button>`;
   }
 }
+
+// ---------- Full screen: the button in the team panel, or F ----------
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+function toggleFullscreen() {
+  const root = document.documentElement;
+  if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  else (root.requestFullscreen || root.webkitRequestFullscreen).call(root);
+}
+if (document.fullscreenEnabled || document.webkitFullscreenEnabled) $("fs").hidden = false;
+$("fs").addEventListener("click", toggleFullscreen);
+addEventListener("keydown", e => {
+  if ((e.key === "f" || e.key === "F") && !e.metaKey && !e.ctrlKey && !e.altKey && $("fs").hidden === false) toggleFullscreen();
+});
+for (const ev of ["fullscreenchange", "webkitfullscreenchange"]) document.addEventListener(ev, () => {
+  const on = !!fsEl();
+  $("fs").textContent = on ? "⛶ EXIT" : "⛶ FULL SCREEN";
+  $("fs").setAttribute("aria-pressed", on);
+});
 
 addEventListener("resize", layout);
 load();
