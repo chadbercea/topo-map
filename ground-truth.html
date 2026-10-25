@@ -30,6 +30,7 @@
     touch-action: none; cursor: grab; }
   #map.ready { opacity: 1; }
   #map.panning { cursor: grabbing; }
+  #map.moving #major { filter: none; }
   #minor path { fill: none; stroke: var(--line); stroke-width: .8; vector-effect: non-scaling-stroke; }
   #major path { fill: none; stroke: var(--major); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
   #river { fill: none; stroke: var(--major); stroke-opacity: .5; stroke-width: 1; stroke-dasharray: 2 5;
@@ -143,6 +144,8 @@
   .card .acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .card.hot { background: rgba(226,185,127,.13); border-left-color: var(--major); }
   .card.discarded, .card.expired { opacity: .4; }
+  .card.leaving { animation: leave .35s ease-in forwards; pointer-events: none; }
+  @keyframes leave { to { opacity: 0; transform: translateX(-16px); } }
   /* Known true or false: the whole card says so. */
   .card.ok { border-left: 3px solid var(--teal); background: rgba(63,208,192,.11); }
   .card.bad { border-left: 3px solid var(--accent); background: rgba(255,106,61,.11); }
@@ -253,7 +256,7 @@
     <div class="title">INTEL</div>
     <div class="label">SNAKE RIVER CANYON · <a href="./">MAP</a></div>
   </div>
-  <div class="sect"><span>REPORTS</span><span id="i-count">0 IN</span></div>
+  <div class="sect"><span>REPORTS</span><span id="i-count">0 OPEN</span></div>
   <div id="cards" aria-live="polite"></div>
 </aside>
 
@@ -366,7 +369,7 @@ const AGREE_T = 60;          // s: reports this close in time (and within KNOWN_
 const $ = id => document.getElementById(id);
 const svg = $("map"), lit = $("lit"), lctx = lit.getContext("2d");
 let state = null, grade = null, game = null, cam = null, fly = null, last = 0;
-let lines = null, litLines = null, settled = null, LS = 1, relineTimer = 0;
+let lines = null, litLines = null, settled = null, LS = 1, relineTimer = 0, litDirty = true, movingTimer = 0;
 
 const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
 const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
@@ -461,6 +464,11 @@ function applyCam() {
   cam.cy = clamp(cam.cy, Math.min(hh, state.gh / 2), Math.max(state.gh - hh, state.gh / 2));
   const w = state.gw / cam.k, h = state.gh / cam.k;
   svg.setAttribute("viewBox", `${cam.cx - w / 2} ${cam.cy - h / 2} ${w} ${h}`);
+  litDirty = true;
+  // The contour glow is the costliest thing to re-render: drop it while the camera moves.
+  svg.classList.add("moving");
+  clearTimeout(movingTimer);
+  movingTimer = setTimeout(() => svg.classList.remove("moving"), 160);
 }
 
 function screenToGrid(x, y) {
@@ -508,9 +516,9 @@ function traceRiver() {
   $("river").setAttribute("d", "M" + pts.map(p => p.map(v => v.toFixed(1)).join(",")).join("L"));
 }
 
-// ---------- Least-cost paths: Dijkstra over the grid, 8 neighbours ----------
+// ---------- Least-cost paths: A* over the grid, 8 neighbours (Dijkstra when there's no heuristic) ----------
 // Returns the cells from a start to the first cell that's done(), or null.
-function cheapest(starts, costOf, done) {
+function cheapest(starts, costOf, done, heur = () => 0) {
   const { gw, gh } = state, N = gw * gh;
   const dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
   const hk = [], hv = [];
@@ -533,19 +541,19 @@ function cheapest(starts, costOf, done) {
     }
     return v;
   };
-  for (const s of starts) { dist[s] = costOf(s); push(dist[s], s); }
+  for (const s of starts) { dist[s] = costOf(s); push(dist[s] + heur(s), s); }
   let end = -1;
   while (hk.length) {
-    const d0 = hk[0], i = pop();
-    if (d0 > dist[i]) continue;
+    const f0 = hk[0], i = pop();
+    if (f0 > dist[i] + heur(i) + 1e-9) continue;
     if (done(i)) { end = i; break; }
     const x = i % gw, y = (i / gw) | 0;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       if (!dx && !dy) continue;
       const nx = x + dx, ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue;
-      const j = ny * gw + nx, nd = d0 + costOf(j) * (dx && dy ? Math.SQRT2 : 1);
-      if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(nd, j); }
+      const j = ny * gw + nx, nd = dist[i] + costOf(j) * (dx && dy ? Math.SQRT2 : 1);
+      if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(nd + heur(j), j); }
     }
   }
   if (end < 0) return null;
@@ -581,7 +589,9 @@ function buildGrade() {
 function plan(from, to) {
   const goal = cellOf(to);
   const costOf = j => { const g = grade[j]; return 1 + g * 6 + (g > .4 ? 30 : 0); };
-  const cells = cheapest([cellOf(from)], costOf, i => i === goal);
+  // Every step costs at least 1, so the straight-line distance never overestimates: A* stays exact.
+  const gx = goal % state.gw, gy = (goal / state.gw) | 0;
+  const cells = cheapest([cellOf(from)], costOf, i => i === goal, j => Math.hypot(j % state.gw - gx, ((j / state.gw) | 0) - gy));
   if (!cells) return [from, to];
   const pts = smooth(cells, 3);
   pts[0] = [...from]; pts[pts.length - 1] = [...to];
@@ -611,11 +621,12 @@ function newGame(seed = Date.now()) {
   };
   $("cards").innerHTML = $("comms").innerHTML = $("pings").innerHTML = $("tasked").innerHTML = "";
   $("route").removeAttribute("d");
-  $("i-count").textContent = "0 IN";
+  $("i-count").textContent = "0 OPEN";
   buildMarks();
   status("AWAITING TASKING");
   updateTeamPanel();
   settled && settled.getContext("2d").clearRect(0, 0, settled.width, settled.height);
+  litDirty = true;
 }
 
 function radio(text, cls = "") {
@@ -691,7 +702,23 @@ function addCard(c) {
   // Clicking a card (not its buttons) flies the camera to it.
   el.addEventListener("click", e => { if (!e.target.closest("button")) flyTo(c.kind === "track" ? (game.hostiles[c.h].seen || game.hostiles[c.h].pos) : c.g); });
   drawCard(c);
-  $("i-count").textContent = `${game.cards.length} IN`;
+  countOpen();
+}
+
+// Reports still waiting on you, plus tracks on cells that are still alive.
+function countOpen() {
+  const open = game.cards.filter(c => c.kind === "report" ? c.state === "new" : game.hostiles[c.h].alive).length;
+  $("i-count").textContent = `${open} OPEN`;
+}
+
+// A decided report shows its result for a moment, then leaves the list and the map. The debrief keeps it.
+function retire(c, delay) {
+  setTimeout(() => {
+    if (!c.el.isConnected) return;
+    c.el.classList.add("leaving");
+    setTimeout(() => c.el.remove(), 350);
+    c.ping?.remove(); c.ping = null;
+  }, delay);
 }
 
 function hot(c, on) {
@@ -716,12 +743,13 @@ function drawCard(c) {
   c.el.innerHTML = `<div class="meta"><span class="n">${pad(c.id)}</span><span>${c.src}</span>
       <span class="grade" title="Source track record">${c.grade} · ${Math.round(RELIABILITY[c.grade] * 100)}%</span><span class="t">${clock(c.when)}</span></div>
     <div class="claim"></div>
-    ${c.state === "new" ? `<div class="agree${agree.length ? " yes" : ""}">${agree.length ? `◆ AGREES WITH ${agree.map(o => pad(o.id)).join(" · ")}` : "◇ NO OTHER REPORT AGREES"}</div>` : ""}
+    ${c.state === "new" ? `<div class="agree${agree.length ? " yes" : ""}">${agree.length ? `◆ AGREES WITH ${agree.map(o => pad(o.id) + (o.state === "sent" ? " (SENT)" : o.state === "discarded" ? " (DROPPED)" : "")).join(" · ")}` : "◇ NO OTHER REPORT AGREES"}</div>` : ""}
     <div class="acts">${acts}${stamp}</div>${game.checking === c ? '<div class="bar"><i></i></div>' : ""}`;
   c.el.querySelector(".claim").textContent = c.claim;
-  c.ping.hidden = c.state === "expired";
-  c.ping.className = `ping${known ? " " + known : ""}${c.state === "discarded" ? " done" : ""}`;
-  c.ping.querySelector(".id").textContent = pad(c.id) + (known === "ok" ? " ✓" : known === "bad" ? " ✗" : "");
+  if (c.ping) {
+    c.ping.className = `ping${known ? " " + known : ""}${c.state === "new" ? "" : " done"}`;
+    c.ping.querySelector(".id").textContent = pad(c.id) + (known === "ok" ? " ✓" : known === "bad" ? " ✗" : "");
+  }
   c.el.querySelector(".send")?.addEventListener("click", () => decide(c, "sent"));
   c.el.querySelector(".drop")?.addEventListener("click", () => decide(c, "discarded"));
   c.el.querySelector(".check")?.addEventListener("click", () => check(c));
@@ -747,6 +775,8 @@ function decide(c, what) {
   c.state = what;
   if (game.checking === c) { game.checking = null; redrawOpen(); }
   drawCard(c);
+  retire(c, 1500);
+  countOpen();
   if (what !== "sent") return;
   task({ key: "r" + c.id, g: c.g, label: `REPORT ${pad(c.id)}`, planted: c.planted });
   updateTeamPanel();
@@ -797,7 +827,7 @@ function sweep(x, y) {
 
 function resolveSweep(g) {
   let found = 0;
-  for (const c of game.cards) if (c.kind === "report" && !c.stamp && c.state !== "expired" && meters(c.g, g) <= SWEEP_R) {
+  for (const c of game.cards) if (c.kind === "report" && !c.stamp && c.state === "new" && meters(c.g, g) <= SWEEP_R) {
     c.stamp = c.truth ? "ok" : "bad"; drawCard(c); found++;
   }
   for (const h of game.hostiles) if (h.alive && meters(h.pos, g) <= SWEEP_R) { track(h, TRACK, "SENSOR SWEEP"); found++; }
@@ -897,7 +927,8 @@ function fight(h) {
   untask(e => e.key === "h" + h.i || meters(e.g, h.pos) < KNOWN_R);
   t.chase = null;
   radio(hunting ? "ALPHA: Target in sight. Engaging." : known ? "ALPHA: Contact! We knew they were close." : "ALPHA: AMBUSH! Taking fire!", hunting ? "alpha" : "alert");
-  if (h.card) drawCard(h.card);
+  if (h.card) { drawCard(h.card); retire(h.card, 2000); }
+  countOpen();
   drawTasks();
   updateTeamPanel();
 }
@@ -1011,6 +1042,8 @@ function tick(dt) {
     c.state = "expired";
     if (game.checking === c) { game.checking = null; redrawOpen(); }
     drawCard(c);
+    retire(c, 600);
+    countOpen();
   }
   if (game.sweeps < SWEEPS) {
     game.recharge += dt;
@@ -1154,7 +1187,8 @@ function layout() {
   if (!state) return;
   const dpr = devicePixelRatio || 1;
   lit.width = Math.round(innerWidth * dpr); lit.height = Math.round(innerHeight * dpr);
-  LS = Math.max(1, Math.min(3072 / state.gw, 3072 / state.gh, baseScale() * dpr * 1.5));
+  LS = Math.max(1, Math.min(2048 / state.gw, 2048 / state.gh, baseScale() * dpr));
+  litDirty = true;
   settled = Object.assign(document.createElement("canvas"), { width: Math.round(state.gw * LS), height: Math.round(state.gh * LS) });
   if (game) {
     const sc = settled.getContext("2d");
@@ -1175,6 +1209,7 @@ function drawLitLines() {
   for (const p of lines.minor) c.stroke(p);
   c.strokeStyle = "#a8fff2"; c.lineWidth = 1.8 * px; c.shadowColor = "#3fd0c0"; c.shadowBlur = 6 * LS * px;
   for (const p of lines.major) c.stroke(p);
+  litDirty = true;
 }
 
 function spot(c, s, open, glow) {
@@ -1187,7 +1222,10 @@ function spot(c, s, open, glow) {
   c.fillRect(s.gx - r, s.gy - r, 2 * r, 2 * r);
 }
 
+// Only redraws while a sweep is opening up or the camera has moved; otherwise the last frame stands.
 function drawLight(now) {
+  if (!litDirty && !game.spots.some(s => !s.done)) return;
+  litDirty = false;
   lctx.setTransform(1, 0, 0, 1, 0, 0);
   lctx.globalCompositeOperation = "source-over";
   lctx.clearRect(0, 0, lit.width, lit.height);
