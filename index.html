@@ -1,11 +1,340 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Topo Map</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topo Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #04080a;
+    --line: #3fd0c0;
+    --major: #a8fff2;
+    --accent: #ff6a3d;
+    --text: #bdf5ee;
+    --muted: #4f8f88;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; color: var(--text);
+    font: 12px/1.45 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; }
+  #map { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+  #map.reveal { animation: reveal 2.6s cubic-bezier(.6,.05,.3,1) both; }
+  @keyframes reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  #minor path { fill: none; stroke: var(--line); stroke-width: .8; vector-effect: non-scaling-stroke; }
+  #major path { fill: none; stroke: var(--major); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+
+  .overlay { position: fixed; inset: 0; pointer-events: none; }
+  #grid { background-image:
+      linear-gradient(rgba(63,208,192,.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(63,208,192,.07) 1px, transparent 1px);
+    background-size: 80px 80px; background-position: center; }
+  #fx { background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.75) 100%); }
+  #sweep { position: fixed; top: 0; bottom: 0; width: 2px; left: -4px; pointer-events: none;
+    background: var(--major); box-shadow: 0 0 18px 4px rgba(63,208,192,.55); opacity: 0; }
+  #sweep.run { animation: sweep 2.6s cubic-bezier(.6,.05,.3,1) both; }
+  @keyframes sweep { 0% { left: 0; opacity: 1; } 95% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+
+  .hx, .hy { position: fixed; pointer-events: none; background: rgba(168,255,242,.35); display: none; }
+  .hx { left: 0; right: 0; height: 1px; }
+  .hy { top: 0; bottom: 0; width: 1px; }
+
+  .hud { position: fixed; padding: 18px 22px; pointer-events: none; text-shadow: 0 0 8px rgba(63,208,192,.5); }
+  .tl { top: 0; left: 0; } .tr { top: 0; right: 0; text-align: right; }
+  .bl { bottom: 0; left: 0; } .br { bottom: 0; right: 0; text-align: right; pointer-events: auto; }
+  .label { color: var(--muted); font-size: 10px; letter-spacing: .18em; }
+  .title { font-size: clamp(20px, 3.4vw, 40px); font-weight: 600; letter-spacing: .08em; line-height: 1.1; margin: 4px 0; }
+  .accent { color: var(--accent); text-shadow: 0 0 8px rgba(255,106,61,.6); }
+  .blink { animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .scale { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .scale i { display: block; height: 6px; border: 1px solid var(--major); border-top: 0; }
+
+  .corner { position: fixed; width: 26px; height: 26px; border: 2px solid var(--line); pointer-events: none; opacity: .8; }
+  .c1 { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
+  .c2 { top: 8px; right: 8px; border-left: 0; border-bottom: 0; }
+  .c3 { bottom: 8px; left: 8px; border-right: 0; border-top: 0; }
+  .c4 { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
+
+  .marker { position: fixed; pointer-events: none; transform: translate(-50%, -50%); }
+  .marker .ring { width: 22px; height: 22px; border: 1.5px solid var(--accent); border-radius: 50%;
+    box-shadow: 0 0 10px rgba(255,106,61,.7); animation: pulse 1.8s ease-out infinite; }
+  .marker .tag { position: absolute; left: 20px; top: -18px; white-space: nowrap; color: var(--accent);
+    font-size: 11px; text-shadow: 0 0 8px rgba(255,106,61,.6); }
+  .marker.tgt .ring { border-radius: 0; border-color: var(--major); animation: none; transform: rotate(45deg);
+    width: 14px; height: 14px; box-shadow: 0 0 10px rgba(168,255,242,.6); }
+  .marker.tgt .tag { top: 14px; left: auto; right: 16px; color: var(--major); text-shadow: 0 0 8px rgba(168,255,242,.6); }
+  @keyframes pulse { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+
+  button { font: inherit; color: var(--text); background: rgba(4,8,10,.6); border: 1px solid var(--muted);
+    padding: 6px 12px; margin-left: 6px; cursor: pointer; letter-spacing: .1em; }
+  button:hover { border-color: var(--major); color: var(--major); box-shadow: 0 0 10px rgba(63,208,192,.4); }
+  .controls { margin-top: 8px; }
+
+  @media (max-width: 640px) {
+    .hud { padding: 14px 16px; }
+    .tr { display: none; }
+    .bl { bottom: 52px; }
+  }
+</style>
 </head>
 <body>
-  <h1>Topo Map</h1>
+<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic contour map">
+  <defs>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g id="minor"></g>
+  <g id="major" filter="url(#glow)"></g>
+</svg>
+<div id="grid" class="overlay"></div>
+<div id="sweep"></div>
+<div class="hx"></div><div class="hy"></div>
+<div id="markers"></div>
+<div id="fx" class="overlay"></div>
+<div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
+
+<div class="hud tl">
+  <div class="label">TOPOGRAPHIC SURVEY // SECTOR <span id="sector">00</span></div>
+  <div class="title" id="name">—</div>
+  <div id="region" class="label"></div>
+  <div id="coords"></div>
+</div>
+<div class="hud tr">
+  <div class="label">ELEVATION RANGE</div>
+  <div id="range">—</div>
+  <div class="label" style="margin-top:8px">CONTOUR INTERVAL</div>
+  <div id="interval">—</div>
+  <div class="label" style="margin-top:8px">SOURCE</div>
+  <div id="source">—</div>
+</div>
+<div class="hud bl">
+  <div id="status" class="accent blink">ACQUIRING ELEVATION DATA…</div>
+  <div id="cursor" class="label">LAT — · LON — · ELEV —</div>
+  <div class="scale"><i id="scalebar"></i><span id="scaletext"></span></div>
+</div>
+<div class="hud br">
+  <div class="label">← → CHANGE SECTOR · R RANDOM</div>
+  <div class="controls">
+    <button id="prev" aria-label="Previous sector">‹ PREV</button>
+    <button id="rand" aria-label="Random sector">RANDOM</button>
+    <button id="next" aria-label="Next sector">NEXT ›</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+// Elevation: AWS Terrain Tiles (Mapzen terrarium encoding), public and CORS-enabled.
+const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
+
+const LOCS = [
+  { id: "st-helens",   name: "MOUNT ST. HELENS", region: "CASCADE RANGE · WASHINGTON", lat: 46.1912, lon: -122.1944, z: 12 },
+  { id: "grand-canyon",name: "GRAND CANYON",     region: "COLORADO PLATEAU · ARIZONA", lat: 36.0997, lon: -112.1124, z: 12 },
+  { id: "matterhorn",  name: "MATTERHORN",       region: "PENNINE ALPS · CH/IT",       lat: 45.9763, lon: 7.6586,    z: 12 },
+  { id: "everest",     name: "MOUNT EVEREST",    region: "MAHALANGUR HIMAL · NP/CN",   lat: 27.9881, lon: 86.9250,   z: 12 },
+  { id: "fuji",        name: "MOUNT FUJI",       region: "HONSHU · JAPAN",             lat: 35.3606, lon: 138.7274,  z: 11 },
+  { id: "yosemite",    name: "YOSEMITE VALLEY",  region: "SIERRA NEVADA · CALIFORNIA", lat: 37.7456, lon: -119.5936, z: 12 },
+  { id: "rainier",     name: "MOUNT RAINIER",    region: "CASCADE RANGE · WASHINGTON", lat: 46.8523, lon: -121.7603, z: 11 },
+  { id: "kilimanjaro", name: "KILIMANJARO",      region: "KILIMANJARO REGION · TANZANIA", lat: -3.0674, lon: 37.3556, z: 11 },
+  { id: "crater-lake", name: "CRATER LAKE",      region: "CASCADE RANGE · OREGON",     lat: 42.9446, lon: -122.1090, z: 12 },
+];
+
+const svg = document.getElementById("map");
+const $ = id => document.getElementById(id);
+let idx = Math.max(0, LOCS.findIndex(l => l.id === location.hash.slice(1)));
+let state = null;
+let loadToken = 0;
+
+const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
+const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
+function pix2lonlat(px, py, z) {
+  const n = 256 * 2 ** z;
+  return [px / n * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * py / n))) * 180 / Math.PI];
+}
+const fmtLat = v => `${Math.abs(v).toFixed(4)}°${v >= 0 ? "N" : "S"}`;
+const fmtLon = v => `${Math.abs(v).toFixed(4)}°${v >= 0 ? "E" : "W"}`;
+const fmtM = v => `${Math.round(v).toLocaleString()} m`;
+
+function loadImg(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// Pixel window sized to the viewport aspect, centered exactly on the location.
+function tileWindow(loc) {
+  const rows = 3, cols = Math.max(3, Math.min(7, Math.ceil(rows * innerWidth / innerHeight)));
+  const W = cols * 256, H = rows * 256;
+  const ox = Math.round(lon2tile(loc.lon, loc.z) * 256 - W / 2);
+  const oy = Math.round(lat2tile(loc.lat, loc.z) * 256 - H / 2);
+  const ds = Math.max(1, Math.ceil(Math.sqrt(W * H / 320000)));
+  return { W, H, ox, oy, ds, gw: Math.floor(W / ds), gh: Math.floor(H / ds) };
+}
+
+async function fetchElevation(loc) {
+  const { W, H, ox, oy, ds, gw, gh } = tileWindow(loc);
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const n = 2 ** loc.z, jobs = [];
+  for (let ty = Math.floor(oy / 256); ty * 256 < oy + H; ty++) for (let tx = Math.floor(ox / 256); tx * 256 < ox + W; tx++) {
+    const x = (tx % n + n) % n;
+    jobs.push(loadImg(`${TILE_URL}/${loc.z}/${x}/${ty}.png`).then(img => ctx.drawImage(img, tx * 256 - ox, ty * 256 - oy)));
+  }
+  await Promise.all(jobs);
+  const px = ctx.getImageData(0, 0, W, H).data;
+  const values = new Float64Array(gw * gh);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const i = ((y * ds) * W + x * ds) * 4;
+    values[y * gw + x] = px[i] * 256 + px[i + 1] + px[i + 2] / 256 - 32768;
+  }
+  return { values, gw, gh, ds, z: loc.z, ox, oy, synthetic: false };
+}
+
+// Fallback: fractal value-noise terrain on the same grid.
+function synthElevation(loc) {
+  const { ox, oy, ds, gw, gh } = tileWindow(loc);
+  const seed = Math.floor(Math.random() * 1e6);
+  const hash = (x, y) => {
+    let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(seed, 144665);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  };
+  const noise = (x, y) => {
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  };
+  const values = new Float64Array(gw * gh);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    let e = 0, amp = 1, f = 3 / gh, norm = 0;
+    for (let o = 0; o < 6; o++) {
+      const n = noise(x * f, y * f);
+      e += amp * (o < 2 ? n : 1 - Math.abs(2 * n - 1));
+      norm += amp; amp *= 0.5; f *= 2;
+    }
+    values[y * gw + x] = 3200 * Math.pow(e / norm, 1.8);
+  }
+  return { values, gw, gh, ds, z: loc.z, ox, oy, synthetic: true };
+}
+
+function niceStep(raw) {
+  const p = 10 ** Math.floor(Math.log10(raw));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= raw) return m * p;
+}
+
+function render(d, loc) {
+  const { gw, gh } = d;
+  d3.blur2({ data: d.values, width: gw, height: gh }, 1);
+  let min = Infinity, max = -Infinity, maxI = 0;
+  for (let i = 0; i < d.values.length; i++) {
+    const v = d.values[i];
+    if (v < min) min = v;
+    if (v > max) { max = v; maxI = i; }
+  }
+  const step = niceStep((max - min) / 45);
+  const thresholds = d3.range(Math.ceil(min / step) * step, max, step);
+  const contours = d3.contours().size([gw, gh]).thresholds(thresholds)(d.values);
+  const isMajor = v => Math.abs(v / (step * 5) - Math.round(v / (step * 5))) < 1e-6;
+  const opacity = v => 0.25 + 0.75 * (v - min) / (max - min || 1);
+  const path = d3.geoPath();
+
+  svg.setAttribute("viewBox", `0 0 ${gw} ${gh}`);
+  d3.select("#minor").selectAll("path").data(contours.filter(c => !isMajor(c.value)))
+    .join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value) * 0.7);
+  d3.select("#major").selectAll("path").data(contours.filter(c => isMajor(c.value)))
+    .join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value));
+
+  state = { ...d, min, max, step, loc, peak: [maxI % gw, Math.floor(maxI / gw)],
+    center: [(lon2tile(loc.lon, d.z) * 256 - d.ox) / d.ds, (lat2tile(loc.lat, d.z) * 256 - d.oy) / d.ds] };
+
+  $("range").textContent = `${fmtM(min)} → ${fmtM(max)}`;
+  $("interval").textContent = `${step} m · INDEX ${step * 5} m`;
+  $("source").innerHTML = d.synthetic
+    ? `<span class="accent">SYNTHETIC TERRAIN</span><br><span class="label">LIVE DATA UNAVAILABLE</span>`
+    : `AWS TERRAIN TILES<br><span class="label">ZOOM ${d.z} · ${gw}×${gh} GRID</span>`;
+  $("status").textContent = d.synthetic ? "SIGNAL LOST — SIMULATION MODE" : "LOCK ACQUIRED";
+  $("status").classList.toggle("blink", d.synthetic);
+
+  for (const el of [svg, $("sweep")]) {
+    const cls = el === svg ? "reveal" : "run";
+    el.classList.remove(cls); void el.getBoundingClientRect(); el.classList.add(cls);
+  }
+  placeMarkers();
+}
+
+function toScreen(gx, gy) {
+  const m = svg.getScreenCTM();
+  return [m.a * gx + m.e, m.d * gy + m.f];
+}
+
+function placeMarkers() {
+  if (!state) return;
+  const [px, py] = toScreen(...state.peak);
+  const [cx, cy] = toScreen(...state.center);
+  $("markers").innerHTML = `
+    <div class="marker" style="left:${px}px;top:${py}px"><div class="ring"></div>
+      <div class="tag">▲ PEAK ${fmtM(state.max)}</div></div>
+    <div class="marker tgt" style="left:${cx}px;top:${cy}px"><div class="ring"></div>
+      <div class="tag">TGT ${state.loc.id.toUpperCase()}</div></div>`;
+
+  // Scale bar: ground metres per screen pixel at this latitude.
+  const mPerPx = 40075016 * Math.cos(state.loc.lat * Math.PI / 180) / (256 * 2 ** state.z) * state.ds / svg.getScreenCTM().a;
+  const dist = niceStep(mPerPx * 120);
+  $("scalebar").style.width = `${dist / mPerPx}px`;
+  $("scaletext").textContent = dist >= 1000 ? `${dist / 1000} km` : `${dist} m`;
+}
+
+svg.addEventListener("pointermove", e => {
+  if (!state) return;
+  const m = svg.getScreenCTM();
+  const gx = (e.clientX - m.e) / m.a, gy = (e.clientY - m.f) / m.d;
+  const x = Math.round(gx), y = Math.round(gy);
+  if (x < 0 || y < 0 || x >= state.gw || y >= state.gh) return;
+  const [lon, lat] = pix2lonlat(state.ox + gx * state.ds, state.oy + gy * state.ds, state.z);
+  $("cursor").textContent = `LAT ${fmtLat(lat)} · LON ${fmtLon(lon)} · ELEV ${fmtM(state.values[y * state.gw + x])}`;
+  document.querySelector(".hx").style.cssText = `display:block;top:${e.clientY}px`;
+  document.querySelector(".hy").style.cssText = `display:block;left:${e.clientX}px`;
+});
+svg.addEventListener("pointerleave", () => {
+  document.querySelector(".hx").style.display = document.querySelector(".hy").style.display = "none";
+});
+
+async function load(i) {
+  idx = (i + LOCS.length) % LOCS.length;
+  const loc = LOCS[idx], token = ++loadToken;
+  history.replaceState(null, "", `#${loc.id}`);
+  $("sector").textContent = String(idx + 1).padStart(2, "0");
+  $("name").textContent = loc.name;
+  $("region").textContent = loc.region;
+  $("coords").textContent = `${fmtLat(loc.lat)}  ${fmtLon(loc.lon)}`;
+  $("status").textContent = "ACQUIRING ELEVATION DATA…";
+  $("status").classList.add("blink");
+  let data;
+  try { data = await fetchElevation(loc); }
+  catch { data = synthElevation(loc); }
+  if (token === loadToken) render(data, loc);
+}
+
+$("prev").onclick = () => load(idx - 1);
+$("next").onclick = () => load(idx + 1);
+$("rand").onclick = () => load(idx + 1 + Math.floor(Math.random() * (LOCS.length - 1)));
+addEventListener("keydown", e => {
+  if (e.key === "ArrowRight" || e.key === "n") $("next").click();
+  else if (e.key === "ArrowLeft" || e.key === "p") $("prev").click();
+  else if (e.key === "r") $("rand").click();
+});
+addEventListener("resize", placeMarkers);
+load(idx);
+</script>
 </body>
 </html>
