@@ -19,87 +19,59 @@
   }
   html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; color: var(--text);
     font: 12px/1.45 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; }
-  .layer { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-  #map.reveal { animation: reveal 2.6s cubic-bezier(.6,.05,.3,1) both; }
-  @keyframes reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  #map { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; opacity: 0; transition: opacity .6s; }
+  #map.ready { opacity: 1; }
   #minor path { fill: none; stroke: var(--line); stroke-width: .8; vector-effect: non-scaling-stroke; }
   #major path { fill: none; stroke: var(--major); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
-
-  /* Radar sweep, lit contours and river all draw into one canvas (#fxc) each frame. */
-  #fxc { pointer-events: none; }
-  #rings { pointer-events: none;
-    background: repeating-radial-gradient(circle at 50% 50%, transparent 0 139px, rgba(63,208,192,.09) 139px 140px); }
-  .late { opacity: 0; transition: opacity 1s; }
-  body.live .late { opacity: 1; }
+  #river { fill: none; stroke: var(--major); stroke-opacity: .5; stroke-width: 1; stroke-dasharray: 2 5;
+    vector-effect: non-scaling-stroke; }
 
   .overlay { position: fixed; inset: 0; pointer-events: none; }
   #grid { background-image:
-      linear-gradient(rgba(63,208,192,.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(63,208,192,.07) 1px, transparent 1px);
+      linear-gradient(rgba(63,208,192,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(63,208,192,.06) 1px, transparent 1px);
     background-size: 80px 80px; background-position: center; }
-  #fx { background:
-      repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px),
-      radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.75) 100%); }
-  #sweep { position: fixed; top: 0; bottom: 0; width: 2px; left: -4px; pointer-events: none;
-    background: var(--major); box-shadow: 0 0 18px 4px rgba(63,208,192,.55); opacity: 0; }
-  #sweep.run { animation: sweep 2.6s cubic-bezier(.6,.05,.3,1) both; }
-  @keyframes sweep { 0% { left: 0; opacity: 1; } 95% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+  #vignette { background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.7) 100%); }
 
-  .hx, .hy { position: fixed; pointer-events: none; background: rgba(168,255,242,.35); display: none; }
+  .hx, .hy { position: fixed; pointer-events: none; background: rgba(168,255,242,.25); display: none; }
   .hx { left: 0; right: 0; height: 1px; }
   .hy { top: 0; bottom: 0; width: 1px; }
 
   .label { color: var(--muted); font-size: 9px; letter-spacing: .18em; }
-  .accent { color: var(--accent); text-shadow: 0 0 8px rgba(255,106,61,.6); }
-  .blink { animation: blink 1s steps(2) infinite; }
-  @keyframes blink { 50% { opacity: 0; } }
+  .accent { color: var(--accent); }
 
   .marker { position: fixed; pointer-events: none; transform: translate(-50%, -50%); }
-  .marker .ring { width: 22px; height: 22px; border: 1.5px solid var(--accent); border-radius: 50%;
-    box-shadow: 0 0 10px rgba(255,106,61,.7); animation: pulse 1.8s ease-out infinite; }
-  .marker .tag { position: absolute; left: 20px; top: -18px; white-space: nowrap; color: var(--accent);
-    font-size: 11px; text-shadow: 0 0 8px rgba(255,106,61,.6); }
-  @keyframes pulse { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
+  .marker .ring { width: 12px; height: 12px; border: 1.5px solid var(--accent); border-radius: 50%; }
+  .marker .tag { position: absolute; left: 16px; top: -12px; white-space: nowrap; color: var(--accent); font-size: 10px; }
 
-  /* Map pings: 44px hit area around a small diamond core. */
+  /* Map pings: 44px hit area around a small diamond and a static ring. */
   .ping { position: fixed; width: 44px; height: 44px; transform: translate(-50%, -50%); padding: 0; margin: 0;
-    background: none; border: 0; cursor: pointer; opacity: 0; animation: pingIn .4s ease-out forwards; }
-  .ping .core { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px;
-    background: var(--major); transform: rotate(45deg); box-shadow: 0 0 10px 2px rgba(168,255,242,.7); transition: transform .2s; }
-  .ping .wave { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px;
-    border: 1.5px solid var(--major); border-radius: 50%; animation: wave 2.2s ease-out infinite; }
-  .ping .wave + .wave { animation-delay: 1.1s; }
-  .ping .burst { position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px;
-    border: 2px solid #fff; border-radius: 50%; opacity: 0; pointer-events: none; }
-  .ping.hit .burst { animation: burst .9s ease-out; }
-  .ping.hit .core { animation: flash .9s ease-out; }
-  .ping .id { position: absolute; left: 34px; top: 4px; white-space: nowrap; color: var(--major); font-size: 10px;
-    letter-spacing: .14em; text-shadow: 0 0 8px rgba(168,255,242,.6); }
-  .ping.flip .id { left: auto; right: 34px; }
-  .ping:hover .core, .ping:focus-visible .core { transform: rotate(45deg) scale(1.4); }
+    background: none; border: 0; cursor: pointer; }
+  .ping .core { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px;
+    background: var(--major); transform: rotate(45deg); box-shadow: 0 0 8px rgba(168,255,242,.6); transition: transform .2s, background .2s; }
+  .ping .ring { position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px;
+    border: 1px solid rgba(168,255,242,.45); border-radius: 50%; transition: border-color .2s, transform .2s; }
+  .ping .id { position: absolute; left: 32px; top: 5px; white-space: nowrap; color: var(--major); font-size: 10px; letter-spacing: .14em; }
+  .ping.flip .id { left: auto; right: 32px; }
+  .ping:hover .core, .ping:focus-visible .core { transform: rotate(45deg) scale(1.3); }
+  .ping:hover .ring { transform: scale(1.15); }
   .ping:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
-  .ping.active .core { background: var(--accent); box-shadow: 0 0 12px 3px rgba(255,106,61,.8); transform: rotate(45deg) scale(1.4); }
-  .ping.active .wave { border-color: var(--accent); }
-  .ping.active .id { color: var(--accent); text-shadow: 0 0 8px rgba(255,106,61,.6); }
+  .ping.active .core { background: var(--accent); box-shadow: 0 0 8px rgba(255,106,61,.7); }
+  .ping.active .ring { border-color: var(--accent); }
+  .ping.active .id { color: var(--accent); }
   .ping.active .id::after { content: attr(data-name); }
-  @keyframes wave { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
-  @keyframes burst { 0% { transform: scale(.1); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
-  @keyframes flash { 0% { background: #fff; box-shadow: 0 0 22px 8px rgba(255,255,255,.9); } }
-  @keyframes pingIn { from { opacity: 0; transform: translate(-50%, -50%) scale(2.5); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 
   /* Frosted side panels. */
   .side { position: fixed; top: 16px; bottom: 16px; width: var(--side); box-sizing: border-box; padding: 16px 16px 14px;
     display: flex; flex-direction: column; gap: 14px; overflow: hidden;
     background: linear-gradient(180deg, rgba(8,20,22,.5), rgba(4,10,12,.38));
     -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
-    border: 1px solid rgba(63,208,192,.2); box-shadow: inset 0 1px 0 rgba(168,255,242,.08), 0 10px 40px rgba(0,0,0,.35);
-    text-shadow: 0 0 8px rgba(63,208,192,.35); animation: sideIn .8s cubic-bezier(.3,.7,.2,1) both; }
+    border: 1px solid rgba(63,208,192,.2); box-shadow: inset 0 1px 0 rgba(168,255,242,.08), 0 10px 40px rgba(0,0,0,.35); }
   .side::before, .side::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--line); }
   .side::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
   .side::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
-  #left { left: 16px; --from: -20px; }
-  #right { right: 16px; --from: 20px; }
-  @keyframes sideIn { from { opacity: 0; transform: translateX(var(--from)); } }
+  #left { left: 16px; }
+  #right { right: 16px; }
   .sect { display: flex; justify-content: space-between; color: var(--muted); font-size: 9px; letter-spacing: .2em;
     padding-bottom: 6px; border-bottom: 1px solid rgba(63,208,192,.18); }
   .title { font-size: 26px; font-weight: 600; letter-spacing: .08em; line-height: 1.05; margin: 4px 0 2px; color: var(--major); }
@@ -113,18 +85,15 @@
   .contact:focus-visible { outline: 1px dashed var(--major); outline-offset: -1px; }
   .contact .dot { grid-row: span 2; position: relative; width: 18px; height: 18px; align-self: center; }
   .contact .dot::before { content: ""; position: absolute; left: 6px; top: 6px; width: 6px; height: 6px;
-    background: var(--major); transform: rotate(45deg); box-shadow: 0 0 6px rgba(168,255,242,.8); }
-  .contact .dot::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--major); border-radius: 50%;
-    animation: wave 2.2s ease-out infinite; }
+    background: var(--major); transform: rotate(45deg); }
+  .contact .dot::after { content: ""; position: absolute; inset: 1px; border: 1px solid rgba(168,255,242,.45); border-radius: 50%; }
   .contact .nm { font-size: 11px; letter-spacing: .08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .contact .nm b { font-weight: 400; color: var(--muted); margin-right: 6px; }
   .contact .tl { font-size: 9px; letter-spacing: .1em; color: var(--muted); white-space: nowrap; }
   .contact .xt { grid-column: 2; font-size: 9px; letter-spacing: .1em; color: var(--text); display: none; margin-top: 4px; line-height: 1.6; }
-  .contact.hit { animation: rowHit .9s ease-out; }
-  @keyframes rowHit { 0% { background: rgba(168,255,242,.18); } }
   .contact.active { border-left-color: var(--accent); background: rgba(255,106,61,.07); }
   .contact.active .nm, .contact.active .nm b { color: var(--accent); }
-  .contact.active .dot::before { background: var(--accent); box-shadow: 0 0 6px rgba(255,106,61,.9); }
+  .contact.active .dot::before { background: var(--accent); }
   .contact.active .dot::after { border-color: var(--accent); }
   .contact.active .xt { display: block; }
 
@@ -135,20 +104,14 @@
   .tele { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: -6px 0 0; font-size: 10px; }
   .tele dt { color: var(--muted); font-size: 9px; letter-spacing: .16em; align-self: center; }
   .tele dd { margin: 0; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .bar { height: 2px; margin-top: -8px; background: rgba(63,208,192,.15); position: relative; overflow: hidden; }
-  .bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--major); box-shadow: 0 0 6px var(--major); }
-  #log { font-size: 9px; letter-spacing: .08em; color: var(--muted); display: flex; flex-direction: column; gap: 3px;
-    margin-top: -6px; overflow: hidden; flex: 1; justify-content: flex-end; }
-  #log div { animation: logIn .4s ease-out; }
-  #log div:last-child { color: var(--text); }
-  @keyframes logIn { from { opacity: 0; transform: translateX(6px); } }
+  #right .label:last-child { margin-top: auto; }
   .retry { font: inherit; font-size: 10px; color: var(--text); background: none; border: 1px solid var(--accent);
     padding: 4px 10px; margin-top: 6px; cursor: pointer; letter-spacing: .1em; }
 
   @media (max-width: 760px) {
     #right { display: none; }
     #left { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 46vh; padding: 12px 14px 14px; gap: 10px;
-      border-width: 1px 0 0; --from: 0; }
+      border-width: 1px 0 0; }
     #left .head .label:first-child, #left #coords, #left .scale { display: none; }
     .title { font-size: 18px; margin: 0; }
     #contacts { flex-direction: row; overflow-x: auto; overflow-y: hidden; gap: 6px; margin: -4px -14px 0; padding: 0 14px;
@@ -158,14 +121,10 @@
     .contact.active { border-top-color: var(--accent); }
     .ping.active .id::after { content: none; }
   }
-  @media (prefers-reduced-motion: reduce) {
-    #fxc, #rings { display: none; }
-    .side { animation: none; }
-  }
 </style>
 </head>
 <body>
-<svg id="map" class="layer" preserveAspectRatio="xMidYMid slice" aria-label="Topographic contour map of Twin Falls, Idaho">
+<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic contour map of Twin Falls, Idaho">
   <defs>
     <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
       <feGaussianBlur stdDeviation="1.6" result="b"/>
@@ -174,31 +133,29 @@
   </defs>
   <g id="minor"></g>
   <g id="major" filter="url(#glow)"></g>
+  <path id="river"></path>
 </svg>
-<canvas id="fxc" class="layer late" aria-hidden="true"></canvas>
 <div id="grid" class="overlay"></div>
-<div id="rings" class="overlay late"></div>
-<div id="sweep"></div>
 <div class="hx"></div><div class="hy"></div>
 <div id="markers"></div>
-<div id="fx" class="overlay"></div>
+<div id="vignette" class="overlay"></div>
 <div id="pings"></div>
 
-<aside id="left" class="side" aria-label="Contacts">
+<aside id="left" class="side" aria-label="Points of interest">
   <div class="head">
     <div class="label">TOPO SURVEY // SNAKE RIVER</div>
     <div class="title">TWIN FALLS</div>
     <div class="label">SNAKE RIVER CANYON · IDAHO</div>
     <div id="coords" class="tiny"></div>
-    <div id="status" class="tiny accent blink" style="margin-top:8px">ACQUIRING ELEVATION DATA…</div>
+    <div id="status" class="tiny accent" style="margin-top:8px">LOADING ELEVATION DATA…</div>
   </div>
   <div class="sect"><span>CONTACTS</span><span>05 TRACKED</span></div>
   <ol id="contacts"></ol>
   <div class="scale"><i id="scalebar"></i><span id="scaletext"></span></div>
 </aside>
 
-<aside id="right" class="side" aria-label="Telemetry">
-  <div class="sect"><span>TELEMETRY</span><span id="t-clock">T+00:00</span></div>
+<aside id="right" class="side" aria-label="Survey data">
+  <div class="sect"><span>SURVEY</span></div>
   <dl class="tele">
     <dt>ELEV MIN</dt><dd id="t-min">—</dd>
     <dt>ELEV MAX</dt><dd id="t-max">—</dd>
@@ -206,22 +163,12 @@
     <dt>GRID</dt><dd id="t-grid">—</dd>
     <dt>RIVER</dt><dd id="t-river">—</dd>
   </dl>
-  <div class="sect"><span>SWEEP</span><span id="t-count">000</span></div>
-  <dl class="tele">
-    <dt>BEARING</dt><dd id="t-brg">—</dd>
-    <dt>PERIOD</dt><dd>7.0 s</dd>
-    <dt>CAMERA</dt><dd id="t-cam">×1.00</dd>
-    <dt>FRAME</dt><dd id="t-frame">—</dd>
-  </dl>
-  <div class="bar"><i id="t-bar"></i></div>
   <div class="sect"><span>CURSOR</span></div>
   <dl class="tele">
     <dt>LAT</dt><dd id="c-lat">—</dd>
     <dt>LON</dt><dd id="c-lon">—</dd>
     <dt>ELEV</dt><dd id="c-elev">—</dd>
   </dl>
-  <div class="sect"><span>EVENT LOG</span></div>
-  <div id="log"></div>
   <div class="label">SRC · AWS TERRAIN TILES</div>
 </aside>
 
@@ -230,7 +177,6 @@
 // Elevation: AWS Terrain Tiles (Mapzen terrarium encoding), public and CORS-enabled.
 const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
 const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
-const SWEEP_MS = 7000, TOUR_IDLE_MS = 12000, TOUR_HOLD_MS = 6000, PARTICLES = 70;
 const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const POIS = [
@@ -243,15 +189,9 @@ const POIS = [
 
 const $ = id => document.getElementById(id);
 const svg = $("map");
-const fxc = $("fxc"), fx = fxc.getContext("2d");
-const litc = document.createElement("canvas");
-let dpr = 1, litPaths = [], litDirty = true;
 let state = null;
 let cam = null, tween = null;
-let river = null, particles = [];
-let pingPos = [], active = -1;
-let lastSweep = 0, sweepCount = 0, lastFrame = 0, frameMs = 16.7, startTime = performance.now();
-let touring = false, tourIdx = 0, tourTimer, idleTimer;
+let active = -1;
 
 const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
 const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
@@ -265,14 +205,6 @@ const fmtM = v => `${Math.round(v).toLocaleString()} m`;
 const pad = (n, w = 2) => String(n).padStart(w, "0");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const ease = t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-const clock = () => { const s = Math.floor((performance.now() - startTime) / 1000); return `T+${pad(Math.floor(s / 60))}:${pad(s % 60)}`; };
-
-function log(msg) {
-  const line = document.createElement("div");
-  line.textContent = `${clock()} ${msg}`;
-  $("log").append(line);
-  while ($("log").children.length > 8) $("log").firstChild.remove();
-}
 
 function loadImg(url) {
   return new Promise((resolve, reject) => {
@@ -339,7 +271,6 @@ function render(d) {
     .join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value) * 0.7);
   d3.select("#major").selectAll("path").data(contours.filter(c => isMajor(c.value)))
     .join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value));
-  litPaths = contours.map(c => ({ p: new Path2D(path(c)), o: 0.35 + 0.65 * opacity(c.value) }));
 
   state = { ...d, min, max, peak: [maxI % gw, Math.floor(maxI / gw)] };
   cam = { cx: gw / 2, cy: gh / 2, k: 1 };
@@ -351,20 +282,11 @@ function render(d) {
   $("t-max").textContent = fmtM(max);
   $("t-int").textContent = `${step} m / ${step * 5} m`;
   $("t-grid").textContent = `Z${d.z} ${gw}×${gh}`;
-  $("status").textContent = "LOCK ACQUIRED";
-  $("status").classList.remove("blink");
-  log(`GRID ${gw}×${gh} LOADED`);
-
-  document.body.classList.remove("live");
-  for (const el of [svg, $("sweep")]) {
-    const cls = el === svg ? "reveal" : "run";
-    el.classList.remove(cls); void el.getBoundingClientRect(); el.classList.add(cls);
-  }
-  setTimeout(() => document.body.classList.add("live"), 2600);
+  $("status").textContent = "LIVE ELEVATION";
+  svg.classList.add("ready");
   buildPings();
   traceRiver();
   placeMarkers();
-  armIdle();
 }
 
 // ---------- River: least-cost path through the elevation grid, east edge to west edge ----------
@@ -415,45 +337,24 @@ function traceRiver() {
     }
   }
   if (end < 0) return;
-  // Walk back from the west end, then reverse so points run east → west (downstream).
   const raw = [];
   for (let i = end; i >= 0; i = prev[i]) raw.push([i % gw, (i / gw) | 0]);
-  raw.reverse();
   const W = 6, pts = [];
   for (let i = 0; i < raw.length; i += 2) {
     let sx = 0, sy = 0, n = 0;
     for (let j = Math.max(0, i - W); j <= Math.min(raw.length - 1, i + W); j++) { sx += raw[j][0]; sy += raw[j][1]; n++; }
     pts.push([sx / n + .5, sy / n + .5]);
   }
-  const cum = [0];
-  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
-  river = { pts, cum, len: cum[cum.length - 1], path: new Path2D("M" + pts.map(p => p.join(",")).join("L")) };
-
-  particles = Array.from({ length: PARTICLES }, () => ({
-    u: Math.random(), speed: 0.012 + Math.random() * 0.014, r: 0.5 + Math.random() * 0.8, off: (Math.random() - .5) * 2.5,
-  }));
-
-  const km = (river.len * mPerGrid() / 1000).toFixed(1);
-  $("t-river").textContent = `${km} km`;
-  log(`RIVER TRACED ${km} KM · ${fmtM(sample(pts[0]))}→${fmtM(sample(pts[pts.length - 1]))}`);
-}
-
-function riverAt(u) {
-  const s = u * river.len, { pts, cum } = river;
-  let lo = 0, hi = cum.length - 1;
-  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cum[m] < s) lo = m; else hi = m; }
-  const t = (s - cum[lo]) / (cum[hi] - cum[lo] || 1);
-  const a = pts[lo], b = pts[hi];
-  const nx = -(b[1] - a[1]), ny = b[0] - a[0], nl = Math.hypot(nx, ny) || 1;
-  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, nx / nl, ny / nl];
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+  $("river").setAttribute("d", "M" + pts.map(p => p.map(v => v.toFixed(1)).join(",")).join("L"));
+  $("t-river").textContent = `${(len * mPerGrid() / 1000).toFixed(1)} km`;
 }
 
 // ---------- Camera: the map's viewBox ----------
 function applyCam() {
   const w = state.gw / cam.k, h = state.gh / cam.k;
   svg.setAttribute("viewBox", `${cam.cx - w / 2} ${cam.cy - h / 2} ${w} ${h}`);
-  litDirty = true;
-  $("t-cam").textContent = `×${cam.k.toFixed(2)}`;
   placeMarkers();
 }
 
@@ -473,10 +374,21 @@ function poiCam(i) {
   };
 }
 
-function flyTo(target, ms = 1400) {
+function flyTo(target, ms = 1100) {
   if (!state) return;
   if (CALM) { cam = target; tween = null; applyCam(); return; }
+  const start = !tween;
   tween = { from: { ...cam }, to: target, t0: performance.now(), ms };
+  if (start) requestAnimationFrame(step);
+}
+
+function step(now) {
+  if (!tween) return;
+  const t = Math.min(1, (now - tween.t0) / tween.ms), e = ease(t), { from, to } = tween;
+  // Interpolate zoom in log space so the motion feels even.
+  cam = { cx: from.cx + (to.cx - from.cx) * e, cy: from.cy + (to.cy - from.cy) * e, k: from.k * (to.k / from.k) ** e };
+  applyCam();
+  if (t < 1) requestAnimationFrame(step); else tween = null;
 }
 
 // ---------- Pings, contact list & markers ----------
@@ -497,8 +409,8 @@ function contactTelemetry(i) {
 
 function buildPings() {
   $("pings").innerHTML = POIS.map((p, i) => `
-    <button class="ping" data-i="${i}" style="animation-delay:${2.4 + i * 0.15}s" aria-label="${p.name}">
-      <span class="wave"></span><span class="wave"></span><span class="burst"></span><span class="core"></span>
+    <button class="ping" data-i="${i}" aria-label="${p.name}">
+      <span class="ring"></span><span class="core"></span>
       <span class="id" data-name=" · ${p.name}">POI-${pad(i + 1)}</span>
     </button>`).join("");
   $("contacts").innerHTML = POIS.map((p, i) => {
@@ -524,12 +436,10 @@ function placeMarkers() {
   }
   const peak = $("markers").firstElementChild;
   peak.style.left = `${px}px`; peak.style.top = `${py}px`;
-  peak.querySelector(".tag").textContent = `▲ PEAK ${fmtM(state.max)}`;
-  pingPos = [];
+  peak.querySelector(".tag").textContent = `▲ ${fmtM(state.max)}`;
   $("pings").querySelectorAll(".ping").forEach(b => {
     const p = POIS[+b.dataset.i];
     const [x, y] = toScreen(...toGrid(p.lat, p.lon));
-    pingPos[+b.dataset.i] = [x, y];
     b.style.left = `${x}px`; b.style.top = `${y}px`;
     b.classList.toggle("flip", x > innerWidth - (b.classList.contains("active") && innerWidth > 760 ? 260 : 100));
   });
@@ -546,7 +456,6 @@ function select(i) {
   active = i;
   document.querySelectorAll(".ping, .contact").forEach(b => b.classList.toggle("active", +b.dataset.i === i));
   document.querySelector(`.contact[data-i="${i}"]`).scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
-  log(`LOCK POI-${pad(i + 1)} ${POIS[i].name}`);
   flyTo(poiCam(i));
 }
 
@@ -556,156 +465,6 @@ function deselect() {
   document.querySelectorAll(".ping, .contact").forEach(b => b.classList.remove("active"));
   flyTo(homeCam());
 }
-
-// ---------- Idle tour ----------
-function armIdle() {
-  clearTimeout(idleTimer);
-  if (!CALM) idleTimer = setTimeout(startTour, TOUR_IDLE_MS);
-}
-
-function startTour() {
-  if (!state) return;
-  touring = true;
-  log("NO INPUT · AUTO-RECON");
-  $("status").classList.add("blink");
-  tourStep();
-}
-
-function tourStep() {
-  if (!touring) return;
-  $("status").textContent = `AUTO-RECON ▸ POI-${pad(tourIdx + 1)}`;
-  select(tourIdx);
-  tourIdx = (tourIdx + 1) % POIS.length;
-  tourTimer = setTimeout(tourStep, TOUR_HOLD_MS);
-}
-
-function stopTour() {
-  touring = false;
-  clearTimeout(tourTimer);
-  $("status").textContent = "LOCK ACQUIRED";
-  $("status").classList.remove("blink");
-  log("MANUAL CONTROL");
-  deselect();
-}
-
-function onInput() {
-  if (touring) stopTour();
-  armIdle();
-}
-for (const ev of ["pointerdown", "pointermove", "keydown", "wheel"]) addEventListener(ev, onInput, { passive: true });
-
-// ---------- Frame loop: camera tween, radar sweep, river particles, live telemetry ----------
-function hit(el) { el.classList.remove("hit"); void el.offsetWidth; el.classList.add("hit"); }
-
-function frame(now) {
-  requestAnimationFrame(frame);
-  frameMs += ((now - lastFrame) - frameMs) * 0.05;
-  lastFrame = now;
-  if (!state) return;
-
-  if (tween) {
-    const t = Math.min(1, (now - tween.t0) / tween.ms), e = ease(t), { from, to } = tween;
-    // Interpolate zoom in log space so the motion feels even.
-    cam = { cx: from.cx + (to.cx - from.cx) * e, cy: from.cy + (to.cy - from.cy) * e, k: from.k * (to.k / from.k) ** e };
-    applyCam();
-    if (t === 1) tween = null;
-  }
-  if (CALM) return;
-
-  const a = (now % SWEEP_MS) / SWEEP_MS * 360;
-  drawFx(now, a);
-  if (document.body.classList.contains("live")) {
-    const swept = (a - lastSweep + 360) % 360, cx = innerWidth / 2, cy = innerHeight / 2;
-    pingPos.forEach(([x, y], i) => {
-      const ang = (Math.atan2(x - cx, -(y - cy)) * 180 / Math.PI + 360) % 360;
-      if ((a - ang + 360) % 360 < swept) {
-        hit($("pings").children[i]);
-        hit(document.querySelector(`.contact[data-i="${i}"]`));
-      }
-    });
-    if (a < lastSweep) {
-      $("t-count").textContent = pad(++sweepCount, 3);
-      if (sweepCount % 4 === 0) log(`SWEEP ${pad(sweepCount, 3)} · ${POIS.length} CONTACTS`);
-    }
-  }
-  lastSweep = a;
-
-  if (river) for (const p of particles) p.u = (p.u + p.speed / 60) % 1;
-
-  $("t-brg").textContent = `${pad(Math.floor(a), 3)}°`;
-  $("t-bar").style.width = `${a / 3.6}%`;
-  $("t-frame").textContent = `${frameMs.toFixed(1)} ms`;
-  $("t-clock").textContent = clock();
-}
-
-function sizeCanvas() {
-  dpr = Math.min(2, devicePixelRatio || 1);
-  for (const c of [fxc, litc]) { c.width = innerWidth * dpr; c.height = innerHeight * dpr; }
-  litDirty = true;
-}
-
-// Bright contours rasterised once per camera position; the sweep only masks this bitmap.
-function rasterLit() {
-  const m = svg.getScreenCTM(), g = litc.getContext("2d");
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.clearRect(0, 0, litc.width, litc.height);
-  g.setTransform(dpr * m.a, 0, 0, dpr * m.d, dpr * m.e, dpr * m.f);
-  g.lineWidth = 1.3 / m.a;
-  g.strokeStyle = "#e6fffb";
-  for (const { p, o } of litPaths) { g.globalAlpha = o; g.stroke(p); }
-  litDirty = false;
-}
-
-// Canvas conic angles start at 3 o'clock; the sweep angle is measured from 12 o'clock.
-function wedge(rad, stops) {
-  const g = fx.createConicGradient(rad, fxc.width / 2, fxc.height / 2);
-  for (const [at, color] of stops) g.addColorStop(at, color);
-  return g;
-}
-
-function drawFx(now, a) {
-  const W = fxc.width, H = fxc.height, rad = (a - 90) * Math.PI / 180;
-  fx.setTransform(1, 0, 0, 1, 0, 0);
-  fx.globalAlpha = 1;
-  fx.clearRect(0, 0, W, H);
-
-  // Lit contours trailing the beam. Skipped mid-flight, re-rasterised when the camera settles.
-  if (!tween) {
-    if (litDirty) rasterLit();
-    fx.globalCompositeOperation = "source-over";
-    fx.drawImage(litc, 0, 0);
-    fx.globalCompositeOperation = "destination-in";
-    fx.fillStyle = wedge(rad, [[0, "rgba(0,0,0,0)"], [250 / 360, "rgba(0,0,0,0)"], [320 / 360, "rgba(0,0,0,.2)"], [1, "#000"]]);
-    fx.fillRect(0, 0, W, H);
-  }
-
-  fx.globalCompositeOperation = "lighter";
-  fx.fillStyle = wedge(rad, [[0, "rgba(0,0,0,0)"], [300 / 360, "rgba(0,0,0,0)"], [352 / 360, "rgba(63,208,192,.08)"], [1, "rgba(168,255,242,.3)"]]);
-  fx.fillRect(0, 0, W, H);
-  fx.globalCompositeOperation = "source-over";
-
-  if (!river) return;
-  const m = svg.getScreenCTM();
-  fx.setTransform(dpr * m.a, 0, 0, dpr * m.d, dpr * m.e, dpr * m.f);
-  fx.lineWidth = 1 / m.a;
-  fx.setLineDash([2 / m.a, 6 / m.a]);
-  fx.lineDashOffset = -(now / 150 % 8) / m.a;
-  fx.strokeStyle = "#a8fff2";
-  fx.globalAlpha = 0.35;
-  fx.stroke(river.path);
-  fx.setLineDash([]);
-  fx.fillStyle = "#e6fffb";
-  for (const p of particles) {
-    const [x, y, nx, ny] = riverAt(p.u);
-    fx.globalAlpha = 0.4 + p.r / 2;
-    fx.beginPath();
-    fx.arc(x + nx * p.off, y + ny * p.off, p.r, 0, Math.PI * 2);
-    fx.fill();
-  }
-  fx.globalAlpha = 1;
-}
-sizeCanvas();
-requestAnimationFrame(frame);
 
 // ---------- Cursor readout ----------
 svg.addEventListener("pointermove", e => {
@@ -728,20 +487,17 @@ addEventListener("keydown", e => { if (e.key === "Escape") deselect(); });
 
 async function load() {
   $("coords").textContent = `${fmtLat(LOC.lat)} ${fmtLon(LOC.lon)}`;
-  $("status").textContent = "ACQUIRING ELEVATION DATA…";
-  $("status").classList.add("blink");
+  $("status").textContent = "LOADING ELEVATION DATA…";
   try {
     render(await fetchElevation());
   } catch {
-    $("status").innerHTML = `SIGNAL LOST — FEED UNREACHABLE<br><button class="retry" onclick="load()">RETRY</button>`;
-    $("status").classList.remove("blink");
+    $("status").innerHTML = `ELEVATION FEED UNREACHABLE<br><button class="retry" onclick="load()">RETRY</button>`;
   }
 }
 
 // Re-fetch when the viewport shape changes enough to need a different tile window.
 let resizeTimer;
 addEventListener("resize", () => {
-  sizeCanvas();
   if (state) { deselect(); cam = homeCam(); tween = null; applyCam(); }
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => { if (state) { const w = tileWindow(); if (w.cols !== state.cols || w.z !== state.z) load(); } }, 300);
