@@ -96,40 +96,52 @@
   .ping:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
   .ping.active .core { background: var(--accent); box-shadow: 0 0 12px 3px rgba(255,106,61,.8); transform: rotate(45deg) scale(1.4); }
   .ping.active .wave { border-color: var(--accent); }
-  .ping.active .id { color: var(--accent); text-shadow: 0 0 8px rgba(255,106,61,.6); }
+  .ping.active .id { opacity: 0; }
   @keyframes wave { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
   @keyframes burst { 0% { transform: scale(.1); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
   @keyframes flash { 0% { background: #fff; box-shadow: 0 0 22px 8px rgba(255,255,255,.9); } }
   @keyframes pingIn { from { opacity: 0; transform: translate(-50%, -50%) scale(2.5); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 
-  #panel { position: fixed; top: 50%; right: 22px; width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 140px);
-    overflow-y: auto; box-sizing: border-box; padding: 18px 20px 20px; background: rgba(4,10,12,.88);
-    border: 1px solid var(--line); box-shadow: 0 0 24px rgba(63,208,192,.25), inset 0 0 30px rgba(63,208,192,.06);
-    backdrop-filter: blur(4px); transform: translate(calc(100% + 40px), -50%); transition: transform .35s cubic-bezier(.3,.7,.2,1); }
-  #panel.open { transform: translate(0, -50%); }
-  #panel::before { content: ""; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px;
-    border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
-  #panel h2 { margin: 4px 0 2px; font-size: 20px; letter-spacing: .08em; color: var(--major); text-shadow: 0 0 10px rgba(168,255,242,.5); }
-  #panel p { margin: 12px 0 0; color: var(--text); line-height: 1.6; }
-  #panel dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 14px 0 0; padding: 12px 0;
-    border-top: 1px solid rgba(63,208,192,.25); border-bottom: 1px solid rgba(63,208,192,.25); }
-  #panel dt { color: var(--muted); font-size: 10px; letter-spacing: .16em; align-self: center; }
-  #panel dd { margin: 0; text-align: right; }
-  #panel ul { margin: 12px 0 0; padding: 0; list-style: none; }
-  #panel li { padding-left: 16px; position: relative; margin-top: 6px; line-height: 1.5; }
-  #panel li::before { content: "▸"; position: absolute; left: 0; color: var(--accent); }
-  #close { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; font: inherit; font-size: 16px;
-    color: var(--text); background: none; border: 1px solid var(--muted); cursor: pointer; }
-  #close:hover { border-color: var(--major); color: var(--major); }
+  /* POI callout: a leader line from the ping into a frameless readout. */
+  #leader { pointer-events: none; overflow: visible; }
+  #leader path { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 1; stroke-dashoffset: 1;
+    filter: drop-shadow(0 0 4px rgba(255,106,61,.7)); }
+  #leader circle { fill: var(--accent); opacity: 0; }
+  #leader.on path { stroke-dashoffset: 0; transition: stroke-dashoffset .35s cubic-bezier(.5,0,.2,1); }
+  #leader.on circle { opacity: 1; transition: opacity .1s .3s; }
+
+  #panel { position: fixed; left: 0; top: 0; width: 300px; padding: 2px 0 14px 16px; box-sizing: border-box;
+    border-left: 1px solid var(--accent); pointer-events: none; visibility: hidden;
+    background: linear-gradient(90deg, rgba(4,8,10,.82), rgba(4,8,10,.6) 75%, rgba(4,8,10,0));
+    text-shadow: 0 0 8px rgba(63,208,192,.4); clip-path: inset(0 100% 0 0); }
+  #panel.open { visibility: visible; pointer-events: auto; clip-path: inset(0 0 0 0);
+    transition: clip-path .45s cubic-bezier(.5,0,.2,1) .3s; }
+  #panel::before, #panel::after { content: ""; position: absolute; left: -1px; width: 8px; border-top: 1px solid var(--accent); }
+  #panel::before { top: 0; } #panel::after { bottom: 0; }
+  #panel h2 { margin: 2px 0 0; font-size: 18px; font-weight: 600; letter-spacing: .1em; color: var(--major);
+    text-shadow: 0 0 10px rgba(168,255,242,.5); }
+  #panel dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 10px 0 0; font-size: 11px; }
+  #panel dt { color: var(--muted); font-size: 9px; letter-spacing: .18em; align-self: center; }
+  #panel dd { margin: 0; color: var(--text); }
+  #panel p { margin: 10px 0 0; font-size: 11px; line-height: 1.6; color: rgba(189,245,238,.78); }
+  #panel ol { margin: 8px 0 0; padding: 0; list-style: none; font-size: 11px; line-height: 1.5; color: rgba(189,245,238,.78); }
+  #panel li { display: grid; grid-template-columns: 22px 1fr; margin-top: 4px; }
+  #panel li b { font-weight: 400; color: var(--accent); }
+  #panel.open .seq { animation: seqIn .4s ease-out both; }
+  @keyframes seqIn { from { opacity: 0; transform: translateX(-6px); } }
+  #close { margin-top: 12px; padding: 0; font: inherit; font-size: 9px; letter-spacing: .2em; color: var(--muted);
+    background: none; border: 0; cursor: pointer; }
+  #close:hover { color: var(--major); }
   .retry { pointer-events: auto; font: inherit; color: var(--text); background: rgba(4,8,10,.6); border: 1px solid var(--accent);
     padding: 6px 12px; margin-top: 6px; cursor: pointer; letter-spacing: .1em; }
 
   @media (max-width: 640px) {
     .hud { padding: 14px 16px; }
     .tr, .br { display: none; }
-    #panel { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 62vh; transform: translateY(105%);
-      border-width: 1px 0 0; }
-    #panel.open { transform: translateY(0); }
+    #panel { width: auto; right: 0; padding: 14px 16px 18px; border-left: 0; border-top: 1px solid var(--accent);
+      background: linear-gradient(180deg, rgba(4,8,10,.75), rgba(4,8,10,.92) 40%); }
+    #panel::before, #panel::after { display: none; }
+    body.callout .bl { opacity: 0; }
   }
   @media (prefers-reduced-motion: reduce) {
     #fxc, #rings { display: none; }
@@ -181,18 +193,19 @@
   <div id="log"></div>
 </div>
 
+<svg id="leader" class="layer" aria-hidden="true"><path pathLength="1"></path><circle r="2.5"></circle></svg>
 <aside id="panel" aria-live="polite" aria-hidden="true">
-  <button id="close" aria-label="Close panel">×</button>
   <div class="label" id="p-id"></div>
   <h2 id="p-name"></h2>
   <div class="label" id="p-kind"></div>
   <dl>
-    <dt>LAT / LON</dt><dd id="p-coords"></dd>
-    <dt>ELEVATION</dt><dd id="p-elev"></dd>
-    <dt>FROM CENTER</dt><dd id="p-range"></dd>
+    <dt>POS</dt><dd id="p-coords"></dd>
+    <dt>ELEV</dt><dd id="p-elev"></dd>
+    <dt>RANGE</dt><dd id="p-range"></dd>
   </dl>
-  <p id="p-desc"></p>
-  <ul id="p-facts"></ul>
+  <p id="p-desc" class="seq"></p>
+  <ol id="p-facts"></ol>
+  <button id="close" class="seq">[ ESC ] CLOSE</button>
 </aside>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -436,10 +449,10 @@ function applyCam() {
 const baseScale = () => Math.max(innerWidth / state.gw, innerHeight / state.gh);
 const homeCam = () => ({ cx: state.gw / 2, cy: state.gh / 2, k: 1 });
 
-// Zoom on a POI and park it in the part of the screen the panel leaves free.
+// Zoom on a POI and park it where its callout has room: left of center on desktop, upper third on phones.
 function poiCam(i) {
   const k = 1.8, s = baseScale() * k, mobile = innerWidth <= 640;
-  const tx = mobile ? innerWidth / 2 : (innerWidth - 400) / 2, ty = mobile ? innerHeight * 0.2 : innerHeight / 2;
+  const tx = mobile ? innerWidth / 2 : innerWidth * 0.36, ty = mobile ? innerHeight * 0.24 : innerHeight * 0.45;
   const [gx, gy] = toGrid(POIS[i].lat, POIS[i].lon);
   const hw = innerWidth / (2 * s), hh = innerHeight / (2 * s);
   return {
@@ -487,6 +500,7 @@ function placeMarkers() {
     b.style.left = `${x}px`; b.style.top = `${y}px`;
     b.classList.toggle("flip", x > innerWidth - 100);
   });
+  placePanel();
 
   // Scale bar: ground metres per screen pixel at this latitude.
   const mPerPx = mPerGrid() / svg.getScreenCTM().a;
@@ -496,30 +510,82 @@ function placeMarkers() {
   $("scaletext").textContent = dist >= 1000 ? `${dist / 1000} km` : `${dist} m`;
 }
 
-// ---------- Panel ----------
+// ---------- Panel: leader-line callout anchored to the active ping ----------
+let activePoi = -1;
+const GLYPHS = "▓▒░<>/\\|#=+01";
+
+// Decode text in left to right, with a band of noise glyphs ahead of the cursor.
+function scramble(el, text, delay = 0, ms = 500) {
+  const tok = el._tok = {}, t0 = performance.now() + delay;
+  el.textContent = "";
+  const tick = now => {
+    if (el._tok !== tok) return;
+    if (now < t0) return requestAnimationFrame(tick);
+    const n = Math.floor(clamp((now - t0) / ms, 0, 1) * text.length);
+    el.textContent = n >= text.length ? text : text.slice(0, n) +
+      [...text.slice(n, n + 5)].map(c => c === " " ? " " : GLYPHS[Math.random() * GLYPHS.length | 0]).join("");
+    if (n < text.length) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function placePanel() {
+  if (activePoi < 0 || !pingPos[activePoi]) return;
+  const [x, y] = pingPos[activePoi], panel = $("panel");
+  const w = panel.offsetWidth, h = panel.offsetHeight;
+  let pts, left, top;
+  if (innerWidth <= 640) {
+    left = 0; top = Math.max(y + 70, innerHeight - h);
+    pts = [[x, y + 12], [x, top]];
+  } else {
+    const flip = x + 100 + w > innerWidth - 16, dir = flip ? -1 : 1;
+    top = clamp(y - 56, 16, innerHeight - h - 16);
+    left = flip ? x - 100 - w : x + 100;
+    pts = [[x + dir * 9, y - 9], [x + dir * 56, top], [flip ? left + w : left, top]];
+  }
+  panel.style.left = `${left}px`; panel.style.top = `${top}px`;
+  $("leader").querySelector("path").setAttribute("d", "M" + pts.join("L"));
+  const [ex, ey] = pts[pts.length - 1];
+  $("leader").querySelector("circle").setAttribute("cx", ex);
+  $("leader").querySelector("circle").setAttribute("cy", ey);
+}
+
 function openPanel(i) {
-  const p = POIS[i];
+  const p = POIS[i], panel = $("panel"), leader = $("leader");
   const g = toGrid(p.lat, p.lon), c = toGrid(LOC.lat, LOC.lon);
   const dx = g[0] - c[0], dy = g[1] - c[1];
   const dist = Math.hypot(dx, dy) * mPerGrid();
   const brg = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
-  $("p-id").textContent = `POI-${String(i + 1).padStart(2, "0")} // INTEL`;
-  $("p-name").textContent = p.name;
-  $("p-kind").textContent = p.kind;
-  $("p-coords").textContent = `${fmtLat(p.lat)} ${fmtLon(p.lon)}`;
-  $("p-elev").textContent = fmtM(sample(g));
-  $("p-range").textContent = `${(dist / 1000).toFixed(2)} km · ${String(Math.round(brg)).padStart(3, "0")}°`;
+  const id = String(i + 1).padStart(2, "0");
+
+  activePoi = i;
+  panel.classList.remove("open"); leader.classList.remove("on");
+  $("p-id").textContent = `CONTACT ${id} // ${p.kind.split(" · ")[0]}`;
+  $("p-kind").textContent = p.kind.split(" · ")[1] || "";
   $("p-desc").textContent = p.desc;
-  $("p-facts").innerHTML = p.facts.map(f => `<li>${f}</li>`).join("");
+  $("p-desc").style.animationDelay = ".75s";
+  $("p-facts").innerHTML = p.facts.map((f, n) =>
+    `<li class="seq" style="animation-delay:${.9 + n * .12}s"><b>${String(n + 1).padStart(2, "0")}</b><span>${f}</span></li>`).join("");
+  $("close").style.animationDelay = `${.9 + p.facts.length * .12}s`;
+  scramble($("p-name"), p.name, 350);
+  scramble($("p-coords"), `${fmtLat(p.lat)} ${fmtLon(p.lon)}`, 500);
+  scramble($("p-elev"), `${fmtM(sample(g))} ASL`, 580);
+  scramble($("p-range"), `${(dist / 1000).toFixed(2)} km · BRG ${String(Math.round(brg)).padStart(3, "0")}°`, 660);
   $("pings").querySelectorAll(".ping").forEach(b => b.classList.toggle("active", +b.dataset.i === i));
-  $("panel").classList.add("open");
-  $("panel").setAttribute("aria-hidden", "false");
+  void panel.offsetWidth;
+  placePanel();
+  panel.classList.add("open"); leader.classList.add("on");
+  document.body.classList.add("callout");
+  panel.setAttribute("aria-hidden", "false");
   flyTo(poiCam(i));
 }
 
 function closePanel() {
-  const wasOpen = $("panel").classList.contains("open");
+  const wasOpen = activePoi >= 0;
+  activePoi = -1;
   $("panel").classList.remove("open");
+  $("leader").classList.remove("on");
+  document.body.classList.remove("callout");
   $("panel").setAttribute("aria-hidden", "true");
   $("pings").querySelectorAll(".ping").forEach(b => b.classList.remove("active"));
   if (wasOpen) flyTo(homeCam());
@@ -698,7 +764,7 @@ async function load() {
 let resizeTimer;
 addEventListener("resize", () => {
   sizeCanvas();
-  if (state) { $("panel").classList.remove("open"); cam = homeCam(); tween = null; applyCam(); }
+  if (state) { closePanel(); cam = homeCam(); tween = null; applyCam(); }
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => { if (state) { const w = tileWindow(); if (w.cols !== state.cols || w.z !== state.z) load(); } }, 300);
 });
