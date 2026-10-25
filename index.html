@@ -15,6 +15,7 @@
     --accent: #ff6a3d;
     --text: #bdf5ee;
     --muted: #4f8f88;
+    --side: 236px;
   }
   html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; color: var(--text);
     font: 12px/1.45 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; }
@@ -28,7 +29,6 @@
   #fxc { pointer-events: none; }
   #rings { pointer-events: none;
     background: repeating-radial-gradient(circle at 50% 50%, transparent 0 139px, rgba(63,208,192,.09) 139px 140px); }
-
   .late { opacity: 0; transition: opacity 1s; }
   body.live .late { opacity: 1; }
 
@@ -49,26 +49,10 @@
   .hx { left: 0; right: 0; height: 1px; }
   .hy { top: 0; bottom: 0; width: 1px; }
 
-  .hud { position: fixed; padding: 18px 22px; pointer-events: none; text-shadow: 0 0 8px rgba(63,208,192,.5); }
-  .tl { top: 0; left: 0; } .tr { top: 0; right: 0; text-align: right; }
-  .bl { bottom: 0; left: 0; } .br { bottom: 0; right: 0; text-align: right; }
-  .label { color: var(--muted); font-size: 10px; letter-spacing: .18em; }
-  .title { font-size: clamp(20px, 3.4vw, 40px); font-weight: 600; letter-spacing: .08em; line-height: 1.1; margin: 4px 0; }
+  .label { color: var(--muted); font-size: 9px; letter-spacing: .18em; }
   .accent { color: var(--accent); text-shadow: 0 0 8px rgba(255,106,61,.6); }
   .blink { animation: blink 1s steps(2) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
-  .scale { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-  .scale i { display: block; height: 6px; border: 1px solid var(--major); border-top: 0; }
-  #log { font-size: 10px; letter-spacing: .12em; color: var(--muted); min-height: 7.5em; }
-  #log div { animation: logIn .4s ease-out; }
-  #log div:last-child { color: var(--text); }
-  @keyframes logIn { from { opacity: 0; transform: translateX(8px); } }
-
-  .corner { position: fixed; width: 26px; height: 26px; border: 2px solid var(--line); pointer-events: none; opacity: .8; }
-  .c1 { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
-  .c2 { top: 8px; right: 8px; border-left: 0; border-bottom: 0; }
-  .c3 { bottom: 8px; left: 8px; border-right: 0; border-top: 0; }
-  .c4 { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
 
   .marker { position: fixed; pointer-events: none; transform: translate(-50%, -50%); }
   .marker .ring { width: 22px; height: 22px; border: 1.5px solid var(--accent); border-radius: 50%;
@@ -77,7 +61,7 @@
     font-size: 11px; text-shadow: 0 0 8px rgba(255,106,61,.6); }
   @keyframes pulse { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
 
-  /* POI pings: 44px hit area around a small diamond core. */
+  /* Map pings: 44px hit area around a small diamond core. */
   .ping { position: fixed; width: 44px; height: 44px; transform: translate(-50%, -50%); padding: 0; margin: 0;
     background: none; border: 0; cursor: pointer; opacity: 0; animation: pingIn .4s ease-out forwards; }
   .ping .core { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px;
@@ -96,55 +80,87 @@
   .ping:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
   .ping.active .core { background: var(--accent); box-shadow: 0 0 12px 3px rgba(255,106,61,.8); transform: rotate(45deg) scale(1.4); }
   .ping.active .wave { border-color: var(--accent); }
-  .ping.active .id { opacity: 0; }
+  .ping.active .id { color: var(--accent); text-shadow: 0 0 8px rgba(255,106,61,.6); }
+  .ping.active .id::after { content: attr(data-name); }
   @keyframes wave { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
   @keyframes burst { 0% { transform: scale(.1); opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
   @keyframes flash { 0% { background: #fff; box-shadow: 0 0 22px 8px rgba(255,255,255,.9); } }
   @keyframes pingIn { from { opacity: 0; transform: translate(-50%, -50%) scale(2.5); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 
-  /* POI callout: a leader line from the ping into a frameless readout. */
-  #leader { pointer-events: none; overflow: visible; }
-  #leader path { fill: none; stroke: var(--accent); stroke-width: 1; stroke-dasharray: 1; stroke-dashoffset: 1;
-    filter: drop-shadow(0 0 4px rgba(255,106,61,.7)); }
-  #leader circle { fill: var(--accent); opacity: 0; }
-  #leader.on path { stroke-dashoffset: 0; transition: stroke-dashoffset .35s cubic-bezier(.5,0,.2,1); }
-  #leader.on circle { opacity: 1; transition: opacity .1s .3s; }
+  /* Frosted side panels. */
+  .side { position: fixed; top: 16px; bottom: 16px; width: var(--side); box-sizing: border-box; padding: 16px 16px 14px;
+    display: flex; flex-direction: column; gap: 14px; overflow: hidden;
+    background: linear-gradient(180deg, rgba(8,20,22,.5), rgba(4,10,12,.38));
+    -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+    border: 1px solid rgba(63,208,192,.2); box-shadow: inset 0 1px 0 rgba(168,255,242,.08), 0 10px 40px rgba(0,0,0,.35);
+    text-shadow: 0 0 8px rgba(63,208,192,.35); animation: sideIn .8s cubic-bezier(.3,.7,.2,1) both; }
+  .side::before, .side::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--line); }
+  .side::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .side::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+  #left { left: 16px; --from: -20px; }
+  #right { right: 16px; --from: 20px; }
+  @keyframes sideIn { from { opacity: 0; transform: translateX(var(--from)); } }
+  .sect { display: flex; justify-content: space-between; color: var(--muted); font-size: 9px; letter-spacing: .2em;
+    padding-bottom: 6px; border-bottom: 1px solid rgba(63,208,192,.18); }
+  .title { font-size: 26px; font-weight: 600; letter-spacing: .08em; line-height: 1.05; margin: 4px 0 2px; color: var(--major); }
+  .tiny { font-size: 10px; letter-spacing: .08em; }
 
-  #panel { position: fixed; left: 0; top: 0; width: 300px; padding: 2px 0 14px 16px; box-sizing: border-box;
-    border-left: 1px solid var(--accent); pointer-events: none; visibility: hidden;
-    background: linear-gradient(90deg, rgba(4,8,10,.82), rgba(4,8,10,.6) 75%, rgba(4,8,10,0));
-    text-shadow: 0 0 8px rgba(63,208,192,.4); clip-path: inset(0 100% 0 0); }
-  #panel.open { visibility: visible; pointer-events: auto; clip-path: inset(0 0 0 0);
-    transition: clip-path .45s cubic-bezier(.5,0,.2,1) .3s; }
-  #panel::before, #panel::after { content: ""; position: absolute; left: -1px; width: 8px; border-top: 1px solid var(--accent); }
-  #panel::before { top: 0; } #panel::after { bottom: 0; }
-  #panel h2 { margin: 2px 0 0; font-size: 18px; font-weight: 600; letter-spacing: .1em; color: var(--major);
-    text-shadow: 0 0 10px rgba(168,255,242,.5); }
-  #panel dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 10px 0 0; font-size: 11px; }
-  #panel dt { color: var(--muted); font-size: 9px; letter-spacing: .18em; align-self: center; }
-  #panel dd { margin: 0; color: var(--text); }
-  #panel p { margin: 10px 0 0; font-size: 11px; line-height: 1.6; color: rgba(189,245,238,.78); }
-  #panel ol { margin: 8px 0 0; padding: 0; list-style: none; font-size: 11px; line-height: 1.5; color: rgba(189,245,238,.78); }
-  #panel li { display: grid; grid-template-columns: 22px 1fr; margin-top: 4px; }
-  #panel li b { font-weight: 400; color: var(--accent); }
-  #panel.open .seq { animation: seqIn .4s ease-out both; }
-  @keyframes seqIn { from { opacity: 0; transform: translateX(-6px); } }
-  #close { margin-top: 12px; padding: 0; font: inherit; font-size: 9px; letter-spacing: .2em; color: var(--muted);
-    background: none; border: 0; cursor: pointer; }
-  #close:hover { color: var(--major); }
-  .retry { pointer-events: auto; font: inherit; color: var(--text); background: rgba(4,8,10,.6); border: 1px solid var(--accent);
-    padding: 6px 12px; margin-top: 6px; cursor: pointer; letter-spacing: .1em; }
+  #contacts { list-style: none; margin: -6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+  .contact { display: grid; grid-template-columns: 18px 1fr; column-gap: 8px; width: 100%; padding: 7px 6px 7px 4px;
+    font: inherit; text-align: left; color: var(--text); background: none; border: 0; border-left: 2px solid transparent;
+    cursor: pointer; transition: background .2s, border-color .2s; }
+  .contact:hover { background: rgba(63,208,192,.07); }
+  .contact:focus-visible { outline: 1px dashed var(--major); outline-offset: -1px; }
+  .contact .dot { grid-row: span 2; position: relative; width: 18px; height: 18px; align-self: center; }
+  .contact .dot::before { content: ""; position: absolute; left: 6px; top: 6px; width: 6px; height: 6px;
+    background: var(--major); transform: rotate(45deg); box-shadow: 0 0 6px rgba(168,255,242,.8); }
+  .contact .dot::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--major); border-radius: 50%;
+    animation: wave 2.2s ease-out infinite; }
+  .contact .nm { font-size: 11px; letter-spacing: .08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .contact .nm b { font-weight: 400; color: var(--muted); margin-right: 6px; }
+  .contact .tl { font-size: 9px; letter-spacing: .1em; color: var(--muted); white-space: nowrap; }
+  .contact .xt { grid-column: 2; font-size: 9px; letter-spacing: .1em; color: var(--text); display: none; margin-top: 4px; line-height: 1.6; }
+  .contact.hit { animation: rowHit .9s ease-out; }
+  @keyframes rowHit { 0% { background: rgba(168,255,242,.18); } }
+  .contact.active { border-left-color: var(--accent); background: rgba(255,106,61,.07); }
+  .contact.active .nm, .contact.active .nm b { color: var(--accent); }
+  .contact.active .dot::before { background: var(--accent); box-shadow: 0 0 6px rgba(255,106,61,.9); }
+  .contact.active .dot::after { border-color: var(--accent); }
+  .contact.active .xt { display: block; }
 
-  @media (max-width: 640px) {
-    .hud { padding: 14px 16px; }
-    .tr, .br { display: none; }
-    #panel { width: auto; right: 0; padding: 14px 16px 18px; border-left: 0; border-top: 1px solid var(--accent);
-      background: linear-gradient(180deg, rgba(4,8,10,.75), rgba(4,8,10,.92) 40%); }
-    #panel::before, #panel::after { display: none; }
-    body.callout .bl { opacity: 0; }
+  .scale { display: flex; align-items: center; gap: 8px; margin-top: auto; font-size: 10px; }
+  .scale span { white-space: nowrap; }
+  .scale i { display: block; height: 5px; border: 1px solid var(--major); border-top: 0; }
+
+  .tele { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: -6px 0 0; font-size: 10px; }
+  .tele dt { color: var(--muted); font-size: 9px; letter-spacing: .16em; align-self: center; }
+  .tele dd { margin: 0; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .bar { height: 2px; margin-top: -8px; background: rgba(63,208,192,.15); position: relative; overflow: hidden; }
+  .bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--major); box-shadow: 0 0 6px var(--major); }
+  #log { font-size: 9px; letter-spacing: .08em; color: var(--muted); display: flex; flex-direction: column; gap: 3px;
+    margin-top: -6px; overflow: hidden; flex: 1; justify-content: flex-end; }
+  #log div { animation: logIn .4s ease-out; }
+  #log div:last-child { color: var(--text); }
+  @keyframes logIn { from { opacity: 0; transform: translateX(6px); } }
+  .retry { font: inherit; font-size: 10px; color: var(--text); background: none; border: 1px solid var(--accent);
+    padding: 4px 10px; margin-top: 6px; cursor: pointer; letter-spacing: .1em; }
+
+  @media (max-width: 760px) {
+    #right { display: none; }
+    #left { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 46vh; padding: 12px 14px 14px; gap: 10px;
+      border-width: 1px 0 0; --from: 0; }
+    #left .head .label:first-child, #left #coords, #left .scale { display: none; }
+    .title { font-size: 18px; margin: 0; }
+    #contacts { flex-direction: row; overflow-x: auto; overflow-y: hidden; gap: 6px; margin: -4px -14px 0; padding: 0 14px;
+      scrollbar-width: none; }
+    #contacts li { flex: 0 0 auto; }
+    .contact { width: auto; min-width: 158px; border-left: 0; border-top: 2px solid transparent; background: rgba(63,208,192,.05); }
+    .contact.active { border-top-color: var(--accent); }
+    .ping.active .id::after { content: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     #fxc, #rings { display: none; }
+    .side { animation: none; }
   }
 </style>
 </head>
@@ -167,45 +183,46 @@
 <div id="markers"></div>
 <div id="fx" class="overlay"></div>
 <div id="pings"></div>
-<div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
 
-<div class="hud tl">
-  <div class="label">TOPOGRAPHIC SURVEY // SNAKE RIVER PLAIN</div>
-  <div class="title">TWIN FALLS</div>
-  <div class="label">SNAKE RIVER CANYON · IDAHO</div>
-  <div id="coords"></div>
-</div>
-<div class="hud tr">
-  <div class="label">ELEVATION RANGE</div>
-  <div id="range">—</div>
-  <div class="label" style="margin-top:8px">CONTOUR INTERVAL</div>
-  <div id="interval">—</div>
-  <div class="label" style="margin-top:8px">SOURCE</div>
-  <div>AWS TERRAIN TILES<br><span id="grid-info" class="label"></span></div>
-</div>
-<div class="hud bl">
-  <div id="status" class="accent blink">ACQUIRING ELEVATION DATA…</div>
-  <div id="cursor" class="label">TAP A PING FOR INTEL</div>
+<aside id="left" class="side" aria-label="Contacts">
+  <div class="head">
+    <div class="label">TOPO SURVEY // SNAKE RIVER</div>
+    <div class="title">TWIN FALLS</div>
+    <div class="label">SNAKE RIVER CANYON · IDAHO</div>
+    <div id="coords" class="tiny"></div>
+    <div id="status" class="tiny accent blink" style="margin-top:8px">ACQUIRING ELEVATION DATA…</div>
+  </div>
+  <div class="sect"><span>CONTACTS</span><span>05 TRACKED</span></div>
+  <ol id="contacts"></ol>
   <div class="scale"><i id="scalebar"></i><span id="scaletext"></span></div>
-</div>
-<div class="hud br">
-  <div class="label" style="margin-bottom:4px">TELEMETRY</div>
-  <div id="log"></div>
-</div>
+</aside>
 
-<svg id="leader" class="layer" aria-hidden="true"><path pathLength="1"></path><circle r="2.5"></circle></svg>
-<aside id="panel" aria-live="polite" aria-hidden="true">
-  <div class="label" id="p-id"></div>
-  <h2 id="p-name"></h2>
-  <div class="label" id="p-kind"></div>
-  <dl>
-    <dt>POS</dt><dd id="p-coords"></dd>
-    <dt>ELEV</dt><dd id="p-elev"></dd>
-    <dt>RANGE</dt><dd id="p-range"></dd>
+<aside id="right" class="side" aria-label="Telemetry">
+  <div class="sect"><span>TELEMETRY</span><span id="t-clock">T+00:00</span></div>
+  <dl class="tele">
+    <dt>ELEV MIN</dt><dd id="t-min">—</dd>
+    <dt>ELEV MAX</dt><dd id="t-max">—</dd>
+    <dt>INTERVAL</dt><dd id="t-int">—</dd>
+    <dt>GRID</dt><dd id="t-grid">—</dd>
+    <dt>RIVER</dt><dd id="t-river">—</dd>
   </dl>
-  <p id="p-desc" class="seq"></p>
-  <ol id="p-facts"></ol>
-  <button id="close" class="seq">[ ESC ] CLOSE</button>
+  <div class="sect"><span>SWEEP</span><span id="t-count">000</span></div>
+  <dl class="tele">
+    <dt>BEARING</dt><dd id="t-brg">—</dd>
+    <dt>PERIOD</dt><dd>7.0 s</dd>
+    <dt>CAMERA</dt><dd id="t-cam">×1.00</dd>
+    <dt>FRAME</dt><dd id="t-frame">—</dd>
+  </dl>
+  <div class="bar"><i id="t-bar"></i></div>
+  <div class="sect"><span>CURSOR</span></div>
+  <dl class="tele">
+    <dt>LAT</dt><dd id="c-lat">—</dd>
+    <dt>LON</dt><dd id="c-lon">—</dd>
+    <dt>ELEV</dt><dd id="c-elev">—</dd>
+  </dl>
+  <div class="sect"><span>EVENT LOG</span></div>
+  <div id="log"></div>
+  <div class="label">SRC · AWS TERRAIN TILES</div>
 </aside>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
@@ -213,25 +230,15 @@
 // Elevation: AWS Terrain Tiles (Mapzen terrarium encoding), public and CORS-enabled.
 const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
 const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
-const SWEEP_MS = 7000, TOUR_IDLE_MS = 12000, TOUR_HOLD_MS = 7000, PARTICLES = 70;
+const SWEEP_MS = 7000, TOUR_IDLE_MS = 12000, TOUR_HOLD_MS = 6000, PARTICLES = 70;
 const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const POIS = [
-  { name: "PERRINE BRIDGE", kind: "STRUCTURE · US-93", lat: 42.6005, lon: -114.4552,
-    desc: "A 1,500 ft steel truss bridge carrying US-93 across the Snake River Canyon, about 486 ft above the water. Main gateway into Twin Falls from the north.",
-    facts: ["Opened 1976, replacing the original 1927 bridge", "One of the few man-made structures in the US where BASE jumping is legal year-round without a permit", "Rim walkway and visitor center on the south end"] },
-  { name: "SHOSHONE FALLS", kind: "WATERFALL · SNAKE RIVER", lat: 42.5952, lon: -114.4009,
-    desc: "The \"Niagara of the West.\" The Snake River drops 212 ft over a rim roughly 900 ft wide, which is taller than Niagara Falls.",
-    facts: ["Flow peaks in spring before irrigation diversions upstream", "Carved during the Bonneville Flood about 14,500 years ago", "City park with overlooks on the south rim"] },
-  { name: "KNIEVEL JUMP SITE", kind: "HISTORIC SITE · SOUTH RIM", lat: 42.5945, lon: -114.4170,
-    desc: "On Sept 8, 1974, Evel Knievel tried to jump the canyon in the steam-powered Skycycle X-2. The parachute deployed early and he drifted down to the riverbank.",
-    facts: ["The dirt launch ramp mound still stands on the south rim", "Stuntman Eddie Braun made the jump successfully in 2016 with a replica rocket", "Position approximate"] },
-  { name: "PILLAR FALLS", kind: "GEOLOGY · RIVER CHANNEL", lat: 42.5992, lon: -114.4385,
-    desc: "A cluster of rhyolite pillars rising out of the river between the Perrine Bridge and Shoshone Falls, with water cascading between the columns.",
-    facts: ["Reached by kayak or SUP from Centennial Waterfront Park", "Also visible via a short hike down from the north rim", "Popular climbing area on the surrounding walls"] },
-  { name: "TWIN FALLS", kind: "WATERFALL · NAMESAKE", lat: 42.5880, lon: -114.3567,
-    desc: "The waterfall the city is named after. Originally two parallel falls; a 1935 hydroelectric dam diverted one channel, so usually only one fall runs.",
-    facts: ["Drops roughly 125 ft into the canyon", "Operated by Idaho Power as a hydro project", "Small park and overlook on the south rim"] },
+  { name: "PERRINE BRIDGE", kind: "STRUCTURE", lat: 42.6005, lon: -114.4552 },
+  { name: "SHOSHONE FALLS", kind: "WATERFALL", lat: 42.5952, lon: -114.4009 },
+  { name: "KNIEVEL JUMP SITE", kind: "HISTORIC SITE", lat: 42.5945, lon: -114.4170 },
+  { name: "PILLAR FALLS", kind: "GEOLOGY", lat: 42.5992, lon: -114.4385 },
+  { name: "TWIN FALLS", kind: "WATERFALL", lat: 42.5880, lon: -114.3567 },
 ];
 
 const $ = id => document.getElementById(id);
@@ -242,8 +249,8 @@ let dpr = 1, litPaths = [], litDirty = true;
 let state = null;
 let cam = null, tween = null;
 let river = null, particles = [];
-let pingPos = [];
-let lastSweep = 0, sweepCount = 0, startTime = performance.now();
+let pingPos = [], active = -1;
+let lastSweep = 0, sweepCount = 0, lastFrame = 0, frameMs = 16.7, startTime = performance.now();
 let touring = false, tourIdx = 0, tourTimer, idleTimer;
 
 const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
@@ -255,15 +262,16 @@ function pix2lonlat(px, py, z) {
 const fmtLat = v => `${Math.abs(v).toFixed(4)}°${v >= 0 ? "N" : "S"}`;
 const fmtLon = v => `${Math.abs(v).toFixed(4)}°${v >= 0 ? "E" : "W"}`;
 const fmtM = v => `${Math.round(v).toLocaleString()} m`;
+const pad = (n, w = 2) => String(n).padStart(w, "0");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const ease = t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+const clock = () => { const s = Math.floor((performance.now() - startTime) / 1000); return `T+${pad(Math.floor(s / 60))}:${pad(s % 60)}`; };
 
 function log(msg) {
-  const s = Math.floor((performance.now() - startTime) / 1000);
   const line = document.createElement("div");
-  line.textContent = `T+${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}  ${msg}`;
+  line.textContent = `${clock()} ${msg}`;
   $("log").append(line);
-  while ($("log").children.length > 6) $("log").firstChild.remove();
+  while ($("log").children.length > 8) $("log").firstChild.remove();
 }
 
 function loadImg(url) {
@@ -336,14 +344,16 @@ function render(d) {
   state = { ...d, min, max, peak: [maxI % gw, Math.floor(maxI / gw)] };
   cam = { cx: gw / 2, cy: gh / 2, k: 1 };
   tween = null;
+  active = -1;
   applyCam();
 
-  $("range").textContent = `${fmtM(min)} → ${fmtM(max)}`;
-  $("interval").textContent = `${step} m · INDEX ${step * 5} m`;
-  $("grid-info").textContent = `ZOOM ${d.z} · ${gw}×${gh} GRID`;
+  $("t-min").textContent = fmtM(min);
+  $("t-max").textContent = fmtM(max);
+  $("t-int").textContent = `${step} m / ${step * 5} m`;
+  $("t-grid").textContent = `Z${d.z} ${gw}×${gh}`;
   $("status").textContent = "LOCK ACQUIRED";
   $("status").classList.remove("blink");
-  log(`ELEVATION GRID ${gw}×${gh} LOADED`);
+  log(`GRID ${gw}×${gh} LOADED`);
 
   document.body.classList.remove("live");
   for (const el of [svg, $("sweep")]) {
@@ -405,7 +415,7 @@ function traceRiver() {
     }
   }
   if (end < 0) return;
-  // Walk back from the west end, which yields points ordered east → west (downstream).
+  // Walk back from the west end, then reverse so points run east → west (downstream).
   const raw = [];
   for (let i = end; i >= 0; i = prev[i]) raw.push([i % gw, (i / gw) | 0]);
   raw.reverse();
@@ -423,8 +433,9 @@ function traceRiver() {
     u: Math.random(), speed: 0.012 + Math.random() * 0.014, r: 0.5 + Math.random() * 0.8, off: (Math.random() - .5) * 2.5,
   }));
 
-  const e0 = sample(pts[0]), e1 = sample(pts[pts.length - 1]);
-  log(`RIVER TRACED · ${(river.len * mPerGrid() / 1000).toFixed(1)} KM · ${fmtM(e0)}→${fmtM(e1)}`);
+  const km = (river.len * mPerGrid() / 1000).toFixed(1);
+  $("t-river").textContent = `${km} km`;
+  log(`RIVER TRACED ${km} KM · ${fmtM(sample(pts[0]))}→${fmtM(sample(pts[pts.length - 1]))}`);
 }
 
 function riverAt(u) {
@@ -437,22 +448,22 @@ function riverAt(u) {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, nx / nl, ny / nl];
 }
 
-// ---------- Camera: the shared viewBox of all map layers ----------
+// ---------- Camera: the map's viewBox ----------
 function applyCam() {
   const w = state.gw / cam.k, h = state.gh / cam.k;
-  const vb = `${cam.cx - w / 2} ${cam.cy - h / 2} ${w} ${h}`;
-  svg.setAttribute("viewBox", vb);
+  svg.setAttribute("viewBox", `${cam.cx - w / 2} ${cam.cy - h / 2} ${w} ${h}`);
   litDirty = true;
+  $("t-cam").textContent = `×${cam.k.toFixed(2)}`;
   placeMarkers();
 }
 
 const baseScale = () => Math.max(innerWidth / state.gw, innerHeight / state.gh);
 const homeCam = () => ({ cx: state.gw / 2, cy: state.gh / 2, k: 1 });
 
-// Zoom on a POI and park it where its callout has room: left of center on desktop, upper third on phones.
+// Zoom on a POI and park it in the open space between the panels.
 function poiCam(i) {
-  const k = 1.8, s = baseScale() * k, mobile = innerWidth <= 640;
-  const tx = mobile ? innerWidth / 2 : innerWidth * 0.36, ty = mobile ? innerHeight * 0.24 : innerHeight * 0.45;
+  const k = 1.8, s = baseScale() * k, mobile = innerWidth <= 760;
+  const tx = innerWidth / 2, ty = mobile ? (innerHeight - $("left").offsetHeight) / 2 : innerHeight / 2;
   const [gx, gy] = toGrid(POIS[i].lat, POIS[i].lon);
   const hw = innerWidth / (2 * s), hh = innerHeight / (2 * s);
   return {
@@ -468,19 +479,41 @@ function flyTo(target, ms = 1400) {
   tween = { from: { ...cam }, to: target, t0: performance.now(), ms };
 }
 
-// ---------- Markers & pings ----------
+// ---------- Pings, contact list & markers ----------
 function toScreen(gx, gy) {
   const m = svg.getScreenCTM();
   return [m.a * gx + m.e, m.d * gy + m.f];
+}
+
+function contactTelemetry(i) {
+  const p = POIS[i], g = toGrid(p.lat, p.lon), c = toGrid(LOC.lat, LOC.lon);
+  const dx = g[0] - c[0], dy = g[1] - c[1];
+  return {
+    elev: fmtM(sample(g)),
+    range: `${(Math.hypot(dx, dy) * mPerGrid() / 1000).toFixed(2)} km`,
+    brg: `${pad(Math.round((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360), 3)}°`,
+  };
 }
 
 function buildPings() {
   $("pings").innerHTML = POIS.map((p, i) => `
     <button class="ping" data-i="${i}" style="animation-delay:${2.4 + i * 0.15}s" aria-label="${p.name}">
       <span class="wave"></span><span class="wave"></span><span class="burst"></span><span class="core"></span>
-      <span class="id">POI-${String(i + 1).padStart(2, "0")}</span>
+      <span class="id" data-name=" · ${p.name}">POI-${pad(i + 1)}</span>
     </button>`).join("");
-  $("pings").querySelectorAll(".ping").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openPanel(+b.dataset.i); }));
+  $("contacts").innerHTML = POIS.map((p, i) => {
+    const t = contactTelemetry(i);
+    return `<li><button class="contact" data-i="${i}">
+      <span class="dot"></span>
+      <span class="nm"><b>${pad(i + 1)}</b>${p.name}</span>
+      <span class="tl">${t.elev} · ${t.range} · ${t.brg}</span>
+      <span class="xt">${p.kind}<br>${fmtLat(p.lat)} ${fmtLon(p.lon)}</span>
+    </button></li>`;
+  }).join("");
+  document.querySelectorAll(".ping, .contact").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation();
+    +b.dataset.i === active && b.classList.contains("contact") ? deselect() : select(+b.dataset.i);
+  }));
 }
 
 function placeMarkers() {
@@ -498,97 +531,30 @@ function placeMarkers() {
     const [x, y] = toScreen(...toGrid(p.lat, p.lon));
     pingPos[+b.dataset.i] = [x, y];
     b.style.left = `${x}px`; b.style.top = `${y}px`;
-    b.classList.toggle("flip", x > innerWidth - 100);
+    b.classList.toggle("flip", x > innerWidth - (b.classList.contains("active") && innerWidth > 760 ? 260 : 100));
   });
-  placePanel();
 
   // Scale bar: ground metres per screen pixel at this latitude.
   const mPerPx = mPerGrid() / svg.getScreenCTM().a;
-  const p = 10 ** Math.floor(Math.log10(mPerPx * 120));
-  const dist = [1, 2, 2.5, 5, 10].map(m => m * p).find(v => v >= mPerPx * 120);
+  const p = 10 ** Math.floor(Math.log10(mPerPx * 140));
+  const dist = [10, 5, 2.5, 2, 1].map(m => m * p).find(v => v <= mPerPx * 140);
   $("scalebar").style.width = `${dist / mPerPx}px`;
   $("scaletext").textContent = dist >= 1000 ? `${dist / 1000} km` : `${dist} m`;
 }
 
-// ---------- Panel: leader-line callout anchored to the active ping ----------
-let activePoi = -1;
-const GLYPHS = "▓▒░<>/\\|#=+01";
-
-// Decode text in left to right, with a band of noise glyphs ahead of the cursor.
-function scramble(el, text, delay = 0, ms = 500) {
-  const tok = el._tok = {}, t0 = performance.now() + delay;
-  el.textContent = "";
-  const tick = now => {
-    if (el._tok !== tok) return;
-    if (now < t0) return requestAnimationFrame(tick);
-    const n = Math.floor(clamp((now - t0) / ms, 0, 1) * text.length);
-    el.textContent = n >= text.length ? text : text.slice(0, n) +
-      [...text.slice(n, n + 5)].map(c => c === " " ? " " : GLYPHS[Math.random() * GLYPHS.length | 0]).join("");
-    if (n < text.length) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-}
-
-function placePanel() {
-  if (activePoi < 0 || !pingPos[activePoi]) return;
-  const [x, y] = pingPos[activePoi], panel = $("panel");
-  const w = panel.offsetWidth, h = panel.offsetHeight;
-  let pts, left, top;
-  if (innerWidth <= 640) {
-    left = 0; top = Math.max(y + 70, innerHeight - h);
-    pts = [[x, y + 12], [x, top]];
-  } else {
-    const flip = x + 100 + w > innerWidth - 16, dir = flip ? -1 : 1;
-    top = clamp(y - 56, 16, innerHeight - h - 16);
-    left = flip ? x - 100 - w : x + 100;
-    pts = [[x + dir * 9, y - 9], [x + dir * 56, top], [flip ? left + w : left, top]];
-  }
-  panel.style.left = `${left}px`; panel.style.top = `${top}px`;
-  $("leader").querySelector("path").setAttribute("d", "M" + pts.join("L"));
-  const [ex, ey] = pts[pts.length - 1];
-  $("leader").querySelector("circle").setAttribute("cx", ex);
-  $("leader").querySelector("circle").setAttribute("cy", ey);
-}
-
-function openPanel(i) {
-  const p = POIS[i], panel = $("panel"), leader = $("leader");
-  const g = toGrid(p.lat, p.lon), c = toGrid(LOC.lat, LOC.lon);
-  const dx = g[0] - c[0], dy = g[1] - c[1];
-  const dist = Math.hypot(dx, dy) * mPerGrid();
-  const brg = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
-  const id = String(i + 1).padStart(2, "0");
-
-  activePoi = i;
-  panel.classList.remove("open"); leader.classList.remove("on");
-  $("p-id").textContent = `CONTACT ${id} // ${p.kind.split(" · ")[0]}`;
-  $("p-kind").textContent = p.kind.split(" · ")[1] || "";
-  $("p-desc").textContent = p.desc;
-  $("p-desc").style.animationDelay = ".75s";
-  $("p-facts").innerHTML = p.facts.map((f, n) =>
-    `<li class="seq" style="animation-delay:${.9 + n * .12}s"><b>${String(n + 1).padStart(2, "0")}</b><span>${f}</span></li>`).join("");
-  $("close").style.animationDelay = `${.9 + p.facts.length * .12}s`;
-  scramble($("p-name"), p.name, 350);
-  scramble($("p-coords"), `${fmtLat(p.lat)} ${fmtLon(p.lon)}`, 500);
-  scramble($("p-elev"), `${fmtM(sample(g))} ASL`, 580);
-  scramble($("p-range"), `${(dist / 1000).toFixed(2)} km · BRG ${String(Math.round(brg)).padStart(3, "0")}°`, 660);
-  $("pings").querySelectorAll(".ping").forEach(b => b.classList.toggle("active", +b.dataset.i === i));
-  void panel.offsetWidth;
-  placePanel();
-  panel.classList.add("open"); leader.classList.add("on");
-  document.body.classList.add("callout");
-  panel.setAttribute("aria-hidden", "false");
+function select(i) {
+  active = i;
+  document.querySelectorAll(".ping, .contact").forEach(b => b.classList.toggle("active", +b.dataset.i === i));
+  document.querySelector(`.contact[data-i="${i}"]`).scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  log(`LOCK POI-${pad(i + 1)} ${POIS[i].name}`);
   flyTo(poiCam(i));
 }
 
-function closePanel() {
-  const wasOpen = activePoi >= 0;
-  activePoi = -1;
-  $("panel").classList.remove("open");
-  $("leader").classList.remove("on");
-  document.body.classList.remove("callout");
-  $("panel").setAttribute("aria-hidden", "true");
-  $("pings").querySelectorAll(".ping").forEach(b => b.classList.remove("active"));
-  if (wasOpen) flyTo(homeCam());
+function deselect() {
+  if (active < 0) return;
+  active = -1;
+  document.querySelectorAll(".ping, .contact").forEach(b => b.classList.remove("active"));
+  flyTo(homeCam());
 }
 
 // ---------- Idle tour ----------
@@ -600,16 +566,15 @@ function armIdle() {
 function startTour() {
   if (!state) return;
   touring = true;
-  log("NO INPUT · AUTO-RECON ENGAGED");
+  log("NO INPUT · AUTO-RECON");
   $("status").classList.add("blink");
   tourStep();
 }
 
 function tourStep() {
   if (!touring) return;
-  $("status").textContent = `AUTO-RECON ▸ POI-${String(tourIdx + 1).padStart(2, "0")}`;
-  log(`RECON POI-${String(tourIdx + 1).padStart(2, "0")} ${POIS[tourIdx].name}`);
-  openPanel(tourIdx);
+  $("status").textContent = `AUTO-RECON ▸ POI-${pad(tourIdx + 1)}`;
+  select(tourIdx);
   tourIdx = (tourIdx + 1) % POIS.length;
   tourTimer = setTimeout(tourStep, TOUR_HOLD_MS);
 }
@@ -619,8 +584,8 @@ function stopTour() {
   clearTimeout(tourTimer);
   $("status").textContent = "LOCK ACQUIRED";
   $("status").classList.remove("blink");
-  log("MANUAL CONTROL RESTORED");
-  closePanel();
+  log("MANUAL CONTROL");
+  deselect();
 }
 
 function onInput() {
@@ -629,9 +594,13 @@ function onInput() {
 }
 for (const ev of ["pointerdown", "pointermove", "keydown", "wheel"]) addEventListener(ev, onInput, { passive: true });
 
-// ---------- Frame loop: camera tween, radar sweep, river particles ----------
+// ---------- Frame loop: camera tween, radar sweep, river particles, live telemetry ----------
+function hit(el) { el.classList.remove("hit"); void el.offsetWidth; el.classList.add("hit"); }
+
 function frame(now) {
   requestAnimationFrame(frame);
+  frameMs += ((now - lastFrame) - frameMs) * 0.05;
+  lastFrame = now;
   if (!state) return;
 
   if (tween) {
@@ -650,15 +619,23 @@ function frame(now) {
     pingPos.forEach(([x, y], i) => {
       const ang = (Math.atan2(x - cx, -(y - cy)) * 180 / Math.PI + 360) % 360;
       if ((a - ang + 360) % 360 < swept) {
-        const b = $("pings").children[i];
-        b.classList.remove("hit"); void b.offsetWidth; b.classList.add("hit");
+        hit($("pings").children[i]);
+        hit(document.querySelector(`.contact[data-i="${i}"]`));
       }
     });
-    if (a < lastSweep && ++sweepCount % 3 === 0) log(`SWEEP ${String(sweepCount).padStart(3, "0")} · ${POIS.length} CONTACTS`);
+    if (a < lastSweep) {
+      $("t-count").textContent = pad(++sweepCount, 3);
+      if (sweepCount % 4 === 0) log(`SWEEP ${pad(sweepCount, 3)} · ${POIS.length} CONTACTS`);
+    }
   }
   lastSweep = a;
 
   if (river) for (const p of particles) p.u = (p.u + p.speed / 60) % 1;
+
+  $("t-brg").textContent = `${pad(Math.floor(a), 3)}°`;
+  $("t-bar").style.width = `${a / 3.6}%`;
+  $("t-frame").textContent = `${frameMs.toFixed(1)} ms`;
+  $("t-clock").textContent = clock();
 }
 
 function sizeCanvas() {
@@ -731,31 +708,32 @@ sizeCanvas();
 requestAnimationFrame(frame);
 
 // ---------- Cursor readout ----------
-svg.parentElement.addEventListener("pointermove", e => {
+svg.addEventListener("pointermove", e => {
   if (!state) return;
   const m = svg.getScreenCTM();
   const gx = (e.clientX - m.e) / m.a, gy = (e.clientY - m.f) / m.d;
   if (gx < 0 || gy < 0 || gx >= state.gw || gy >= state.gh) return;
   const [lon, lat] = pix2lonlat(state.ox + gx * state.ds, state.oy + gy * state.ds, state.z);
-  $("cursor").textContent = `LAT ${fmtLat(lat)} · LON ${fmtLon(lon)} · ELEV ${fmtM(sample([gx, gy]))}`;
+  $("c-lat").textContent = fmtLat(lat);
+  $("c-lon").textContent = fmtLon(lon);
+  $("c-elev").textContent = fmtM(sample([gx, gy]));
   document.querySelector(".hx").style.cssText = `display:block;top:${e.clientY}px`;
   document.querySelector(".hy").style.cssText = `display:block;left:${e.clientX}px`;
 });
-document.addEventListener("pointerleave", () => {
+svg.addEventListener("pointerleave", () => {
   document.querySelector(".hx").style.display = document.querySelector(".hy").style.display = "none";
 });
-document.addEventListener("click", e => { if (!e.target.closest(".ping, #panel")) closePanel(); });
-$("close").addEventListener("click", closePanel);
-addEventListener("keydown", e => { if (e.key === "Escape") closePanel(); });
+svg.addEventListener("click", deselect);
+addEventListener("keydown", e => { if (e.key === "Escape") deselect(); });
 
 async function load() {
-  $("coords").textContent = `${fmtLat(LOC.lat)}  ${fmtLon(LOC.lon)}`;
+  $("coords").textContent = `${fmtLat(LOC.lat)} ${fmtLon(LOC.lon)}`;
   $("status").textContent = "ACQUIRING ELEVATION DATA…";
   $("status").classList.add("blink");
   try {
     render(await fetchElevation());
   } catch {
-    $("status").innerHTML = `SIGNAL LOST — ELEVATION FEED UNREACHABLE<br><button class="retry" onclick="load()">RETRY</button>`;
+    $("status").innerHTML = `SIGNAL LOST — FEED UNREACHABLE<br><button class="retry" onclick="load()">RETRY</button>`;
     $("status").classList.remove("blink");
   }
 }
@@ -764,7 +742,7 @@ async function load() {
 let resizeTimer;
 addEventListener("resize", () => {
   sizeCanvas();
-  if (state) { closePanel(); cam = homeCam(); tween = null; applyCam(); }
+  if (state) { deselect(); cam = homeCam(); tween = null; applyCam(); }
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => { if (state) { const w = tileWindow(); if (w.cols !== state.cols || w.z !== state.z) load(); } }, 300);
 });
