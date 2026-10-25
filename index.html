@@ -43,7 +43,7 @@
 
   .hud { position: fixed; padding: 18px 22px; pointer-events: none; text-shadow: 0 0 8px rgba(63,208,192,.5); }
   .tl { top: 0; left: 0; } .tr { top: 0; right: 0; text-align: right; }
-  .bl { bottom: 0; left: 0; } .br { bottom: 0; right: 0; text-align: right; pointer-events: auto; }
+  .bl { bottom: 0; left: 0; }
   .label { color: var(--muted); font-size: 10px; letter-spacing: .18em; }
   .title { font-size: clamp(20px, 3.4vw, 40px); font-weight: 600; letter-spacing: .08em; line-height: 1.1; margin: 4px 0; }
   .accent { color: var(--accent); text-shadow: 0 0 8px rgba(255,106,61,.6); }
@@ -63,25 +63,60 @@
     box-shadow: 0 0 10px rgba(255,106,61,.7); animation: pulse 1.8s ease-out infinite; }
   .marker .tag { position: absolute; left: 20px; top: -18px; white-space: nowrap; color: var(--accent);
     font-size: 11px; text-shadow: 0 0 8px rgba(255,106,61,.6); }
-  .marker.tgt .ring { border-radius: 0; border-color: var(--major); animation: none; transform: rotate(45deg);
-    width: 14px; height: 14px; box-shadow: 0 0 10px rgba(168,255,242,.6); }
-  .marker.tgt .tag { top: 14px; left: auto; right: 16px; color: var(--major); text-shadow: 0 0 8px rgba(168,255,242,.6); }
   @keyframes pulse { 0% { transform: scale(.6); opacity: 1; } 100% { transform: scale(1.8); opacity: 0; } }
 
-  button { font: inherit; color: var(--text); background: rgba(4,8,10,.6); border: 1px solid var(--muted);
-    padding: 6px 12px; margin-left: 6px; cursor: pointer; letter-spacing: .1em; }
-  button:hover { border-color: var(--major); color: var(--major); box-shadow: 0 0 10px rgba(63,208,192,.4); }
-  .controls { margin-top: 8px; }
+  /* POI pings: 44px hit area around a small diamond core. */
+  .ping { position: fixed; width: 44px; height: 44px; transform: translate(-50%, -50%); padding: 0; margin: 0;
+    background: none; border: 0; cursor: pointer; opacity: 0; animation: pingIn .4s ease-out forwards; }
+  .ping .core { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+    background: var(--major); transform: rotate(45deg); box-shadow: 0 0 10px 2px rgba(168,255,242,.7); transition: transform .2s; }
+  .ping .wave { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px;
+    border: 1.5px solid var(--major); border-radius: 50%; animation: wave 2.2s ease-out infinite; }
+  .ping .wave + .wave { animation-delay: 1.1s; }
+  .ping .id { position: absolute; left: 34px; top: 4px; white-space: nowrap; color: var(--major); font-size: 10px;
+    letter-spacing: .14em; text-shadow: 0 0 8px rgba(168,255,242,.6); }
+  .ping.flip .id { left: auto; right: 34px; }
+  .ping:hover .core, .ping:focus-visible .core { transform: rotate(45deg) scale(1.4); }
+  .ping:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
+  .ping.active .core { background: var(--accent); box-shadow: 0 0 12px 3px rgba(255,106,61,.8); transform: rotate(45deg) scale(1.4); }
+  .ping.active .wave { border-color: var(--accent); }
+  .ping.active .id { color: var(--accent); text-shadow: 0 0 8px rgba(255,106,61,.6); }
+  @keyframes wave { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+  @keyframes pingIn { from { opacity: 0; transform: translate(-50%, -50%) scale(2.5); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+
+  #panel { position: fixed; top: 50%; right: 22px; width: min(360px, calc(100vw - 32px)); max-height: calc(100vh - 140px);
+    overflow-y: auto; box-sizing: border-box; padding: 18px 20px 20px; background: rgba(4,10,12,.88);
+    border: 1px solid var(--line); box-shadow: 0 0 24px rgba(63,208,192,.25), inset 0 0 30px rgba(63,208,192,.06);
+    backdrop-filter: blur(4px); transform: translate(calc(100% + 40px), -50%); transition: transform .35s cubic-bezier(.3,.7,.2,1); }
+  #panel.open { transform: translate(0, -50%); }
+  #panel::before { content: ""; position: absolute; top: -1px; left: -1px; width: 14px; height: 14px;
+    border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+  #panel h2 { margin: 4px 0 2px; font-size: 20px; letter-spacing: .08em; color: var(--major); text-shadow: 0 0 10px rgba(168,255,242,.5); }
+  #panel p { margin: 12px 0 0; color: var(--text); line-height: 1.6; }
+  #panel dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 14px 0 0; padding: 12px 0;
+    border-top: 1px solid rgba(63,208,192,.25); border-bottom: 1px solid rgba(63,208,192,.25); }
+  #panel dt { color: var(--muted); font-size: 10px; letter-spacing: .16em; align-self: center; }
+  #panel dd { margin: 0; text-align: right; }
+  #panel ul { margin: 12px 0 0; padding: 0; list-style: none; }
+  #panel li { padding-left: 16px; position: relative; margin-top: 6px; line-height: 1.5; }
+  #panel li::before { content: "▸"; position: absolute; left: 0; color: var(--accent); }
+  #close { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; font: inherit; font-size: 16px;
+    color: var(--text); background: none; border: 1px solid var(--muted); cursor: pointer; }
+  #close:hover { border-color: var(--major); color: var(--major); }
+  .retry { pointer-events: auto; font: inherit; color: var(--text); background: rgba(4,8,10,.6); border: 1px solid var(--accent);
+    padding: 6px 12px; margin-top: 6px; cursor: pointer; letter-spacing: .1em; }
 
   @media (max-width: 640px) {
     .hud { padding: 14px 16px; }
     .tr { display: none; }
-    .bl { bottom: 52px; }
+    #panel { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 62vh; transform: translateY(105%);
+      border-width: 1px 0 0; }
+    #panel.open { transform: translateY(0); }
   }
 </style>
 </head>
 <body>
-<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic contour map">
+<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic contour map of Twin Falls, Idaho">
   <defs>
     <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
       <feGaussianBlur stdDeviation="1.6" result="b"/>
@@ -96,12 +131,13 @@
 <div class="hx"></div><div class="hy"></div>
 <div id="markers"></div>
 <div id="fx" class="overlay"></div>
+<div id="pings"></div>
 <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
 
 <div class="hud tl">
-  <div class="label">TOPOGRAPHIC SURVEY // SECTOR <span id="sector">00</span></div>
-  <div class="title" id="name">—</div>
-  <div id="region" class="label"></div>
+  <div class="label">TOPOGRAPHIC SURVEY // SNAKE RIVER PLAIN</div>
+  <div class="title">TWIN FALLS</div>
+  <div class="label">SNAKE RIVER CANYON · IDAHO</div>
   <div id="coords"></div>
 </div>
 <div class="hud tr">
@@ -110,45 +146,55 @@
   <div class="label" style="margin-top:8px">CONTOUR INTERVAL</div>
   <div id="interval">—</div>
   <div class="label" style="margin-top:8px">SOURCE</div>
-  <div id="source">—</div>
+  <div>AWS TERRAIN TILES<br><span id="grid-info" class="label"></span></div>
 </div>
 <div class="hud bl">
   <div id="status" class="accent blink">ACQUIRING ELEVATION DATA…</div>
-  <div id="cursor" class="label">LAT — · LON — · ELEV —</div>
+  <div id="cursor" class="label">TAP A PING FOR INTEL</div>
   <div class="scale"><i id="scalebar"></i><span id="scaletext"></span></div>
 </div>
-<div class="hud br">
-  <div class="label">← → CHANGE SECTOR · R RANDOM</div>
-  <div class="controls">
-    <button id="prev" aria-label="Previous sector">‹ PREV</button>
-    <button id="rand" aria-label="Random sector">RANDOM</button>
-    <button id="next" aria-label="Next sector">NEXT ›</button>
-  </div>
-</div>
+
+<aside id="panel" aria-live="polite" aria-hidden="true">
+  <button id="close" aria-label="Close panel">×</button>
+  <div class="label" id="p-id"></div>
+  <h2 id="p-name"></h2>
+  <div class="label" id="p-kind"></div>
+  <dl>
+    <dt>LAT / LON</dt><dd id="p-coords"></dd>
+    <dt>ELEVATION</dt><dd id="p-elev"></dd>
+    <dt>FROM CENTER</dt><dd id="p-range"></dd>
+  </dl>
+  <p id="p-desc"></p>
+  <ul id="p-facts"></ul>
+</aside>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
 // Elevation: AWS Terrain Tiles (Mapzen terrarium encoding), public and CORS-enabled.
 const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
+const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
 
-const LOCS = [
-  { id: "twin-falls",  name: "TWIN FALLS",       region: "SNAKE RIVER CANYON · IDAHO", lat: 42.5900, lon: -114.4350,  z: 12, step: 5 },
-  { id: "st-helens",   name: "MOUNT ST. HELENS", region: "CASCADE RANGE · WASHINGTON", lat: 46.1912, lon: -122.1944, z: 12 },
-  { id: "grand-canyon",name: "GRAND CANYON",     region: "COLORADO PLATEAU · ARIZONA", lat: 36.0997, lon: -112.1124, z: 12 },
-  { id: "matterhorn",  name: "MATTERHORN",       region: "PENNINE ALPS · CH/IT",       lat: 45.9763, lon: 7.6586,    z: 12 },
-  { id: "everest",     name: "MOUNT EVEREST",    region: "MAHALANGUR HIMAL · NP/CN",   lat: 27.9881, lon: 86.9250,   z: 12 },
-  { id: "fuji",        name: "MOUNT FUJI",       region: "HONSHU · JAPAN",             lat: 35.3606, lon: 138.7274,  z: 11 },
-  { id: "yosemite",    name: "YOSEMITE VALLEY",  region: "SIERRA NEVADA · CALIFORNIA", lat: 37.7456, lon: -119.5936, z: 12 },
-  { id: "rainier",     name: "MOUNT RAINIER",    region: "CASCADE RANGE · WASHINGTON", lat: 46.8523, lon: -121.7603, z: 11 },
-  { id: "kilimanjaro", name: "KILIMANJARO",      region: "KILIMANJARO REGION · TANZANIA", lat: -3.0674, lon: 37.3556, z: 11 },
-  { id: "crater-lake", name: "CRATER LAKE",      region: "CASCADE RANGE · OREGON",     lat: 42.9446, lon: -122.1090, z: 12 },
+const POIS = [
+  { name: "PERRINE BRIDGE", kind: "STRUCTURE · US-93", lat: 42.6005, lon: -114.4552,
+    desc: "A 1,500 ft steel truss bridge carrying US-93 across the Snake River Canyon, about 486 ft above the water. Main gateway into Twin Falls from the north.",
+    facts: ["Opened 1976, replacing the original 1927 bridge", "One of the few man-made structures in the US where BASE jumping is legal year-round without a permit", "Rim walkway and visitor center on the south end"] },
+  { name: "SHOSHONE FALLS", kind: "WATERFALL · SNAKE RIVER", lat: 42.5952, lon: -114.4009,
+    desc: "The \"Niagara of the West.\" The Snake River drops 212 ft over a rim roughly 900 ft wide, which is taller than Niagara Falls.",
+    facts: ["Flow peaks in spring before irrigation diversions upstream", "Carved during the Bonneville Flood about 14,500 years ago", "City park with overlooks on the south rim"] },
+  { name: "KNIEVEL JUMP SITE", kind: "HISTORIC SITE · SOUTH RIM", lat: 42.5945, lon: -114.4170,
+    desc: "On Sept 8, 1974, Evel Knievel tried to jump the canyon in the steam-powered Skycycle X-2. The parachute deployed early and he drifted down to the riverbank.",
+    facts: ["The dirt launch ramp mound still stands on the south rim", "Stuntman Eddie Braun made the jump successfully in 2016 with a replica rocket", "Position approximate"] },
+  { name: "PILLAR FALLS", kind: "GEOLOGY · RIVER CHANNEL", lat: 42.5992, lon: -114.4385,
+    desc: "A cluster of rhyolite pillars rising out of the river between the Perrine Bridge and Shoshone Falls, with water cascading between the columns.",
+    facts: ["Reached by kayak or SUP from Centennial Waterfront Park", "Also visible via a short hike down from the north rim", "Popular climbing area on the surrounding walls"] },
+  { name: "TWIN FALLS", kind: "WATERFALL · NAMESAKE", lat: 42.5880, lon: -114.3567,
+    desc: "The waterfall the city is named after. Originally two parallel falls; a 1935 hydroelectric dam diverted one channel, so usually only one fall runs.",
+    facts: ["Drops roughly 125 ft into the canyon", "Operated by Idaho Power as a hydro project", "Small park and overlook on the south rim"] },
 ];
 
 const svg = document.getElementById("map");
 const $ = id => document.getElementById(id);
-let idx = Math.max(0, LOCS.findIndex(l => l.id === location.hash.slice(1)));
 let state = null;
-let loadToken = 0;
 
 const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
 const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
@@ -171,24 +217,25 @@ function loadImg(url) {
 }
 
 // Pixel window sized to the viewport aspect, centered exactly on the location.
-function tileWindow(loc) {
+// Landscape screens get zoom 13 so the POIs spread out; portrait needs zoom 12 to fit them all.
+function tileWindow() {
+  const z = innerWidth >= innerHeight ? 13 : 12;
   const rows = 3, cols = Math.max(3, Math.min(7, Math.ceil(rows * innerWidth / innerHeight)));
   const W = cols * 256, H = rows * 256;
-  const ox = Math.round(lon2tile(loc.lon, loc.z) * 256 - W / 2);
-  const oy = Math.round(lat2tile(loc.lat, loc.z) * 256 - H / 2);
+  const ox = Math.round(lon2tile(LOC.lon, z) * 256 - W / 2);
+  const oy = Math.round(lat2tile(LOC.lat, z) * 256 - H / 2);
   const ds = Math.max(1, Math.ceil(Math.sqrt(W * H / 320000)));
-  return { W, H, ox, oy, ds, gw: Math.floor(W / ds), gh: Math.floor(H / ds) };
+  return { z, cols, W, H, ox, oy, ds, gw: Math.floor(W / ds), gh: Math.floor(H / ds) };
 }
 
-async function fetchElevation(loc) {
-  const { W, H, ox, oy, ds, gw, gh } = tileWindow(loc);
+async function fetchElevation() {
+  const { z, cols, W, H, ox, oy, ds, gw, gh } = tileWindow();
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  const n = 2 ** loc.z, jobs = [];
+  const jobs = [];
   for (let ty = Math.floor(oy / 256); ty * 256 < oy + H; ty++) for (let tx = Math.floor(ox / 256); tx * 256 < ox + W; tx++) {
-    const x = (tx % n + n) % n;
-    jobs.push(loadImg(`${TILE_URL}/${loc.z}/${x}/${ty}.png`).then(img => ctx.drawImage(img, tx * 256 - ox, ty * 256 - oy)));
+    jobs.push(loadImg(`${TILE_URL}/${z}/${tx}/${ty}.png`).then(img => ctx.drawImage(img, tx * 256 - ox, ty * 256 - oy)));
   }
   await Promise.all(jobs);
   const px = ctx.getImageData(0, 0, W, H).data;
@@ -197,43 +244,13 @@ async function fetchElevation(loc) {
     const i = ((y * ds) * W + x * ds) * 4;
     values[y * gw + x] = px[i] * 256 + px[i + 1] + px[i + 2] / 256 - 32768;
   }
-  return { values, gw, gh, ds, z: loc.z, ox, oy, synthetic: false };
+  return { values, z, cols, gw, gh, ds, ox, oy };
 }
 
-// Fallback: fractal value-noise terrain on the same grid.
-function synthElevation(loc) {
-  const { ox, oy, ds, gw, gh } = tileWindow(loc);
-  const seed = Math.floor(Math.random() * 1e6);
-  const hash = (x, y) => {
-    let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(seed, 144665);
-    h = Math.imul(h ^ (h >>> 13), 1274126177);
-    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-  };
-  const noise = (x, y) => {
-    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
-    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
-    const a = hash(xi, yi), b = hash(xi + 1, yi), c = hash(xi, yi + 1), d = hash(xi + 1, yi + 1);
-    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-  };
-  const values = new Float64Array(gw * gh);
-  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
-    let e = 0, amp = 1, f = 3 / gh, norm = 0;
-    for (let o = 0; o < 6; o++) {
-      const n = noise(x * f, y * f);
-      e += amp * (o < 2 ? n : 1 - Math.abs(2 * n - 1));
-      norm += amp; amp *= 0.5; f *= 2;
-    }
-    values[y * gw + x] = 3200 * Math.pow(e / norm, 1.8);
-  }
-  return { values, gw, gh, ds, z: loc.z, ox, oy, synthetic: true };
-}
+const toGrid = (lat, lon) => [(lon2tile(lon, state.z) * 256 - state.ox) / state.ds, (lat2tile(lat, state.z) * 256 - state.oy) / state.ds];
+const sample = ([gx, gy]) => state.values[Math.min(state.gh - 1, Math.max(0, Math.round(gy))) * state.gw + Math.min(state.gw - 1, Math.max(0, Math.round(gx)))];
 
-function niceStep(raw) {
-  const p = 10 ** Math.floor(Math.log10(raw));
-  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= raw) return m * p;
-}
-
-function render(d, loc) {
+function render(d) {
   const { gw, gh } = d;
   d3.blur2({ data: d.values, width: gw, height: gh }, 1);
   let min = Infinity, max = -Infinity, maxI = 0;
@@ -242,7 +259,7 @@ function render(d, loc) {
     if (v < min) min = v;
     if (v > max) { max = v; maxI = i; }
   }
-  const step = loc.step || niceStep((max - min) / 45);
+  const step = LOC.step;
   const thresholds = d3.range(Math.ceil(min / step) * step, max, step);
   const contours = d3.contours().size([gw, gh]).thresholds(thresholds)(d.values);
   const isMajor = v => Math.abs(v / (step * 5) - Math.round(v / (step * 5))) < 1e-6;
@@ -255,21 +272,19 @@ function render(d, loc) {
   d3.select("#major").selectAll("path").data(contours.filter(c => isMajor(c.value)))
     .join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value));
 
-  state = { ...d, min, max, step, loc, peak: [maxI % gw, Math.floor(maxI / gw)],
-    center: [(lon2tile(loc.lon, d.z) * 256 - d.ox) / d.ds, (lat2tile(loc.lat, d.z) * 256 - d.oy) / d.ds] };
+  state = { ...d, min, max, peak: [maxI % gw, Math.floor(maxI / gw)] };
 
   $("range").textContent = `${fmtM(min)} → ${fmtM(max)}`;
   $("interval").textContent = `${step} m · INDEX ${step * 5} m`;
-  $("source").innerHTML = d.synthetic
-    ? `<span class="accent">SYNTHETIC TERRAIN</span><br><span class="label">LIVE DATA UNAVAILABLE</span>`
-    : `AWS TERRAIN TILES<br><span class="label">ZOOM ${d.z} · ${gw}×${gh} GRID</span>`;
-  $("status").textContent = d.synthetic ? "SIGNAL LOST — SIMULATION MODE" : "LOCK ACQUIRED";
-  $("status").classList.toggle("blink", d.synthetic);
+  $("grid-info").textContent = `ZOOM ${d.z} · ${gw}×${gh} GRID`;
+  $("status").textContent = "LOCK ACQUIRED";
+  $("status").classList.remove("blink");
 
   for (const el of [svg, $("sweep")]) {
     const cls = el === svg ? "reveal" : "run";
     el.classList.remove(cls); void el.getBoundingClientRect(); el.classList.add(cls);
   }
+  buildPings();
   placeMarkers();
 }
 
@@ -278,64 +293,100 @@ function toScreen(gx, gy) {
   return [m.a * gx + m.e, m.d * gy + m.f];
 }
 
+const mPerGrid = () => 40075016 * Math.cos(LOC.lat * Math.PI / 180) / (256 * 2 ** state.z) * state.ds;
+
+function buildPings() {
+  $("pings").innerHTML = POIS.map((p, i) => `
+    <button class="ping" data-i="${i}" style="animation-delay:${2.4 + i * 0.15}s" aria-label="${p.name}">
+      <span class="wave"></span><span class="wave"></span><span class="core"></span>
+      <span class="id">POI-${String(i + 1).padStart(2, "0")}</span>
+    </button>`).join("");
+  $("pings").querySelectorAll(".ping").forEach(b => b.addEventListener("click", e => { e.stopPropagation(); openPanel(+b.dataset.i); }));
+}
+
 function placeMarkers() {
   if (!state) return;
   const [px, py] = toScreen(...state.peak);
-  const [cx, cy] = toScreen(...state.center);
   $("markers").innerHTML = `
     <div class="marker" style="left:${px}px;top:${py}px"><div class="ring"></div>
-      <div class="tag">▲ PEAK ${fmtM(state.max)}</div></div>
-    <div class="marker tgt" style="left:${cx}px;top:${cy}px"><div class="ring"></div>
-      <div class="tag">TGT ${state.loc.id.toUpperCase()}</div></div>`;
+      <div class="tag">▲ PEAK ${fmtM(state.max)}</div></div>`;
+  $("pings").querySelectorAll(".ping").forEach(b => {
+    const p = POIS[+b.dataset.i];
+    const [x, y] = toScreen(...toGrid(p.lat, p.lon));
+    b.style.left = `${x}px`; b.style.top = `${y}px`;
+    b.classList.toggle("flip", x > innerWidth - 100);
+  });
 
   // Scale bar: ground metres per screen pixel at this latitude.
-  const mPerPx = 40075016 * Math.cos(state.loc.lat * Math.PI / 180) / (256 * 2 ** state.z) * state.ds / svg.getScreenCTM().a;
-  const dist = niceStep(mPerPx * 120);
+  const mPerPx = mPerGrid() / svg.getScreenCTM().a;
+  const p = 10 ** Math.floor(Math.log10(mPerPx * 120));
+  const dist = [1, 2, 2.5, 5, 10].map(m => m * p).find(v => v >= mPerPx * 120);
   $("scalebar").style.width = `${dist / mPerPx}px`;
   $("scaletext").textContent = dist >= 1000 ? `${dist / 1000} km` : `${dist} m`;
+}
+
+function openPanel(i) {
+  const p = POIS[i];
+  const g = toGrid(p.lat, p.lon), c = toGrid(LOC.lat, LOC.lon);
+  const dx = g[0] - c[0], dy = g[1] - c[1];
+  const dist = Math.hypot(dx, dy) * mPerGrid();
+  const brg = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+  $("p-id").textContent = `POI-${String(i + 1).padStart(2, "0")} // INTEL`;
+  $("p-name").textContent = p.name;
+  $("p-kind").textContent = p.kind;
+  $("p-coords").textContent = `${fmtLat(p.lat)} ${fmtLon(p.lon)}`;
+  $("p-elev").textContent = fmtM(sample(g));
+  $("p-range").textContent = `${(dist / 1000).toFixed(2)} km · ${String(Math.round(brg)).padStart(3, "0")}°`;
+  $("p-desc").textContent = p.desc;
+  $("p-facts").innerHTML = p.facts.map(f => `<li>${f}</li>`).join("");
+  $("pings").querySelectorAll(".ping").forEach(b => b.classList.toggle("active", +b.dataset.i === i));
+  $("panel").classList.add("open");
+  $("panel").setAttribute("aria-hidden", "false");
+}
+
+function closePanel() {
+  $("panel").classList.remove("open");
+  $("panel").setAttribute("aria-hidden", "true");
+  $("pings").querySelectorAll(".ping").forEach(b => b.classList.remove("active"));
 }
 
 svg.addEventListener("pointermove", e => {
   if (!state) return;
   const m = svg.getScreenCTM();
   const gx = (e.clientX - m.e) / m.a, gy = (e.clientY - m.f) / m.d;
-  const x = Math.round(gx), y = Math.round(gy);
-  if (x < 0 || y < 0 || x >= state.gw || y >= state.gh) return;
+  if (gx < 0 || gy < 0 || gx >= state.gw || gy >= state.gh) return;
   const [lon, lat] = pix2lonlat(state.ox + gx * state.ds, state.oy + gy * state.ds, state.z);
-  $("cursor").textContent = `LAT ${fmtLat(lat)} · LON ${fmtLon(lon)} · ELEV ${fmtM(state.values[y * state.gw + x])}`;
+  $("cursor").textContent = `LAT ${fmtLat(lat)} · LON ${fmtLon(lon)} · ELEV ${fmtM(sample([gx, gy]))}`;
   document.querySelector(".hx").style.cssText = `display:block;top:${e.clientY}px`;
   document.querySelector(".hy").style.cssText = `display:block;left:${e.clientX}px`;
 });
 svg.addEventListener("pointerleave", () => {
   document.querySelector(".hx").style.display = document.querySelector(".hy").style.display = "none";
 });
+svg.addEventListener("click", closePanel);
+$("close").addEventListener("click", closePanel);
+addEventListener("keydown", e => { if (e.key === "Escape") closePanel(); });
 
-async function load(i) {
-  idx = (i + LOCS.length) % LOCS.length;
-  const loc = LOCS[idx], token = ++loadToken;
-  history.replaceState(null, "", `#${loc.id}`);
-  $("sector").textContent = String(idx + 1).padStart(2, "0");
-  $("name").textContent = loc.name;
-  $("region").textContent = loc.region;
-  $("coords").textContent = `${fmtLat(loc.lat)}  ${fmtLon(loc.lon)}`;
+async function load() {
+  $("coords").textContent = `${fmtLat(LOC.lat)}  ${fmtLon(LOC.lon)}`;
   $("status").textContent = "ACQUIRING ELEVATION DATA…";
   $("status").classList.add("blink");
-  let data;
-  try { data = await fetchElevation(loc); }
-  catch { data = synthElevation(loc); }
-  if (token === loadToken) render(data, loc);
+  try {
+    render(await fetchElevation());
+  } catch {
+    $("status").innerHTML = `SIGNAL LOST — ELEVATION FEED UNREACHABLE<br><button class="retry" onclick="load()">RETRY</button>`;
+    $("status").classList.remove("blink");
+  }
 }
 
-$("prev").onclick = () => load(idx - 1);
-$("next").onclick = () => load(idx + 1);
-$("rand").onclick = () => load(idx + 1 + Math.floor(Math.random() * (LOCS.length - 1)));
-addEventListener("keydown", e => {
-  if (e.key === "ArrowRight" || e.key === "n") $("next").click();
-  else if (e.key === "ArrowLeft" || e.key === "p") $("prev").click();
-  else if (e.key === "r") $("rand").click();
+// Re-fetch when the viewport shape changes enough to need a different tile window.
+let resizeTimer;
+addEventListener("resize", () => {
+  placeMarkers();
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (state) { const w = tileWindow(); if (w.cols !== state.cols || w.z !== state.z) load(); } }, 300);
 });
-addEventListener("resize", placeMarkers);
-load(idx);
+load();
 </script>
 </body>
 </html>
