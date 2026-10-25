@@ -132,6 +132,7 @@
 const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
 
 const LOCS = [
+  { id: "twin-falls",  name: "TWIN FALLS",       region: "SNAKE RIVER CANYON · IDAHO", lat: 42.5900, lon: -114.4350,  z: 12, step: 5 },
   { id: "st-helens",   name: "MOUNT ST. HELENS", region: "CASCADE RANGE · WASHINGTON", lat: 46.1912, lon: -122.1944, z: 12 },
   { id: "grand-canyon",name: "GRAND CANYON",     region: "COLORADO PLATEAU · ARIZONA", lat: 36.0997, lon: -112.1124, z: 12 },
   { id: "matterhorn",  name: "MATTERHORN",       region: "PENNINE ALPS · CH/IT",       lat: 45.9763, lon: 7.6586,    z: 12 },
@@ -241,7 +242,7 @@ function render(d, loc) {
     if (v < min) min = v;
     if (v > max) { max = v; maxI = i; }
   }
-  const step = niceStep((max - min) / 45);
+  const step = loc.step || niceStep((max - min) / 45);
   const thresholds = d3.range(Math.ceil(min / step) * step, max, step);
   const contours = d3.contours().size([gw, gh]).thresholds(thresholds)(d.values);
   const isMajor = v => Math.abs(v / (step * 5) - Math.round(v / (step * 5))) < 1e-6;
