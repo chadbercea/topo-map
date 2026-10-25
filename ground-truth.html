@@ -130,6 +130,9 @@
   .sect { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 9px;
     letter-spacing: .2em; padding-bottom: 6px; border-bottom: 1px solid rgba(226,185,127,.18); }
 
+  .turn { font-size: 10px; letter-spacing: .14em; padding: 7px 9px; border: 1px solid rgba(63,208,192,.35); color: var(--tealhi); }
+  .turn.stopped { border-color: var(--major); color: var(--bg); background: var(--major); font-weight: 600; }
+  .turn:empty { display: none; }
   #cards { display: flex; flex-direction: column; gap: 8px; margin-top: -4px; }
   #cards:empty::before { content: "AWAITING REPORTS…"; color: var(--muted); font-size: 9px; letter-spacing: .18em; }
   .card { display: grid; gap: 6px; padding: 8px 9px; border-left: 2px solid rgba(226,185,127,.35); background: rgba(226,185,127,.05);
@@ -256,6 +259,7 @@
     <div class="title">INTEL</div>
     <div class="label">SNAKE RIVER CANYON · <a href="./">MAP</a></div>
   </div>
+  <div id="turn" class="turn"></div>
   <div class="sect"><span>REPORTS</span><span id="i-count">0 OPEN</span></div>
   <div id="cards" aria-live="polite"></div>
 </aside>
@@ -277,12 +281,12 @@
   <div class="label">GROUND TRUTH // BRIEFING</div>
   <div class="title">OPERATION DRY CREEK</div>
   <p>Three hostile cells are operating on the south rim of the Snake River canyon. Team ALPHA, five operators, will find them, neutralize them and get out. You have five minutes.</p>
-  <p>You're their intel. Reports stream in. Some are true and some are false, and true ones go stale as the cells move.</p>
+  <p>You're their intel. Reports come in <b>one at a time</b>, and <b>the clock stops</b> until you decide on each one. Take your time: study the map and the clues. Some reports are true, some are false, and true ones go stale as the cells move.</p>
   <ul>
     <li><b>Send</b> a report and ALPHA moves on it. They act on what you send, and nothing else.</li>
     <li><b>Read</b> each report before you trust it. The grade is the source's track record: A is right 90% of the time, E only 15%. Reports that agree with each other usually point at something real; false ones stand alone.</li>
-    <li><b>Check</b> a report when you need to be sure. An analyst verifies it in eight seconds, one at a time.</li>
-    <li><b>Tap the map</b> to sweep. It checks the reports around it and reveals any cell there. <b>Tap a revealed cell</b> to send ALPHA its live position.</li>
+    <li><b>Check</b> a report when you need to be sure. The analyst takes eight seconds of mission time, so the clock runs while they work.</li>
+    <li><b>Tap the map</b> to sweep. It costs no time: it checks the reports around it and reveals any cell there. <b>Tap a revealed cell</b> to send ALPHA its live position.</li>
     <li><b>Drag</b> to look around. <b>Scroll or pinch</b> to zoom.</li>
   </ul>
   <button class="btn go" id="begin">BEGIN</button>
@@ -300,7 +304,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
-// Ground Truth (ILI-1091): you're the intel officer. Three hostile cells are loose on the south rim, and reports about
+// Ground Truth (ILI-1091, turn-based since ILI-1093): you're the intel officer. Three hostile cells are loose on the south rim, and reports about
 // them stream in, some true and some false. You check them, sweep the map, and send ALPHA what's real. ALPHA hunts
 // what you send and neutralizes what it finds; the quality of your intel decides what that costs. A fictional exercise.
 // The terrain loading, river tracing and sweep light follow index.html and headgate.html.
@@ -319,8 +323,8 @@ const TRACK = 15;            // s a sweep keeps a cell tracked
 const SWEEPS = 3, RECHARGE = 20;
 const CHECK_TIME = 8;        // s for the analyst to verify one report
 const LIMIT = 300;           // s: the mission window
-const REPORT_EVERY = 9;      // s between reports
-const REPORT_TTL = 45;       // s before an unanswered report expires
+const REPORT_EVERY = 9;      // s of mission time from one decision to the next report
+const CHECK_SPEED = 4;       // a CHECK plays its seconds out this many times faster than real time
 const FIGHT = 4;             // s an engagement holds ALPHA
 const EXFIL = 4;             // s from the last cell down to the end of the mission
 const HEAL = .8;             // hp/s a wounded operator recovers between fights
@@ -611,7 +615,7 @@ function place(g) {
 // ---------- The game ----------
 function newGame(seed = Date.now()) {
   game = {
-    T: 0, running: false, over: false, rng: mulberry32(seed), seed, nextReport: 3, cards: [],
+    T: 0, running: false, over: false, rng: mulberry32(seed), seed, nextReport: 1, cards: [],
     sweeps: SWEEPS, recharge: 0, spots: [], checking: null,
     hostiles: OP.cells.map((route, i) => ({ i, route: route.map(toGrid), seg: 0, dir: 1, pos: toGrid(route[0]), alive: true,
       trackedUntil: -1, seen: null, card: null, down: null, live: false })),
@@ -643,6 +647,8 @@ function status(text, alert = false) {
 }
 
 const tracked = h => h.alive && game.T < h.trackedUntil;
+// Turn-based: one report is open at a time, and the clock stops until you decide on it.
+const openReport = () => game.cards.find(c => c.kind === "report" && c.state === "new");
 // ALPHA knows about a cell when one of the grids you sent it is close: intel is what lets it see them coming.
 const knows = h => game.team.targets.some(e => meters(e.g, h.pos) < KNOWN_R);
 // Operators out of the fight: below half health, or dead. Three at once and ALPHA is combat ineffective.
@@ -777,6 +783,7 @@ function decide(c, what) {
   drawCard(c);
   retire(c, 1500);
   countOpen();
+  game.nextReport = game.T + REPORT_EVERY;
   if (what !== "sent") return;
   task({ key: "r" + c.id, g: c.g, label: `REPORT ${pad(c.id)}`, planted: c.planted });
   updateTeamPanel();
@@ -1037,13 +1044,11 @@ function moveHostiles(dt) {
 // One step of the whole simulation.
 function tick(dt) {
   game.T += dt;
-  if (game.T >= game.nextReport) { game.nextReport += REPORT_EVERY; makeReport(); }
-  for (const c of game.cards) if (c.kind === "report" && c.state === "new" && game.T - c.when > REPORT_TTL) {
-    c.state = "expired";
-    if (game.checking === c) { game.checking = null; redrawOpen(); }
-    drawCard(c);
-    retire(c, 600);
-    countOpen();
+  if (game.T >= game.nextReport && !openReport()) {
+    makeReport();
+    const c = openReport();
+    if (c) { flyTo(c.g); radio(`OPS: Report ${pad(c.id)} in. Clock stopped for your call.`); }
+    else game.nextReport = game.T + REPORT_EVERY;   // nothing to report this time
   }
   if (game.sweeps < SWEEPS) {
     game.recharge += dt;
@@ -1249,13 +1254,30 @@ function drawLight(now) {
   lctx.drawImage(litLines, 0, 0, gw, gh);
 }
 
+// The turn line: whose move it is.
+let turnHTML = "";
+function drawTurn() {
+  const c = openReport();
+  let cls = "turn", html;
+  if (c && game.checking === c) html = `» ANALYST CHECKING REPORT ${pad(c.id)} · THE CLOCK RUNS`;
+  else if (c) { cls += " stopped"; html = `II CLOCK STOPPED · YOUR CALL ON REPORT ${pad(c.id)}`; }
+  else html = `▶ RUNNING · NEXT REPORT IN ${Math.max(0, Math.ceil(game.nextReport - game.T))} s`;
+  if (html + cls === turnHTML) return;
+  turnHTML = html + cls;
+  $("turn").className = cls;
+  $("turn").textContent = html;
+}
+
 // ---------- Loop ----------
 function frame(now) {
   const dt = Math.min(.1, (now - last) / 1000);
   last = now;
   stepFly(now);
   if (game.running) {
-    tick(dt);
+    // The clock stops while a report waits on you. A CHECK spends mission time, played out fast.
+    if (!openReport()) tick(dt);
+    else if (game.checking) tick(dt * CHECK_SPEED);
+    drawTurn();
     $("recharge").firstElementChild.style.width = `${game.sweeps < SWEEPS ? game.recharge / RECHARGE * 100 : 0}%`;
     $("clock").textContent = clock(game.T);
   }
