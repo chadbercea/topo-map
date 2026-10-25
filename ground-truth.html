@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ground Truth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #04080a;
+    --line: #e2b97f;
+    --major: #ffe2b8;
+    --teal: #3fd0c0;
+    --tealhi: #a8fff2;
+    --accent: #ff6a3d;
+    --text: #f5e6cf;
+    --muted: #8f7a5a;
+    --side: 300px;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; color: var(--text);
+    font: 12px/1.45 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em;
+    -webkit-user-select: none; user-select: none; }
+  #map { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; opacity: 0; transition: opacity .6s;
+    touch-action: none; cursor: crosshair; }
+  #map.ready { opacity: 1; }
+  #minor path { fill: none; stroke: var(--line); stroke-width: .8; vector-effect: non-scaling-stroke; }
+  #major path { fill: none; stroke: var(--major); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+  #river { fill: none; stroke: var(--major); stroke-opacity: .5; stroke-width: 1; stroke-dasharray: 2 5;
+    vector-effect: non-scaling-stroke; }
+  #route { fill: none; stroke: var(--tealhi); stroke-width: 1.6; stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
+  #known circle { fill: rgba(255,106,61,.07); stroke: var(--accent); stroke-opacity: .7; stroke-width: 1;
+    stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+  #lit { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; }
+
+  .overlay { position: fixed; inset: 0; pointer-events: none; }
+  #grid { background-image:
+      linear-gradient(rgba(226,185,127,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(226,185,127,.06) 1px, transparent 1px);
+    background-size: 80px 80px; background-position: center; }
+  #vignette { background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.7) 100%); }
+
+  .label { color: var(--muted); font-size: 9px; letter-spacing: .18em; }
+  .title { font-size: 22px; font-weight: 600; letter-spacing: .08em; line-height: 1.05; margin: 4px 0 2px; color: var(--major); }
+  a { color: var(--muted); }
+  a:hover { color: var(--major); }
+
+  /* Map markers, positioned over the map in screen space. */
+  .mk { position: fixed; left: 0; top: 0; pointer-events: none; font-size: 9px; letter-spacing: .18em; white-space: nowrap; }
+  .mk .tag { position: absolute; left: 12px; top: -6px; }
+  .mk.lz i, .mk.exfil i { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 1.5px solid var(--major); }
+  .mk.lz .tag, .mk.exfil .tag { color: var(--major); }
+  .mk.obj i { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 1.5px solid var(--major); border-radius: 50%; }
+  .mk.obj i::before, .mk.obj i::after { content: ""; position: absolute; background: var(--major); }
+  .mk.obj i::before { left: 6px; top: -5px; width: 1.5px; height: 24px; }
+  .mk.obj i::after { top: 6px; left: -5px; height: 1.5px; width: 24px; }
+  .mk.obj .tag { color: var(--major); left: 16px; }
+  .mk.hostile i { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 1.5px solid var(--accent);
+    transform: rotate(45deg); }
+  .mk.hostile .tag { color: var(--accent); left: -24px; top: 12px; }
+  .mk.team b { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--tealhi);
+    box-shadow: 0 0 6px var(--teal); transition: background .3s; }
+  .mk.team b.wia { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .mk.team .tag { color: var(--tealhi); left: 16px; top: -16px; }
+
+  /* Intel pings: a diamond, as on the survey map. Taps pass through to the map, so tapping a report sweeps it. */
+  .ping { position: fixed; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; pointer-events: none; }
+  .ping .core { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px;
+    background: var(--major); transform: rotate(45deg); box-shadow: 0 0 8px rgba(255,226,184,.6); transition: transform .2s, background .2s; }
+  .ping .ring { position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px;
+    border: 1px solid rgba(255,226,184,.45); border-radius: 50%; }
+  .ping .id { position: absolute; left: 30px; top: 15px; color: var(--major); font-size: 10px; letter-spacing: .14em; }
+  .ping.ok .core { background: var(--tealhi); } .ping.ok .ring { border-color: var(--teal); } .ping.ok .id { color: var(--tealhi); }
+  .ping.bad .core { background: var(--accent); } .ping.bad .ring { border-color: var(--accent); } .ping.bad .id { color: var(--accent); }
+  .ping.done { opacity: .35; }
+  .ping.hot .core { transform: rotate(45deg) scale(1.5); }
+
+  /* Frosted panels, as on the survey map, in tan. */
+  .side { position: fixed; top: 16px; width: var(--side); max-height: calc(100vh - 32px); box-sizing: border-box;
+    padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 12px; overflow: auto; scrollbar-width: none;
+    background: linear-gradient(180deg, rgba(20,16,10,.62), rgba(8,8,6,.5));
+    -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+    border: 1px solid rgba(226,185,127,.22); box-shadow: inset 0 1px 0 rgba(255,226,184,.08), 0 10px 40px rgba(0,0,0,.35); }
+  .side::before, .side::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--line); }
+  .side::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .side::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+  #intel { left: 16px; }
+  #team { right: 16px; width: 260px; }
+  .sect { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 9px;
+    letter-spacing: .2em; padding-bottom: 6px; border-bottom: 1px solid rgba(226,185,127,.18); }
+
+  #cards { display: flex; flex-direction: column; gap: 8px; margin-top: -4px; }
+  #cards:empty::before { content: "AWAITING REPORTS…"; color: var(--muted); font-size: 9px; letter-spacing: .18em; }
+  .card { display: grid; gap: 6px; padding: 8px 9px; border-left: 2px solid rgba(226,185,127,.35); background: rgba(226,185,127,.05);
+    animation: arrive .5s ease-out; transition: opacity .3s, background .3s, border-color .3s; }
+  @keyframes arrive { from { opacity: 0; transform: translateX(-12px); } }
+  .card .meta { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 9px; letter-spacing: .14em; }
+  .card .meta .n { color: var(--major); }
+  .card .meta .t { margin-left: auto; }
+  .card .claim { font-size: 11px; line-height: 1.5; }
+  .card .acts { display: flex; gap: 6px; align-items: center; }
+  .card.hot { background: rgba(226,185,127,.13); border-left-color: var(--major); }
+  .card.sent { border-left-color: var(--teal); }
+  .card.discarded { opacity: .4; }
+  .grade { display: inline-block; min-width: 14px; text-align: center; border: 1px solid rgba(226,185,127,.4); color: var(--text); }
+  .btn { font: inherit; font-size: 9px; letter-spacing: .16em; color: var(--text); background: none; cursor: pointer;
+    border: 1px solid rgba(226,185,127,.4); padding: 4px 8px; }
+  .btn:hover { border-color: var(--major); color: var(--major); }
+  .btn.send { border-color: var(--teal); color: var(--tealhi); }
+  .btn.send:hover { background: rgba(63,208,192,.12); }
+  .btn:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
+  .stamp { font-size: 9px; letter-spacing: .2em; padding: 1px 6px; border: 1px solid; margin-left: auto; }
+  .stamp.ok { color: var(--tealhi); border-color: var(--teal); }
+  .stamp.bad { color: var(--accent); border-color: var(--accent); }
+  .said { font-size: 9px; letter-spacing: .16em; color: var(--muted); }
+  .card.sent .said { color: var(--tealhi); }
+
+  .clock { font-size: 22px; font-weight: 600; color: var(--major); font-variant-numeric: tabular-nums; letter-spacing: .06em; }
+  #t-status { font-size: 12px; color: var(--tealhi); letter-spacing: .1em; min-height: 17px; }
+  #t-status.alert { color: var(--accent); }
+  #pips { display: flex; gap: 6px; }
+  .pip { width: 16px; height: 16px; box-sizing: border-box; border: 1px solid var(--teal); background: rgba(63,208,192,.55); }
+  .pip.wia { border-color: var(--accent); background: repeating-linear-gradient(45deg, rgba(255,106,61,.6) 0 3px, transparent 3px 6px); }
+  .row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
+  #sweeps { color: var(--tealhi); letter-spacing: .3em; font-size: 12px; }
+  #sweeps.empty { color: var(--accent); }
+  #recharge { height: 2px; background: rgba(63,208,192,.2); margin-top: -6px; }
+  #recharge i { display: block; height: 100%; width: 0; background: var(--teal); }
+  #comms { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 10px; line-height: 1.45; }
+  #comms li { animation: arrive .4s ease-out; }
+  #comms .when { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+  #comms .alert { color: var(--accent); }
+  #comms .alpha { color: var(--tealhi); }
+
+  /* Briefing and debrief. */
+  .sheet { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(480px, calc(100vw - 32px)); z-index: 5; gap: 14px; }
+  .sheet p { margin: 0; font-size: 11px; line-height: 1.6; }
+  .sheet ul { margin: 0; padding-left: 16px; font-size: 11px; line-height: 1.6; }
+  .sheet li + li { margin-top: 6px; }
+  .sheet .go { align-self: flex-start; font-size: 11px; padding: 8px 18px; border-color: var(--teal); color: var(--tealhi); }
+  .sheet .fine { font-size: 9px; color: var(--muted); letter-spacing: .12em; }
+  .sheet[hidden] { display: none; }
+  #d-result { font-size: 20px; font-weight: 600; letter-spacing: .1em; }
+  #d-result.win { color: var(--tealhi); } #d-result.loss { color: var(--accent); }
+  #d-cards { display: flex; flex-direction: column; gap: 8px; }
+  .dc { display: grid; grid-template-columns: 26px 1fr; gap: 2px 8px; font-size: 10px; line-height: 1.5; }
+  .dc .n { color: var(--muted); grid-row: span 3; }
+  .dc .v { font-size: 9px; letter-spacing: .18em; }
+  .dc .v.good { color: var(--tealhi); } .dc .v.bad { color: var(--accent); } .dc .v.miss { color: var(--major); }
+  .dc .why { color: var(--muted); }
+
+  @media (max-width: 760px) {
+    #team { top: 10px; left: 10px; right: 10px; width: auto; padding: 10px 12px; gap: 8px; }
+    #team .clock { font-size: 16px; }
+    #team .hide-sm { display: none; }
+    #comms li:nth-child(n+2) { display: none; }
+    #intel { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 42vh; border-width: 1px 0 0; padding: 10px 12px 12px; }
+    #intel .hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic map of the Snake River canyon at Twin Falls. Touch the map to run a sensor sweep.">
+  <defs>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g id="minor"></g>
+  <g id="major" filter="url(#glow)"></g>
+  <path id="river"></path>
+  <g id="known"></g>
+  <path id="route"></path>
+</svg>
+<!-- Sensor sweeps: the lines light teal where you touch. -->
+<canvas id="lit"></canvas>
+<div id="grid" class="overlay"></div>
+<div id="vignette" class="overlay"></div>
+<div id="marks"></div>
+<div id="pings"></div>
+
+<aside id="intel" class="side" aria-label="Intel reports">
+  <div class="hide-sm">
+    <div class="label">GROUND TRUTH // OP DRY CREEK</div>
+    <div class="title">INTEL</div>
+    <div class="label">SNAKE RIVER CANYON · <a href="./">MAP</a></div>
+  </div>
+  <div class="sect"><span>REPORTS</span><span id="i-count">0 IN</span></div>
+  <div id="cards" aria-live="polite"></div>
+</aside>
+
+<aside id="team" class="side" aria-label="Team ALPHA">
+  <div class="sect"><span>TEAM ALPHA</span><span class="clock" id="clock">T+00:00</span></div>
+  <div class="row hide-sm"><span class="label">WINDOW CLOSES</span><span class="label">T+06:00</span></div>
+  <div id="t-status">STANDING BY</div>
+  <div class="row"><div id="pips"></div><span id="fit" class="label">5/5 FIT</span></div>
+  <div class="row"><span class="label">SENSOR SWEEPS</span><span id="sweeps">◆◆◆</span></div>
+  <div id="recharge"><i></i></div>
+  <div class="sect hide-sm"><span>COMMS</span></div>
+  <ol id="comms" aria-live="polite"></ol>
+</aside>
+
+<aside id="brief" class="side sheet" aria-label="Briefing">
+  <div class="label">GROUND TRUTH // BRIEFING</div>
+  <div class="title">OPERATION DRY CREEK</div>
+  <p>A drone went down near the Snake River canyon. Team ALPHA, five operators, is going in to recover it and get out. They have six minutes.</p>
+  <p>You're their intel. Reports will come in. Some are true. Some are wrong, and some are planted.</p>
+  <ul>
+    <li><b>Send</b> what's true to ALPHA. They act on whatever you send, and nothing else.</li>
+    <li><b>Touch the map</b> to run a sensor sweep. It checks every report around it and finds what's hiding there. You have three, and they recharge slowly.</li>
+  </ul>
+  <button class="btn go" id="begin">BEGIN</button>
+  <div class="fine">LOADING ELEVATION DATA…</div>
+</aside>
+
+<aside id="debrief" class="side sheet" aria-label="Debrief" hidden>
+  <div class="label">GROUND TRUTH // DEBRIEF</div>
+  <div id="d-result"></div>
+  <div class="row"><span id="d-fit"></span><span id="d-time" class="label"></span></div>
+  <div class="sect"><span>YOUR CALLS</span></div>
+  <div id="d-cards"></div>
+  <button class="btn go" id="again">RUN IT AGAIN</button>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+// Ground Truth (ILI-1088): you're the intel officer. Reports come in, some true and some false. You check them with
+// sensor sweeps and send them to Team ALPHA, who act on exactly what you sent. A fictional training exercise.
+// The terrain loading, river tracing and sweep light follow index.html and headgate.html.
+const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
+const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
+const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const SPEED = 55;          // m/s ALPHA covers on flat ground (game time)
+const LIMIT = 360;         // s: the window to recover the drone and get out
+const THREAT_R = 350;      // m: how close a patrol has to be to make contact
+const OBJ_R = 250;         // m: close enough to find the drone
+const SWEEP_R = 600;       // m: what a sensor sweep checks
+const SWEEPS = 3, RECHARGE = 25;
+const BLOOM = 450, SETTLE = 2600, REST = .35;   // the sweep light, as in headgate.html
+
+// Operation Dry Creek. The briefing's grid for the drone is stale: it's really at the jump site.
+const OP = {
+  lz: [42.585, -114.370],
+  exfil: [42.586, -114.452],
+  brief: [42.5992, -114.4385],
+  drone: [42.5945, -114.4170],
+  hostiles: [[42.589, -114.395], [42.5905, -114.432]],
+};
+// kind: obj (the drone is here), threat (hostiles here), clear (no hostiles here).
+// lesson: [what sending it did, what not sending it did].
+const REPORTS = [
+  { t: 6, src: "DRONE IMAGERY", grade: "B", kind: "obj", at: [42.5945, -114.4170], truth: true,
+    claim: "Wreckage matching the drone at the Knievel jump site, on the south rim.",
+    lesson: ["ALPHA went straight to the drone.", "The briefing grid was stale. ALPHA searched the wrong place."] },
+  { t: 16, src: "SIGNALS INTERCEPT", grade: "C", kind: "threat", at: [42.589, -114.395], truth: true,
+    claim: "Hostile patrol on the rim trail west of the LZ. Radio chatter, five or six voices.",
+    lesson: ["ALPHA routed around the rim patrol.", "Nobody warned ALPHA about the rim patrol."] },
+  { t: 28, src: "INFORMANT", grade: "D", kind: "clear", at: [42.589, -114.395], truth: false,
+    claim: "The rim trail is clear. No patrols since dawn.",
+    lesson: ["The informant was wrong. \"Clear\" walked ALPHA into the patrol.", "A D-grade source contradicting an intercept. Right to drop it."] },
+  { t: 40, src: "SIGNALS INTERCEPT", grade: "B", kind: "threat", at: [42.582, -114.396], truth: false,
+    claim: "Ambush being set up south of the rim trail.",
+    lesson: ["Planted. It only cost ALPHA time going around it.", "It was planted to slow ALPHA down. Right to drop it."] },
+  { t: 55, src: "SIGHTING", grade: "B", kind: "threat", at: [42.5905, -114.432], truth: true,
+    claim: "A truck and four armed men west of the jump site, near the road out.",
+    lesson: ["ALPHA got out around the second patrol.", "ALPHA ran into the second patrol on the way out."] },
+  { t: 70, src: "SIGNALS INTERCEPT", grade: "C", kind: "obj", at: [42.6005, -114.4552], truth: false,
+    claim: "They've moved the drone. It's at Perrine Bridge.",
+    lesson: ["The drone never moved. ALPHA chased it to the bridge.", "The drone never moved. Right to drop it."] },
+];
+
+const $ = id => document.getElementById(id);
+const svg = $("map"), lit = $("lit"), lctx = lit.getContext("2d");
+let state = null, grade = null, game = null, last = 0;
+let lines = null, litLines = null, settled = null;
+
+const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
+const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const ease = t => 1 - (1 - t) ** 3;
+const pad = (n, w = 2) => String(n).padStart(w, "0");
+const clock = s => `T+${pad(Math.floor(s / 60))}:${pad(Math.floor(s % 60))}`;
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+
+function loadImg(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// Same tile window as the map: zoom 13 on landscape screens, 12 on portrait.
+function tileWindow() {
+  const z = innerWidth >= innerHeight ? 13 : 12;
+  const rows = 3, cols = Math.max(3, Math.min(7, Math.ceil(rows * innerWidth / innerHeight)));
+  const W = cols * 256, H = rows * 256;
+  const ox = Math.round(lon2tile(LOC.lon, z) * 256 - W / 2);
+  const oy = Math.round(lat2tile(LOC.lat, z) * 256 - H / 2);
+  const ds = Math.max(1, Math.ceil(Math.sqrt(W * H / 320000)));
+  return { z, cols, W, H, ox, oy, ds, gw: Math.floor(W / ds), gh: Math.floor(H / ds) };
+}
+
+async function fetchElevation() {
+  const { z, cols, W, H, ox, oy, ds, gw, gh } = tileWindow();
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const jobs = [];
+  for (let ty = Math.floor(oy / 256); ty * 256 < oy + H; ty++) for (let tx = Math.floor(ox / 256); tx * 256 < ox + W; tx++) {
+    jobs.push(loadImg(`${TILE_URL}/${z}/${tx}/${ty}.png`).then(img => ctx.drawImage(img, tx * 256 - ox, ty * 256 - oy)));
+  }
+  await Promise.all(jobs);
+  const px = ctx.getImageData(0, 0, W, H).data;
+  const values = new Float64Array(gw * gh);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const i = ((y * ds) * W + x * ds) * 4;
+    values[y * gw + x] = px[i] * 256 + px[i + 1] + px[i + 2] / 256 - 32768;
+  }
+  return { values, z, cols, W, H, gw, gh, ds, ox, oy };
+}
+
+const toGrid = ([lat, lon]) => [(lon2tile(lon, state.z) * 256 - state.ox) / state.ds, (lat2tile(lat, state.z) * 256 - state.oy) / state.ds];
+const mPerGrid = () => 40075016 * Math.cos(LOC.lat * Math.PI / 180) / (256 * 2 ** state.z) * state.ds;
+const cellOf = ([gx, gy]) => clamp(gy | 0, 0, state.gh - 1) * state.gw + clamp(gx | 0, 0, state.gw - 1);
+
+function render(d) {
+  const { gw, gh } = d;
+  d3.blur2({ data: d.values, width: gw, height: gh }, 1);
+  let min = Infinity, max = -Infinity;
+  for (const v of d.values) { if (v < min) min = v; if (v > max) max = v; }
+  const step = LOC.step;
+  const contours = d3.contours().size([gw, gh]).thresholds(d3.range(Math.ceil(min / step) * step, max, step))(d.values);
+  const isMajor = v => Math.abs(v / (step * 5) - Math.round(v / (step * 5))) < 1e-6;
+  const opacity = v => 0.25 + 0.75 * (v - min) / (max - min || 1);
+  const path = d3.geoPath();
+  const minor = contours.filter(c => !isMajor(c.value)), major = contours.filter(c => isMajor(c.value));
+  d3.select("#minor").selectAll("path").data(minor).join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value) * 0.7);
+  d3.select("#major").selectAll("path").data(major).join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value));
+  svg.setAttribute("viewBox", `0 0 ${gw} ${gh}`);
+
+  state = { ...d, min, max, mpg: 0 };
+  state.mpg = mPerGrid();
+  lines = { minor: minor.map(c => new Path2D(path(c))), major: major.map(c => new Path2D(path(c))) };
+  buildGrade();
+  traceRiver();
+  svg.classList.add("ready");
+  layout();
+}
+
+// ---------- River: least-cost path through the elevation grid, east edge to west edge (as in index.html) ----------
+function traceRiver() {
+  const { values, gw, gh, min } = state, N = gw * gh;
+  const cost = new Float64Array(N);
+  for (let i = 0; i < N; i++) cost[i] = (values[i] - min + 1) ** 2.5;
+  const isSource = (x, y) => x === gw - 1 || ((y === 0 || y === gh - 1) && x >= gw - (gw >> 2));
+  const isTarget = (x, y) => x === 0 || ((y === 0 || y === gh - 1) && x < gw >> 2);
+  const starts = [];
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) if (isSource(x, y)) starts.push(y * gw + x);
+  const cells = cheapest(starts, j => cost[j], i => isTarget(i % gw, (i / gw) | 0));
+  if (!cells) return;
+  const pts = smooth(cells.reverse(), 6, 2);
+  $("river").setAttribute("d", "M" + pts.map(p => p.map(v => v.toFixed(1)).join(",")).join("L"));
+}
+
+// ---------- Least-cost paths: Dijkstra over the grid, 8 neighbours ----------
+// Returns the cells from a start to the first cell that's done(), or null.
+function cheapest(starts, costOf, done) {
+  const { gw, gh } = state, N = gw * gh;
+  const dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
+  const hk = [], hv = [];
+  const push = (k, v) => {
+    let i = hk.length; hk.push(k); hv.push(v);
+    while (i > 0) { const p = (i - 1) >> 1; if (hk[p] <= k) break; hk[i] = hk[p]; hv[i] = hv[p]; i = p; }
+    hk[i] = k; hv[i] = v;
+  };
+  const pop = () => {
+    const v = hv[0], k = hk.pop(), last = hv.pop(), n = hk.length;
+    if (n) {
+      let i = 0;
+      for (;;) {
+        let c = 2 * i + 1; if (c >= n) break;
+        if (c + 1 < n && hk[c + 1] < hk[c]) c++;
+        if (hk[c] >= k) break;
+        hk[i] = hk[c]; hv[i] = hv[c]; i = c;
+      }
+      hk[i] = k; hv[i] = last;
+    }
+    return v;
+  };
+  for (const s of starts) { dist[s] = costOf(s); push(dist[s], s); }
+  let end = -1;
+  while (hk.length) {
+    const d0 = hk[0], i = pop();
+    if (d0 > dist[i]) continue;
+    if (done(i)) { end = i; break; }
+    const x = i % gw, y = (i / gw) | 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue;
+      const j = ny * gw + nx, nd = d0 + costOf(j) * (dx && dy ? Math.SQRT2 : 1);
+      if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(nd, j); }
+    }
+  }
+  if (end < 0) return null;
+  const cells = [];
+  for (let i = end; i >= 0; i = prev[i]) cells.push(i);
+  return cells.reverse();
+}
+
+// Cell indices to map points, averaged over a window so the line reads as a trail, not a staircase.
+function smooth(cells, W, stride = 1) {
+  const { gw } = state, raw = cells.map(i => [i % gw + .5, ((i / gw) | 0) + .5]), pts = [];
+  for (let i = 0; i < raw.length; i += stride) {
+    let sx = 0, sy = 0, n = 0;
+    for (let j = Math.max(0, i - W); j <= Math.min(raw.length - 1, i + W); j++) { sx += raw[j][0]; sy += raw[j][1]; n++; }
+    pts.push([sx / n, sy / n]);
+  }
+  if (raw.length) pts.push(raw.at(-1));
+  return pts;
+}
+
+// Slope of each cell, as rise over run: the canyon walls are steep, the rim is flat.
+function buildGrade() {
+  const { values: v, gw, gh, mpg } = state;
+  grade = new Float32Array(gw * gh);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const dx = v[y * gw + Math.min(x + 1, gw - 1)] - v[y * gw + Math.max(x - 1, 0)];
+    const dy = v[Math.min(y + 1, gh - 1) * gw + x] - v[Math.max(y - 1, 0) * gw + x];
+    grade[y * gw + x] = Math.hypot(dx, dy) / (2 * mpg);
+  }
+}
+
+// ALPHA's route: cheapest over the terrain, well clear of every threat it knows about.
+function plan(from, to, threats) {
+  const { gw, mpg } = state, keep = THREAT_R * 1.6 / mpg;
+  const goal = cellOf(to);
+  const tc = threats.map(t => [t[0], t[1]]);
+  const costOf = j => {
+    const g = grade[j];
+    let c = 1 + g * 6 + (g > .4 ? 30 : 0);
+    if (tc.length) {
+      const x = j % gw + .5, y = ((j / gw) | 0) + .5;
+      for (const t of tc) if (Math.hypot(x - t[0], y - t[1]) < keep) { c += 60; break; }
+    }
+    return c;
+  };
+  const cells = cheapest([cellOf(from)], costOf, i => i === goal);
+  if (!cells) return [from, to];
+  const pts = smooth(cells, 3);
+  pts[0] = [...from]; pts[pts.length - 1] = [...to];
+  return pts;
+}
+
+// ---------- The game ----------
+function newGame() {
+  game = {
+    T: 0, running: false, over: false, next: 0, cards: [], sent: [],
+    sweeps: SWEEPS, recharge: 0, spots: [],
+    hostiles: OP.hostiles.map(h => ({ g: toGrid(h), hit: false, sensed: false })),
+    team: { pos: toGrid(OP.lz), route: [], seg: 0, phase: "insert", wait: 0, resume: null, wia: [false, false, false, false, false],
+      known: { threats: [], obj: toGrid(OP.brief) }, found: false },
+  };
+  $("cards").innerHTML = $("comms").innerHTML = $("pings").innerHTML = "";
+  $("known").innerHTML = "";
+  $("route").removeAttribute("d");
+  buildMarks();
+  status("STANDING BY");
+  updateTeamPanel();
+  settled && settled.getContext("2d").clearRect(0, 0, settled.width, settled.height);
+}
+
+function radio(text, cls = "") {
+  const li = document.createElement("li");
+  li.innerHTML = `<span class="when">${clock(game.T)}</span><span class="${cls}"></span>`;
+  li.lastChild.textContent = text;
+  $("comms").prepend(li);
+}
+
+function status(text, alert = false) {
+  $("t-status").textContent = text;
+  $("t-status").classList.toggle("alert", alert);
+}
+
+// What ALPHA believes: built from the reports you sent, in the order you sent them, plus any patrol it has run into.
+function knowledge() {
+  const k = { threats: [], obj: toGrid(OP.brief) }, near = THREAT_R * 1.5 / state.mpg;
+  for (const c of game.sent) {
+    if (c.kind === "threat") k.threats.push(c.g);
+    else if (c.kind === "clear") k.threats = k.threats.filter(t => dist(t, c.g) > near);
+    else if (c.kind === "obj") k.obj = c.g;
+  }
+  for (const h of game.hostiles) if (h.hit) k.threats.push(h.g);
+  return k;
+}
+
+function replan() {
+  const t = game.team;
+  t.known = knowledge();
+  $("known").innerHTML = t.known.threats.map(g =>
+    `<circle cx="${g[0]}" cy="${g[1]}" r="${THREAT_R / state.mpg}"/>`).join("");
+  if (t.phase === "hold" && dist(t.known.obj, t.heldFor) > .5) {
+    t.phase = "move";
+    radio("ALPHA: Copy new grid. Moving.", "alpha");
+  }
+  if (t.phase === "move" || t.phase === "exfil" || (t.phase === "contact" && t.resume !== "hold")) {
+    const target = (t.phase === "exfil" || t.resume === "exfil") ? toGrid(OP.exfil) : t.known.obj;
+    t.route = plan(t.pos, target, t.known.threats);
+    t.seg = 0;
+  } else if (t.phase !== "insert") t.route = [];
+  $("route").setAttribute("d", t.route.length > 1 ? "M" + t.route.map(p => p.map(v => v.toFixed(1)).join(",")).join("L") : "");
+}
+
+function arriveReports() {
+  while (game.next < REPORTS.length && game.T >= REPORTS[game.next].t) addCard({ ...REPORTS[game.next++] });
+}
+
+function addCard(c) {
+  c.id = game.cards.length + 1;
+  c.g = c.g || toGrid(c.at);
+  c.state = "new";
+  c.stamp = c.stamp || null;
+  c.when = game.T;
+  game.cards.push(c);
+  const el = document.createElement("div");
+  el.className = "card";
+  c.el = el;
+  $("cards").prepend(el);
+  const ping = document.createElement("div");
+  ping.className = "ping";
+  ping.innerHTML = `<span class="ring"></span><span class="core"></span><span class="id">${pad(c.id)}</span>`;
+  c.ping = ping;
+  $("pings").append(ping);
+  el.addEventListener("pointerenter", () => hot(c, true));
+  el.addEventListener("pointerleave", () => hot(c, false));
+  drawCard(c);
+  $("i-count").textContent = `${game.cards.length} IN`;
+}
+
+function hot(c, on) {
+  for (const o of game.cards) { o.el.classList.remove("hot"); o.ping.classList.remove("hot"); }
+  if (on) { c.el.classList.add("hot"); c.ping.classList.add("hot"); }
+}
+
+function drawCard(c) {
+  const stamp = c.stamp ? `<span class="stamp ${c.stamp}">${c.stamp === "ok" ? "VERIFIED" : "FALSE"}</span>` : "";
+  const acts = c.state === "new"
+    ? `<button class="btn send">SEND → ALPHA</button><button class="btn drop">DISCARD</button>`
+    : `<span class="said">${c.state === "sent" ? "SENT TO ALPHA" : "DISCARDED"}</span>`;
+  c.el.className = `card ${c.state}`;
+  c.el.innerHTML = `<div class="meta"><span class="n">${pad(c.id)}</span><span>${c.src}</span>
+      <span class="grade" title="Source reliability, A (best) to F">${c.grade}</span><span class="t">${clock(c.when)}</span></div>
+    <div class="claim"></div><div class="acts">${acts}${stamp}</div>`;
+  c.el.querySelector(".claim").textContent = c.claim;
+  c.ping.className = `ping${c.stamp ? " " + c.stamp : ""}${c.state === "new" ? "" : " done"}`;
+  c.el.querySelector(".send")?.addEventListener("click", () => decide(c, "sent"));
+  c.el.querySelector(".drop")?.addEventListener("click", () => decide(c, "discarded"));
+}
+
+function decide(c, what) {
+  if (!game.running || c.state !== "new") return;
+  c.state = what;
+  drawCard(c);
+  if (what !== "sent") return;
+  game.sent.push(c);
+  const t = game.team;
+  if (t.found && c.kind === "obj") radio("ALPHA: Copy. We already have the drone.", "alpha");
+  else radio(`ALPHA: Copy report ${pad(c.id)}.${t.phase === "move" || t.phase === "exfil" ? " Adjusting route." : ""}`, "alpha");
+  replan();
+}
+
+// ---------- Sensor sweeps ----------
+function sweep(x, y) {
+  if (!game.running) return;
+  if (game.sweeps < 1) { $("sweeps").animate([{ opacity: .2 }, { opacity: 1 }], { duration: 300, iterations: 2 }); return; }
+  game.sweeps--;
+  const m = svg.getScreenCTM(), g = [(x - m.e) / m.a, (y - m.f) / m.d];
+  game.spots.push({ gx: g[0], gy: g[1], t0: performance.now(), done: false });
+  updateTeamPanel();
+  setTimeout(() => game.running && resolveSweep(g), 1200);
+}
+
+function resolveSweep(g) {
+  const r = SWEEP_R / state.mpg;
+  let found = 0;
+  for (const c of game.cards) if (!c.stamp && dist(c.g, g) <= r) { c.stamp = c.truth ? "ok" : "bad"; drawCard(c); found++; }
+  for (const h of game.hostiles) if (!h.sensed && !h.hit && dist(h.g, g) <= r) {
+    h.sensed = true;
+    addCard({ src: "SENSOR SWEEP", grade: "A", kind: "threat", g: h.g, truth: true, stamp: "ok",
+      claim: "Movement: an armed group, four to six, holding position.",
+      lesson: ["ALPHA steered clear of what the sweep found.", "The sweep found them, but ALPHA was never told."] });
+    found++;
+  }
+  radio(found ? `SENSOR: Sweep complete. ${found} result${found > 1 ? "s" : ""}.` : "SENSOR: Sweep complete. Nothing there.");
+}
+
+// ---------- ALPHA ----------
+function contact(h) {
+  const t = game.team;
+  h.hit = true;
+  const warned = t.known.threats.some(k => dist(k, h.g) * state.mpg < THREAT_R * 1.5);
+  let n = warned ? 1 : 2;
+  for (let i = 0; i < 5 && n; i++) if (!t.wia[i]) { t.wia[i] = true; n--; }
+  const hurt = t.wia.filter(Boolean).length;
+  radio(`ALPHA: CONTACT! Taking fire${warned ? ", we knew they were close" : ""}.`, "alert");
+  radio(`ALPHA: ${warned ? "One" : "Two"} wounded. ${5 - hurt} still in the fight.`, "alert");
+  t.resume = t.phase;
+  t.phase = "contact";
+  t.wait = 6;
+  status("CONTACT", true);
+  updateTeamPanel();
+  if (hurt >= 3) end(false, "ALPHA is combat ineffective. Mission aborted.");
+  else replan();
+}
+
+function arrive() {
+  const t = game.team;
+  if (t.phase === "exfil") return end(true);
+  if (dist(t.pos, toGrid(OP.drone)) * state.mpg < OBJ_R) {
+    t.phase = "recover"; t.wait = 4; t.found = true;
+    status("RECOVERING THE DRONE");
+    radio("ALPHA: Drone located. Recovering it now.", "alpha");
+    t.route = []; $("route").removeAttribute("d");
+  } else {
+    t.phase = "hold"; t.heldFor = t.known.obj;
+    status("HOLDING: NOTHING HERE", true);
+    radio("ALPHA: Nothing here. Holding for a new grid.", "alert");
+    t.route = []; $("route").removeAttribute("d");
+  }
+}
+
+function moveTeam(dt) {
+  const t = game.team;
+  if (t.route.length < 2) return arrive();
+  const i = cellOf(t.pos);
+  let budget = SPEED / state.mpg / (1 + grade[i] * 4) * dt;
+  while (budget > 0 && t.seg < t.route.length - 1) {
+    const to = t.route[t.seg + 1], d = dist(t.pos, to);
+    if (d <= budget) { t.pos = [...to]; t.seg++; budget -= d; }
+    else { t.pos = [t.pos[0] + (to[0] - t.pos[0]) * budget / d, t.pos[1] + (to[1] - t.pos[1]) * budget / d]; budget = 0; }
+  }
+  for (const h of game.hostiles) if (!h.hit && dist(t.pos, h.g) * state.mpg < THREAT_R) return contact(h);
+  if (t.seg >= t.route.length - 1) arrive();
+}
+
+function stepTeam(dt) {
+  const t = game.team;
+  if (game.T >= LIMIT) return end(false, "Out of time. Pulling out without the drone.");
+  if (t.phase === "insert") {
+    if (game.T < 3) return;
+    t.phase = "move";
+    status("MOVING TO THE OBJECTIVE");
+    radio("ALPHA: Boots on the ground. Moving to the drone's last signal at Pillar Falls.", "alpha");
+    replan();
+  } else if (t.phase === "contact" || t.phase === "recover") {
+    t.wait -= dt;
+    if (t.wait > 0) return;
+    if (t.phase === "recover") {
+      t.phase = "exfil";
+      status("EXFIL");
+      radio("ALPHA: We have the drone. Moving to exfil.", "alpha");
+    } else {
+      t.phase = t.resume;
+      status(t.phase === "exfil" ? "EXFIL" : t.phase === "hold" ? "HOLDING: NOTHING HERE" : "MOVING TO THE OBJECTIVE", t.phase === "hold");
+      radio("ALPHA: Contact broken. Moving.", "alpha");
+    }
+    replan();
+  } else if (t.phase === "move" || t.phase === "exfil") moveTeam(dt);
+}
+
+function end(won, why) {
+  game.running = false; game.over = true;
+  const t = game.team, fit = 5 - t.wia.filter(Boolean).length;
+  status(won ? "MISSION COMPLETE" : "MISSION ABORTED", !won);
+  if (won) radio(fit === 5 ? "ALPHA: At exfil. All five, no wounded. Good intel." : `ALPHA: At exfil with the drone. ${5 - fit} wounded.`, "alpha");
+  else radio(`ALPHA: ${why}`, "alert");
+  setTimeout(() => debrief(won, why, fit), 1600);
+}
+
+function debrief(won, why, fit) {
+  $("d-result").textContent = won ? (fit === 5 ? "MISSION COMPLETE · CLEAN" : "MISSION COMPLETE") : "MISSION FAILED";
+  $("d-result").className = won ? "win" : "loss";
+  $("d-fit").textContent = `ALPHA ${fit}/5 FIT${won ? " · DRONE RECOVERED" : ""}`;
+  $("d-time").textContent = clock(game.T);
+  $("d-cards").innerHTML = "";
+  for (const c of game.cards) {
+    const sent = c.state === "sent";
+    const [v, cls] = c.truth ? (sent ? ["GOOD CALL", "good"] : ["MISSED", "miss"]) : (sent ? ["BAD CALL", "bad"] : ["GOOD CALL", "good"]);
+    const el = document.createElement("div");
+    el.className = "dc";
+    el.innerHTML = `<span class="n">${pad(c.id)}</span><span class="v ${cls}">${v} · ${c.truth ? "TRUE" : "FALSE"} · ${sent ? "SENT" : c.state === "discarded" ? "DISCARDED" : "NOT SENT"}</span>
+      <span class="c"></span><span class="why"></span>`;
+    el.querySelector(".c").textContent = c.claim;
+    el.querySelector(".why").textContent = c.lesson[sent ? 0 : 1];
+    $("d-cards").append(el);
+  }
+  $("debrief").hidden = false;
+}
+
+// ---------- Map markers ----------
+function buildMarks() {
+  $("marks").innerHTML = `
+    <div class="mk lz" id="m-lz"><i></i><span class="tag">LZ</span></div>
+    <div class="mk exfil" id="m-exfil"><i></i><span class="tag">EXFIL</span></div>
+    <div class="mk obj" id="m-obj"><i></i><span class="tag">OBJ</span></div>
+    ${OP.hostiles.map((_, i) => `<div class="mk hostile" id="m-h${i}" hidden><i></i><span class="tag">HOSTILE</span></div>`).join("")}
+    <div class="mk team" id="m-team">${"<b></b>".repeat(5)}<span class="tag">ALPHA</span></div>`;
+}
+
+// The team's five dots, in a loose file.
+const WEDGE = [[0, -7], [-6, -1], [6, -1], [-10, 6], [10, 6]];
+
+function placeMarks() {
+  const m = svg.getScreenCTM();
+  const at = (el, g) => { el.style.transform = `translate(${m.a * g[0] + m.e}px, ${m.d * g[1] + m.f}px)`; };
+  const t = game.team;
+  at($("m-lz"), toGrid(OP.lz));
+  at($("m-exfil"), toGrid(OP.exfil));
+  $("m-obj").hidden = t.found;
+  at($("m-obj"), t.known.obj);
+  game.hostiles.forEach((h, i) => { const el = $(`m-h${i}`); el.hidden = !(h.hit || h.sensed); at(el, h.g); });
+  const team = $("m-team");
+  at(team, t.pos);
+  team.querySelectorAll("b").forEach((b, i) => {
+    b.style.transform = `translate(${WEDGE[i][0]}px, ${WEDGE[i][1]}px)`;
+    b.classList.toggle("wia", t.wia[i]);
+  });
+  for (const c of game.cards) at(c.ping, c.g);
+}
+
+function updateTeamPanel() {
+  const t = game.team, fit = 5 - t.wia.filter(Boolean).length;
+  $("pips").innerHTML = t.wia.map(w => `<span class="pip${w ? " wia" : ""}"></span>`).join("");
+  $("fit").textContent = `${fit}/5 FIT`;
+  $("sweeps").textContent = "◆".repeat(game.sweeps) + "◇".repeat(SWEEPS - game.sweeps);
+  $("sweeps").classList.toggle("empty", !game.sweeps);
+}
+
+// ---------- The sweep light: tan lines lit teal through a mask of the sweeps (as in headgate.html) ----------
+function layout() {
+  if (!state) return;
+  const dpr = devicePixelRatio || 1, w = Math.round(innerWidth * dpr), h = Math.round(innerHeight * dpr);
+  const m = svg.getScreenCTM();
+  lit.width = w; lit.height = h;
+  litLines = Object.assign(document.createElement("canvas"), { width: w, height: h });
+  const c = litLines.getContext("2d");
+  c.setTransform(dpr * m.a, 0, 0, dpr * m.d, dpr * m.e, dpr * m.f);
+  c.lineJoin = "round";
+  c.strokeStyle = "#3fd0c0"; c.lineWidth = 1.1 / m.a;
+  for (const p of lines.minor) c.stroke(p);
+  c.strokeStyle = "#a8fff2"; c.lineWidth = 1.8 / m.a; c.shadowColor = "#3fd0c0"; c.shadowBlur = 6 * dpr;
+  for (const p of lines.major) c.stroke(p);
+  settled = Object.assign(document.createElement("canvas"), { width: w, height: h });
+  if (game) for (const s of game.spots) if (s.done) spot(settled.getContext("2d"), s, 1, REST);
+}
+
+function spot(c, s, open, glow) {
+  const m = svg.getScreenCTM(), dpr = devicePixelRatio || 1, R = SWEEP_R / state.mpg * m.a;
+  const x = (m.a * s.gx + m.e) * dpr, y = (m.d * s.gy + m.f) * dpr, r = R * dpr * (.35 + .65 * open);
+  const g = c.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(255,255,255,${glow})`);
+  g.addColorStop(.45, `rgba(255,255,255,${glow * .85})`);
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  c.fillStyle = g;
+  c.fillRect(x - r, y - r, 2 * r, 2 * r);
+}
+
+function drawLight(now) {
+  if (!litLines) return;
+  lctx.globalCompositeOperation = "source-over";
+  lctx.clearRect(0, 0, lit.width, lit.height);
+  lctx.drawImage(settled, 0, 0);
+  for (const s of game.spots) {
+    if (s.done) continue;
+    const t = CALM ? Infinity : now - s.t0;
+    const open = ease(clamp(t / BLOOM, 0, 1));
+    const glow = t < BLOOM ? 1 : REST + (1 - REST) * (1 - ease(clamp((t - BLOOM) / SETTLE, 0, 1)));
+    if (t >= BLOOM + SETTLE) { s.done = true; spot(settled.getContext("2d"), s, 1, REST); }
+    else spot(lctx, s, open, glow);
+  }
+  lctx.globalCompositeOperation = "source-in";
+  lctx.drawImage(litLines, 0, 0);
+}
+
+// ---------- Loop ----------
+function frame(now) {
+  const dt = Math.min(.1, (now - last) / 1000);
+  last = now;
+  if (game.running) {
+    game.T += dt;
+    arriveReports();
+    if (game.sweeps < SWEEPS) {
+      game.recharge += dt;
+      if (game.recharge >= RECHARGE) { game.sweeps++; game.recharge = 0; updateTeamPanel(); }
+    } else game.recharge = 0;
+    $("recharge").firstElementChild.style.width = `${game.sweeps < SWEEPS ? game.recharge / RECHARGE * 100 : 0}%`;
+    stepTeam(dt);
+    $("clock").textContent = clock(game.T);
+  }
+  placeMarks();
+  drawLight(now);
+  requestAnimationFrame(frame);
+}
+
+svg.addEventListener("pointerdown", e => {
+  if (!state || (e.pointerType === "mouse" && e.button !== 0)) return;
+  sweep(e.clientX, e.clientY);
+});
+
+$("begin").addEventListener("click", () => {
+  if (!state) return;
+  $("brief").hidden = true;
+  game.running = true;
+  radio("OPS: Operation Dry Creek is go. ALPHA inserting.");
+});
+$("again").addEventListener("click", () => {
+  $("debrief").hidden = true;
+  newGame();
+  $("brief").hidden = false;
+});
+
+async function load() {
+  const fine = document.querySelector("#brief .fine");
+  fine.textContent = "LOADING ELEVATION DATA…";
+  $("begin").disabled = true;
+  try {
+    render(await fetchElevation());
+    newGame();
+    fine.textContent = "A FICTIONAL TRAINING EXERCISE.";
+    $("begin").disabled = false;
+    last = performance.now();
+    requestAnimationFrame(frame);
+  } catch {
+    fine.innerHTML = `ELEVATION FEED UNREACHABLE <button class="btn" onclick="load()">RETRY</button>`;
+  }
+}
+
+addEventListener("resize", layout);
+load();
+</script>
+</body>
+</html>
