@@ -140,7 +140,8 @@ export function startSeek(s: GameState, contactId: string, weapon: Weapon): Game
       shots: [],
       roundsLeft: w.rounds,
       nextShotMs: s.elapsedMs,
-      spotted: c.observed ? c.units.slice(0, 1) : [],
+      // Painted by ALPHA: every fighter is marked on the board. Observed only: one.
+      spotted: c.painted ? [...c.units] : c.observed ? c.units.slice(0, 1) : [],
     },
   };
 }

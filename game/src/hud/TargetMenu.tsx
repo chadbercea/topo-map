@@ -15,7 +15,13 @@ export function TargetMenu({ contactId }: { contactId: string }) {
   return (
     <div className="target-menu" data-testid="target-menu">
       <p className="note">
-        {c.status === 'cleared' ? 'Destroyed.' : c.status === 'avoided' ? 'Avoided.' : 'Pick ordnance, or send the team.'}
+        {c.status === 'cleared'
+          ? 'Destroyed.'
+          : c.status === 'avoided'
+            ? 'Avoided.'
+            : c.painted
+              ? 'PAINTED by ALPHA: every fighter is marked for your strike.'
+              : 'Pick ordnance, or send the team.'}
       </p>
       {c.status === 'revealed' && (
         <div className="options">
