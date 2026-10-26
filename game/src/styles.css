@@ -37,11 +37,20 @@ html, body {
   height: 100%;
   padding: max(var(--gutter), env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right))
     max(var(--gutter), env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: grid;
   gap: var(--gutter);
+  /* Landscape (ideal: tablet): intel and team down the left, timer on the right. */
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(170px, 200px);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'intel map timer'
+    'team  map timer';
 }
+
+.slot-intel { grid-area: intel; align-self: start; }
+.slot-timer { grid-area: timer; align-self: start; }
+.slot-team { grid-area: team; align-self: end; }
+.map-area { grid-area: map; min-height: 0; }
 
 .panel {
   pointer-events: auto;
@@ -62,13 +71,6 @@ html, body {
 }
 
 .panel p { margin: 0; color: var(--dim); }
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
 
 .timer-row {
   display: flex;
@@ -151,7 +153,66 @@ html, body {
 
 .menu input { accent-color: var(--accent); width: 18px; height: 18px; }
 
-@media (max-width: 600px) {
-  .hud { flex-direction: column; }
-  .stack { align-items: stretch; }
+/* Shared panel bits */
+.panel-toggle {
+  all: unset;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  cursor: pointer;
+}
+
+.panel-toggle .chevron { display: none; color: var(--dim); }
+
+.panel ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
+
+.intel li { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px; color: var(--ink); }
+.intel li.note { display: block; color: var(--dim); }
+
+.bar { display: block; height: 6px; border: 1px solid var(--line); }
+.bar > span { display: block; height: 100%; background: var(--accent); }
+
+.team .activity { color: var(--ink); }
+
+.debug {
+  position: fixed;
+  right: var(--gutter);
+  bottom: var(--gutter);
+  max-width: 260px;
+  opacity: 0.85;
+}
+
+/* Phone portrait: top bar (intel, timer), map, bottom bar (team). */
+@media (max-aspect-ratio: 1/1) {
+  .hud {
+    gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'intel timer'
+      'map   map'
+      'team  team';
+  }
+
+  .slot-intel { position: relative; align-self: stretch; }
+  .slot-intel .panel { height: 100%; }
+  .panel-toggle .chevron { display: inline; }
+  .intel .panel-body { display: none; }
+  /* Expanded intel drops down over the map rather than pushing it around. */
+  .intel[data-open='true'] .panel-body {
+    display: grid;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    padding: 10px 12px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    z-index: 1;
+  }
+
+  .clock { font-size: 22px; }
+  .timer h2, .timer p { display: none; }
+  .debug { bottom: auto; top: 40%; }
 }

@@ -8,7 +8,15 @@ export type SceneStatus = { width: number; height: number; renderer: string; poi
 
 export const EV = {
   sceneStatus: 'scene-status',
+  mapRect: 'map-rect',
 } as const;
+
+// The part of the screen the map gets, between the HUD panels, in CSS px.
+export type MapRect = { x: number; y: number; width: number; height: number };
+
+let lastRect: MapRect | null = null;
+bus.on(EV.mapRect, (r: MapRect) => (lastRect = r));
+export const getMapRect = () => lastRect;
 
 // The scene can emit before React mounts, so keep the latest status for late subscribers.
 let lastStatus: SceneStatus | null = null;
