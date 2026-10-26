@@ -1,5 +1,7 @@
 import * as Phaser from 'phaser';
 import { bus, EV, type SceneStatus } from './events';
+import { createLoop } from '../sim/loop';
+import { game } from '../sim/store';
 
 // Empty map scene: a faint grid so the canvas is visibly alive, and a crosshair that
 // follows the last pointer or touch so input can be checked on desktop and phone.
@@ -7,6 +9,8 @@ export class MapScene extends Phaser.Scene {
   private grid!: Phaser.GameObjects.Graphics;
   private cross!: Phaser.GameObjects.Graphics;
   private pointer = 'none';
+  // Phaser owns the frame clock; the sim advances in fixed ticks from it.
+  private loop = createLoop((dt) => game.tick(dt));
 
   constructor() {
     super('map');
@@ -24,6 +28,10 @@ export class MapScene extends Phaser.Scene {
     });
 
     this.layout();
+  }
+
+  update(_time: number, delta: number) {
+    this.loop.advance(delta);
   }
 
   private layout() {
