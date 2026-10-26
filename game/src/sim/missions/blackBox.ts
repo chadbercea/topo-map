@@ -10,7 +10,9 @@ export const BLACK_BOX: MissionDef = registerMission({
   route: ['G5', 'F4', 'E3', 'D3', 'C2', 'B1'],
 
   contacts: () => [
-    makeContact('technicals', 'E3', 'two technicals', 1, [5, 6, 9, 10]),
+    // The static enemy checkpoint on the route (GDD event 1): dug in, too strong to walk
+    // through. It's meant to be softened with seek and destroy.
+    makeContact('checkpoint', 'E3', 'a fortified checkpoint', 1.6, [1, 5, 6, 9, 10]),
     makeContact('patrol', 'C2', 'a foot patrol', 0.7, [1, 7, 12]),
     makeContact('post', 'C3', 'an observation post', 0.5, [10, 11]),
   ],
@@ -41,6 +43,13 @@ export const BLACK_BOX: MissionDef = registerMission({
       id: 'first-contact-hint',
       when: (s) => s.events.some((e) => e.kind === 'contact' && e.id.startsWith('contact-')) && !s.team.fight,
       then: (s) => say(s, 'HQ', 'hint-first-contact', 'Contact on the map. Tap it to hit it with ordnance, or let ALPHA decide when it gets there.'),
+    },
+    // The checkpoint found: HQ calls it what it is.
+    {
+      id: 'checkpoint-found',
+      when: (s) => s.contacts.some((c) => c.id === 'checkpoint' && c.status === 'revealed'),
+      then: (s) =>
+        say(s, 'HQ', 'checkpoint-brief', 'That\u2019s a fortified checkpoint in E3. Too strong for ALPHA to walk through. Soften it with ordnance first, or go around.'),
     },
     // The contract window, called out as it closes.
     {

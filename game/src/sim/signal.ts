@@ -39,7 +39,7 @@ const caesar = (text: string, k: number) =>
 // What HQ sees right now: the intercept shifted by however far the guess is off.
 export const cipherText = (g: Signal) => caesar(g.plain, g.shift - g.guess);
 
-const WORD: Record<string, string> = { patrol: 'PATROL', technicals: 'TECHNICALS', post: 'OBSERVATION POST' };
+const WORD: Record<string, string> = { patrol: 'PATROL', checkpoint: 'CHECKPOINT', post: 'OBSERVATION POST' };
 
 export function startIntercept(s: GameState, eventId: string): GameState {
   const e = s.events.find((x) => x.id === eventId);

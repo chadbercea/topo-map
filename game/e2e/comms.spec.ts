@@ -28,7 +28,7 @@ test('comms can be minimized to a badge and reopened', async ({ page }) => {
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
 });
 
-test('Send imagery: a won scan finds the technicals in E3 and ALPHA asks to observe, attack or go around', async ({ page, isMobile }) => {
+test('Send imagery: a won scan finds the checkpoint in E3 and ALPHA asks to observe, attack or go around', async ({ page, isMobile }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 500);
@@ -46,7 +46,7 @@ test('Send imagery: a won scan finds the technicals in E3 and ALPHA asks to obse
   await page.evaluate(() => {
     for (let i = 0; i < 600 && !window.game.get().team.holdFor; i++) window.game.tick(100);
   });
-  await expect(page.getByTestId('comms-text')).toHaveText(/Contact in E3, two technicals, on our route/);
+  await expect(page.getByTestId('comms-text')).toHaveText(/Contact in E3, a fortified checkpoint, on our route/);
   const responses = page.getByTestId('responses');
   for (const name of ['Observe', 'Attack', 'Go around']) await expect(responses.getByRole('button', { name })).toBeVisible();
   await responses.getByRole('button', { name: 'Go around' }).click();

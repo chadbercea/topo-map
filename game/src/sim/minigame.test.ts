@@ -36,10 +36,10 @@ describe('grid scan mini game', () => {
     expect(s.minigame?.status).toBe('won');
     expect(s.map.scanned).toEqual(expect.arrayContaining(['F4', 'E3', 'D3', 'C2']));
     expect(s.team.holdFor).toBeNull();
-    // The scan found the technicals in E3 and the patrol in C2, both on the route.
+    // The scan found the checkpoint in E3 and the patrol in C2, both on the route.
     expect(s.contacts.filter((c) => c.status === 'revealed').map((c) => c.square).sort()).toEqual(['C2', 'E3']);
     expect(s.events.map((e) => e.square).sort()).toEqual(['C2', 'E3']);
-    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /Contact in E3: two technicals\. It is on ALPHA/.test(m.text))).toBe(true);
+    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /Contact in E3: a fortified checkpoint\. It is on ALPHA/.test(m.text))).toBe(true);
   });
 
   it('a wrong tap costs a second; running out of time loses and nothing is found', () => {

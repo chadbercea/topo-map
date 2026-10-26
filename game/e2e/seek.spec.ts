@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { boardCell, tapAt } from './helpers';
+import { boardCell, squarePoint, tapAt } from './helpers';
 
-// Win the opening scan so the technicals in E3 are found, then open their target menu.
+// Win the opening scan so the checkpoint in E3 is found, then open its target menu.
 async function targetE3(page: Page) {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
@@ -12,7 +12,7 @@ async function targetE3(page: Page) {
     g.closeMiniGame();
   });
   await page.getByTestId('alerts').getByRole('button', { name: /E3/ }).click();
-  await expect(page.getByTestId('event-card')).toContainText('Two technicals');
+  await expect(page.getByTestId('event-card')).toContainText('A fortified checkpoint');
   await expect(page.getByTestId('target-menu')).toBeVisible();
 }
 
@@ -39,16 +39,23 @@ test('sniper: the square becomes a board; a shot on a fighter is a kill', async 
   await expect(panel).toContainText('7 rounds left');
 });
 
-test('drone: one blast over all four fighters destroys the target', async ({ page, isMobile }) => {
+test('drone then sniper: the blast takes four of the checkpoint, the sniper finishes it', async ({ page, isMobile }) => {
   await targetE3(page);
   await page.getByTestId('fire-drone').click();
   await tapAt(page, isMobile, await e3Cell(page, 5)); // 2x2 over 5, 6, 9, 10
-  await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'won');
-  await expect(page.getByTestId('minigame-result')).toContainText('Target destroyed. 4 down.');
-  // Confirmed kills pay, and the spot becomes a kill site ALPHA can search.
-  await expect(page.getByTestId('resources')).toContainText('$6,000');
+  await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'lost');
+  await expect(page.getByTestId('minigame-result')).toContainText('4 down. The rest are still in E3.');
+  await expect(page.getByTestId('resources')).toContainText('$6,000'); // confirmed kills pay
   await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByTestId('alerts')).toContainText('KILL SITE E3');
+
+  // Seen now, so no alert: open it again from its marker in E3's corner.
+  await tapAt(page, isMobile, await squarePoint(page, 4, 2, 0.25, -0.25));
+  await page.getByTestId('fire-sniper').click();
+  await tapAt(page, isMobile, await e3Cell(page, 1)); // the last fighter
+  await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'won');
+  await expect(page.getByTestId('minigame-result')).toContainText('Target destroyed.');
+  await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByTestId('alerts')).toContainText('KILL SITE E3'); // ALPHA can search it
 });
 
 test('a drone strike is loud: the noise meter jumps', async ({ page, isMobile }) => {
