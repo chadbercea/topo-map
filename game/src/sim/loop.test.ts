@@ -21,11 +21,14 @@ describe('createLoop', () => {
     expect(count(1000 / 60, 600)).toBe(100);
   });
 
-  it('caps a long stall instead of fast-forwarding', () => {
+  it('keeps real time through slow frames but caps a long stall', () => {
     let n = 0;
     const loop = createLoop(() => n++, 100);
+    loop.advance(600);
+    expect(n).toBe(6);
+    n = 0;
     loop.advance(10_000);
-    expect(n).toBe(2);
+    expect(n).toBe(10);
   });
 
   it('ignores negative frame times and can reset the carry', () => {
