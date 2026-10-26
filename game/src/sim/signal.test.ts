@@ -51,7 +51,7 @@ describe('signal intercept', () => {
     const g = store.get().minigame!.signal!;
     expect(cipherText(g)).not.toBe(g.plain);
     for (let i = 0; i < g.shift; i++) store.shiftCipher(1);
-    expect(cipherText(store.get().minigame!.signal!)).toBe('PATROL AT C2 HOLD POSITION');
+    expect(cipherText(store.get().minigame!.signal!)).toBe('PATROL AT C2 MOVING TO D3 FOR THE DRONE');
     const signals = store.get().intel.projects.signals?.progress ?? 0;
     store.submitDecode();
     const s: GameState = store.get();
@@ -60,7 +60,7 @@ describe('signal intercept', () => {
     expect(s.events.find((e) => e.id === 'contact-patrol')).toBeTruthy();
     expect(s.events.find((e) => e.id === 'traffic-c2')?.status).toBe('resolved');
     if (s.intel.projects.signals) expect(s.intel.projects.signals.progress).toBeGreaterThan(signals);
-    expect(s.comms.messages.some((m) => m.from === 'SIGINT' && m.text === 'Decoded: "PATROL AT C2 HOLD POSITION".')).toBe(true);
+    expect(s.comms.messages.some((m) => m.from === 'SIGINT' && m.text === 'Decoded: "PATROL AT C2 MOVING TO D3 FOR THE DRONE".')).toBe(true);
   });
 
   it('a wrong decode costs time; running out loses', () => {

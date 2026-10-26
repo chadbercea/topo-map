@@ -34,7 +34,7 @@ export const isMissionPoint = (s: GameState, sq: SquareId) => sq === s.mission.b
 
 const radio = (s: GameState, id: string, text: string): Message => ({ id, from: s.team.callsign, text, atMs: s.elapsedMs, status: 'new', holds: false });
 
-export const missionSystem: System = (s) => {
+export const missionSystem: System = (s, dt) => {
   const { mission, team } = s;
   const here = squareAt(team.position.x, team.position.y);
   const quiet = !team.fight && !team.treating && !team.holdFor;
@@ -52,6 +52,10 @@ export const missionSystem: System = (s) => {
       team: { ...team, holdUntilMs: s.elapsedMs + RECOVER_MS, activity: `Recovering the black box at ${mission.b}` },
       comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, radio(s, 'at-crash-site', `At the crash site in ${mission.b}. Pulling the drive.`)] },
     };
+  }
+  // A fight or the medic at work stops the recovery; it picks up again after.
+  if (mission.phase === 'objective' && mission.recoverUntilMs !== null && (team.fight || team.treating)) {
+    return { ...s, mission: { ...mission, recoverUntilMs: mission.recoverUntilMs + dt } };
   }
   if (mission.phase === 'objective' && mission.recoverUntilMs !== null && s.elapsedMs >= mission.recoverUntilMs) {
     const next = boostIntel(s, 'target', 0.3); // documents from the wreck

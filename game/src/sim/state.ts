@@ -10,6 +10,7 @@ import type { MiniGame } from './minigame';
 import type { Contact, Decision } from './contacts';
 import { BLACK_BOX } from './missions/blackBox';
 import type { MissionDef } from './script';
+import type { SideJob } from './sidejob';
 import { initialOrdnance, type Ordnance } from './ordnance';
 import { initialMission, type Mission } from './mission';
 
@@ -58,7 +59,8 @@ export type GameState = {
   ordnance: Ordnance;
   noise: number; // 0-100, how loud the PMC has been
   script: { mission: string; fired: string[] }; // the mission script and which triggers have run
-  stats: { searched: number; decoded: number }; // for the wrap-up
+  stats: { searched: number; decoded: number; bonus: number }; // for the wrap-up
+  sideJob: SideJob | null; // the client's side offer
   alerted: boolean; // the enemy knows a PMC is in the area
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
@@ -106,7 +108,8 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     ordnance: initialOrdnance(),
     noise: 0,
     script: { mission: MISSION.id, fired: [] },
-    stats: { searched: 0, decoded: 0 },
+    stats: { searched: 0, decoded: 0, bonus: 0 },
+    sideJob: null,
     alerted: false,
     rng: 1234,
     settings,

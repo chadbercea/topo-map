@@ -13,7 +13,7 @@ describe('mission script', () => {
     expect(missionDef('black-box')).toBe(BLACK_BOX);
     expect(s.team.route).toEqual(BLACK_BOX.route);
     expect(s.timer.remainingMs).toBe(BLACK_BOX.durationMs);
-    expect(s.contacts.map((c) => c.id)).toEqual(['technicals', 'patrol', 'post']);
+    expect(s.contacts.map((c) => c.id)).toEqual(['checkpoint', 'patrol', 'post']);
     expect(s.schedule).toBe(BLACK_BOX.schedule);
     expect(s.intel.queue).toBe(BLACK_BOX.feed);
     expect(s.script).toEqual({ mission: 'black-box', fired: [] });
@@ -51,5 +51,30 @@ describe('mission script', () => {
     });
     const s = run({ ...walking(), script: { mission: tiny.id, fired: [] } }, 600);
     expect(s.comms.messages.find((m) => m.id === 'hello')?.text).toBe('Hello from a test mission.');
+  });
+});
+
+describe('the checkpoint', () => {
+  it('is dug in on the route, much stronger than a patrol', () => {
+    const cp = BLACK_BOX.contacts().find((c) => c.id === 'checkpoint')!;
+    expect(cp).toMatchObject({ square: 'E3', label: 'a fortified checkpoint', total: 5 });
+    expect(cp.strength).toBeGreaterThan(1.5);
+    expect(BLACK_BOX.route).toContain('E3');
+  });
+
+  it('once found, HQ says to soften it with ordnance first', () => {
+    const s = step(reveal({ ...walking(), contacts: BLACK_BOX.contacts() }, ['E3'], 'ORION-3'), 100);
+    expect(s.comms.messages.find((m) => m.id === 'checkpoint-brief')?.text).toMatch(/fortified checkpoint in E3.*Soften it with ordnance first/);
+  });
+
+  it('softened by ordnance first, ALPHA takes it with far less damage than walking in', () => {
+    const fightAt = (soften: boolean) => {
+      let s = reveal({ ...walking(), contacts: BLACK_BOX.contacts() }, ['E3'], 'ORION-3');
+      if (soften) s = { ...s, contacts: s.contacts.map((c) => (c.id === 'checkpoint' ? { ...c, units: c.units.slice(0, 1) } : c)) };
+      s = { ...s, team: { ...s.team, position: { x: 900, y: 500 }, waypoint: 3, decisions: { E3: 'attack' } } };
+      s = run(s, 30_000);
+      return s.team.operators.reduce((n, o) => n + o.health, 0);
+    };
+    expect(fightAt(true)).toBeGreaterThan(fightAt(false));
   });
 });

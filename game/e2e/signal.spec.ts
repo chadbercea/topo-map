@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { fastForward } from './helpers';
 
 test('intercept: tune with the dial controls, lock on, shift the cipher until it reads, send', async ({ page }) => {
+  test.setTimeout(60_000); // up to a dozen clicks, and CI clicks slowly
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 50_000);
@@ -21,9 +22,11 @@ test('intercept: tune with the dial controls, lock on, shift the cipher until it
   await fastForward(page, 1_600);
 
   await expect(page.getByTestId('signal-decode')).toBeVisible();
+  // The short way round the alphabet: forward, or back if that's fewer clicks.
   const shift = await page.evaluate(() => window.game.get().minigame!.signal!.shift);
-  for (let i = 0; i < shift; i++) await page.getByRole('button', { name: 'Shift forward' }).click();
-  await expect(page.getByTestId('cipher')).toHaveText('PATROL AT C2 HOLD POSITION');
+  const [button, clicks] = shift <= 13 ? ['Shift forward', shift] : ['Shift back', 26 - shift];
+  for (let i = 0; i < clicks; i++) await page.getByRole('button', { name: button }).click();
+  await expect(page.getByTestId('cipher')).toHaveText('PATROL AT C2 MOVING TO D3 FOR THE DRONE');
   await panel.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(panel).toHaveAttribute('data-status', 'won');
   await panel.getByRole('button', { name: 'Close' }).click();

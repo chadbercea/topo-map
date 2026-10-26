@@ -46,10 +46,12 @@ export function wrapUp(s: GameState): WrapUp {
 
   const contract = outcome === 'failed' ? 0 : CONTRACT;
   const penalty = outcome === 'failed' ? 0 : down * CASUALTY_PENALTY;
-  const earned = s.resources.budget; // kill cash, documents, bonuses during the mission
+  const bonus = s.stats.bonus;
+  const earned = s.resources.budget - bonus; // kill cash and documents during the mission
   const payout = [
     { label: 'Contract', amount: contract },
     { label: 'Earned in the field', amount: earned },
+    ...(bonus ? [{ label: 'Client bonus', amount: bonus }] : []),
     ...(penalty ? [{ label: `Casualties (${down})`, amount: -penalty }] : []),
   ];
 

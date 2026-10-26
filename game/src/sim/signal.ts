@@ -39,7 +39,7 @@ const caesar = (text: string, k: number) =>
 // What HQ sees right now: the intercept shifted by however far the guess is off.
 export const cipherText = (g: Signal) => caesar(g.plain, g.shift - g.guess);
 
-const WORD: Record<string, string> = { patrol: 'PATROL', technicals: 'TECHNICALS', post: 'OBSERVATION POST' };
+const WORD: Record<string, string> = { patrol: 'PATROL', checkpoint: 'CHECKPOINT', post: 'OBSERVATION POST' };
 
 export function startIntercept(s: GameState, eventId: string): GameState {
   const e = s.events.find((x) => x.id === eventId);
@@ -52,7 +52,7 @@ export function startIntercept(s: GameState, eventId: string): GameState {
   const target = round1(BAND.min + 5 + r * (BAND.max - BAND.min - 10));
   [r, rng] = nextRandom(rng);
   const shift = 3 + Math.floor(r * 20);
-  const plain = c ? `${WORD[c.id] ?? 'UNIT'} AT ${c.square} HOLD POSITION` : `NOTHING AT ${e.square}`;
+  const plain = c ? `${WORD[c.id] ?? 'UNIT'} AT ${c.square} ${c.intent ?? 'HOLD POSITION'}` : `NOTHING AT ${e.square}`;
   const signal: Signal = { phase: 'tune', target, dial: round1((BAND.min + BAND.max) / 2), lockMs: 0, plain, shift, guess: 0, contactId: c?.id };
   const game: MiniGame = {
     kind: 'signal',

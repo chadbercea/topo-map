@@ -32,7 +32,11 @@ export function TeamPanel() {
   const auto = useGame(teamMode);
   const [pinned, setPinned] = useState(false);
   const readout = auto === 'B' || pinned;
-  const call = currentCall(comms);
+  // Several calls can wait at once (ALPHA holding while the client calls): cycle through them.
+  const [focus, setFocus] = useState<string | null>(null);
+  const waitingCalls = comms.messages.filter((m) => m.status === 'new' && (m.holds || m.responses));
+  const call = waitingCalls.find((m) => m.id === focus) ?? currentCall(comms);
+  const others = waitingCalls.filter((m) => m.id !== call?.id);
   const waiting = comms.messages.filter((m) => m.status === 'new').length;
   const mode = call && !comms.minimized ? 'C' : readout ? 'B' : 'A';
 
@@ -81,6 +85,11 @@ export function TeamPanel() {
           <p className="text" data-testid="comms-text">
             {call.text}
           </p>
+          {others.length > 0 && (
+            <button className="more-calls" onClick={() => setFocus(others[0].id)} data-testid="more-calls">
+              ▸ {others.length} more waiting · {others[0].from}
+            </button>
+          )}
           <div className="actions" data-testid="responses">
             {call.responses ? (
               call.responses.map((r, i) => {

@@ -139,7 +139,8 @@ export function respond(s: GameState, id: string, responseId: string): GameState
   const r = m?.responses?.find((x) => x.id === responseId);
   if (!m || !r || m.status !== 'new' || blocked(s, r)) return s;
 
-  const reply: Message = { ...call(s, `${id}-${r.id}`, r.reply), status: 'read' };
+  // The answer goes back to whoever called: the team replies to HQ, HQ replies to the client.
+  const reply: Message = { ...call(s, `${id}-${r.id}`, r.reply), status: 'read', from: m.from === s.team.callsign ? s.team.callsign : 'HQ' };
   // A follow-up waits for its hold (an observation) before it comes in; see followSystem.
   const follow = r.follow && m.square ? treeCall(s, `${id}-${r.follow}`, r.follow, m.square, m.eventId, m.label) : undefined;
   const messages = [

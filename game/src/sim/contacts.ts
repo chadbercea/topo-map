@@ -6,6 +6,7 @@ import type { System } from './systems';
 import { treeCall } from './responses';
 import { pass, search } from './sites';
 import { isMissionPoint } from './mission';
+import { acceptJob, declineJob } from './sidejob';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -24,13 +25,14 @@ export type Contact = {
   observed: boolean;
   units: number[];
   total: number;
+  intent?: string; // what an intercept of its radio reveals it's doing
 };
 
 // What the team decided about a square on its route.
 export type Decision = 'blind' | 'attack' | 'push';
 
 // Contacts for a mission script: hidden until imagery (or an intercept) finds them.
-export const makeContact = (id: string, square: SquareId, label: string, strength: number, units: number[]): Contact => ({
+export const makeContact = (id: string, square: SquareId, label: string, strength: number, units: number[], intent?: string): Contact => ({
   id,
   square,
   label,
@@ -39,7 +41,17 @@ export const makeContact = (id: string, square: SquareId, label: string, strengt
   observed: false,
   units,
   total: units.length,
+  intent,
 });
+
+// A contact on the move: it and its map marker go to a new square.
+export function moveContact(s: GameState, id: string, square: SquareId): GameState {
+  return {
+    ...s,
+    contacts: s.contacts.map((c) => (c.id === id ? { ...c, square } : c)),
+    events: s.events.map((e) => (e.id === `contact-${id}` ? { ...e, square } : e)),
+  };
+}
 
 // How hard it fights: its strength, scaled by the fighters it has left.
 export const effectiveStrength = (c: Contact) => c.strength * (c.units.length / c.total);
@@ -122,7 +134,7 @@ function holdOn(s: GameState, c: { node: string; id: string; square: SquareId; l
 }
 
 // The effects HQ's answers have on a contact or an unimaged square.
-export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass';
+export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'accept-job' | 'decline-job';
 
 export function applyEffect(s: GameState, effect: Effect, square: SquareId): GameState {
   const decide = (d: Decision) => ({ ...s.team, decisions: { ...s.team.decisions, [square]: d } });
@@ -150,6 +162,10 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
       return search(s, square);
     case 'pass':
       return pass(s, square);
+    case 'accept-job':
+      return acceptJob(s);
+    case 'decline-job':
+      return declineJob(s);
   }
 }
 

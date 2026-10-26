@@ -9,6 +9,7 @@ import { spendWeapon, WEAPON, type Weapon } from './ordnance';
 import { CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
 import { makeNoise, NOISE } from './noise';
 import { finishSignal, type Signal } from './signal';
+import { deliverImagery } from './sidejob';
 
 // Mini games play on the theater map itself (GDD). Starting one puts the map in that game's
 // mode and opens a companion panel; the result feeds back into the mission: the team gets
@@ -242,6 +243,7 @@ function finish(s: GameState, status: 'won' | 'lost'): GameState {
     next = boostIntel(next, def.intel);
     const scanned = [...new Set([...next.map.scanned, ...m.targets])];
     next = reveal({ ...next, map: { ...next.map, scanned } }, m.targets, def.callsign);
+    next = deliverImagery(next, m.targets);
   }
   const sat = radio(s, def.callsign, `minigame-${m.startedMs}-sat`,
     status === 'won' ? `${m.targets.join(', ')} imaged. Downlinked to ${s.team.callsign}.` : 'Pass ended. No usable imagery.', 'read');
