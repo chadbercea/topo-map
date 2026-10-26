@@ -50,7 +50,7 @@ html, body {
 .slot-intel { grid-area: intel; align-self: start; }
 .slot-timer { grid-area: timer; align-self: start; }
 .slot-team { grid-area: team; align-self: end; }
-.slot-map { grid-area: map; min-height: 0; position: relative; display: grid; }
+.slot-map { grid-area: map; min-height: 0; position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 6px; }
 .map-area { grid-area: 1 / 1; min-height: 0; }
 
 /* Panels that pop in over the map edge: alerts on top, the event card at the bottom. */
@@ -106,8 +106,8 @@ html, body {
 }
 
 .views {
-  grid-area: 1 / 1;
-  align-self: end;
+  /* Its own row under the map, so it never covers a grid square. */
+  grid-area: 2 / 1;
   justify-self: end;
   display: flex;
   align-items: center;
@@ -136,7 +136,7 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .alert, .event-card, .comms, .incoming .dot { animation: none; }
+  .alert, .event-card, .comms, .incoming .dot, .ecg .trace { animation: none; }
 }
 
 .panel {
@@ -261,6 +261,34 @@ html, body {
 .bar > span { display: block; height: 100%; background: var(--accent); }
 
 .team .activity { color: var(--ink); }
+.team-head .hint { color: var(--dim); }
+
+/* Mode B readout: a row per operator. */
+.readout { margin-top: 8px; gap: 8px; }
+
+.op { display: grid; grid-template-columns: 1fr 72px; grid-template-areas: 'who vitals' 'supplies supplies'; gap: 2px 8px; }
+.op .who { grid-area: who; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.op .name { color: var(--ink); }
+.op .role { color: var(--dim); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op .vitals { grid-area: vitals; display: grid; justify-items: end; }
+.op .status { font-size: 9px; letter-spacing: 0.1em; }
+.op .supplies { grid-area: supplies; display: grid; grid-template-columns: auto 1fr auto 1fr auto auto; align-items: center; gap: 4px; font-size: 9px; color: var(--dim); }
+.op .fatigue { color: var(--ink); min-width: 2ch; text-align: right; }
+
+.rank { width: 10px; height: 14px; fill: none; stroke: var(--accent); stroke-width: 1.4; flex: none; }
+
+.ecg { width: 72px; height: 18px; overflow: hidden; fill: none; stroke-width: 1.6; stroke-linejoin: round; }
+.ecg .trace { animation: ecg 1.2s linear infinite; }
+.op[data-condition='fine'] { --vital: #35d0a5; }
+.op[data-condition='caution'] { --vital: #f2c14e; }
+.op[data-condition='danger'] { --vital: #e5484d; }
+.op[data-condition='down'] { --vital: #4a5a53; }
+.ecg { stroke: var(--vital); }
+.op .status { color: var(--vital); }
+.op[data-condition='caution'] .ecg .trace { animation-duration: 0.85s; }
+.op[data-condition='danger'] .ecg .trace { animation-duration: 0.55s; }
+
+@keyframes ecg { to { transform: translateX(-40px); } }
 
 /* Mode C: radio comms under the team readout, unmistakably an incoming call. */
 .comms {
@@ -327,6 +355,7 @@ html, body {
   bottom: var(--gutter);
   max-width: 260px;
   opacity: 0.85;
+  pointer-events: none; /* read-only; never steal a tap from the map */
 }
 
 /* Phone portrait: top bar (intel, timer), map, bottom bar (team). */
@@ -362,4 +391,7 @@ html, body {
   .timer h2, .timer p:not(.resources) { display: none; }
   .timer .resources { font-size: 11px; }
   .debug { bottom: auto; top: 40%; }
+  /* On a phone the comms window replaces the readout rather than stacking under it. */
+  .team[data-mode='C'] .readout { display: none; }
+  .op { grid-template-columns: 1fr 72px 1.4fr; grid-template-areas: 'who vitals supplies'; }
 }

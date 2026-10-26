@@ -2,14 +2,18 @@ import { game, useGame } from '../sim/store';
 import { teamFatigue } from '../sim/movement';
 import { currentCall } from '../sim/comms';
 import { blocked } from '../sim/responses';
+import { teamMode } from '../sim/systems';
+import { OperatorRow } from './OperatorRow';
+import { useState } from 'react';
 
 const clock = (ms: number) => {
   const s = Math.floor(ms / 1000);
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
 
-// Team panel. Mode A (GDD): callsign, activity, general status. Mode C: the radio comms
-// window slides open under it when a call comes in. The full readout (Mode B) is ILI-1123.
+// Team panel (GDD). Mode A: callsign, activity, general status. Mode B opens by itself
+// while the team fights, bleeds or heals: a row per operator with heartbeat and supplies.
+// Mode C: the radio comms window slides open under it when a call comes in.
 export function TeamPanel() {
   const callsign = useGame((s) => s.team.callsign);
   const activity = useGame((s) => s.team.activity);
@@ -18,17 +22,31 @@ export function TeamPanel() {
   const fatigue = useGame((s) => Math.round(teamFatigue(s.team.operators)));
   const comms = useGame((s) => s.comms);
   const state = useGame((s) => s);
+  const operators = useGame((s) => s.team.operators);
+  const auto = useGame(teamMode);
+  const [pinned, setPinned] = useState(false);
+  const readout = auto === 'B' || pinned;
   const call = currentCall(comms);
   const waiting = comms.messages.filter((m) => m.status === 'new').length;
-  const mode = call && !comms.minimized ? 'C' : 'A';
+  const mode = call && !comms.minimized ? 'C' : readout ? 'B' : 'A';
 
   return (
     <section className="panel team" data-testid="team-panel" data-mode={mode}>
-      <h2>{callsign}</h2>
+      <button className="panel-toggle team-head" onClick={() => setPinned(!pinned)} aria-expanded={readout}>
+        <h2>{callsign}</h2>
+        <span className="hint">{readout ? '▾' : '▸'}</span>
+      </button>
       <p className="activity">{activity}</p>
       <p>
         {fit}/{size} fit · fatigue {fatigue}%
       </p>
+      {readout && (
+        <ul className="readout" data-testid="readout">
+          {operators.map((o) => (
+            <OperatorRow key={o.id} o={o} />
+          ))}
+        </ul>
+      )}
       {call && comms.minimized && (
         <button className="comms-badge" onClick={() => game.setCommsMinimized(false)} data-testid="comms-badge">
           ◂ {waiting} incoming

@@ -5,7 +5,7 @@ test('panels sit around the map, never on it', async ({ page }) => {
   const map = (await page.getByTestId('map-area').boundingBox())!;
   expect(map.width).toBeGreaterThan(200);
   expect(map.height).toBeGreaterThan(150);
-  for (const id of ['intel-panel', 'mission-timer', 'team-panel']) {
+  for (const id of ['intel-panel', 'mission-timer', 'team-panel', 'map-views']) {
     const p = (await page.getByTestId(id).boundingBox())!;
     const overlaps = p.x < map.x + map.width && p.x + p.width > map.x && p.y < map.y + map.height && p.y + p.height > map.y;
     expect(overlaps, `${id} overlaps the map`).toBe(false);
