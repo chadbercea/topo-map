@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('walking blind into the hidden checkpoint is an ambush; the readout shows it and the medic patches them up', async ({ page }) => {
+test('walking blind into the hidden checkpoint is an ambush; the team panel goes red and the medic patches them up', async ({ page }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
 
@@ -18,7 +18,8 @@ test('walking blind into the hidden checkpoint is an ambush; the readout shows i
   await expect(panel).toContainText('Engaged in E3');
   const log = await page.evaluate(() => window.game.get().comms.messages.map((m) => m.text));
   expect(log).toContain('Ambush in E3! Returning fire.');
-  await expect(page.getByTestId('readout')).toBeAttached();
+  await expect(panel).toHaveAttribute('data-fight', 'true'); // the team panel goes red
+  await expect(page.getByTestId('banner')).toContainText('Ambush in E3');
 
   await page.evaluate(() => {
     const done = () => window.game.get().comms.messages.some((m) => m.text === 'Patched up. Moving.');

@@ -16,6 +16,9 @@ const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, sign
 const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 const MAX_TEXTURE = 4096;
+const OUTSIDE_DIM = 0.45; // how much of the ground outside the grid shows through
+const FAR_SCALE = 0.2; // texture px per world unit for the coarse layer, before DPR
+const MAX_FRAME_MS = 50; // the most sim time one rendered frame may advance
 
 // The theater map: contour lines of the fictional terrain under the A1–H5 grid. The camera
 // fits the grid to the screen; line widths and labels are redrawn per zoom so they stay crisp.
@@ -56,7 +59,7 @@ export class MapScene extends Phaser.Scene {
     this.contours = traceContours(theater());
     this.farContours = traceContours(outerTheater());
     this.city = generateCity();
-    this.farRelief = this.makeRelief(outerTheater(), 'relief-far', -6);
+    this.farRelief = this.makeRelief(outerTheater(), 'relief-far', -6).setAlpha(OUTSIDE_DIM);
     this.nearBg = this.add.graphics().fillStyle(0x0b0f0d, 1).fillRect(FINE.x, FINE.y, FINE.w, FINE.h).setDepth(-3);
     this.relief = this.makeRelief(theater(), 'relief', -4);
     this.outsideGfx = this.add.graphics();
@@ -104,9 +107,21 @@ export class MapScene extends Phaser.Scene {
     this.layout();
   }
 
+  // Elapsed time: wall time, but never more than Phaser's smoothed delta and never more
+  // than MAX_FRAME_MS. With the 30 fps cap Phaser's delta runs ahead of wall time (the
+  // clock ran fast); on a slow renderer (CI) the smoothed delta keeps the sim in slow motion.
+  private lastFrame: number | null = null;
   update(_time: number, delta: number) {
-    this.loop.advance(delta);
+    const now = performance.now();
+    this.loop.advance(this.lastFrame === null ? 0 : Math.min(now - this.lastFrame, delta, MAX_FRAME_MS));
+    this.lastFrame = now;
     this.drawTeam();
+    const st = game.get();
+    const key = `${st.team.waypoint}|${st.team.route.join()}|${st.map.scanned.length}|${st.contacts.filter((c) => c.status === 'revealed').map((c) => c.square)}`;
+    if (key !== this.routeKey) {
+      this.routeKey = key;
+      this.drawRoute();
+    }
     this.drawMarkers(_time);
     this.drawFight(_time);
     this.drawMiniGame(_time);
@@ -293,25 +308,30 @@ export class MapScene extends Phaser.Scene {
     // Two layers fill the screen: the fine contours over the grid and its margin, and the
     // coarse ones out to the edges. Textures stay under 4096 px a side (the safe limit on
     // phones); the coarse layer is dimmed and faint, so a lower resolution doesn't show.
-    const s = Math.min(2 * DPR, this.baseZoom, MAX_TEXTURE / Math.max(FINE.w, FINE.h));
+    // Bake scales come in steps (x1.25), so small zoom changes, like the layout settling as
+    // the panels report in, don't trigger a re-bake.
+    const want = Math.min(2 * DPR, this.baseZoom, MAX_TEXTURE / Math.max(FINE.w, FINE.h));
+    const s = Math.pow(1.25, Math.ceil(Math.log(want) / Math.log(1.25)));
     if (s === this.bakedScale) return;
     this.bakedScale = s;
     this.terrain?.destroy();
     this.terrain = this.bakeContours('terrain', this.contours, FINE, s, 1).setDepth(-2);
-    this.farTerrain?.destroy();
-    const far = Math.min(s, MAX_TEXTURE / Math.max(COARSE.w, COARSE.h));
-    this.farTerrain = this.bakeContours('terrain-far', this.farContours, COARSE, far, 0.8).setDepth(-5);
+    // The coarse layer is dimmed and faint: bake it once, at a fixed modest scale.
+    // Line weight scales with bake-to-screen ratio so the lines look as fine as the near ones.
+    const far = FAR_SCALE * DPR;
+    // Baked already dimmed, so no full-screen overlay has to dim it every frame.
+    this.farTerrain ??= this.bakeContours('terrain-far', this.farContours, COARSE, far, (0.8 * far) / this.baseZoom, OUTSIDE_DIM).setDepth(-5);
     this.drawCity(s);
     this.shown = undefined;
     this.applyView();
   }
 
-  private bakeContours(key: string, lines: ContourLine[], area: Area, s: number, weight: number) {
+  private bakeContours(key: string, lines: ContourLine[], area: Area, s: number, weight: number, dim = 1) {
     const g = this.make.graphics({}, false);
     const X = (x: number) => (x - area.x) * s;
     const Y = (y: number) => (y - area.y) * s;
     for (const line of lines) {
-      g.lineStyle((line.index ? 1.4 : 0.8) * DPR * weight, TEAL, line.index ? 0.38 : 0.16);
+      g.lineStyle((line.index ? 1.4 : 0.8) * DPR * weight, TEAL, (line.index ? 0.38 : 0.16) * dim);
       for (const ring of line.rings) {
         if (ring.length < 2) continue;
         g.beginPath();
@@ -376,10 +396,12 @@ export class MapScene extends Phaser.Scene {
     this.status();
   }
 
-  // Ground outside the grid stays on screen but dimmed, so the eye lands on the theater.
+  // Ground outside the grid stays on screen but dimmed, so the eye lands on the theater. The
+  // coarse layer is baked dimmed; this only dims the fine layer's margin around the grid,
+  // which keeps full-screen layers (expensive on phones without much GPU) to a minimum.
   private drawOutside() {
-    const g = this.outsideGfx.clear().fillStyle(0x0b0f0d, 0.55);
-    const { x, y, w, h } = COARSE;
+    const g = this.outsideGfx.clear().fillStyle(0x0b0f0d, 1 - OUTSIDE_DIM);
+    const { x, y, w, h } = FINE;
     g.fillRect(x, y, w, -y); // above
     g.fillRect(x, WORLD_H, w, y + h - WORLD_H); // below
     g.fillRect(x, 0, -x, WORLD_H); // left
@@ -428,15 +450,40 @@ export class MapScene extends Phaser.Scene {
     });
   }
 
-  // The route still ahead of the team: a thin amber line through the waypoint squares.
+  // The route's state (ILI-1173): walked legs faint, imaged legs ahead solid, unimaged legs
+  // dashed (ALPHA will stop and ask), and a leg into a known contact red.
   private drawRoute() {
-    const { route, waypoint, position } = game.get().team;
-    const g = this.routeGfx.clear().lineStyle((1.5 * DPR) / this.zoom, TEAM, 0.55);
-    const points = [position, ...route.slice(waypoint).map((id) => squareCenter(id)!)];
-    for (let i = 1; i < points.length; i++) g.lineBetween(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
-    g.fillStyle(TEAM, 0.8);
-    for (const p of points.slice(1)) g.fillCircle(p.x, p.y, (3 * DPR) / this.zoom);
+    const s = game.get();
+    const { route, waypoint, position } = s.team;
+    const w = (1.5 * DPR) / this.zoom;
+    const g = this.routeGfx.clear();
+    const walked = [...route.slice(0, waypoint).map((id) => squareCenter(id)!), position];
+    g.lineStyle(w, TEAM, 0.2);
+    for (let i = 1; i < walked.length; i++) g.lineBetween(walked[i - 1].x, walked[i - 1].y, walked[i].x, walked[i].y);
+    let from = position;
+    for (const id of route.slice(waypoint)) {
+      const to = squareCenter(id)!;
+      const contact = s.contacts.some((c) => c.square === id && c.status === 'revealed');
+      g.lineStyle(w, contact ? EVENT_COLOR.contact : TEAM, contact ? 0.8 : 0.55);
+      if (contact || s.map.scanned.includes(id)) g.lineBetween(from.x, from.y, to.x, to.y);
+      else this.dashed(g, from, to, (6 * DPR) / this.zoom);
+      g.fillStyle(contact ? EVENT_COLOR.contact : TEAM, 0.8).fillCircle(to.x, to.y, (3 * DPR) / this.zoom);
+      from = to;
+    }
   }
+
+  private dashed(g: Phaser.GameObjects.Graphics, a: { x: number; y: number }, b: { x: number; y: number }, dash: number) {
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    const ux = (b.x - a.x) / len;
+    const uy = (b.y - a.y) / len;
+    for (let d = 0; d < len; d += dash * 2) {
+      const e = Math.min(d + dash, len);
+      g.lineBetween(a.x + ux * d, a.y + uy * d, a.x + ux * e, a.y + uy * e);
+    }
+  }
+
+  // The route redraws when the team moves, and when a scan or a reveal changes a leg's state.
+  private routeKey = '';
 
   private lastTeam = { x: NaN, y: NaN };
 

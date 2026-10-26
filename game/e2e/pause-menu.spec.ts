@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { fastForward } from './helpers';
 
 const tick = async (page: Page) => Number(await page.getByTestId('tick').textContent());
 const menu = (page: Page) => page.getByTestId('pause-menu');
@@ -9,12 +10,13 @@ const press = async (page: Page, name: string, isMobile: boolean) => {
 };
 
 test('restart starts the mission over from 06:00', async ({ page, isMobile }) => {
-  await page.goto('');
-  await expect.poll(() => tick(page), { timeout: 15_000 }).toBeGreaterThan(3);
+  await page.goto('?debug');
+  await page.waitForFunction(() => window.game);
+  await fastForward(page, 2_000); // well into the mission: 20+ ticks
   await press(page, 'Pause', isMobile);
   await press(page, 'Restart', isMobile);
   await expect(menu(page)).toHaveCount(0);
-  expect(await tick(page)).toBeLessThan(3);
+  expect(await tick(page)).toBeLessThan(10); // back near zero (a few frames run after the click)
   await expect(page.getByTestId('clock')).toHaveText('06:00');
 });
 

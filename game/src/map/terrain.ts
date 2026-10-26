@@ -35,7 +35,7 @@ function valueNoise(x: number, y: number, seed: number) {
 // world position, so the two layers agree wherever they overlap.
 export type Area = { x: number; y: number; w: number; h: number; sample: number };
 export const FINE: Area = { x: -400, y: -400, w: WORLD_W + 800, h: WORLD_H + 800, sample: SAMPLE };
-export const COARSE: Area = { x: -3200, y: -4000, w: WORLD_W + 6400, h: WORLD_H + 8000, sample: 30 };
+export const COARSE: Area = { x: -3200, y: -4000, w: WORLD_W + 6400, h: WORLD_H + 8000, sample: 60 };
 
 export type Terrain = {
   x0: number; // world position of sample 0

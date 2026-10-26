@@ -23,11 +23,10 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
 
-test('intel collapses into the top bar on a phone and opens on tap', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'phone layout only');
+test('intel is a tab that opens its drawer on tap', async ({ page }) => {
   await page.goto('');
   const panel = page.getByTestId('intel-panel');
   await expect(panel.getByText('Imagery')).toBeHidden();
-  await panel.getByRole('button').tap();
+  await panel.getByRole('button').click();
   await expect(panel.getByText('Imagery')).toBeVisible();
 });

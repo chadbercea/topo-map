@@ -26,6 +26,8 @@ export type MissionDef = {
   schedule: Scheduled[];
   feed: { atMs: number; project: Omit<Project, 'progress'> & { type: IntelType } }[];
   triggers: Trigger[];
+  // Known threats with an ETA, for the mission bar's Next line (ILI-1173).
+  threats?: (s: GameState) => { text: string; atMs: number }[];
 };
 
 const registry = new Map<string, MissionDef>();

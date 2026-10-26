@@ -7,8 +7,8 @@ test('ALPHA holds short of unimaged ground and asks; Push through sends it on bl
   await fastForward(page, 500);
 
   const panel = page.getByTestId('team-panel');
-  await expect(panel).toHaveAttribute('data-mode', 'C');
-  await expect(page.getByTestId('comms')).toContainText('INCOMING · ALPHA');
+  await expect(page.getByTestId('comms')).toContainText('ALPHA · NEEDS A DECISION');
+  await expect(page.getByTestId('call-deadline')).toHaveText(/00:(19|20)/); // the hold times out in 20 s
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4\. No imagery/);
 
   const push = page.getByTestId('responses').getByRole('button', { name: 'Push through' });
@@ -24,6 +24,7 @@ test('comms can be minimized to a badge and reopened', async ({ page }) => {
   await fastForward(page, 500);
   await page.getByRole('button', { name: 'Minimize comms' }).click();
   await expect(page.getByTestId('comms')).toHaveCount(0);
+  await expect(page.getByTestId('comms-badge')).toContainText('ALPHA needs a decision');
   await page.getByTestId('comms-badge').click();
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
 });

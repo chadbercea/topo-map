@@ -43,8 +43,21 @@ const Bar = ({ value, label }: { value: number; label: string }) => (
 
 const STATUS = { fine: 'FINE', caution: 'CAUTION', danger: 'DANGER', down: 'DOWN' } as const;
 
-export function OperatorRow({ o }: { o: Operator }) {
+// Compact: the team panel's fixed row (heartbeat, name, the operator's key supply, status).
+// Full: the expanded readout with every supply.
+export function OperatorRow({ o, compact = false }: { o: Operator; compact?: boolean }) {
   const c = condition(o);
+  if (compact) {
+    const medic = o.role === 'Medic';
+    return (
+      <li className="op compact" data-condition={c} data-testid={`op-${o.id}`}>
+        <Heartbeat o={o} />
+        <span className="name">{o.name}</span>
+        <Bar value={medic ? medsLeft(o) : ammoLeft(o)} label={`${o.name} ${medic ? 'meds' : 'ammo'}`} />
+        <span className="status">{STATUS[c]}</span>
+      </li>
+    );
+  }
   return (
     <li className="op" data-condition={c} data-testid={`op-${o.id}`}>
       <div className="who">
