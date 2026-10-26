@@ -3,7 +3,7 @@ import { bus, EV, getMapRect, type SceneStatus } from './events';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
 import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
-import { SAMPLE, theater, traceContours, type ContourLine } from '../map/terrain';
+import { COARSE, FINE, outerTheater, theater, traceContours, type Area, type ContourLine, type Terrain } from '../map/terrain';
 import { generateCity, type City } from '../map/city';
 import { hillshade } from '../map/relief';
 import type { Settings } from '../sim/state';
@@ -15,17 +15,23 @@ const TEAM = 0xf2c14e; // the team stands out from the map in amber
 const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff } as const;
 const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
+const MAX_TEXTURE = 4096;
 
 // The theater map: contour lines of the fictional terrain under the A1–H5 grid. The camera
 // fits the grid to the screen; line widths and labels are redrawn per zoom so they stay crisp.
 export class MapScene extends Phaser.Scene {
   private contours: ContourLine[] = [];
-  private terrain?: Phaser.GameObjects.Image;
+  private farContours: ContourLine[] = [];
+  private terrain?: Phaser.GameObjects.Image; // fine contours, over the grid and its margin
+  private farTerrain?: Phaser.GameObjects.Image; // coarse contours, out to the screen edges
+  private nearBg!: Phaser.GameObjects.Graphics; // hides the coarse layer under the fine one
   private relief!: Phaser.GameObjects.Image;
+  private farRelief!: Phaser.GameObjects.Image;
   private cityImg?: Phaser.GameObjects.Image;
   private city!: City;
   private shown?: Settings;
   private gridGfx!: Phaser.GameObjects.Graphics;
+  private outsideGfx!: Phaser.GameObjects.Graphics;
   private selectGfx!: Phaser.GameObjects.Graphics;
   private routeGfx!: Phaser.GameObjects.Graphics;
   private teamGfx!: Phaser.GameObjects.Graphics;
@@ -48,8 +54,12 @@ export class MapScene extends Phaser.Scene {
 
   create() {
     this.contours = traceContours(theater());
+    this.farContours = traceContours(outerTheater());
     this.city = generateCity();
-    this.relief = this.makeRelief();
+    this.farRelief = this.makeRelief(outerTheater(), 'relief-far', -6);
+    this.nearBg = this.add.graphics().fillStyle(0x0b0f0d, 1).fillRect(FINE.x, FINE.y, FINE.w, FINE.h).setDepth(-3);
+    this.relief = this.makeRelief(theater(), 'relief', -4);
+    this.outsideGfx = this.add.graphics();
     this.gridGfx = this.add.graphics();
     this.selectGfx = this.add.graphics();
     this.missionGfx = this.add.graphics();
@@ -249,6 +259,9 @@ export class MapScene extends Phaser.Scene {
     const view = this.focus();
     const cam = this.cameras.main;
     const zoom = Math.max(0.01, Math.min((area.w - MARGIN * 2) / view.w, (area.h - MARGIN * 2) / view.h));
+    // The terrain bakes at the whole-map zoom; closing in on a board reuses it (re-baking the
+    // whole theater on every zoom would stutter on a phone).
+    this.baseZoom = Math.max(0.01, Math.min((area.w - MARGIN * 2) / WORLD_W, (area.h - MARGIN * 2) / WORLD_H));
     cam.setZoom(zoom);
     // Put the view's centre on the area's centre rather than the screen's.
     cam.centerOn(
@@ -256,6 +269,7 @@ export class MapScene extends Phaser.Scene {
       view.y + view.h / 2 - (area.y + area.h / 2 - height / 2) / zoom,
     );
     this.drawTerrain();
+    this.drawOutside();
     this.drawGrid();
     this.drawSelection();
     this.drawMission();
@@ -273,42 +287,54 @@ export class MapScene extends Phaser.Scene {
   // Thousands of contour segments are too many to redraw every frame, so they're baked
   // into a texture at screen resolution once per resize and shown as a single image.
   private bakedScale = 0;
+  private baseZoom = 1;
 
   private drawTerrain() {
-    const s = Math.min(2 * DPR, this.zoom);
+    // Two layers fill the screen: the fine contours over the grid and its margin, and the
+    // coarse ones out to the edges. Textures stay under 4096 px a side (the safe limit on
+    // phones); the coarse layer is dimmed and faint, so a lower resolution doesn't show.
+    const s = Math.min(2 * DPR, this.baseZoom, MAX_TEXTURE / Math.max(FINE.w, FINE.h));
     if (s === this.bakedScale) return;
     this.bakedScale = s;
-    const g = this.make.graphics({}, false);
-    for (const line of this.contours) {
-      g.lineStyle((line.index ? 1.4 : 0.8) * DPR, TEAL, line.index ? 0.38 : 0.16);
-      for (const ring of line.rings) {
-        if (ring.length < 2) continue;
-        g.beginPath();
-        g.moveTo(ring[0][0] * s, ring[0][1] * s);
-        for (let i = 1; i < ring.length; i++) g.lineTo(ring[i][0] * s, ring[i][1] * s);
-        g.strokePath();
-      }
-    }
-    if (this.textures.exists('terrain')) this.textures.remove('terrain');
-    g.generateTexture('terrain', Math.ceil(WORLD_W * s), Math.ceil(WORLD_H * s));
-    g.destroy();
     this.terrain?.destroy();
-    this.terrain = this.add.image(0, 0, 'terrain').setOrigin(0).setScale(1 / s).setDepth(-1);
+    this.terrain = this.bakeContours('terrain', this.contours, FINE, s, 1).setDepth(-2);
+    this.farTerrain?.destroy();
+    const far = Math.min(s, MAX_TEXTURE / Math.max(COARSE.w, COARSE.h));
+    this.farTerrain = this.bakeContours('terrain-far', this.farContours, COARSE, far, 0.8).setDepth(-5);
     this.drawCity(s);
     this.shown = undefined;
     this.applyView();
   }
 
-  // Relief view: one pixel per height sample, stretched over the world. Sample i sits at
-  // world i * SAMPLE, so the image starts half a sample up and left of the origin.
-  private makeRelief() {
-    const t = theater();
+  private bakeContours(key: string, lines: ContourLine[], area: Area, s: number, weight: number) {
+    const g = this.make.graphics({}, false);
+    const X = (x: number) => (x - area.x) * s;
+    const Y = (y: number) => (y - area.y) * s;
+    for (const line of lines) {
+      g.lineStyle((line.index ? 1.4 : 0.8) * DPR * weight, TEAL, line.index ? 0.38 : 0.16);
+      for (const ring of line.rings) {
+        if (ring.length < 2) continue;
+        g.beginPath();
+        g.moveTo(X(ring[0][0]), Y(ring[0][1]));
+        for (let i = 1; i < ring.length; i++) g.lineTo(X(ring[i][0]), Y(ring[i][1]));
+        g.strokePath();
+      }
+    }
+    if (this.textures.exists(key)) this.textures.remove(key);
+    g.generateTexture(key, Math.ceil(area.w * s), Math.ceil(area.h * s));
+    g.destroy();
+    return this.add.image(area.x, area.y, key).setOrigin(0).setScale(1 / s);
+  }
+
+  // Relief view: one pixel per height sample, stretched over the layer. Sample i sits at
+  // its world position, so the image starts half a sample up and left of the layer.
+  private makeRelief(t: Terrain, key: string, depth: number) {
     const canvas = document.createElement('canvas');
     canvas.width = t.cols;
     canvas.height = t.rows;
     canvas.getContext('2d')!.putImageData(new ImageData(hillshade(t) as ImageDataArray, t.cols, t.rows), 0, 0);
-    this.textures.addCanvas('relief', canvas);
-    return this.add.image(-SAMPLE / 2, -SAMPLE / 2, 'relief').setOrigin(0).setScale(SAMPLE).setDepth(-2);
+    this.textures.addCanvas(key, canvas);
+    return this.add.image(t.x0 - t.sample / 2, t.y0 - t.sample / 2, key).setOrigin(0).setScale(t.sample).setDepth(depth);
   }
 
   // City overlay, baked like the contours: highways, streets, building footprints.
@@ -336,13 +362,28 @@ export class MapScene extends Phaser.Scene {
   // Show the chosen view: contours alone, or relief with faint contours; city on top.
   private applyView() {
     const settings = game.get().settings;
-    if (settings === this.shown || !this.terrain || !this.cityImg) return;
+    if (settings === this.shown || !this.terrain || !this.farTerrain || !this.cityImg) return;
     this.shown = settings;
     const relief = settings.mapView === 'relief';
+    // Layers, back to front: far relief, far contours, near relief (opaque, so it hides the
+    // far contours under it), near background (topo view: does the same job), near contours.
     this.relief.setVisible(relief);
+    this.farRelief.setVisible(relief);
+    this.nearBg.setVisible(!relief);
     this.terrain.setAlpha(relief ? 0.35 : 1);
+    this.farTerrain.setAlpha(relief ? 0.35 : 1);
     this.cityImg.setVisible(settings.city);
     this.status();
+  }
+
+  // Ground outside the grid stays on screen but dimmed, so the eye lands on the theater.
+  private drawOutside() {
+    const g = this.outsideGfx.clear().fillStyle(0x0b0f0d, 0.55);
+    const { x, y, w, h } = COARSE;
+    g.fillRect(x, y, w, -y); // above
+    g.fillRect(x, WORLD_H, w, y + h - WORLD_H); // below
+    g.fillRect(x, 0, -x, WORLD_H); // left
+    g.fillRect(WORLD_W, 0, x + w - WORLD_W, WORLD_H); // right
   }
 
   private drawGrid() {
