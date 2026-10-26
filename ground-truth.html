@@ -125,14 +125,25 @@
   .side::before, .side::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--line); }
   .side::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
   .side::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
-  #intel { left: 16px; }
+  /* Only the card list scrolls, so the feed line and the sort bar stay in reach. */
+  #intel { left: 16px; overflow: clip; }
+  #cards { flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
   #team { right: 16px; width: 260px; }
   .sect { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 9px;
     letter-spacing: .2em; padding-bottom: 6px; border-bottom: 1px solid rgba(226,185,127,.18); }
 
-  .turn { font-size: 10px; letter-spacing: .14em; padding: 7px 9px; border: 1px solid rgba(63,208,192,.35); color: var(--tealhi); }
-  .turn.stopped { border-color: var(--major); color: var(--bg); background: var(--major); font-weight: 600; }
-  .turn:empty { display: none; }
+  /* The feed line and the sort bar. */
+  .feed { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: .14em; padding: 6px 6px 6px 9px;
+    border: 1px solid rgba(63,208,192,.35); color: var(--tealhi); }
+  .feed #pause { margin-left: auto; white-space: nowrap; }
+  .feed.paused { border-color: var(--major); color: var(--bg); background: var(--major); font-weight: 600; }
+  .feed.paused #pause { color: var(--bg); border-color: var(--bg); }
+  .sorts { display: flex; gap: 4px; margin-top: -4px; }
+  .sorts .btn { flex: 1; padding: 4px 2px; white-space: nowrap; letter-spacing: .06em; color: var(--muted); border-color: rgba(226,185,127,.2); }
+  .sorts .btn[aria-pressed="true"] { color: var(--bg); background: var(--major); border-color: var(--major); font-weight: 600; }
+  .sorts .k, .keys b { color: var(--major); font-weight: 600; }
+  .sorts .btn[aria-pressed="true"] .k { color: var(--bg); }
+  .keys { font-size: 9px; letter-spacing: .12em; color: var(--muted); line-height: 1.7; }
   #cards { display: flex; flex-direction: column; gap: 8px; margin-top: -4px; }
   #cards:empty::before { content: "AWAITING REPORTS…"; color: var(--muted); font-size: 9px; letter-spacing: .18em; }
   .card { display: grid; gap: 6px; padding: 8px 9px; border-left: 2px solid rgba(226,185,127,.35); background: rgba(226,185,127,.05);
@@ -146,6 +157,14 @@
   .card .agree.yes { color: var(--tealhi); }
   .card .acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
   .card.hot { background: rgba(226,185,127,.13); border-left-color: var(--major); }
+  .card.sel { outline: 1px solid var(--major); outline-offset: -1px; }
+  .card.pinned .meta .n::before { content: "★ "; color: var(--major); }
+  .btn.pin { padding: 4px 6px; }
+  .btn.pin[aria-pressed="true"] { color: var(--bg); background: var(--major); border-color: var(--major); }
+  /* How long an open report has before it goes stale. */
+  .ttl { height: 2px; background: rgba(226,185,127,.12); }
+  .ttl i { display: block; height: 100%; background: rgba(226,185,127,.5); transform-origin: left; }
+  .ttl.low i { background: var(--accent); }
   .card.discarded, .card.expired { opacity: .4; }
   .card.leaving { animation: leave .35s ease-in forwards; pointer-events: none; }
   @keyframes leave { to { opacity: 0; transform: translateX(-16px); } }
@@ -259,9 +278,16 @@
     <div class="title">INTEL</div>
     <div class="label">SNAKE RIVER CANYON · <a href="./">MAP</a></div>
   </div>
-  <div id="turn" class="turn"></div>
+  <div id="feed" class="feed"><span id="feed-state">● LIVE</span><button class="btn" id="pause" title="Pause (Space)">‖ PAUSE</button></div>
   <div class="sect"><span>REPORTS</span><span id="i-count">0 OPEN</span></div>
+  <div class="sorts" role="group" aria-label="Sort reports">
+    <button class="btn" data-sort="new" aria-pressed="true"><span class="k hide-sm">1 </span>NEWEST</button>
+    <button class="btn" data-sort="grade" aria-pressed="false"><span class="k hide-sm">2 </span>GRADE</button>
+    <button class="btn" data-sort="agree" aria-pressed="false"><span class="k hide-sm">3 </span>AGREE</button>
+    <button class="btn" data-sort="exp" aria-pressed="false"><span class="k hide-sm">4 </span>EXPIRY</button>
+  </div>
   <div id="cards" aria-live="polite"></div>
+  <div class="keys hide-sm"><b>↑↓</b> SELECT · <b>S</b> SEND · <b>C</b> CHECK · <b>D</b> DISCARD · <b>P</b> PIN · <b>SPACE</b> PAUSE</div>
 </aside>
 
 <aside id="team" class="side" aria-label="Team ALPHA">
@@ -281,13 +307,14 @@
   <div class="label">GROUND TRUTH // BRIEFING</div>
   <div class="title">OPERATION DRY CREEK</div>
   <p>Three hostile cells are operating on the south rim of the Snake River canyon. Team ALPHA, five operators, will find them, neutralize them and get out. You have five minutes.</p>
-  <p>You're their intel. Reports come in <b>one at a time</b>, and <b>the clock stops</b> until you decide on each one. Take your time: study the map and the clues. Some reports are true, some are false, and true ones go stale as the cells move.</p>
+  <p>You're their intel. Reports <b>stream in live</b>, sometimes several at once, and each one <b>goes stale after 40 seconds</b>. Some are true, some are false, and true ones drift as the cells move. Work the pile.</p>
   <ul>
     <li><b>Send</b> a report and ALPHA moves on it. They act on what you send, and nothing else.</li>
     <li><b>Read</b> each report before you trust it. The grade is the source's track record: A is right 90% of the time, E only 15%. Reports that agree with each other usually point at something real; false ones stand alone.</li>
-    <li><b>Check</b> a report when you need to be sure. The analyst takes eight seconds of mission time, so the clock runs while they work.</li>
-    <li><b>Tap the map</b> to sweep. It costs no time: it checks the reports around it and reveals any cell there. <b>Tap a revealed cell</b> to send ALPHA its live position.</li>
-    <li><b>Drag</b> to look around. <b>Scroll or pinch</b> to zoom.</li>
+    <li><b>Sort</b> the list by newest, grade, agreement or what's about to expire, and <b>pin ★</b> the ones you're watching to the top.</li>
+    <li><b>Check</b> a report when you need to be sure. The analyst takes eight seconds each and works a queue of three.</li>
+    <li><b>Tap the map</b> to sweep. It checks the reports around it and reveals any cell there. <b>Tap a revealed cell</b> to send ALPHA its live position.</li>
+    <li><b>Keys:</b> ↑↓ select, S send, C check, D discard, P pin, 1–4 sort, Space pause. <b>Drag</b> to look around, <b>scroll or pinch</b> to zoom.</li>
   </ul>
   <button class="btn go" id="begin">BEGIN</button>
   <div class="fine">LOADING ELEVATION DATA…</div>
@@ -304,8 +331,8 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
-// Ground Truth (ILI-1091, turn-based since ILI-1093): you're the intel officer. Three hostile cells are loose on the south rim, and reports about
-// them stream in, some true and some false. You check them, sweep the map, and send ALPHA what's real. ALPHA hunts
+// Ground Truth (ILI-1091, a live feed you triage since ILI-1094): you're the intel officer. Three hostile cells are loose on the south rim,
+// and reports about them stream in, some true and some false. You sort them, check them, sweep the map, and send ALPHA what's real. ALPHA hunts
 // what you send and neutralizes what it finds; the quality of your intel decides what that costs. A fictional exercise.
 // The terrain loading, river tracing and sweep light follow index.html and headgate.html.
 const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
@@ -323,8 +350,11 @@ const TRACK = 15;            // s a sweep keeps a cell tracked
 const SWEEPS = 3, RECHARGE = 20;
 const CHECK_TIME = 8;        // s for the analyst to verify one report
 const LIMIT = 300;           // s: the mission window
-const REPORT_EVERY = 9;      // s of mission time from one decision to the next report
-const CHECK_SPEED = 4;       // a CHECK plays its seconds out this many times faster than real time
+const REPORT_EVERY = [4, 8]; // s between arrivals, picked at random in this range
+const BURST = .25;           // chance an arrival is two or three reports at once
+const REPORT_TTL = 40;       // s before an unanswered report goes stale
+const MAX_OPEN = 8;          // the feed holds back while this many reports wait on you
+const QUEUE = 3;             // reports the analyst holds: one being checked, the rest waiting
 const FIGHT = 4;             // s an engagement holds ALPHA
 const EXFIL = 4;             // s from the last cell down to the end of the mission
 const HEAL = .8;             // hp/s a wounded operator recovers between fights
@@ -615,8 +645,8 @@ function place(g) {
 // ---------- The game ----------
 function newGame(seed = Date.now()) {
   game = {
-    T: 0, running: false, over: false, rng: mulberry32(seed), seed, nextReport: 1, cards: [],
-    sweeps: SWEEPS, recharge: 0, spots: [], checking: null,
+    T: 0, running: false, paused: false, over: false, rng: mulberry32(seed), seed, nextReport: 2, cards: [],
+    sweeps: SWEEPS, recharge: 0, spots: [], queue: [], sel: null,
     hostiles: OP.cells.map((route, i) => ({ i, route: route.map(toGrid), seg: 0, dir: 1, pos: toGrid(route[0]), alive: true,
       trackedUntil: -1, seen: null, card: null, down: null, live: false })),
     team: { pos: toGrid(OP.lz), route: [], seg: 0, phase: "hold", wait: 0,
@@ -647,8 +677,11 @@ function status(text, alert = false) {
 }
 
 const tracked = h => h.alive && game.T < h.trackedUntil;
-// Turn-based: one report is open at a time, and the clock stops until you decide on it.
-const openReport = () => game.cards.find(c => c.kind === "report" && c.state === "new");
+// The clock runs unless you pause it, and nothing can be decided while it's paused.
+const live = () => game?.running && !game.paused;
+const isOpen = c => c.kind === "report" && c.state === "new";
+// The report the analyst is working on: the head of the queue.
+const checking = () => game.queue[0] || null;
 // ALPHA knows about a cell when one of the grids you sent it is close: intel is what lets it see them coming.
 const knows = h => game.team.targets.some(e => meters(e.g, h.pos) < KNOWN_R);
 // Operators out of the fight: below half health, or dead. Three at once and ALPHA is combat ineffective.
@@ -692,9 +725,12 @@ function addCard(c) {
   c.state = "new";
   c.stamp = c.stamp || null;
   c.when = game.T;
+  c.pinned = false;
   game.cards.push(c);
   const el = document.createElement("div");
   c.el = el;
+  // The arrival slide plays once; re-sorting moves the card without replaying it.
+  el.addEventListener("animationend", () => { if (!el.classList.contains("leaving")) el.style.animation = "none"; }, { once: true });
   $("cards").prepend(el);
   if (c.kind === "report") {
     const ping = document.createElement("div");
@@ -705,9 +741,11 @@ function addCard(c) {
   }
   el.addEventListener("pointerenter", () => hot(c, true));
   el.addEventListener("pointerleave", () => hot(c, false));
-  // Clicking a card (not its buttons) flies the camera to it.
-  el.addEventListener("click", e => { if (!e.target.closest("button")) flyTo(c.kind === "track" ? (game.hostiles[c.h].seen || game.hostiles[c.h].pos) : c.g); });
+  // Clicking a card (not its buttons) selects it and flies the camera to it.
+  el.addEventListener("click", e => { if (!e.target.closest("button")) select(c, true); });
   drawCard(c);
+  if (!game.sel) select(c);
+  reorder();
   countOpen();
 }
 
@@ -721,44 +759,145 @@ function countOpen() {
 function retire(c, delay) {
   setTimeout(() => {
     if (!c.el.isConnected) return;
+    c.el.style.animation = "";
     c.el.classList.add("leaving");
     setTimeout(() => c.el.remove(), 350);
     c.ping?.remove(); c.ping = null;
   }, delay);
 }
 
+// Hovering a card lights its ping; letting go falls back to the selected card.
 function hot(c, on) {
   for (const o of game.cards) { o.el.classList.remove("hot"); o.ping?.classList.remove("hot"); }
-  if (on) { c.el.classList.add("hot"); c.ping?.classList.add("hot"); }
+  const h = on ? c : game.sel;
+  if (h) { h.el.classList.add("hot"); h.ping?.classList.add("hot"); }
+}
+
+// ---------- Triage: sorting, selection, pins ----------
+const SORTS = {
+  new: (a, b) => b.when - a.when,
+  grade: (a, b) => RELIABILITY[b.grade] - RELIABILITY[a.grade] || b.when - a.when,
+  exp: (a, b) => a.when - b.when,
+};
+let sortBy = "new";
+
+// Groups of reports that agree, directly or through each other: the biggest group first, then the newest.
+function clusters(list) {
+  const of = new Map();
+  for (const c of list) {
+    if (c.kind !== "report" || of.has(c)) continue;
+    const group = [c];
+    of.set(c, group);
+    for (let i = 0; i < group.length; i++)
+      for (const o of agreeing(group[i])) if (list.includes(o) && !of.has(o)) { of.set(o, group); group.push(o); }
+  }
+  return of;
+}
+
+// Pinned reports on top, then live tracks, then the rest in the chosen order. Decided cards keep their place until they leave.
+function reorder() {
+  const list = game.cards.filter(c => c.el.isConnected && !c.el.classList.contains("leaving"));
+  const rank = c => c.pinned ? 0 : c.kind === "track" ? (game.hostiles[c.h].alive ? 1 : 3) : 2;
+  let by = SORTS[sortBy];
+  if (sortBy === "agree") {
+    const of = clusters(list), newest = g => Math.max(...g.map(c => c.when));
+    by = (a, b) => {
+      const ga = of.get(a), gb = of.get(b);
+      return gb.length - ga.length || newest(gb) - newest(ga) || b.when - a.when;
+    };
+  }
+  const want = list.sort((a, b) => rank(a) - rank(b) || (a.kind === "report" && b.kind === "report" ? by(a, b) : b.when - a.when));
+  const now = [...$("cards").children].filter(el => !el.classList.contains("leaving"));
+  if (want.every((c, i) => now[i] === c.el)) return;
+  for (const c of want) $("cards").append(c.el);
+  for (const el of $("cards").querySelectorAll(".leaving")) $("cards").append(el);
+}
+
+function setSort(s) {
+  sortBy = s;
+  for (const b of document.querySelectorAll(".sorts .btn")) b.setAttribute("aria-pressed", b.dataset.sort === s);
+  reorder();
+  game.sel?.el.scrollIntoView({ block: "nearest" });
+}
+
+// Cards you can act on, in the order the list shows them.
+const actionable = () => [...$("cards").children].map(el => game.cards.find(c => c.el === el))
+  .filter(c => c && (c.kind === "report" ? c.state === "new" : game.hostiles[c.h].alive));
+
+function select(c, go = false) {
+  const was = game.sel;
+  game.sel = c;
+  if (was && was !== c) drawCard(was);
+  if (c) { drawCard(c); hot(c, true); c.el.scrollIntoView({ block: "nearest" }); }
+  if (c && go) flyTo(c.kind === "track" ? (game.hostiles[c.h].seen || game.hostiles[c.h].pos) : c.g);
+}
+
+// Moves the selection up or down the list.
+function step(by) {
+  const list = actionable();
+  if (!list.length) return;
+  const i = list.indexOf(game.sel);
+  select(list[i < 0 ? 0 : clamp(i + by, 0, list.length - 1)], true);
+}
+
+// When the selected card is decided, the selection moves to the one below it (or above, at the bottom).
+function selectNext(c) {
+  if (game.sel !== c) return;
+  const list = actionable(), i = list.indexOf(c);
+  const rest = list.filter(o => o !== c);
+  select(rest[Math.min(Math.max(i, 0), rest.length - 1)] || null);
+}
+
+function pin(c) {
+  if (!isOpen(c)) return;
+  c.pinned = !c.pinned;
+  drawCard(c);
+  reorder();
 }
 
 function drawCard(c) {
   if (c.kind === "track") return drawTrack(c);
   const stamp = c.stamp ? `<span class="stamp ${c.stamp}">${c.stamp === "ok" ? "✓ TRUE" : "✗ FALSE"}</span>` : "";
   let acts;
-  if (c.state === "new" && game.checking === c) acts = `<span class="checking">ANALYST CHECKING…</span>`;
+  const q = game.queue.indexOf(c);
+  if (c.state === "new" && q === 0) acts = `<span class="checking">ANALYST CHECKING…</span>`;
   else if (c.state === "new") {
-    const check = c.stamp ? "" : `<button class="btn check"${game.checking ? ' disabled title="The analyst is busy"' : ""}>CHECK</button>`;
+    const check = c.stamp ? ""
+      : q > 0 ? `<button class="btn check" title="Take it out of the analyst's queue">QUEUED #${q} ✕</button>`
+      : `<button class="btn check"${game.queue.length >= QUEUE ? ' disabled title="The analyst\'s queue is full"' : ""}>${game.queue.length ? "QUEUE CHECK" : "CHECK"}</button>`;
     acts = `<button class="btn send">SEND → ALPHA</button>${check}<button class="btn drop">DISCARD</button>`;
   } else if (c.state === "sent") acts = `<span class="fed ${c.truth ? "good" : "bad"}">${c.truth ? "✓ GOOD INTEL" : "✗ BAD INTEL"} SENT</span>`;
-  else acts = `<span class="said">${c.state === "expired" ? "EXPIRED" : "DISCARDED"}</span>`;
+  else acts = `<span class="said">${c.state === "expired" ? "WENT STALE" : "DISCARDED"}</span>`;
   // Known true or false: checked, swept, or sent (sending tells you what you fed them).
   const known = c.stamp || (c.state === "sent" ? (c.truth ? "ok" : "bad") : null);
-  c.el.className = `card ${c.state}${known ? " " + known : ""}`;
+  c.el.className = `card ${c.state}${known ? " " + known : ""}${c.pinned ? " pinned" : ""}${game.sel === c ? " sel hot" : ""}`;
   const agree = agreeing(c);
+  const pinBtn = c.state === "new" ? `<button class="btn pin" aria-pressed="${c.pinned}" title="Pin to the top (P)">★</button>` : "";
   c.el.innerHTML = `<div class="meta"><span class="n">${pad(c.id)}</span><span>${c.src}</span>
       <span class="grade" title="Source track record">${c.grade} · ${Math.round(RELIABILITY[c.grade] * 100)}%</span><span class="t">${clock(c.when)}</span></div>
     <div class="claim"></div>
     ${c.state === "new" ? `<div class="agree${agree.length ? " yes" : ""}">${agree.length ? `◆ AGREES WITH ${agree.map(o => pad(o.id) + (o.state === "sent" ? " (SENT)" : o.state === "discarded" ? " (DROPPED)" : "")).join(" · ")}` : "◇ NO OTHER REPORT AGREES"}</div>` : ""}
-    <div class="acts">${acts}${stamp}</div>${game.checking === c ? '<div class="bar"><i></i></div>' : ""}`;
+    <div class="acts">${acts}${pinBtn}${stamp}</div>${q === 0 ? '<div class="bar"><i></i></div>' : ""}
+    ${c.state === "new" ? '<div class="ttl"><i></i></div>' : ""}`;
   c.el.querySelector(".claim").textContent = c.claim;
   if (c.ping) {
-    c.ping.className = `ping${known ? " " + known : ""}${c.state === "new" ? "" : " done"}`;
+    c.ping.className = `ping${known ? " " + known : ""}${c.state === "new" ? "" : " done"}${game.sel === c ? " hot" : ""}`;
     c.ping.querySelector(".id").textContent = pad(c.id) + (known === "ok" ? " ✓" : known === "bad" ? " ✗" : "");
   }
+  drawTTL(c);
   c.el.querySelector(".send")?.addEventListener("click", () => decide(c, "sent"));
   c.el.querySelector(".drop")?.addEventListener("click", () => decide(c, "discarded"));
   c.el.querySelector(".check")?.addEventListener("click", () => check(c));
+  c.el.querySelector(".pin")?.addEventListener("click", () => pin(c));
+}
+
+// The stale bar drains as a report ages, and turns red in its last ten seconds.
+function drawTTL(c) {
+  const bar = c.el.querySelector(".ttl");
+  if (!bar) return;
+  const left = Math.max(0, 1 - (game.T - c.when) / REPORT_TTL);
+  bar.firstElementChild.style.transform = `scaleX(${left})`;
+  bar.classList.toggle("low", left * REPORT_TTL < 10);
 }
 
 // A sensor track on a cell: live while tracked, then the last place it was seen.
@@ -768,7 +907,7 @@ function drawTrack(c) {
   const claim = !h.alive ? "Neutralized." : live ? `Hostile cell, tracked live ${place(h.pos)}.` : `Signal lost. Last seen ${place(h.seen)}.`;
   const acts = !h.alive ? `<span class="said">NEUTRALIZED</span>`
     : `<button class="btn upd">${live ? "UPDATE ALPHA: LIVE POSITION" : "SEND LAST SEEN"}</button><span class="live-dot">${live ? "● LIVE" : "○ LOST"}</span>`;
-  c.el.className = `card track${h.alive ? "" : " down"}`;
+  c.el.className = `card track${h.alive ? "" : " down"}${game.sel === c ? " sel hot" : ""}`;
   c.el.innerHTML = `<div class="meta"><span class="n">${pad(c.id)}</span><span>${c.src}</span>
       <span class="grade" title="Source reliability, A (best) to F">A</span><span class="t">${clock(c.when)}</span></div>
     <div class="claim"></div><div class="acts">${acts}<span class="stamp ok">✓ TRUE</span></div>`;
@@ -776,54 +915,74 @@ function drawTrack(c) {
   c.el.querySelector(".upd")?.addEventListener("click", () => updateAlpha(h));
 }
 
+// Takes a report out of the analyst's queue; whoever's next moves up.
+function unqueue(c) {
+  const i = game.queue.indexOf(c);
+  if (i < 0) return;
+  game.queue.splice(i, 1);
+  if (i === 0 && game.queue[0]) game.queue[0].checkT = 0;
+  redrawOpen();
+}
+
 function decide(c, what) {
-  if (!game.running || c.state !== "new") return;
+  if (!live() || c.state !== "new") return;
+  selectNext(c);
   c.state = what;
-  if (game.checking === c) { game.checking = null; redrawOpen(); }
+  unqueue(c);
   drawCard(c);
   retire(c, 1500);
   countOpen();
-  game.nextReport = game.T + REPORT_EVERY;
   if (what !== "sent") return;
   task({ key: "r" + c.id, g: c.g, label: `REPORT ${pad(c.id)}`, planted: c.planted });
   updateTeamPanel();
 }
 
+// An unanswered report goes stale: it leaves the list, and the debrief remembers it.
+function expire(c) {
+  selectNext(c);
+  c.state = "expired";
+  unqueue(c);
+  drawCard(c);
+  retire(c, 900);
+  countOpen();
+}
+
 // Sends a cell's live position (or where it was last seen) to ALPHA.
 function updateAlpha(h) {
-  if (!game.running || !h.alive) return;
+  if (!live() || !h.alive) return;
   const c = h.card;
   if (c.state !== "sent") { c.state = "sent"; updateTeamPanel(); }
   task({ key: "h" + h.i, g: [...(tracked(h) ? h.pos : h.seen)], label: `TRACK ${h.i + 1}` }, true);
 }
 
-// ---------- The analyst: one report at a time, verified after CHECK_TIME ----------
+// ---------- The analyst: works a queue, one report every CHECK_TIME ----------
 function check(c) {
-  if (!game.running || game.checking || c.stamp || c.state !== "new") return;
-  game.checking = c;
-  c.checkT = 0;
+  if (!live() || c.stamp || c.state !== "new") return;
+  if (game.queue.includes(c)) return unqueue(c);
+  if (game.queue.length >= QUEUE) return;
+  game.queue.push(c);
+  if (game.queue.length === 1) c.checkT = 0;
   redrawOpen();
 }
 
 function tickCheck(dt) {
-  const c = game.checking;
+  const c = checking();
   if (!c) return;
   c.checkT += dt;
   const bar = c.el.querySelector(".bar i");
   if (bar) bar.style.width = `${Math.min(100, c.checkT / CHECK_TIME * 100)}%`;
   if (c.checkT < CHECK_TIME) return;
   c.stamp = c.truth ? "ok" : "bad";
-  game.checking = null;
   radio(`ANALYST: Report ${pad(c.id)} is ${c.truth ? "TRUE" : "FALSE"}.`, c.truth ? "alpha" : "alert");
-  redrawOpen();
+  unqueue(c);
 }
 
-// Open reports' CHECK buttons depend on whether the analyst is free.
-function redrawOpen() { for (const o of game.cards) if (o.state === "new" && o.kind === "report") drawCard(o); }
+// Open reports' CHECK buttons depend on the analyst's queue.
+function redrawOpen() { for (const o of game.cards) if (isOpen(o)) drawCard(o); }
 
 // ---------- Sensor sweeps ----------
 function sweep(x, y) {
-  if (!game?.running) return;
+  if (!live()) return;
   if (game.sweeps < 1) { $("sweeps").animate([{ opacity: .2 }, { opacity: 1 }], { duration: 300, iterations: 2 }); return; }
   game.sweeps--;
   const g = screenToGrid(x, y);
@@ -835,7 +994,8 @@ function sweep(x, y) {
 function resolveSweep(g) {
   let found = 0;
   for (const c of game.cards) if (c.kind === "report" && !c.stamp && c.state === "new" && meters(c.g, g) <= SWEEP_R) {
-    c.stamp = c.truth ? "ok" : "bad"; drawCard(c); found++;
+    c.stamp = c.truth ? "ok" : "bad"; found++;
+    if (game.queue.includes(c)) unqueue(c); else drawCard(c);
   }
   for (const h of game.hostiles) if (h.alive && meters(h.pos, g) <= SWEEP_R) { track(h, TRACK, "SENSOR SWEEP"); found++; }
   radio(found ? `SENSOR: Sweep complete. ${found} result${found > 1 ? "s" : ""}.` : "SENSOR: Sweep complete. Nothing there.");
@@ -1044,12 +1204,16 @@ function moveHostiles(dt) {
 // One step of the whole simulation.
 function tick(dt) {
   game.T += dt;
-  if (game.T >= game.nextReport && !openReport()) {
-    makeReport();
-    const c = openReport();
-    if (c) { flyTo(c.g); radio(`OPS: Report ${pad(c.id)} in. Clock stopped for your call.`); }
-    else game.nextReport = game.T + REPORT_EVERY;   // nothing to report this time
+  // The feed: a report every few seconds, sometimes a burst, held back while the list is full.
+  if (game.T >= game.nextReport) {
+    const r = game.rng, [lo, hi] = REPORT_EVERY;
+    game.nextReport = game.T + lo + r() * (hi - lo);
+    const n = r() < BURST ? 2 + (r() < .5) : 1, before = game.cards.length;
+    for (let i = 0; i < n && game.cards.filter(isOpen).length < MAX_OPEN; i++) makeReport();
+    const got = game.cards.length - before;
+    if (got > 1) radio(`OPS: ${got} reports in at once.`);
   }
+  for (const c of game.cards) if (isOpen(c)) { if (game.T - c.when > REPORT_TTL) expire(c); else drawTTL(c); }
   if (game.sweeps < SWEEPS) {
     game.recharge += dt;
     if (game.recharge >= RECHARGE) { game.sweeps++; game.recharge = 0; updateTeamPanel(); }
@@ -1254,18 +1418,23 @@ function drawLight(now) {
   lctx.drawImage(litLines, 0, 0, gw, gh);
 }
 
-// The turn line: whose move it is.
-let turnHTML = "";
-function drawTurn() {
-  const c = openReport();
-  let cls = "turn", html;
-  if (c && game.checking === c) html = `» ANALYST CHECKING REPORT ${pad(c.id)} · THE CLOCK RUNS`;
-  else if (c) { cls += " stopped"; html = `II CLOCK STOPPED · YOUR CALL ON REPORT ${pad(c.id)}`; }
-  else html = `▶ RUNNING · NEXT REPORT IN ${Math.max(0, Math.ceil(game.nextReport - game.T))} s`;
-  if (html + cls === turnHTML) return;
-  turnHTML = html + cls;
-  $("turn").className = cls;
-  $("turn").textContent = html;
+// The feed line: live, or paused by you, and when the next report is due.
+let feedKey = "";
+function drawFeed() {
+  const next = Math.max(0, Math.ceil(game.nextReport - game.T)), q = game.queue.length;
+  const text = game.paused ? "‖ PAUSED" : `● LIVE · NEXT ${next} s${q ? ` · ANALYST ${q}/${QUEUE}` : ""}`;
+  if (text === feedKey) return;
+  feedKey = text;
+  $("feed").classList.toggle("paused", game.paused);
+  $("feed-state").textContent = text;
+  $("pause").textContent = game.paused ? "▶ RESUME" : "‖ PAUSE";
+}
+
+function togglePause() {
+  if (!game?.running) return;
+  game.paused = !game.paused;
+  radio(game.paused ? "OPS: Paused." : "OPS: Resumed.");
+  drawFeed();
 }
 
 // ---------- Loop ----------
@@ -1274,10 +1443,8 @@ function frame(now) {
   last = now;
   stepFly(now);
   if (game.running) {
-    // The clock stops while a report waits on you. A CHECK spends mission time, played out fast.
-    if (!openReport()) tick(dt);
-    else if (game.checking) tick(dt * CHECK_SPEED);
-    drawTurn();
+    if (!game.paused) tick(dt);
+    drawFeed();
     $("recharge").firstElementChild.style.width = `${game.sweeps < SWEEPS ? game.recharge / RECHARGE * 100 : 0}%`;
     $("clock").textContent = clock(game.T);
   }
@@ -1329,6 +1496,26 @@ svg.addEventListener("wheel", e => {
   fly = null;
   zoomAt(e.clientX, e.clientY, cam.k * Math.exp(-e.deltaY * .0015));
 }, { passive: false });
+
+// ---------- Triage keys and the sort bar ----------
+$("pause").addEventListener("click", togglePause);
+for (const b of document.querySelectorAll(".sorts .btn")) b.addEventListener("click", () => setSort(b.dataset.sort));
+const SORT_KEYS = { 1: "new", 2: "grade", 3: "agree", 4: "exp" };
+addEventListener("keydown", e => {
+  if (!game?.running || e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key, c = game.sel;
+  if (k === " ") togglePause();
+  else if (k === "ArrowDown" || k === "j") step(1);
+  else if (k === "ArrowUp" || k === "k") step(-1);
+  else if (SORT_KEYS[k]) setSort(SORT_KEYS[k]);
+  else if (!c) return;
+  else if (k === "s") c.kind === "track" ? updateAlpha(game.hostiles[c.h]) : decide(c, "sent");
+  else if (k === "c" && c.kind === "report") check(c);
+  else if (k === "d" && c.kind === "report") decide(c, "discarded");
+  else if (k === "p" && c.kind === "report") pin(c);
+  else return;
+  e.preventDefault();
+});
 
 $("begin").addEventListener("click", () => {
   if (!state) return;
