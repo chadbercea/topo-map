@@ -45,4 +45,8 @@ test('drone: one blast over all four fighters destroys the target', async ({ pag
   await tapAt(page, isMobile, await e3Cell(page, 5)); // 2x2 over 5, 6, 9, 10
   await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'won');
   await expect(page.getByTestId('minigame-result')).toContainText('Target destroyed. 4 down.');
+  // Confirmed kills pay, and the spot becomes a kill site ALPHA can search.
+  await expect(page.getByTestId('resources')).toContainText('$6,000');
+  await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByTestId('alerts')).toContainText('KILL SITE E3');
 });

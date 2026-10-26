@@ -12,7 +12,7 @@ import { BOARD } from '../sim/minigame';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
-const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e } as const;
+const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf } as const;
 const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 

@@ -5,6 +5,7 @@ import type { Operator, Role } from './team';
 import type { Message } from './comms';
 import { hasBuff } from './intel';
 import { contactIn, effectiveStrength } from './contacts';
+import { CASH_PER_TEAM_KILL, earn, markSite } from './sites';
 
 // Contact resolves on its own (GDD: the player doesn't control the team). Walking into a
 // square with a live contact starts a firefight: an attack on a found contact has surprise
@@ -117,14 +118,18 @@ export const firefightSystem: System = (s, dt) => {
     // Fight over: the contact is cleared (or the team breaks contact, out of ammo).
     const wounded = operators.filter((o) => alive(o) && o.health < WOUNDED_BELOW).length;
     const down = operators.filter((o) => !alive(o)).length;
+    // The team cleared it: its fighters are confirmed kills, and the spot is a kill site.
+    const cleared = enemy <= 0 ? s.contacts.find((c) => c.id === fight.contactId) : undefined;
+    const pay = cleared ? cleared.units.length * CASH_PER_TEAM_KILL : 0;
+    const after: GameState = cleared ? markSite(earn(s, pay), cleared) : s;
     const text = outOfAmmo && enemy > 0
       ? `Out of ammo, breaking contact in ${fight.square}.`
-      : `${fight.square} clear. ${wounded ? `${wounded} wounded` : 'No wounded'}${down ? `, ${down} down` : ''}.`;
+      : `${fight.square} clear. ${wounded ? `${wounded} wounded` : 'No wounded'}${down ? `, ${down} down` : ''}.${pay ? ` +$${pay.toLocaleString('en-US')}.` : ''}`;
     return {
-      ...s,
+      ...after,
       rng,
-      events: enemy <= 0 ? s.events.map((e) => (e.id === fight.eventId ? { ...e, status: 'resolved' as const } : e)) : s.events,
-      contacts: enemy <= 0 ? s.contacts.map((c) => (c.id === fight.contactId ? { ...c, status: 'cleared' as const } : c)) : s.contacts,
+      events: enemy <= 0 ? after.events.map((e) => (e.id === fight.eventId ? { ...e, status: 'resolved' as const } : e)) : after.events,
+      contacts: enemy <= 0 ? after.contacts.map((c) => (c.id === fight.contactId ? { ...c, status: 'cleared' as const, units: [] } : c)) : after.contacts,
       team: { ...team, operators, fight: null, activity: wounded ? 'Treating wounded' : team.activity },
       comms: { ...s.comms, messages: [...s.comms.messages, radio(s, `fight-${fight.eventId}-end`, text)] },
     };
