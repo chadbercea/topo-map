@@ -39,6 +39,11 @@ export const missionSystem: System = (s) => {
   const here = squareAt(team.position.x, team.position.y);
   const quiet = !team.fight && !team.treating && !team.holdFor;
 
+  // The whole team down: the mission is lost.
+  if (team.operators.every((o) => o.health <= 0)) {
+    return { ...s, phase: 'ended', comms: { ...s.comms, messages: [...s.comms.messages, { ...radio(s, 'team-lost', `${team.callsign} is not responding.`), from: 'HQ' }] } };
+  }
+
   // At the crash site: pull the drive.
   if (mission.phase === 'infil' && here === mission.b && quiet) {
     return {

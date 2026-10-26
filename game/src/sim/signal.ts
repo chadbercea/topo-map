@@ -107,7 +107,7 @@ export function finishSignal(s: GameState, status: 'won' | 'lost'): GameState {
   const g = m.signal!;
   let next: GameState = { ...s, minigame: { ...m, status } };
   if (status === 'won') {
-    next = boostIntel(next, 'signals', 0.3);
+    next = boostIntel({ ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } }, 'signals', 0.3);
     const c = g.contactId && next.contacts.find((x) => x.id === g.contactId);
     if (c && c.status === 'hidden') next = reveal(next, [c.square], 'SIGINT');
   }

@@ -47,6 +47,7 @@ export function search(s: GameState, square: string): GameState {
   return {
     ...next,
     team: { ...next.team, holdUntilMs: s.elapsedMs + SEARCH_MS, activity: `Searching ${square}` },
+    stats: { ...next.stats, searched: next.stats.searched + 1 },
     events: next.events.map((e) => (e === site ? { ...e, status: 'resolved' as const } : e)),
   };
 }

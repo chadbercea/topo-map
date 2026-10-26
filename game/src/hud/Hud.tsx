@@ -8,6 +8,7 @@ import { MiniGamePanel } from './MiniGamePanel';
 import { SquareActions } from './SquareActions';
 import { MissionTimer } from './MissionTimer';
 import { PauseMenu } from './PauseMenu';
+import { WrapUp } from './WrapUp';
 import { TeamPanel } from './TeamPanel';
 
 const debug = new URLSearchParams(location.search).has('debug');
@@ -40,6 +41,7 @@ export function Hud() {
       </div>
       {debug && <DebugPanel />}
       <PauseMenu />
+      <WrapUp />
     </div>
   );
 }
