@@ -5,6 +5,7 @@ import type { Store } from '../src/sim/store';
 declare global {
   interface Window {
     game: Store;
+    frozen?: boolean;
   }
 }
 
@@ -13,6 +14,13 @@ export const fastForward = (page: Page, ms: number) =>
   page.evaluate((ms) => {
     for (let t = 0; t < ms; t += 100) window.game.tick(100);
   }, ms);
+
+// Stop the real-time clock (MapScene reads window.frozen) before tapping through a timed
+// mini game: real taps take seconds on CI's software renderer. Time then moves only via tick.
+export const freeze = (page: Page) =>
+  page.evaluate(() => {
+    window.frozen = true;
+  });
 
 // Mirror MapScene's camera fit: the grid is centred in the map area between the panels.
 const WORLD_W = 1600, WORLD_H = 1000, CELL = 200, MARGIN = 8;

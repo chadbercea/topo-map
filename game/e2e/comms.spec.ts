@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, squarePoint, tapAt } from './helpers';
+import { fastForward, freeze, squarePoint, tapAt } from './helpers';
 
 test('ALPHA holds short of unimaged ground and asks; Push through sends it on blind', async ({ page, isMobile }) => {
   await page.goto('?debug');
@@ -32,6 +32,7 @@ test('comms can be minimized to a badge and reopened', async ({ page }) => {
 test('Send imagery: a won scan finds the checkpoint in E3 and ALPHA asks to observe, attack or go around', async ({ page, isMobile }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
+  await freeze(page);
   await fastForward(page, 500);
   await page.getByTestId('responses').getByRole('button', { name: 'Send imagery' }).click();
   await expect(page.getByTestId('minigame')).toContainText('SATELLITE GRID SCAN · F4');

@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { squarePoint, tapAt } from './helpers';
+import { freeze, squarePoint, tapAt } from './helpers';
 
 test('the grid scan dims the map to its targets; tapping them in order wins it', async ({ page, isMobile }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
+  await freeze(page);
   await page.evaluate(() => window.game.startMiniGame('gridScan', 'D3'));
 
   const panel = page.getByTestId('minigame');
