@@ -296,6 +296,7 @@ html, body {
   padding: var(--gutter);
   background: rgba(11, 15, 13, 0.6);
   pointer-events: auto;
+  z-index: 20; /* above every panel, including the phone's intel dropdown */
 }
 
 .menu {
@@ -340,6 +341,22 @@ html, body {
 }
 
 .menu input { accent-color: var(--accent); width: 18px; height: 18px; }
+
+.wrapup { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--bg); }
+.wrapup .reason { color: var(--ink); font-size: 14px; }
+.wrapup .objectives { margin: 0; }
+.wrapup .objectives li { color: var(--ink); }
+.wrapup .objectives li[data-done='false'] { color: #e5484d; }
+.wrapup .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.wrapup dl { margin: 0; display: grid; gap: 3px; font-size: 12px; }
+.wrapup dt { color: var(--accent); font-size: 10px; letter-spacing: 0.12em; margin-bottom: 2px; }
+.wrapup dl div { display: flex; justify-content: space-between; gap: 8px; }
+.wrapup dd { margin: 0; color: var(--dim); }
+.wrapup dd.v { color: var(--ink); font-variant-numeric: tabular-nums; }
+.wrapup .payout .total { border-top: 1px solid var(--line); padding-top: 4px; margin-top: 2px; }
+.wrapup .payout .total dd { color: var(--accent); }
+.overlay[data-outcome='failed'] .wrapup h2 { color: #e5484d; }
+@media (max-width: 480px) { .wrapup .columns { grid-template-columns: 1fr; } }
 
 /* Shared panel bits */
 .panel-toggle {

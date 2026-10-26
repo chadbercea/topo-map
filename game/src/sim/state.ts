@@ -55,6 +55,7 @@ export type GameState = {
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
   ordnance: Ordnance;
   noise: number; // 0-100, how loud the PMC has been
+  stats: { searched: number; decoded: number }; // for the wrap-up
   alerted: boolean; // the enemy knows a PMC is in the area
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
@@ -101,6 +102,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     capabilities: ['imagery'],
     ordnance: initialOrdnance(),
     noise: 0,
+    stats: { searched: 0, decoded: 0 },
     alerted: false,
     rng: 1234,
     settings,
