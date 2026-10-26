@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>War Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #04080a;
+    --line: #e2b97f;
+    --major: #ffe2b8;
+    --teal: #3fd0c0;
+    --tealhi: #a8fff2;
+    --accent: #ff6a3d;
+    --text: #f5e6cf;
+    --muted: #8f7a5a;
+    --side: 300px;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; color: var(--text);
+    font: 12px/1.45 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em;
+    -webkit-user-select: none; user-select: none; }
+  #map { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; opacity: 0; transition: opacity .6s;
+    touch-action: none; cursor: grab; }
+  #map.ready { opacity: 1; }
+  #map.panning { cursor: grabbing; }
+  #map.moving #major { filter: none; }
+  #map.hud { cursor: crosshair; }
+  #minor path { fill: none; stroke: var(--line); stroke-width: .8; vector-effect: non-scaling-stroke; }
+  #major path { fill: none; stroke: var(--major); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+  #river { fill: none; stroke: var(--major); stroke-opacity: .5; stroke-width: 1; stroke-dasharray: 2 5;
+    vector-effect: non-scaling-stroke; }
+  #route { fill: none; stroke: var(--tealhi); stroke-width: 1.6; stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
+
+  /* The map grid over the area of operations: 1 km squares, labelled A1 to H5. */
+  #squares rect { fill: transparent; stroke: rgba(226,185,127,.22); stroke-width: 1; vector-effect: non-scaling-stroke; transition: fill .2s; }
+  #squares text { fill: rgba(226,185,127,.5); font-family: "JetBrains Mono", monospace; font-weight: 600; letter-spacing: .08em; }
+  #squares .ao { fill: none; stroke: rgba(226,185,127,.45); stroke-width: 1.2; stroke-dasharray: 6 4; }
+  #map.hud #squares rect { stroke: rgba(226,185,127,.35); }
+  #map.hud #squares text { fill: rgba(255,226,184,.85); }
+  #squares rect.under { fill: rgba(63,208,192,.08); stroke: rgba(63,208,192,.5); }
+  #squares rect.aim { fill: rgba(63,208,192,.2); stroke: var(--tealhi); stroke-width: 1.6; }
+  #squares rect.shot { fill: rgba(63,208,192,.16); stroke: var(--teal); stroke-width: 1.6; }
+  #squares rect.wasted { fill: rgba(255,106,61,.12); stroke: var(--accent); }
+  #squares rect.missed { fill: rgba(255,106,61,.06); stroke: rgba(255,106,61,.6); stroke-dasharray: 3 3; }
+  #squares text.tasked { fill: var(--tealhi); }
+
+  /* The satellite's swath: a band that sweeps the area of operations from the east. */
+  #swath rect.band { fill: url(#swathFill); }
+  #swath line { stroke: var(--tealhi); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+
+  .overlay { position: fixed; inset: 0; pointer-events: none; }
+  #grid { background-image:
+      linear-gradient(rgba(226,185,127,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(226,185,127,.06) 1px, transparent 1px);
+    background-size: 80px 80px; background-position: center; }
+  #vignette { background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.7) 100%); }
+
+  .label { color: var(--muted); font-size: 9px; letter-spacing: .18em; }
+  .title { font-size: 22px; font-weight: 600; letter-spacing: .08em; line-height: 1.05; margin: 4px 0 2px; color: var(--major); }
+  a { color: var(--muted); }
+  a:hover { color: var(--major); }
+
+  /* Map markers, positioned over the map in screen space. */
+  .mk { position: fixed; left: 0; top: 0; pointer-events: none; font-size: 9px; letter-spacing: .18em; white-space: nowrap; }
+  .mk[hidden] { display: none; }
+  .mk .tag { position: absolute; left: 12px; top: -6px; }
+  .mk.lz i { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 1.5px solid var(--major); }
+  .mk.lz .tag { color: var(--major); }
+  .mk.team b { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--tealhi);
+    box-shadow: 0 0 6px var(--teal); }
+  .mk.team .tag { color: var(--tealhi); left: 16px; top: -16px; }
+  /* What the imagery found. */
+  .mk.find i { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border: 1.5px solid var(--accent); transform: rotate(45deg);
+    animation: pop .4s ease-out; }
+  .mk.find .tag { color: var(--accent); left: 12px; top: 6px; font-weight: 600; }
+  .mk.find.clear i { border-color: var(--teal); border-radius: 50%; transform: none; }
+  .mk.find.clear .tag { color: var(--tealhi); }
+  .mk.sat { color: var(--tealhi); font-weight: 600; }
+  .mk.sat .tag { left: 8px; top: 8px; }
+  @keyframes pop { from { transform: rotate(45deg) scale(2.4); opacity: 0; } }
+
+  /* Frosted panels, as on the survey map. */
+  .side { position: fixed; top: 16px; width: var(--side); max-height: calc(100vh - 32px); box-sizing: border-box;
+    padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 12px; overflow: auto; scrollbar-width: none;
+    background: linear-gradient(180deg, rgba(20,16,10,.62), rgba(8,8,6,.5));
+    -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+    border: 1px solid rgba(226,185,127,.22); box-shadow: inset 0 1px 0 rgba(255,226,184,.08), 0 10px 40px rgba(0,0,0,.35); }
+  .side::before, .side::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--line); }
+  .side::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .side::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+  #radio { left: 16px; }
+  #team { right: 16px; width: 260px; }
+  .sect { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 9px;
+    letter-spacing: .2em; padding-bottom: 6px; border-bottom: 1px solid rgba(226,185,127,.18); }
+
+  .btn { font: inherit; font-size: 9px; letter-spacing: .16em; color: var(--text); background: none; cursor: pointer;
+    border: 1px solid rgba(226,185,127,.4); padding: 4px 8px; }
+  .btn:hover { border-color: var(--major); color: var(--major); }
+  .btn.go { border-color: var(--teal); color: var(--tealhi); font-size: 10px; padding: 7px 14px; }
+  .btn.go:hover { background: rgba(63,208,192,.12); }
+  .btn:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
+  .btn:disabled { opacity: .35; cursor: default; }
+
+  /* The request from the ground: what they need, and, once you take it, the HUD for the mini game. */
+  #req { display: flex; flex-direction: column; gap: 9px; padding: 10px 11px; border-left: 3px solid var(--major); background: rgba(226,185,127,.08);
+    animation: arrive .4s ease-out; }
+  #req[hidden] { display: none; }
+  #req .kind { font-size: 9px; letter-spacing: .2em; color: var(--major); display: flex; justify-content: space-between; }
+  #req .ask { font-size: 12px; line-height: 1.5; }
+  #req.live { border-left-color: var(--teal); background: rgba(63,208,192,.08); }
+  #req.live .kind { color: var(--tealhi); }
+  .chips { display: flex; gap: 6px; }
+  .chip { flex: 1; text-align: center; padding: 6px 0; font-size: 14px; font-weight: 600; letter-spacing: .1em;
+    border: 1px solid rgba(226,185,127,.4); color: var(--major); }
+  .chip.shot { border-color: var(--teal); background: rgba(63,208,192,.16); color: var(--tealhi); }
+  .chip.shot::after { content: " ✓"; }
+  .chip.missed { border-color: var(--accent); color: var(--accent); text-decoration: line-through; }
+  .hudrow { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: .14em; color: var(--muted); }
+  .hudrow b { color: var(--tealhi); font-weight: 600; letter-spacing: .3em; }
+  .hudrow b.out { color: var(--accent); }
+  .bar { height: 3px; background: rgba(63,208,192,.18); }
+  .bar i { display: block; height: 100%; width: 0; background: var(--teal); }
+  .grade { font-size: 16px; font-weight: 600; letter-spacing: .14em; }
+  .grade.clean { color: var(--tealhi); } .grade.partial { color: var(--major); } .grade.failed { color: var(--accent); }
+
+  #comms { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 10px; line-height: 1.45; }
+  #comms li { animation: arrive .4s ease-out; }
+  #comms .when { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+  #comms .alpha { color: var(--tealhi); }
+  #comms .alert { color: var(--accent); }
+  #comms .intel { color: var(--major); }
+  @keyframes arrive { from { opacity: 0; transform: translateX(-12px); } }
+
+  .clock { font-size: 22px; font-weight: 600; color: var(--major); font-variant-numeric: tabular-nums; letter-spacing: .06em; }
+  #t-status { font-size: 12px; color: var(--tealhi); letter-spacing: .1em; min-height: 17px; }
+  #t-status.alert { color: var(--accent); }
+  .row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
+  #pips { display: flex; gap: 6px; }
+  .pip { width: 16px; height: 16px; box-sizing: border-box; border: 1px solid var(--teal); background: rgba(63,208,192,.55); }
+  /* The mission's phases: where you are, and what's next. */
+  #phases { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 10px; letter-spacing: .12em; }
+  #phases li { display: grid; grid-template-columns: 16px 1fr auto; gap: 6px; color: var(--muted); }
+  #phases li .r { font-size: 9px; }
+  #phases li.now { color: var(--major); font-weight: 600; }
+  #phases li.done { color: var(--tealhi); }
+  #phases li.done.bad { color: var(--accent); }
+
+  /* Briefing and debrief. */
+  .sheet { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(500px, calc(100vw - 32px)); z-index: 5; gap: 14px; }
+  .sheet p { margin: 0; font-size: 11px; line-height: 1.6; }
+  .sheet ul { margin: 0; padding-left: 16px; font-size: 11px; line-height: 1.6; }
+  .sheet li + li { margin-top: 5px; }
+  .sheet .go { align-self: flex-start; }
+  .sheet .fine { font-size: 9px; color: var(--muted); letter-spacing: .12em; }
+  .sheet[hidden] { display: none; }
+
+  @media (max-width: 760px) {
+    #team { top: 10px; left: 10px; right: 10px; width: auto; padding: 10px 12px; gap: 8px; }
+    #team .clock { font-size: 16px; }
+    .hide-sm { display: none !important; }
+    #radio { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 42vh; border-width: 1px 0 0; padding: 10px 12px 12px; }
+    #comms li:nth-child(n+3) { display: none; }
+  }
+</style>
+</head>
+<body>
+<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic map of the Snake River canyon at Twin Falls, with a 1 km grid over the area of operations.">
+  <defs>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="swathFill" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#3fd0c0" stop-opacity=".22"/>
+      <stop offset=".8" stop-color="#3fd0c0" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#3fd0c0" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <g id="minor"></g>
+  <g id="major" filter="url(#glow)"></g>
+  <path id="river"></path>
+  <g id="squares"></g>
+  <g id="swath" style="display:none"><rect class="band"></rect><line></line></g>
+  <path id="route"></path>
+</svg>
+<div id="grid" class="overlay"></div>
+<div id="vignette" class="overlay"></div>
+<div id="marks"></div>
+
+<aside id="radio" class="side" aria-label="Radio">
+  <div class="hide-sm">
+    <div class="label">WAR ROOM // OP DRY CREEK</div>
+    <div class="title">RADIO</div>
+    <div class="label">SNAKE RIVER CANYON · <a href="./">MAP</a></div>
+  </div>
+  <div id="req" hidden aria-live="polite"></div>
+  <div class="sect"><span>COMMS</span></div>
+  <ol id="comms" aria-live="polite"></ol>
+</aside>
+
+<aside id="team" class="side" aria-label="Team ALPHA">
+  <div class="sect"><span>TEAM ALPHA</span><span class="hide-sm">5 OPERATORS</span></div>
+  <div class="row"><span class="clock" id="clock">T+00:00</span><div id="pips"></div></div>
+  <div id="t-status">STANDING BY</div>
+  <div class="sect hide-sm"><span>MISSION</span></div>
+  <ol id="phases" class="hide-sm"></ol>
+</aside>
+
+<aside id="brief" class="side sheet" aria-label="Briefing">
+  <div class="label">WAR ROOM // BRIEFING</div>
+  <div class="title">OPERATION DRY CREEK</div>
+  <p>Team ALPHA is going in on the south rim of the Snake River canyon to take down a hostile cell. You're mission control: the voice in their ear, with the eyes in the sky.</p>
+  <ul>
+    <li>ALPHA will <b>call in support</b> when they need it. Each request is a job you run on the map.</li>
+    <li>How well you run it decides <b>what intel they get</b>, and the intel decides how the next part goes.</li>
+    <li>The map has a <b>1 km grid</b> over the area of operations, columns <b>A–H</b> west to east and rows <b>1–5</b> north to south. Drag to look around, scroll or pinch to zoom.</li>
+  </ul>
+  <button class="btn go" id="begin">BEGIN</button>
+  <div class="fine">LOADING ELEVATION DATA…</div>
+</aside>
+
+<aside id="debrief" class="side sheet" aria-label="Debrief" hidden>
+  <div class="label">WAR ROOM // PHASE 1 DEBRIEF</div>
+  <div class="title" id="d-title"></div>
+  <p id="d-sum"></p>
+  <p class="fine">NEXT: ALPHA PAINTS THE OUTPOST AND CALLS FOR ORDNANCE. THAT RUN IS THE NEXT BUILD.</p>
+  <button class="btn go" id="again">RUN IT AGAIN</button>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+// War Room (ILI-1097): you're mission control for team ALPHA on the south rim of the Snake River canyon. ALPHA calls in
+// support, each request is a mini game played on the map, and how well you run it decides the intel ALPHA moves on.
+// One fixed mission; this build is phase 1, the satellite pass. A fictional exercise.
+// The terrain loading, river tracing, camera and route planning follow ground-truth.html.
+const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
+const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
+const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const SPEED = 140;           // m/s ALPHA covers on flat ground (game time, so the move plays out in about 30 s)
+const CALL_AT = 3;           // s into the mission ALPHA calls for imagery
+const ACQUIRE = 3;           // s of countdown before the pass starts
+const PASS = 18;             // s the swath takes to cross the area of operations
+const SWATH = 2;             // squares wide
+const FRAMES = 4;            // frames the satellite can take on one pass
+
+// The area of operations: an 8 x 5 grid of 1 km squares, A1 in the north-west corner. Fixed to the ground, so a
+// square's name is the same on every screen.
+const AO = { lat: 42.6060, lon: -114.4578, cols: 8, rows: 5, dLat: 1000 / 111320, dLon: 1000 / (111320 * Math.cos(42.59 * Math.PI / 180)) };
+const COLS = "ABCDEFGH";
+
+// Operation Dry Creek, phase 1. ALPHA needs imagery on three squares before it moves west from the LZ.
+const OP = {
+  lz: [42.5850, -114.3700],
+  tasked: ["C2", "E3", "F3"],
+  // What's on the ground in the tasked squares.
+  finds: {
+    C2: { at: [42.5905, -114.4320], tag: "OUTPOST · 6 PAX · 2 TECHNICALS", outpost: true },
+    E3: { at: [42.5830, -114.4050], tag: "2 VEHICLES · PATROL" },
+    F3: { at: [42.5862, -114.3900], tag: "CLEAR · ROAD OPEN", clear: true },
+  },
+  staging: [42.5893, -114.4228],   // ALPHA's position on the outpost, if it knows where the outpost is
+};
+
+const $ = id => document.getElementById(id);
+const svg = $("map");
+let state = null, grade = null, cam = null, fly = null, last = 0, game = null, movingTimer = 0;
+
+const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
+const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const ease = t => 1 - (1 - t) ** 3;
+const pad = (n, w = 2) => String(n).padStart(w, "0");
+const clock = s => `T+${pad(Math.floor(s / 60))}:${pad(Math.floor(s % 60))}`;
+const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+const meters = (a, b) => dist(a, b) * state.mpg;
+
+// ---------- Terrain (as in ground-truth.html) ----------
+function loadImg(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// Same tile window as the map: zoom 13 on landscape screens, 12 on portrait.
+function tileWindow() {
+  const z = innerWidth >= innerHeight ? 13 : 12;
+  const rows = 3, cols = Math.max(3, Math.min(7, Math.ceil(rows * innerWidth / innerHeight)));
+  const W = cols * 256, H = rows * 256;
+  const ox = Math.round(lon2tile(LOC.lon, z) * 256 - W / 2);
+  const oy = Math.round(lat2tile(LOC.lat, z) * 256 - H / 2);
+  const ds = Math.max(1, Math.ceil(Math.sqrt(W * H / 320000)));
+  return { z, cols, W, H, ox, oy, ds, gw: Math.floor(W / ds), gh: Math.floor(H / ds) };
+}
+
+async function fetchElevation() {
+  const { z, cols, W, H, ox, oy, ds, gw, gh } = tileWindow();
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const jobs = [];
+  for (let ty = Math.floor(oy / 256); ty * 256 < oy + H; ty++) for (let tx = Math.floor(ox / 256); tx * 256 < ox + W; tx++) {
+    jobs.push(loadImg(`${TILE_URL}/${z}/${tx}/${ty}.png`).then(img => ctx.drawImage(img, tx * 256 - ox, ty * 256 - oy)));
+  }
+  await Promise.all(jobs);
+  const px = ctx.getImageData(0, 0, W, H).data;
+  const values = new Float64Array(gw * gh);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const i = ((y * ds) * W + x * ds) * 4;
+    values[y * gw + x] = px[i] * 256 + px[i + 1] + px[i + 2] / 256 - 32768;
+  }
+  return { values, z, cols, W, H, gw, gh, ds, ox, oy };
+}
+
+const toGrid = ([lat, lon]) => [(lon2tile(lon, state.z) * 256 - state.ox) / state.ds, (lat2tile(lat, state.z) * 256 - state.oy) / state.ds];
+const mPerGrid = () => 40075016 * Math.cos(LOC.lat * Math.PI / 180) / (256 * 2 ** state.z) * state.ds;
+const cellOf = ([gx, gy]) => clamp(gy | 0, 0, state.gh - 1) * state.gw + clamp(gx | 0, 0, state.gw - 1);
+
+function render(d) {
+  const { gw, gh } = d;
+  d3.blur2({ data: d.values, width: gw, height: gh }, 1);
+  let min = Infinity, max = -Infinity;
+  for (const v of d.values) { if (v < min) min = v; if (v > max) max = v; }
+  const step = LOC.step;
+  const contours = d3.contours().size([gw, gh]).thresholds(d3.range(Math.ceil(min / step) * step, max, step))(d.values);
+  const isMajor = v => Math.abs(v / (step * 5) - Math.round(v / (step * 5))) < 1e-6;
+  const opacity = v => 0.25 + 0.75 * (v - min) / (max - min || 1);
+  const path = d3.geoPath();
+  d3.select("#minor").selectAll("path").data(contours.filter(c => !isMajor(c.value))).join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value) * 0.7);
+  d3.select("#major").selectAll("path").data(contours.filter(c => isMajor(c.value))).join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value));
+  state = { ...d, min, max, mpg: 0 };
+  state.mpg = mPerGrid();
+  cam = { cx: gw / 2, cy: gh / 2, k: 1 };
+  applyCam();
+  buildGrade();
+  traceRiver();
+  svg.classList.add("ready");
+}
+
+// ---------- Camera: the map's viewBox. Drag pans, wheel and pinch zoom ----------
+const baseScale = () => Math.max(innerWidth / state.gw, innerHeight / state.gh);
+
+function applyCam() {
+  cam.k = clamp(cam.k, 1, 4);
+  const s = baseScale() * cam.k, hw = innerWidth / (2 * s), hh = innerHeight / (2 * s);
+  cam.cx = clamp(cam.cx, Math.min(hw, state.gw / 2), Math.max(state.gw - hw, state.gw / 2));
+  cam.cy = clamp(cam.cy, Math.min(hh, state.gh / 2), Math.max(state.gh - hh, state.gh / 2));
+  const w = state.gw / cam.k, h = state.gh / cam.k;
+  svg.setAttribute("viewBox", `${cam.cx - w / 2} ${cam.cy - h / 2} ${w} ${h}`);
+  // The contour glow is the costliest thing to re-render: drop it while the camera moves.
+  svg.classList.add("moving");
+  clearTimeout(movingTimer);
+  movingTimer = setTimeout(() => svg.classList.remove("moving"), 160);
+}
+
+function screenToGrid(x, y) {
+  const m = svg.getScreenCTM();
+  return [(x - m.e) / m.a, (y - m.f) / m.d];
+}
+
+// Zoom keeping the ground under (sx, sy) where it is.
+function zoomAt(sx, sy, k) {
+  const [gx, gy] = screenToGrid(sx, sy);
+  cam.k = clamp(k, 1, 4);
+  const s = baseScale() * cam.k;
+  cam.cx = gx - (sx - innerWidth / 2) / s;
+  cam.cy = gy - (sy - innerHeight / 2) / s;
+  applyCam();
+}
+
+// ---------- River: least-cost path through the elevation grid, east edge to west edge (as in index.html) ----------
+function traceRiver() {
+  const { values, gw, gh, min } = state, N = gw * gh;
+  const cost = new Float64Array(N);
+  for (let i = 0; i < N; i++) cost[i] = (values[i] - min + 1) ** 2.5;
+  const isSource = (x, y) => x === gw - 1 || ((y === 0 || y === gh - 1) && x >= gw - (gw >> 2));
+  const isTarget = (x, y) => x === 0 || ((y === 0 || y === gh - 1) && x < gw >> 2);
+  const starts = [];
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) if (isSource(x, y)) starts.push(y * gw + x);
+  const cells = cheapest(starts, j => cost[j], i => isTarget(i % gw, (i / gw) | 0));
+  if (!cells) return;
+  const pts = smooth(cells.reverse(), 6, 2);
+  $("river").setAttribute("d", "M" + pts.map(p => p.map(v => v.toFixed(1)).join(",")).join("L"));
+}
+
+// ---------- Least-cost paths: A* over the grid, 8 neighbours (Dijkstra when there's no heuristic) ----------
+// Returns the cells from a start to the first cell that's done(), or null.
+function cheapest(starts, costOf, done, heur = () => 0) {
+  const { gw, gh } = state, N = gw * gh;
+  const dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
+  const hk = [], hv = [];
+  const push = (k, v) => {
+    let i = hk.length; hk.push(k); hv.push(v);
+    while (i > 0) { const p = (i - 1) >> 1; if (hk[p] <= k) break; hk[i] = hk[p]; hv[i] = hv[p]; i = p; }
+    hk[i] = k; hv[i] = v;
+  };
+  const pop = () => {
+    const v = hv[0], k = hk.pop(), last = hv.pop(), n = hk.length;
+    if (n) {
+      let i = 0;
+      for (;;) {
+        let c = 2 * i + 1; if (c >= n) break;
+        if (c + 1 < n && hk[c + 1] < hk[c]) c++;
+        if (hk[c] >= k) break;
+        hk[i] = hk[c]; hv[i] = hv[c]; i = c;
+      }
+      hk[i] = k; hv[i] = last;
+    }
+    return v;
+  };
+  for (const s of starts) { dist[s] = costOf(s); push(dist[s] + heur(s), s); }
+  let end = -1;
+  while (hk.length) {
+    const f0 = hk[0], i = pop();
+    if (f0 > dist[i] + heur(i) + 1e-9) continue;
+    if (done(i)) { end = i; break; }
+    const x = i % gw, y = (i / gw) | 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue;
+      const j = ny * gw + nx, nd = dist[i] + costOf(j) * (dx && dy ? Math.SQRT2 : 1);
+      if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(nd + heur(j), j); }
+    }
+  }
+  if (end < 0) return null;
+  const cells = [];
+  for (let i = end; i >= 0; i = prev[i]) cells.push(i);
+  return cells.reverse();
+}
+
+// Cell indices to map points, averaged over a window so the line reads as a trail, not a staircase.
+function smooth(cells, W, stride = 1) {
+  const { gw } = state, raw = cells.map(i => [i % gw + .5, ((i / gw) | 0) + .5]), pts = [];
+  for (let i = 0; i < raw.length; i += stride) {
+    let sx = 0, sy = 0, n = 0;
+    for (let j = Math.max(0, i - W); j <= Math.min(raw.length - 1, i + W); j++) { sx += raw[j][0]; sy += raw[j][1]; n++; }
+    pts.push([sx / n, sy / n]);
+  }
+  if (raw.length) pts.push(raw.at(-1));
+  return pts;
+}
+
+// Slope of each cell, as rise over run: the canyon walls are steep, the rim is flat.
+function buildGrade() {
+  const { values: v, gw, gh, mpg } = state;
+  grade = new Float32Array(gw * gh);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const dx = v[y * gw + Math.min(x + 1, gw - 1)] - v[y * gw + Math.max(x - 1, 0)];
+    const dy = v[Math.min(y + 1, gh - 1) * gw + x] - v[Math.max(y - 1, 0) * gw + x];
+    grade[y * gw + x] = Math.hypot(dx, dy) / (2 * mpg);
+  }
+}
+
+// ALPHA's route: the cheapest way over the terrain, so it keeps off the canyon walls where it can.
+function plan(from, to) {
+  const goal = cellOf(to);
+  const costOf = j => { const g = grade[j]; return 1 + g * 6 + (g > .4 ? 30 : 0); };
+  // Every step costs at least 1, so the straight-line distance never overestimates: A* stays exact.
+  const gx = goal % state.gw, gy = (goal / state.gw) | 0;
+  const cells = cheapest([cellOf(from)], costOf, i => i === goal, j => Math.hypot(j % state.gw - gx, ((j / state.gw) | 0) - gy));
+  if (!cells) return [from, to];
+  const pts = smooth(cells, 3);
+  pts[0] = [...from]; pts[pts.length - 1] = [...to];
+  return pts;
+}
+
+// ---------- The map grid ----------
+// A square's corners in map space: [x0, y0, x1, y1].
+function square(name) {
+  const c = COLS.indexOf(name[0]), r = +name.slice(1) - 1;
+  const [x0, y0] = toGrid([AO.lat - r * AO.dLat, AO.lon + c * AO.dLon]);
+  const [x1, y1] = toGrid([AO.lat - (r + 1) * AO.dLat, AO.lon + (c + 1) * AO.dLon]);
+  return [x0, y0, x1, y1];
+}
+const names = () => [...COLS].flatMap(c => [1, 2, 3, 4, 5].map(r => c + r));
+const aoBox = () => { const a = square("A1"), b = square("H5"); return [a[0], a[1], b[2], b[3]]; };
+
+function buildSquares() {
+  const g = $("squares"), [ax0, ay0, ax1, ay1] = aoBox(), fs = (square("A1")[2] - square("A1")[0]) * .15;
+  g.innerHTML = names().map(n => {
+    const [x0, y0, x1, y1] = square(n);
+    return `<rect data-sq="${n}" x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"/>` +
+      `<text data-sq="${n}" x="${x0 + fs * .45}" y="${y0 + fs * 1.15}" font-size="${fs}">${n}</text>`;
+  }).join("") + `<rect class="ao" x="${ax0}" y="${ay0}" width="${ax1 - ax0}" height="${ay1 - ay0}"/>`;
+}
+
+function squareAt(g) {
+  return names().find(n => { const [x0, y0, x1, y1] = square(n); return g[0] >= x0 && g[0] < x1 && g[1] >= y0 && g[1] < y1; }) || null;
+}
+const rectOf = n => $("squares").querySelector(`rect[data-sq="${n}"]`);
+const textOf = n => $("squares").querySelector(`text[data-sq="${n}"]`);
+
+// ---------- Camera: fit the area of operations into the open middle of the screen ----------
+function openRect() {
+  const r = $("radio").getBoundingClientRect(), t = $("team").getBoundingClientRect();
+  return innerWidth > 760 ? { x0: r.right, x1: t.left, y0: 0, y1: innerHeight } : { x0: 0, x1: innerWidth, y0: t.bottom, y1: r.top };
+}
+
+function flyTo(g, k = cam.k) {
+  const o = openRect();
+  fly = { from: { cx: cam.cx, cy: cam.cy, k: cam.k }, to: g, k,
+    off: [(o.x0 + o.x1) / 2 - innerWidth / 2, (o.y0 + o.y1) / 2 - innerHeight / 2], t0: performance.now(), ms: CALM ? 0 : 800 };
+}
+
+function stepFly(now) {
+  if (!fly) return;
+  const t = fly.ms ? clamp((now - fly.t0) / fly.ms, 0, 1) : 1, e = ease(t);
+  cam.k = fly.from.k + (fly.k - fly.from.k) * e;
+  const s = baseScale() * cam.k;
+  cam.cx = fly.from.cx + (fly.to[0] - fly.off[0] / s - fly.from.cx) * e;
+  cam.cy = fly.from.cy + (fly.to[1] - fly.off[1] / s - fly.from.cy) * e;
+  applyCam();
+  if (t >= 1) fly = null;
+}
+
+function fitAO() {
+  const [x0, y0, x1, y1] = aoBox(), o = openRect(), pad = .92;
+  const k = Math.min((o.x1 - o.x0) * pad / ((x1 - x0) * baseScale()), (o.y1 - o.y0) * pad / ((y1 - y0) * baseScale()));
+  flyTo([(x0 + x1) / 2, (y0 + y1) / 2], clamp(k, 1, 4));
+}
+
+// ---------- The mission ----------
+function newGame() {
+  game = {
+    T: 0, running: false, phase: 1, stage: "insert", pass: null, intel: { outpost: false }, results: [],
+    team: { pos: toGrid(OP.lz), route: [], seg: 0 },
+  };
+  $("comms").innerHTML = "";
+  $("req").hidden = true;
+  $("route").removeAttribute("d");
+  $("swath").style.display = "none";
+  svg.classList.remove("hud");
+  buildSquares();
+  $("marks").innerHTML = `
+    <div class="mk lz" id="m-lz"><i></i><span class="tag">LZ</span></div>
+    <div class="mk team" id="m-team">${"<b></b>".repeat(5)}<span class="tag">ALPHA</span></div>
+    <div class="mk sat" id="m-sat" hidden><span class="tag"></span></div>`;
+  $("pips").innerHTML = '<span class="pip"></span>'.repeat(5);
+  drawPhases();
+  status("INSERTED AT THE LZ");
+}
+
+function radio(text, cls = "") {
+  const li = document.createElement("li");
+  li.innerHTML = `<span class="when">${clock(game.T)}</span><span class="${cls}"></span>`;
+  li.lastChild.textContent = text;
+  $("comms").prepend(li);
+}
+
+function status(text, alert = false) {
+  $("t-status").textContent = text;
+  $("t-status").classList.toggle("alert", alert);
+}
+
+const PHASES = [
+  ["INSERT", "SATELLITE IMAGERY"],
+  ["OUTPOST", "ORDNANCE"],
+  ["OBJECTIVE", "—"],
+  ["EXFIL", "MEDEVAC LZ"],
+];
+function drawPhases() {
+  $("phases").innerHTML = PHASES.map(([name, job], i) => {
+    const n = i + 1, r = game.results[i];
+    const cls = n < game.phase || r ? `done${r && r !== "CLEAN" ? " bad" : ""}` : n === game.phase ? "now" : "";
+    return `<li class="${cls}"><span>${r ? (r === "FAILED" ? "✗" : "✓") : n === game.phase ? "▸" : n}</span><span>${name}</span><span class="r">${r || job}</span></li>`;
+  }).join("");
+}
+
+// ALPHA calls for imagery: the request card, waiting on you.
+function callImagery() {
+  game.stage = "request";
+  radio(`ALPHA: Overwatch, ALPHA. On the ground. Need imagery on ${OP.tasked.join(", ")} before we move.`, "alpha");
+  status("WAITING ON IMAGERY");
+  const req = $("req");
+  req.className = "";
+  req.hidden = false;
+  req.innerHTML = `<div class="kind"><span>ALPHA REQUESTS</span><span>SATELLITE IMAGERY</span></div>
+    <div class="ask">Image these three squares on the next pass. The swath comes in from the east.</div>
+    <div class="chips">${OP.tasked.map(n => `<span class="chip">${n}</span>`).join("")}</div>
+    <button class="btn go" id="accept">TASK THE SATELLITE ▸</button>`;
+  $("accept").addEventListener("click", startPass);
+  for (const n of OP.tasked) textOf(n).classList.add("tasked");
+}
+
+// ---------- Mini game: the satellite pass ----------
+function startPass() {
+  if (game.stage !== "request") return;
+  game.stage = "pass";
+  const [x0, , x1] = aoBox(), w = (x1 - x0) / AO.cols;
+  game.pass = { t: -ACQUIRE, frames: FRAMES, shots: [], wasted: [], from: x1 + w * .2, to: x0 - w * SWATH, w: w * SWATH };
+  radio("OVERWATCH: Satellite tasked. Acquiring.");
+  status("IMAGERY PASS IN PROGRESS");
+  svg.classList.add("hud");
+  fitAO();
+  const [, y0, , y1] = aoBox();
+  const band = $("swath").querySelector(".band"), edge = $("swath").querySelector("line");
+  band.setAttribute("y", y0); band.setAttribute("height", y1 - y0); band.setAttribute("width", game.pass.w);
+  edge.setAttribute("y1", y0); edge.setAttribute("y2", y1);
+  const req = $("req");
+  req.className = "live";
+  req.innerHTML = `<div class="kind"><span>SATELLITE PASS</span><span id="p-state">ACQUIRING</span></div>
+    <div class="ask">Tap a square while the swath is over it to take a frame.</div>
+    <div class="chips">${OP.tasked.map(n => `<span class="chip" id="chip-${n}">${n}</span>`).join("")}</div>
+    <div class="hudrow"><span>FRAMES</span><b id="p-frames"></b></div>
+    <div class="bar"><i id="p-time"></i></div>`;
+  drawPass();
+}
+
+// Where the swath is: its east and west edges in map space.
+function swathSpan() {
+  const p = game.pass, f = clamp(p.t / PASS, 0, 1), lead = p.from + (p.to - p.from) * f;
+  return [lead, lead + p.w];
+}
+const underSwath = n => { const [x0, , x1] = square(n), [a, b] = swathSpan(); return game.pass.t >= 0 && x1 > a && x0 < b; };
+// A square the swath has fully passed is gone for this pass.
+const passed = n => game.pass.t >= 0 && square(n)[2] > swathSpan()[1];
+
+function tickPass(dt) {
+  const p = game.pass;
+  p.t += dt;
+  if (p.t >= PASS) return endPass();
+  const [a, b] = swathSpan();
+  if (p.t >= 0) {
+    $("swath").style.display = "";
+    $("swath").querySelector(".band").setAttribute("x", a);
+    const edge = $("swath").querySelector("line");
+    edge.setAttribute("x1", a); edge.setAttribute("x2", a);
+  }
+  for (const n of names()) {
+    const r = rectOf(n);
+    r.classList.toggle("under", underSwath(n) && !p.shots.includes(n) && !p.wasted.includes(n));
+    if (OP.tasked.includes(n) && passed(n) && !p.shots.includes(n) && !r.classList.contains("missed")) {
+      r.classList.add("missed");
+      radio(`OVERWATCH: Swath is past ${n}. No frame.`, "alert");
+    }
+  }
+  drawPass();
+}
+
+function drawPass() {
+  const p = game.pass;
+  $("p-state").textContent = p.t < 0 ? `ACQUIRING ${Math.ceil(-p.t)}` : `${Math.ceil(PASS - p.t)} s`;
+  $("p-frames").textContent = "■".repeat(p.frames) + "□".repeat(FRAMES - p.frames);
+  $("p-frames").classList.toggle("out", !p.frames);
+  $("p-time").style.width = `${clamp(p.t / PASS, 0, 1) * 100}%`;
+  for (const n of OP.tasked) $(`chip-${n}`).className = `chip${p.shots.includes(n) ? " shot" : rectOf(n).classList.contains("missed") ? " missed" : ""}`;
+  // The satellite's tag rides the leading edge of the swath.
+  const sat = $("m-sat");
+  sat.hidden = p.t < 0;
+}
+
+// A tap during the pass: take a frame of that square, if the swath is over it.
+function shoot(g) {
+  const p = game.pass, n = squareAt(g);
+  if (!n || p.t < 0) return;
+  if (p.shots.includes(n) || p.wasted.includes(n)) return;
+  if (!underSwath(n)) { radio(`OVERWATCH: ${n} isn't under the swath.`, "alert"); return; }
+  if (!p.frames) { radio("OVERWATCH: Out of frames.", "alert"); return; }
+  p.frames--;
+  const r = rectOf(n);
+  if (OP.tasked.includes(n)) { p.shots.push(n); r.classList.add("shot"); radio(`OVERWATCH: Frame on ${n}.`, "intel"); }
+  else { p.wasted.push(n); r.classList.add("wasted"); radio(`OVERWATCH: Frame on ${n}. That one wasn't tasked.`, "alert"); }
+  drawPass();
+  if (OP.tasked.every(t => p.shots.includes(t))) endPass();
+}
+
+// The pass is over: grade it, show what the frames found, and hand ALPHA the intel.
+function endPass() {
+  const p = game.pass;
+  game.stage = "result";
+  $("swath").style.display = "none";
+  $("m-sat").hidden = true;
+  svg.classList.remove("hud");
+  for (const n of names()) rectOf(n).classList.remove("under");
+  const got = p.shots.length, result = got === 3 ? "CLEAN" : got ? "PARTIAL" : "FAILED";
+  game.results[0] = result;
+  game.intel.outpost = p.shots.includes("C2") ? true : false;
+  for (const n of p.shots) {
+    const f = OP.finds[n], el = document.createElement("div");
+    el.className = `mk find${f.clear ? " clear" : ""}`;
+    el.dataset.at = JSON.stringify(f.at);
+    el.innerHTML = `<i></i><span class="tag">${n} · ${f.tag}</span>`;
+    $("marks").append(el);
+    radio(`OVERWATCH: ${n}: ${f.tag.toLowerCase()}.`, f.clear ? "alpha" : "intel");
+  }
+  const req = $("req");
+  req.className = "";
+  req.innerHTML = `<div class="kind"><span>SATELLITE PASS</span><span>${got}/3 IMAGED</span></div>
+    <div class="grade ${result.toLowerCase()}">${result}</div>
+    <div class="ask">${game.intel.outpost ? "The outpost is located. ALPHA can move on it." : "No frame on the outpost. ALPHA goes in without knowing where it is."}</div>`;
+  drawPhases();
+  setTimeout(() => game.running && moveOut(), 1800);
+}
+
+// ALPHA moves on whatever the imagery gave it.
+function moveOut() {
+  game.stage = "move";
+  const t = game.team;
+  if (game.intel.outpost) {
+    radio("ALPHA: Copy the outpost at C2. Moving to a position east of it.", "alpha");
+    status("MOVING ON THE OUTPOST");
+  } else {
+    radio("ALPHA: No picture of C2. Moving west along the rim, slow.", "alert");
+    status("MOVING BLIND", true);
+  }
+  t.route = plan(t.pos, toGrid(OP.staging)); t.seg = 0;
+  $("route").setAttribute("d", "M" + t.route.map(p => p.map(v => v.toFixed(1)).join(",")).join("L"));
+  flyTo(toGrid(OP.staging), Math.max(cam.k, 1.6));
+}
+
+function moveTeam(dt) {
+  const t = game.team;
+  let budget = SPEED / state.mpg / (1 + grade[cellOf(t.pos)] * 4) * dt;
+  while (budget > 0 && t.seg < t.route.length - 1) {
+    const to = t.route[t.seg + 1], d = dist(t.pos, to);
+    if (d <= budget) { t.pos = [...to]; t.seg++; budget -= d; }
+    else { t.pos = [t.pos[0] + (to[0] - t.pos[0]) * budget / d, t.pos[1] + (to[1] - t.pos[1]) * budget / d]; budget = 0; }
+  }
+  if (t.seg >= t.route.length - 1) inPosition();
+}
+
+// End of phase 1: ALPHA on the outpost, or spotted on the way.
+function inPosition() {
+  game.stage = "done";
+  $("route").removeAttribute("d");
+  if (game.intel.outpost) {
+    radio("ALPHA: In position on the outpost. Eyes on six fighters, two technicals. Ready to paint.", "alpha");
+    status("IN POSITION");
+  } else {
+    radio("ALPHA: Contact! Outpost at C2. They saw us first. Pulling back to cover.", "alert");
+    status("SPOTTED AT THE OUTPOST", true);
+    game.results[0] = game.results[0] === "CLEAN" ? "CLEAN" : "FAILED";
+  }
+  game.phase = 2;
+  drawPhases();
+  setTimeout(debrief, 2200);
+}
+
+function debrief() {
+  game.running = false;
+  const r = game.results[0], p = game.pass;
+  $("d-title").textContent = `IMAGERY · ${r}`;
+  $("d-sum").textContent = `${p.shots.length} of 3 tasked squares imaged${p.wasted.length ? `, ${p.wasted.length} frame${p.wasted.length > 1 ? "s" : ""} wasted` : ""}. ` +
+    (game.intel.outpost ? "ALPHA knew where the outpost was and got into position unseen."
+      : "Nobody had eyes on C2, so ALPHA walked into the outpost's sight line and lost the element of surprise.");
+  $("debrief").hidden = false;
+}
+
+// ---------- Loop ----------
+function placeMarks() {
+  const m = svg.getScreenCTM();
+  const at = (el, g) => { el.style.transform = `translate(${m.a * g[0] + m.e}px, ${m.d * g[1] + m.f}px)`; };
+  const t = game.team, WEDGE = [[0, -7], [-6, -1], [6, -1], [-10, 6], [10, 6]];
+  at($("m-lz"), toGrid(OP.lz));
+  const team = $("m-team");
+  at(team, t.pos);
+  team.querySelectorAll("b").forEach((b, i) => { b.style.transform = `translate(${WEDGE[i][0]}px, ${WEDGE[i][1]}px)`; });
+  for (const el of document.querySelectorAll(".mk.find")) at(el, toGrid(JSON.parse(el.dataset.at)));
+  if (game.pass && !$("m-sat").hidden) {
+    const [a] = swathSpan(), [, y0] = aoBox();
+    at($("m-sat"), [a, y0]);
+    $("m-sat").querySelector(".tag").textContent = "◂ ORION-3";
+  }
+}
+
+function frame(now) {
+  const dt = Math.min(.1, (now - last) / 1000);
+  last = now;
+  stepFly(now);
+  if (game.running) {
+    game.T += dt;
+    if (game.stage === "insert" && game.T >= CALL_AT) callImagery();
+    else if (game.stage === "pass") tickPass(dt);
+    else if (game.stage === "move") moveTeam(dt);
+    $("clock").textContent = clock(game.T);
+  }
+  placeMarks();
+  requestAnimationFrame(frame);
+}
+
+// ---------- Input: drag pans, two fingers pinch, a tap takes a frame during the pass, the wheel zooms ----------
+const ptrs = new Map();
+let gesture = null;
+svg.addEventListener("pointerdown", e => {
+  if (!state || (e.pointerType === "mouse" && e.button !== 0)) return;
+  svg.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+  fly = null;
+  if (ptrs.size === 1) gesture = { kind: "tap", x: e.clientX, y: e.clientY, cx: cam.cx, cy: cam.cy };
+  else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; gesture = { kind: "pinch", d: dist(a, b) || 1, k: cam.k }; }
+});
+svg.addEventListener("pointermove", e => {
+  if (game?.stage === "pass" && !ptrs.size) {
+    const n = squareAt(screenToGrid(e.clientX, e.clientY));
+    for (const r of $("squares").querySelectorAll("rect.aim")) r.classList.remove("aim");
+    if (n && underSwath(n) && !game.pass.shots.includes(n) && !game.pass.wasted.includes(n)) rectOf(n).classList.add("aim");
+  }
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+  if (gesture?.kind === "pinch" && ptrs.size === 2) {
+    const [a, b] = [...ptrs.values()];
+    zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, gesture.k * dist(a, b) / gesture.d);
+  } else if (gesture?.kind === "tap" || gesture?.kind === "pan") {
+    if (gesture.kind === "tap" && Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > 8) { gesture.kind = "pan"; svg.classList.add("panning"); }
+    if (gesture.kind === "pan") {
+      const s = baseScale() * cam.k;
+      cam.cx = gesture.cx - (e.clientX - gesture.x) / s;
+      cam.cy = gesture.cy - (e.clientY - gesture.y) / s;
+      applyCam();
+    }
+  }
+});
+const lift = e => {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  if (gesture?.kind === "tap" && e.type === "pointerup" && game?.stage === "pass") shoot(screenToGrid(gesture.x, gesture.y));
+  if (!ptrs.size) { gesture = null; svg.classList.remove("panning"); }
+  else gesture = { kind: "done" };
+};
+svg.addEventListener("pointerup", lift);
+svg.addEventListener("pointercancel", lift);
+svg.addEventListener("wheel", e => {
+  if (!state) return;
+  e.preventDefault();
+  fly = null;
+  zoomAt(e.clientX, e.clientY, cam.k * Math.exp(-e.deltaY * .0015));
+}, { passive: false });
+addEventListener("keydown", e => {
+  if (e.key === "Enter" && game?.stage === "request") { e.preventDefault(); startPass(); }
+});
+
+$("begin").addEventListener("click", () => {
+  if (!state) return;
+  $("brief").hidden = true;
+  game.running = true;
+  radio("WAR ROOM: Operation Dry Creek is go. ALPHA is on the ground at the LZ.");
+  fitAO();
+});
+$("again").addEventListener("click", () => {
+  $("debrief").hidden = true;
+  newGame();
+  $("brief").hidden = false;
+});
+
+async function load() {
+  const fine = document.querySelector("#brief .fine");
+  fine.textContent = "LOADING ELEVATION DATA…";
+  $("begin").disabled = true;
+  try {
+    render(await fetchElevation());
+    newGame();
+    fine.textContent = "A FICTIONAL TRAINING EXERCISE.";
+    $("begin").disabled = false;
+    last = performance.now();
+    requestAnimationFrame(frame);
+  } catch (err) {
+    console.error(err);
+    fine.innerHTML = `ELEVATION FEED UNREACHABLE <button class="btn" onclick="load()">RETRY</button>`;
+  }
+}
+
+addEventListener("resize", () => { if (state) applyCam(); });
+load();
+</script>
+</body>
+</html>
