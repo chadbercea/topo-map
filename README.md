@@ -1,100 +1,76 @@
-# War Room: a game demo
+# PMC War Room: a game in progress
 
-This repo is a playable demo of **War Room**, a game I'm developing with Claude, Anthropic's AI, in Claude Code. You're mission control in an operations center, guiding a special operations team across real terrain: the Snake River canyon at Twin Falls, Idaho, drawn live from public elevation data.
+This repo is **PMC War Room**, a game I'm developing with Claude, Anthropic's AI, in Claude Code. It's the reverse of a squad shooter. You don't control the soldiers. You're the war room of a private military company, supporting five contractors on the ground with imagery, intel, ordnance and support, while they carry out the mission themselves.
 
-It's a work in progress. What's here is one team, one fixed mission and the core loop, built to find out whether the game is fun before it grows.
+It's a work in progress: one team, one mission (Operation Black Box), all three mini games and the PMC mechanics. It's built to find out whether the game is fun before it grows.
 
-**Play it:** https://chadbercea.github.io/topo-map/war-room.html
+**Play it:** https://topo-map-nu.vercel.app/game/ (desktop or phone, mouse or touch)
 
 ## How we're making it
 
 I design and direct the game, and I play every build. Claude writes the code, tests it, and keeps the paper trail. A round goes like this:
 
-1. **I play the live build** and say what's working and what isn't, usually in a sentence or two. For example: *"the list is killing me"*, *"the team almost barrelled through space I had not scanned yet"*, or *"a health status like Resident Evil with a heart beat line"*.
-2. **Claude turns it into a Linear issue,** quoting what I said, adding concrete acceptance criteria, and making the judgment calls I've delegated.
-3. **Claude builds it on its own branch.** It plays the result with scripted bots in a headless browser, at desktop and phone sizes, and checks screenshots of the layout.
-4. **Claude opens a PR** saying what changed and how it was checked. I say merge, it deploys to GitHub Pages, and I play it again.
+1. **I play the live build** and say what's working and what isn't, usually in a sentence or two.
+2. **Claude turns it into a Linear issue,** quoting what I said and adding acceptance criteria.
+3. **Claude builds it on its own branch,** with unit tests for the game logic and browser tests that play it at desktop and phone sizes, and checks screenshots.
+4. **Claude opens a PR** saying what changed and how it was checked. CI runs the typecheck, unit tests and browser tests, Vercel builds a preview, and the PR auto-merges once both pass. Production updates and I play it again.
 
-The direction has changed a lot along the way, and the repo keeps the history. I started with a survey map. That became a farming game, then an intel-officer game (Ground Truth). Playing that one, I found I was staring at a list of cards and missing the story on the map. So I went back to the drawing board and asked Claude to help design a game about being mission control, which became War Room.
+The direction has changed a lot, and the repo keeps the history. I started with a survey map. That became a farming game, then an intel-officer game (Ground Truth), then a mission-control prototype (War Room). PMC War Room is that prototype grown into a full game, designed in a game design document and built ticket by ticket.
 
-## War Room
+## Playing Operation Black Box
 
-Operation Dry Creek: team ALPHA crosses the south rim of the canyon to an enemy outpost in C2, and you're the voice in their ear, with the eyes in the sky. It's a fictional exercise.
+A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5), recovers its black box at the crash site **B** (D3), and exfils at **C** (B1). You have six minutes.
 
-- **The grid.** A 1 km grid (A1–H5) is fixed to the real ground, and everything outside it is dimmed. After BEGIN, the map zooms in until the grid fills the screen.
-- **ALPHA's route.** ALPHA calls its route, square by square: H3 → G3 → F3 → E3 → D2 → C2.
-- **Scanning.** Tap up to three squares, then **SCAN** (or press Enter). Each square comes back clear or with a contact. The satellite needs 12 s to recharge, and you can line up the next scan while you wait.
-- **Unscanned ground.** ALPHA stops before any square nobody has imaged and asks for imagery. Scan it, or tell them to **push through** blind. Leave them waiting and they push on their own after 20 s.
-- **Contacts.** Tap a contact, or wait for ALPHA to hold short of one, and choose:
-  - **Observe:** ALPHA watches it for detail, and gets a free look at the square next to it.
-  - **Attack:** artillery. You get two fire missions for the whole approach.
-  - **Avoid:** ALPHA sneaks around the square. The detour goes through the next square over, which may not be scanned.
-- **Ambushes.** Walking into a contact nobody found is an ambush, and every hit wounds an operator. Three wounded and ALPHA pulls out. Reach C2 to complete the approach. The debrief says what happened with each contact.
+- **The map.** Topographic contours over an 8×5 grid (A1–H5), with a town you can switch on or off and a Topo or Relief view. ALPHA walks its route on its own. Climbs slow it down and tire the heavy gunner first.
+- **Imagery.** ALPHA stops short of any square nobody has imaged and asks: scan it, or push through blind? *Send imagery* starts the **grid scan**: tap the ORION-3 satellite's squares in order before the pass ends. Scans are a shared pool that recharges. You can also select any square and scan it yourself.
+- **Contacts.** Scans find contacts. One on the route makes ALPHA ask what to do:
+  - **Observe** gives you intel, a look next door, and paints the target.
+  - **Attack** goes in with surprise.
+  - **Go around** detours, maybe over ground that needs imagery of its own.
 
-**HUD:**
-- **Radio** (top left): the latest transmission, shown big.
-- **Tools** (below the radio): the tool for the task at hand. That's the satellite, an imagery request, a contact's options, or a task in progress.
-- **Team** (top right): a tab per team, ALPHA's route, and a row per operator with a Resident Evil style heartbeat (FINE, CAUTION, DANGER, KIA).
-- **Mission bar** (top center): the clock and the phases.
+  Walking into a contact nobody found is an ambush.
+- **Seek and destroy.** Tap a found contact for its target menu: drone strike (one 2×2 blast), sniper (one round at a time, then a cooldown), and a helicopter that's locked until upgrades. The square becomes a Battleship board. Painted targets show every fighter. Kills pay cash and leave kill sites ALPHA can search.
+- **Signal intercept.** Enemy radio traffic comes up mid-mission. **Intercept** it: tune the dial until the signal peaks, hold to lock on, then shift the cipher until it reads. The decode tells you the patrol is heading for the crash site. Or **Jam** it: the patrol slows down, but you never learn its plan.
+- **The team.** The ALPHA panel opens to a full readout when things get hot: heartbeats in green, yellow and red, ammo, meds and fatigue. Fights resolve on their own, and the medic patches people up afterwards. Send intel from the analysts' panel as buffs (faster, more accurate, harder to hit).
+- **The PMC side.** The client offers a bonus for a side job against the clock. Noise from strikes alerts the enemy, and too much makes the client disown you (no contract, no air support). A local fixer can guide ALPHA in or stage a distraction. Running low? Send a resupply bird. Combat ineffective? Send reinforcements.
+- **The wrap-up.** A win needs the black box at exfil with nobody down. It shows what your intel achieved, what new intel you found, and the payout.
 
-On a phone, the team panel goes on top and the tools and radio go at the bottom.
-
-**Where it goes next:** mini games in the tools panel, one for each call:
-- **Ordnance** for attack: hit the painted targets in order before they fade.
-- **Glassing** for observe: tag figures in a scope view.
-- **A sneak line** for avoid: draw a path through ground the enemy can't see, worked out from the real elevation.
-
-After that come the mission phases past the approach (outpost, objective, exfil with a medevac LZ), and more teams as tabs.
-
-## Everything in the repo
-
-| Page | What it is |
-|---|---|
-| [**War Room**](https://chadbercea.github.io/topo-map/war-room.html) (`war-room.html`) | **The demo.** The current game. |
-| [**Survey map**](https://chadbercea.github.io/topo-map/) (`index.html`) | Where it started, and a portfolio piece in its own right. Contour lines of the canyon traced from elevation tiles. Drag across the map for an elevation profile; the panel also has a height slice and an imagery blend. The earlier animated HUD version is kept at the git tag `v1-hud`. |
-| [**Ground Truth**](https://chadbercea.github.io/topo-map/ground-truth.html) (`ground-truth.html`) | The game before War Room. You're the intel officer, sorting a live feed of true and false reports and sending the team what's real. Finished and still playable. |
-| [**Headgate**](https://chadbercea.github.io/topo-map/headgate.html) (`headgate.html`) | What's left of the farming game: the dark map, with contour lines that light up teal where you touch. Both games' sweep light comes from here. |
+Pause with Esc, P or the ❚❚ button. `?minutes=8` changes the mission length for tuning.
 
 ## How it's built
 
-- **No build step and no dependencies to install.** Each page is a single HTML file with its own CSS and JavaScript. d3 7.9.0 comes from cdnjs, and the font is JetBrains Mono from Google Fonts.
-- **The terrain.** Elevation comes from the public [Terrarium tiles](https://registry.opendata.aws/terrain-tiles/) on AWS. Each page fetches the tiles around Twin Falls, decodes the heights, and traces contours with `d3.contours`. The river is a least-cost path through the elevation grid.
-- **Movement.** The games route their teams with A* over the slope of the terrain, so routes keep off the canyon walls.
-- **Shared code.** The games copy the terrain loading, camera and route planning from each other, and from `index.html`, rather than share a module. Comments at the top of each script say where the code came from.
+`game/` is a Vite + TypeScript project: **Phaser 4** draws the map and the mini games, **React 19** draws the HUD panels, and the game itself is plain TypeScript.
 
-**Run it locally.** The tiles are fetched cross-origin, so serve the folder rather than opening the file directly:
-
-```sh
-python3 -m http.server 8000
-# then open http://localhost:8000/war-room.html
-```
-
-**Testing.** Every change is played in headless Chromium at desktop and phone sizes. For War Room, that means three scripted runs that must end the right way: careful CLEAN, idle FAILED and reckless FAILED. It also means a check that no panel covers a square the mission uses.
-
-**Deploys.** GitHub Actions publishes the repo to GitHub Pages on every push to `main` (`.github/workflows/deploy.yml`).
-
-## The game build (`game/`)
-
-War Room is moving from single HTML prototypes to a real web project in `game/`: Vite, TypeScript, **Phaser 4** for the map and mini games, and **React 19** for the HUD panels. Phaser and React each own one full-screen layer. The HUD passes touches through to the map except where a panel sits, and the two talk over one event bus (`game/src/game/events.ts`). Right now it's an empty shell: a grid scene and two placeholder panels.
+- **`src/sim/`, the game.** One `GameState` object and a list of systems (timer, script, intel, scans, comms, contacts, fights, support, mission, movement…) that each turn a state into the next, at a fixed 10 ticks a second. It doesn't know about Phaser or React, so it's unit-tested directly and replays exactly (chance comes from a seed in the state).
+- **`src/sim/missions/`, missions as data.** The route, clock, contacts, schedule, intel feed and triggers (one-time decision points such as the patrol moving on the crash site) for Operation Black Box.
+- **`src/game/`, the map.** The Phaser scene: terrain and town baked into textures, the grid, markers, the team, and each mini game's map mode.
+- **`src/hud/`, the panels.** The React war room: intel, mission timer, team readout with comms, alerts, target menu, mini game panel, pause menu and wrap-up.
+- **`src/audio/`, the sound effects,** synthesized with WebAudio, so there are no sound files.
 
 ```sh
 cd game
 npm install
 npm run dev      # http://localhost:5173/game/
-npm run build    # typecheck + production build into game/dist
 npm test         # unit tests (Vitest)
-npm run e2e      # smoke test in headless Chromium, desktop and phone (Playwright)
+npm run e2e      # browser tests, desktop and phone (Playwright)
+npm run build    # typecheck and production build
 ```
 
-**Checks.** `.github/workflows/game-ci.yml` runs the typecheck, unit tests and smoke test on every PR. `main` requires it and the Vercel check to pass, and PRs auto-merge once both are green.
+**Checks and deploys.** `.github/workflows/game-ci.yml` runs the typecheck, unit tests and browser tests on every PR. `main` requires that check and Vercel's, and PRs auto-merge once both are green. Vercel's GitHub app deploys previews for PRs and production from `main`. The root `vercel.json` builds `game/` alongside the HTML prototypes.
 
-**Deploys.** The repo is connected to Vercel's GitHub app (project `topo-map`). Every PR gets a preview deploy, linked on the PR, and merging to `main` deploys to production. The root `vercel.json` builds `game/` and puts it together with the HTML prototypes in `site/`. The prototypes keep their paths (`/war-room.html` and so on) and the game is at `/game/`. GitHub Pages still serves the prototypes too.
+## The prototypes
+
+Each of these is a single HTML file with no build step, drawn from real elevation data for the Snake River canyon at Twin Falls, Idaho. They're kept as the history of how the game got here. GitHub Pages serves them, and so does Vercel at the same paths.
+
+| Page | What it is |
+|---|---|
+| [**War Room**](https://chadbercea.github.io/topo-map/war-room.html) (`war-room.html`) | The prototype PMC War Room grew from: scan squares for ALPHA, then observe, attack or avoid each contact. |
+| [**Survey map**](https://chadbercea.github.io/topo-map/) (`index.html`) | Where it started, and a portfolio piece in its own right: contour lines traced from elevation tiles, with an elevation profile, a height slice and an imagery blend. |
+| [**Ground Truth**](https://chadbercea.github.io/topo-map/ground-truth.html) (`ground-truth.html`) | The intel-officer game: sort a live feed of true and false reports and send the team what's real. |
+| [**Headgate**](https://chadbercea.github.io/topo-map/headgate.html) (`headgate.html`) | What's left of the farming game: contour lines that light up teal where you touch. |
+
+To run them locally, serve the folder (the elevation tiles are fetched cross-origin): `python3 -m http.server 8000`, then open http://localhost:8000/war-room.html.
 
 ## Work tracking
 
-Every change starts from a Linear issue in the **Topo Map** project, gets a branch and PR named after the issue key, and merges to `main`.
-
-| Epic | What it covers |
-|---|---|
-| [ILI-1162](https://linear.app/iliketobuild/issue/ILI-1162) | War Room, from ILI-1097 onward. |
-| [ILI-1087](https://linear.app/iliketobuild/issue/ILI-1087) | Ground Truth: ILI-1088 to ILI-1096. |
+Every change starts from a Linear issue, gets a branch and PR named after the issue key, and merges to `main`. PMC War Room is the **PMC War Room** project, built in five milestones: playable shell, war room systems, mini games, mission complete, support options. The prototypes are in the **Topo Map** project ([ILI-1162](https://linear.app/iliketobuild/issue/ILI-1162) War Room, [ILI-1087](https://linear.app/iliketobuild/issue/ILI-1087) Ground Truth).
