@@ -24,13 +24,14 @@ export type Contact = {
   observed: boolean;
   units: number[];
   total: number;
+  intent?: string; // what an intercept of its radio reveals it's doing
 };
 
 // What the team decided about a square on its route.
 export type Decision = 'blind' | 'attack' | 'push';
 
 // Contacts for a mission script: hidden until imagery (or an intercept) finds them.
-export const makeContact = (id: string, square: SquareId, label: string, strength: number, units: number[]): Contact => ({
+export const makeContact = (id: string, square: SquareId, label: string, strength: number, units: number[], intent?: string): Contact => ({
   id,
   square,
   label,
@@ -39,7 +40,17 @@ export const makeContact = (id: string, square: SquareId, label: string, strengt
   observed: false,
   units,
   total: units.length,
+  intent,
 });
+
+// A contact on the move: it and its map marker go to a new square.
+export function moveContact(s: GameState, id: string, square: SquareId): GameState {
+  return {
+    ...s,
+    contacts: s.contacts.map((c) => (c.id === id ? { ...c, square } : c)),
+    events: s.events.map((e) => (e.id === `contact-${id}` ? { ...e, square } : e)),
+  };
+}
 
 // How hard it fights: its strength, scaled by the fighters it has left.
 export const effectiveStrength = (c: Contact) => c.strength * (c.units.length / c.total);

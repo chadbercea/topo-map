@@ -52,7 +52,7 @@ export function startIntercept(s: GameState, eventId: string): GameState {
   const target = round1(BAND.min + 5 + r * (BAND.max - BAND.min - 10));
   [r, rng] = nextRandom(rng);
   const shift = 3 + Math.floor(r * 20);
-  const plain = c ? `${WORD[c.id] ?? 'UNIT'} AT ${c.square} HOLD POSITION` : `NOTHING AT ${e.square}`;
+  const plain = c ? `${WORD[c.id] ?? 'UNIT'} AT ${c.square} ${c.intent ?? 'HOLD POSITION'}` : `NOTHING AT ${e.square}`;
   const signal: Signal = { phase: 'tune', target, dial: round1((BAND.min + BAND.max) / 2), lockMs: 0, plain, shift, guess: 0, contactId: c?.id };
   const game: MiniGame = {
     kind: 'signal',
