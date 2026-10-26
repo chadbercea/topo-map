@@ -2,3 +2,4 @@
 export const FIXER_GUIDE = 2_000;
 export const FIXER_DISTRACTION = 3_000;
 export const RESUPPLY_COST = 4_000;
+export const REINFORCE_COST = 8_000;

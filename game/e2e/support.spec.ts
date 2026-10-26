@@ -28,3 +28,27 @@ test('running low, ALPHA asks for a resupply; the bird flies in and refills them
   const ammo = await page.evaluate(() => window.game.get().team.operators.every((o) => o.ammo > 100));
   expect(ammo).toBe(true);
 });
+
+test('combat ineffective: ALPHA asks for reinforcements, and replacements arrive', async ({ page }) => {
+  await page.goto('?debug');
+  await page.waitForFunction(() => window.game);
+  await page.evaluate(() => {
+    const s = window.game.get();
+    const operators = s.team.operators.map((o, i) => (i < 2 ? { ...o, health: 0 } : o));
+    window.game.set({
+      ...s,
+      contacts: [],
+      schedule: [],
+      map: { ...s.map, scanned: [...s.team.route] },
+      resources: { ...s.resources, budget: 9_000 },
+      comms: { ...s.comms, messages: [] },
+      team: { ...s.team, operators, holdFor: null },
+    });
+  });
+  await fastForward(page, 300);
+  await expect(page.getByTestId('comms-text')).toHaveText("We're combat ineffective, 2 down. We need reinforcements.");
+  await page.getByTestId('responses').getByRole('button', { name: /Send reinforcements/ }).click();
+  await expect(page.getByTestId('inbound-reinforcements')).toContainText('reinforcements inbound');
+  await fastForward(page, 30_500);
+  await expect(page.getByTestId('team-panel')).toContainText('5/5 fit');
+});

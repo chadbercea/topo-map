@@ -20,16 +20,19 @@ export type WrapUp = {
   timeUsedMs: number;
 };
 
+// Casualties: everyone who went down, even if a replacement took their place.
+const casualties = (s: GameState) => new Set([...s.stats.lost, ...s.team.operators.filter((o) => o.health <= 0).map((o) => o.id)]).size;
+
 export function outcomeOf(s: GameState): Outcome {
-  const down = s.team.operators.filter((o) => o.health <= 0).length;
+  const down = casualties(s);
   if (s.mission.phase !== 'complete') return 'failed';
   return down ? 'casualties' : 'win';
 }
 
 export function wrapUp(s: GameState): WrapUp {
   const outcome = outcomeOf(s);
-  const down = s.team.operators.filter((o) => o.health <= 0).length;
-  const wiped = down === s.team.operators.length;
+  const down = casualties(s);
+  const wiped = s.team.operators.every((o) => o.health <= 0);
   const disowned = s.deniability === 'disowned';
   const reason = disowned && outcome !== 'failed'
     ? 'Black box recovered, but the client disowned the operation.'

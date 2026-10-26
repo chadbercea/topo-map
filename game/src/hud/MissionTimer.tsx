@@ -58,7 +58,7 @@ export function MissionTimer() {
       )}
       {inbound.map((i) => (
         <p key={i.kind} className="inbound" data-testid={`inbound-${i.kind}`}>
-          resupply bird inbound · {Math.max(0, Math.ceil((i.arrivesMs - now) / 1000))}s
+          {i.kind === 'resupply' ? 'resupply bird' : 'reinforcements'} inbound · {Math.max(0, Math.ceil((i.arrivesMs - now) / 1000))}s
         </p>
       ))}
       <p className="resources" data-testid="resources">
