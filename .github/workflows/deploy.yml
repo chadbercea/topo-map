@@ -3,6 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+    # The game in game/ deploys to Vercel instead (vercel.yml).
+    paths-ignore: ['game/**', 'vercel.json', '.github/workflows/vercel.yml']
   workflow_dispatch:
 
 permissions:
