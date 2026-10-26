@@ -36,11 +36,10 @@ describe('helicopter resupply', () => {
     expect(store.get().comms.messages.some((m) => m.from === 'DUSTOFF-2' && /Full reload/.test(m.text))).toBe(true);
   });
 
-  it('greyed out without the money; asks again only after a refill', () => {
-    const s = run(lowOnAmmo(0), 200);
-    const call = lowCall(s)!;
-    expect(call.responses?.find((r) => r.id === 'resupply')).toBeTruthy();
-    expect(run(s, 5_000).comms.messages.filter((m) => m.node === 'low-supplies')).toHaveLength(1);
+  it('asks once per shortage, even after HQ says to make it last', () => {
+    const store = createStore(run(lowOnAmmo(0), 200));
+    store.respond(lowCall(store.get())!.id, 'no');
+    expect(run(store.get(), 5_000).comms.messages.filter((m) => m.node === 'low-supplies')).toHaveLength(1);
   });
 
   it('only one bird at a time', () => {

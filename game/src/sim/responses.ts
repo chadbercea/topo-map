@@ -2,7 +2,7 @@ import type { GameState } from './state';
 import type { MiniGameKind } from './minigame';
 import type { Message } from './comms';
 import type { Effect } from './contacts';
-import { FIXER_DISTRACTION, FIXER_GUIDE, RESUPPLY_COST } from './prices';
+import { FIXER_DISTRACTION, FIXER_GUIDE, REINFORCE_COST, RESUPPLY_COST } from './prices';
 
 // The response tree for radio calls (GDD: answer through a menu tree; options depend on
 // capabilities and budget). Each call offers one to three responses; a response can move
@@ -68,6 +68,15 @@ export const TREE: Record<string, CallNode> = {
     responses: [
       { id: 'resupply', label: `Send a resupply bird ($${RESUPPLY_COST.toLocaleString('en-US')})`, requires: { budget: RESUPPLY_COST }, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
       { id: 'no', label: 'Make it last', effect: 'pass', reply: 'Understood. Conserving.' },
+    ],
+  },
+  // Combat ineffective (GDD support options): HQ can send reinforcements.
+  ineffective: {
+    text: ({ label }) => `We're combat ineffective, ${label}. We need reinforcements.`,
+    timeout: 'pass',
+    responses: [
+      { id: 'reinforce', label: `Send reinforcements ($${REINFORCE_COST.toLocaleString('en-US')})`, requires: { budget: REINFORCE_COST }, effect: 'reinforce', reply: 'Copy. Holding for the bird.', hold: 30_000 },
+      { id: 'push', label: 'Push on', effect: 'pass', reply: 'Understood. Moving with what we have.' },
     ],
   },
   'contact-observed': {

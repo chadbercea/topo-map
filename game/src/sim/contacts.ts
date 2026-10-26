@@ -7,7 +7,7 @@ import { treeCall } from './responses';
 import { pass, search } from './sites';
 import { isMissionPoint } from './mission';
 import { acceptJob, declineJob } from './sidejob';
-import { sendResupply } from './support';
+import { sendReinforcements, sendResupply } from './support';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -135,7 +135,7 @@ function holdOn(s: GameState, c: { node: string; id: string; square: SquareId; l
 }
 
 // The effects HQ's answers have on a contact or an unimaged square.
-export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'accept-job' | 'decline-job' | 'guide' | 'distract' | 'resupply';
+export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'accept-job' | 'decline-job' | 'guide' | 'distract' | 'resupply' | 'reinforce';
 
 export function applyEffect(s: GameState, effect: Effect, square: SquareId): GameState {
   const decide = (d: Decision) => ({ ...s.team, decisions: { ...s.team.decisions, [square]: d } });
@@ -177,6 +177,8 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
       };
     case 'resupply':
       return sendResupply(s);
+    case 'reinforce':
+      return sendReinforcements(s);
     case 'accept-job':
       return acceptJob(s);
     case 'decline-job':
