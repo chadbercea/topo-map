@@ -29,21 +29,10 @@ export const BUFF_EFFECT: Record<IntelType, string> = {
   signals: 'Enemy net read: takes 30% less damage',
 };
 
-// Placeholder feed until the mission script lands (ILI-1139).
-const p = (atMs: number, id: string, type: IntelType, title: string, durationMs: number) => ({ atMs, project: { id, type, title, durationMs } });
-export const DEMO_FEED = [
-  p(0, 'route-overwatch', 'imagery', 'Route overwatch', 40_000),
-  p(20_000, 'radio-chatter', 'signals', 'Radio chatter', 50_000),
-  p(40_000, 'checkpoint-photos', 'target', 'Checkpoint photos', 45_000),
-  p(90_000, 'town-rooftops', 'imagery', 'Town rooftops', 40_000),
-  p(120_000, 'patrol-net', 'signals', 'Patrol net', 50_000),
-  p(150_000, 'vehicle-ids', 'target', 'Vehicle IDs', 45_000),
-];
-
-export const initialIntel = (): Intel => ({
+export const initialIntel = (feed: Intel['queue']): Intel => ({
   analysts: BASE_ANALYSTS,
   projects: { imagery: null, target: null, signals: null },
-  queue: DEMO_FEED,
+  queue: feed,
   sent: [],
 });
 

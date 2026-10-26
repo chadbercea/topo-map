@@ -29,8 +29,8 @@ export type Contact = {
 // What the team decided about a square on its route.
 export type Decision = 'blind' | 'attack' | 'push';
 
-// Placeholder placement until the mission script lands (ILI-1139).
-const contact = (id: string, square: SquareId, label: string, strength: number, units: number[]): Contact => ({
+// Contacts for a mission script: hidden until imagery (or an intercept) finds them.
+export const makeContact = (id: string, square: SquareId, label: string, strength: number, units: number[]): Contact => ({
   id,
   square,
   label,
@@ -40,11 +40,6 @@ const contact = (id: string, square: SquareId, label: string, strength: number, 
   units,
   total: units.length,
 });
-export const DEMO_CONTACTS: Contact[] = [
-  contact('technicals', 'E3', 'two technicals', 1, [5, 6, 9, 10]),
-  contact('patrol', 'C2', 'a foot patrol', 0.7, [1, 7, 12]),
-  contact('post', 'C3', 'an observation post', 0.5, [10, 11]),
-];
 
 // How hard it fights: its strength, scaled by the fighters it has left.
 export const effectiveStrength = (c: Contact) => c.strength * (c.units.length / c.total);
