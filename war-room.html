@@ -51,6 +51,8 @@
   #squares rect.clear { fill: rgba(63,208,192,.07); }
   #squares rect.hot { fill: rgba(255,106,61,.16); stroke: var(--accent); stroke-width: 1.6; }
   #squares rect.cold { fill: rgba(143,122,90,.12); }
+  #squares rect.need { stroke: var(--major); stroke-width: 2; stroke-dasharray: 6 4; animation: need .8s ease-in-out infinite alternate; }
+  @keyframes need { from { fill: rgba(255,226,184,.03); } to { fill: rgba(255,226,184,.16); } }
   #squares text.clear { fill: var(--tealhi); }
   #squares text.hot { fill: var(--accent); }
 
@@ -75,6 +77,12 @@
     box-shadow: 0 0 6px var(--teal); transition: background .3s; }
   .mk.team b.wia { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
   .mk.team .tag { color: var(--tealhi); left: 16px; top: -16px; }
+  /* ALPHA's last transmission, beside the team on the map. */
+  .mk.bark span { position: absolute; left: 16px; bottom: 22px; width: max-content; max-width: 230px; white-space: normal; font-size: 10px; letter-spacing: .06em;
+    line-height: 1.4; padding: 4px 7px; color: var(--tealhi); background: rgba(4,8,10,.88); border-left: 2px solid var(--teal); animation: arrive .3s ease-out; }
+  .mk.bark.alert span { color: var(--accent); border-left-color: var(--accent); }
+  .mk.bark.flip span { left: auto; right: 16px; border-left: 0; border-right: 2px solid var(--teal); text-align: right; }
+  .mk.bark.flip.alert span { border-right-color: var(--accent); }
   /* A contact: a button you tap for ALPHA's options. */
   .mk.contact { pointer-events: auto; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; font-size: 9px; letter-spacing: .16em; color: var(--accent); }
   .mk.contact i { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 1.5px solid var(--accent); background: rgba(255,106,61,.25);
@@ -146,6 +154,13 @@
   .bar i { display: block; height: 100%; width: 0; background: var(--teal); }
   /* ALPHA's route, square by square, coloured by what you know about each one. */
   .card.route { border-left-color: var(--major); background: rgba(226,185,127,.07); }
+  /* ALPHA asking for imagery before it crosses unscanned ground. */
+  .card.need { border-left-color: var(--major); background: rgba(255,226,184,.1); animation: arrive .3s ease-out; }
+  .card.need[hidden] { display: none; }
+  .card.need .kind { color: var(--major); }
+  .card.need .ask { color: var(--text); font-size: 11px; }
+  .card.need .acts { display: flex; gap: 6px; }
+  .card.need .acts .go { flex: 1; width: auto; }
   .card.route .kind { color: var(--major); }
   #legs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11px; font-weight: 600; letter-spacing: .08em; }
   #legs span { padding: 2px 5px; border: 1px dashed rgba(226,185,127,.45); color: var(--muted); }
@@ -157,6 +172,7 @@
 
   #comms { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 10px; line-height: 1.45; }
   #comms li { animation: arrive .4s ease-out; }
+  #comms li + li { opacity: .5; }
   #comms .when { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
   #comms .alpha { color: var(--tealhi); }
   #comms .alert { color: var(--accent); }
@@ -235,6 +251,11 @@
     <button class="btn go" id="scan" disabled>SCAN ▸</button>
     <div class="bar"><i id="s-bar"></i></div>
   </div>
+  <div class="card need" id="ask" hidden>
+    <div class="kind"><span>IMAGERY REQUEST</span><span id="a-time"></span></div>
+    <div class="ask" id="a-text"></div>
+    <div class="acts"><button class="btn go" id="a-scan"></button><button class="btn" id="a-push">PUSH THROUGH</button></div>
+  </div>
   <div class="card route">
     <div class="kind"><span>ALPHA ROUTE</span><span id="r-state">—</span></div>
     <div id="legs"></div>
@@ -257,7 +278,8 @@
   <div class="title">OPERATION DRY CREEK</div>
   <p>Team ALPHA is crossing the south rim of the Snake River canyon to an enemy outpost at <b>C2</b>. You're mission control: the voice in their ear, with the eyes in the sky.</p>
   <ul>
-    <li>ALPHA calls in its <b>route</b>, square by square. Anything on that route that nobody has found is an <b>ambush</b>.</li>
+    <li>ALPHA calls in its <b>route</b>, square by square, and <b>stops before any square nobody has imaged</b>. Scan it, or tell them to push through blind. Leave them waiting and they push on their own.</li>
+    <li>Anything ALPHA walks into that nobody found is an <b>ambush</b>.</li>
     <li><b>Scan</b> whenever the satellite is ready: tap up to three squares, then SCAN. It needs a few seconds to recharge after each scan.</li>
     <li>When you find a contact, ALPHA holds short of it. <b>Tap the contact</b> to choose: <b>observe</b> it for free intel, <b>attack</b> it with artillery (two fire missions), or <b>avoid</b> it and sneak around.</li>
     <li>Three operators wounded and ALPHA pulls out. The grid runs <b>A–H</b> west to east and <b>1–5</b> north to south. Drag to look around, scroll or pinch to zoom.</li>
@@ -286,7 +308,7 @@ const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
 const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
 const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const SPEED = 110;           // m/s ALPHA covers on flat ground (game time, so a square takes about 10 s)
+const SPEED = 80;            // m/s ALPHA covers on flat ground (game time, so a square takes about 13 s)
 const STEP_OFF = 12;         // s into the mission ALPHA starts moving
 const PICK = 3;              // squares per scan
 const SCAN_TIME = 2.5;       // s the satellite spends over the squares
@@ -297,6 +319,9 @@ const FIRES = 2;             // fire missions for the whole approach
 const AMBUSH_TIME = 3;       // s an ambush holds ALPHA
 const LOOK = 350;            // m ahead ALPHA checks for a contact you've found, and holds short of it
 const OBSERVE_R = 1600;      // m: ALPHA has to be this close to observe a contact
+const PATIENCE = 20;         // s ALPHA waits for imagery on the next square before pushing on blind
+const COMMS = 4;             // lines the comms log keeps
+const BARK = 5;              // s ALPHA's last transmission stays on the map
 
 // The area of operations: an 8 x 5 grid of 1 km squares, A1 in the north-west corner. Fixed to the ground, so a
 // square's name is the same on every screen.
@@ -594,20 +619,25 @@ function newGame() {
     contacts: Object.fromEntries(Object.entries(OP.contacts).map(([n, c]) => [n,
       { ...c, n, found: false, observed: false, status: "active", how: null, hurt: 0 }])),
     team: { pos: toGrid(OP.lz), path: [], seg: 0, goals: OP.route.slice(1), avoid: new Set(),
-      mode: "wait", timer: 0, on: null, held: null, ops: [100, 100, 100, 100, 100] },
+      mode: "wait", timer: 0, on: null, held: null, need: null, patience: 0, pushed: new Set(), bark: -1, ops: [100, 100, 100, 100, 100] },
   };
   $("comms").innerHTML = "";
   $("route").removeAttribute("d");
   $("menu").hidden = true;
   buildSquares();
   for (const n of OP.route) rectOf(n).classList.add("onroute");
+  // ALPHA is standing in the LZ's square: it knows what's there.
+  game.scanned.add(squareAt(toGrid(OP.lz)));
+  $("ask").hidden = true;
   $("marks").innerHTML = `
     <div class="mk lz" id="m-lz"><i></i><span class="tag">LZ</span></div>
     <div class="mk obj" id="m-obj"><i></i><span class="tag">OBJECTIVE · OUTPOST</span></div>
-    <div class="mk team" id="m-team">${"<b></b>".repeat(5)}<span class="tag">ALPHA</span></div>` +
+    <div class="mk team" id="m-team">${"<b></b>".repeat(5)}<span class="tag">ALPHA</span></div>
+    <div class="mk bark" id="m-bark" hidden><span></span></div>` +
     Object.values(game.contacts).map(c => `<button class="mk contact" id="c-${c.n}" hidden aria-label="Contact in ${c.n}: ${c.tag}"><i></i><span class="tag">${c.n} · ${c.tag}</span></button>`).join("");
   for (const c of Object.values(game.contacts)) $(`c-${c.n}`).addEventListener("click", e => { e.stopPropagation(); openMenu(c); });
   status("ON THE GROUND AT THE LZ");
+  for (const n of game.scanned) drawSquare(n);
   drawScan(); drawLegs(); drawTeam(); drawPhases();
 }
 
@@ -616,6 +646,15 @@ function radio(text, cls = "") {
   li.innerHTML = `<span class="when">${clock(game.T)}</span><span class="${cls}"></span>`;
   li.lastChild.textContent = text;
   $("comms").prepend(li);
+  while ($("comms").children.length > COMMS) $("comms").lastChild.remove();
+  if (text.startsWith("ALPHA: ")) {
+    const b = $("m-bark");
+    b.hidden = false;
+    b.classList.toggle("alert", cls === "alert");
+    b.firstChild.textContent = text.slice(7);
+    b.firstChild.style.animation = "none"; void b.offsetWidth; b.firstChild.style.animation = "";
+    game.team.bark = game.T + BARK;
+  }
 }
 
 function status(text, alert = false) {
@@ -667,7 +706,8 @@ function drawSquare(n) {
 // ---------- The satellite: pick up to three squares, scan, recharge ----------
 function pick(n) {
   const s = game.scan;
-  if (s.busy || s.cool) return radio(`ORION-3: ${s.busy ? "Busy scanning." : `Recharging, ${Math.ceil(s.cool)} s.`}`, "alert");
+  // You can line up the next scan while the satellite recharges, but not while it's scanning.
+  if (s.busy) return radio("ORION-3: Busy scanning.", "alert");
   if (s.sel.includes(n)) s.sel = s.sel.filter(x => x !== n);
   else if (known(n)) return radio(`ORION-3: ${n} is already ${known(n) === "clear" ? "clear" : "imaged"}.`);
   else if (s.sel.length >= PICK) return radio(`ORION-3: Three squares per scan.`, "alert");
@@ -841,10 +881,61 @@ function aheadFound() {
   return null;
 }
 
+// The first square on the path just ahead that nobody has imaged, and ALPHA hasn't been told to push through.
+function aheadUnscanned() {
+  const t = game.team, lim = LOOK / state.mpg, here = squareAt(t.pos);
+  let d = 0, p = t.pos;
+  for (let i = t.seg + 1; i < t.path.length && d < lim; i++) {
+    d += dist(p, t.path[i]); p = t.path[i];
+    const n = squareAt(p);
+    if (n && n !== here && !known(n) && !t.pushed.has(n) && !t.avoid.has(n)) return n;
+  }
+  return null;
+}
+
+// ALPHA stops short of ground nobody has imaged and asks for it.
+function needImagery(n) {
+  const t = game.team;
+  t.mode = "hold"; t.need = n; t.patience = PATIENCE;
+  $("route").classList.add("held");
+  rectOf(n).classList.add("need");
+  radio(`ALPHA: Holding short of ${n}. No imagery on it. Scan it, or tell us to push.`, "alert");
+  status(`HOLDING · NEED IMAGERY ON ${n}`, true);
+  $("a-text").textContent = `ALPHA is holding short of ${n} and wants imagery before crossing.`;
+  $("a-scan").textContent = `SCAN ${n} ▸`;
+  $("ask").hidden = false;
+  drawAsk();
+}
+
+function drawAsk() {
+  const t = game.team;
+  $("a-time").textContent = `PUSHING IN ${Math.ceil(t.patience)} s`;
+}
+
+// The held square is imaged, or ALPHA has gone without it: the request is over.
+function doneAsking() {
+  const t = game.team;
+  if (t.need) rectOf(t.need).classList.remove("need");
+  t.need = null;
+  $("ask").hidden = true;
+}
+
+// Push through the held square blind: on your order, or because ALPHA got tired of waiting.
+function push(own = false) {
+  const t = game.team, n = t.need;
+  if (!n) return;
+  t.pushed.add(n);
+  radio(own ? `ALPHA: Can't sit here any longer. Pushing through ${n} without imagery.` : `ALPHA: Copy, pushing through ${n} blind.`, "alert");
+  doneAsking();
+  resume();
+}
+
 function moveTeam(dt) {
   const t = game.team;
   const ahead = aheadFound();
   if (ahead) return hold(ahead);
+  const blind = aheadUnscanned();
+  if (blind) return needImagery(blind);
   let budget = SPEED / state.mpg / (1 + grade[cellOf(t.pos)] * 4) * dt * (t.avoid.size ? .85 : 1);
   while (budget > 0 && t.seg < t.path.length - 1) {
     const to = t.path[t.seg + 1], d = dist(t.pos, to);
@@ -861,6 +952,7 @@ function moveTeam(dt) {
 
 function hold(c) {
   const t = game.team;
+  doneAsking();
   t.mode = "hold"; t.held = c;
   $("route").classList.add("held");
   $(`c-${c.n}`).classList.add("call");
@@ -903,7 +995,14 @@ function stepTeam(dt) {
     return;
   }
   if (t.mode === "move") return moveTeam(dt);
-  if (t.mode === "hold") return;
+  if (t.mode === "hold") {
+    if (t.need) {
+      if (known(t.need)) { doneAsking(); resume(); }
+      else if ((t.patience -= dt) <= 0) push(true);
+      else drawAsk();
+    }
+    return;
+  }
   t.timer -= dt;
   if (t.timer > 0) return;
   const c = t.on;
@@ -932,6 +1031,7 @@ function resume() {
   const t = game.team;
   if (t.held && t.held.status !== "active") t.held = null;
   if (t.held) { t.mode = "hold"; status(`HOLDING · YOUR CALL ON ${t.held.n}`, true); return; }
+  if (t.need) { t.mode = "hold"; status(`HOLDING · NEED IMAGERY ON ${t.need}`, true); return; }
   $("route").classList.remove("held");
   if (game.T < STEP_OFF) { t.mode = "wait"; return; }
   t.mode = "move";
@@ -981,6 +1081,11 @@ function placeMarks() {
     b.style.transform = `translate(${WEDGE[i][0]}px, ${WEDGE[i][1]}px)`;
     b.classList.toggle("wia", t.ops[i] < 50);
   });
+  // The caption flips to ALPHA's left when there's no room for it on the right.
+  const bark = $("m-bark");
+  at(bark, t.pos);
+  if (game.T > t.bark) bark.hidden = true;
+  else bark.classList.toggle("flip", m.a * t.pos[0] + m.e + 260 > openRect().x1);
   for (const c of Object.values(game.contacts)) at($(`c-${c.n}`), center(c.n));
   for (const el of $("booms").children) at(el, JSON.parse(el.dataset.at));
   placeMenu();
@@ -1070,6 +1175,14 @@ addEventListener("keydown", e => {
   else if (e.key === "Escape") closeMenu();
 });
 $("scan").addEventListener("click", scan);
+$("a-scan").addEventListener("click", () => {
+  const n = game.team.need;
+  if (!n) return;
+  if (!game.scan.sel.includes(n)) pick(n);
+  if (!game.scan.cool) scan();
+  else radio(`ORION-3: ${n} is lined up for the next scan, in ${Math.ceil(game.scan.cool)} s.`);
+});
+$("a-push").addEventListener("click", () => push());
 
 $("begin").addEventListener("click", () => {
   if (!state) return;
