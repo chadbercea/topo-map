@@ -215,6 +215,7 @@ html, body {
 .square-actions button:disabled { opacity: 0.45; cursor: default; }
 .timer .recharge { color: var(--dim); }
 .timer .side-job { color: #f2c14e; font-size: 11px; }
+.timer .inbound { color: var(--accent); font-size: 11px; }
 .timer .deniability { font-size: 11px; color: #f2c14e; }
 .timer .deniability[data-state='disowned'] { color: #e5484d; }
 .timer .noise { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
@@ -533,7 +534,7 @@ html, body {
   }
 
   .clock { font-size: 22px; }
-  .timer h2, .timer p:not(.resources):not(.noise):not(.side-job):not(.deniability) { display: none; }
+  .timer h2, .timer p:not(.resources):not(.noise):not(.side-job):not(.deniability):not(.inbound) { display: none; }
   .timer .noise { font-size: 10px; }
   .timer .resources { font-size: 11px; }
   .debug { bottom: auto; top: 40%; }

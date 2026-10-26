@@ -7,6 +7,7 @@ import { manualScan } from './scans';
 import { abortMiniGame, closeMiniGame, startMiniGame, startSeek, tapMiniGame, type MiniGameKind } from './minigame';
 import { weaponBlocked, type Weapon } from './ordnance';
 import { applyEffect } from './contacts';
+import { sendResupply } from './support';
 import { jam, shiftGuess, startIntercept, submitDecode, tune } from './signal';
 import { step } from './systems';
 
@@ -66,6 +67,7 @@ export function createStore(initial: GameState = initialState()) {
       set({ ...applyEffect(state, 'attack', c.square), openEvent: null });
     },
     manualScan: (square: string) => set(manualScan(state, square)),
+    sendResupply: () => set(sendResupply(state)),
     intercept: (eventId: string) => set(startIntercept(state, eventId)),
     jam: (eventId: string) => set(jam(state, eventId)),
     tune: (mhz: number) => set(tune(state, mhz)),

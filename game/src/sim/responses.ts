@@ -2,6 +2,7 @@ import type { GameState } from './state';
 import type { MiniGameKind } from './minigame';
 import type { Message } from './comms';
 import type { Effect } from './contacts';
+import { FIXER_DISTRACTION, FIXER_GUIDE, RESUPPLY_COST } from './prices';
 
 // The response tree for radio calls (GDD: answer through a menu tree; options depend on
 // capabilities and budget). Each call offers one to three responses; a response can move
@@ -29,8 +30,7 @@ export type CallNode = {
   timeout: Effect; // what the team does if HQ stays silent
 };
 
-export const FIXER_GUIDE = 2_000;
-export const FIXER_DISTRACTION = 3_000;
+export { FIXER_DISTRACTION, FIXER_GUIDE } from './prices';
 
 // The tree's wording.
 export const TREE: Record<string, CallNode> = {
@@ -59,6 +59,15 @@ export const TREE: Record<string, CallNode> = {
     responses: [
       { id: 'search', label: 'Search it', effect: 'search', reply: 'Searching. Give us fifteen.' },
       { id: 'pass', label: 'Keep moving', effect: 'pass', reply: 'Moving on.' },
+    ],
+  },
+  // The team running low (GDD team resources): HQ can send a resupply bird.
+  'low-supplies': {
+    text: ({ label }) => `Running low on ${label}. Can you get us a resupply?`,
+    timeout: 'pass',
+    responses: [
+      { id: 'resupply', label: `Send a resupply bird ($${RESUPPLY_COST.toLocaleString('en-US')})`, requires: { budget: RESUPPLY_COST }, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
+      { id: 'no', label: 'Make it last', effect: 'pass', reply: 'Understood. Conserving.' },
     ],
   },
   'contact-observed': {
