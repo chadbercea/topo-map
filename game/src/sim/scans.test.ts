@@ -41,7 +41,7 @@ describe('scan pool', () => {
     expect(s.resources.scans).toBe(MAX_SCANS - 1);
     expect(s.minigame).toMatchObject({ kind: 'gridScan', square: 'D3', status: 'active' });
     expect(s.map.selected).toBeNull();
-    expect(s.team.holdFor).toBeNull(); // nobody waits on a scan HQ started
+    expect(s.minigame!.callId).toBeUndefined(); // nobody waits on a scan HQ started
   });
 
   it('cannot scan with an empty pool or over a running pass', () => {

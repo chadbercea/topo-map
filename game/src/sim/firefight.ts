@@ -4,13 +4,16 @@ import type { System } from './systems';
 import type { Operator, Role } from './team';
 import type { Message } from './comms';
 import { hasBuff } from './intel';
+import { contactIn } from './contacts';
 
 // Contact resolves on its own (GDD: the player doesn't control the team). Walking into a
-// square with an uncleared contact starts a firefight: everyone with ammo shoots, rounds
+// square with a live contact starts a firefight: an attack on a found contact has surprise
+// (half strength); a contact nobody found is an ambush at full strength with an opening
+// volley. Then everyone with ammo shoots, rounds
 // drain by role, the enemy wears down, and hits land on the team. Afterwards the medic
 // treats the wounded one at a time, spending time and meds. A downed operator stays down.
 
-export type Fight = { eventId: string; square: string; enemy: number; startedMs: number };
+export type Fight = { contactId: string; eventId: string; square: string; enemy: number; full: number; startedMs: number };
 export type Treatment = { patient: string; doneMs: number };
 
 const ENEMY_STRENGTH = 100;
@@ -19,6 +22,7 @@ const HIT_PER_ROUND = 0.45; // enemy strength removed per round fired
 const ENEMY_DPS = 16; // total health per second the enemy deals at full strength
 const TREAT_MS = 4_000;
 const TREAT_HP = 35;
+const AMBUSH_HIT = 12; // the opening volley, on two operators
 const WOUNDED_BELOW = 90; // the medic only bothers below this
 
 // Small seeded generator kept in state so fights replay the same way.
@@ -45,20 +49,40 @@ export const firefightSystem: System = (s, dt) => {
   const { team } = s;
   const secs = dt / 1000;
 
-  // Contact: the team is standing in a square with an uncleared contact.
+  // Contact: the team is standing in a square with a live contact.
   if (!team.fight && !team.treating) {
     const here = squareAt(team.position.x, team.position.y);
-    const contact = s.events.find((e) => e.kind === 'contact' && e.status !== 'resolved' && e.square === here);
-    if (contact) return {
-      ...s,
-      team: {
-        ...team,
-        holdFor: null,
-        fight: { eventId: contact.id, square: contact.square, enemy: ENEMY_STRENGTH, startedMs: s.elapsedMs },
-        activity: `Engaged in ${contact.square}`,
-      },
-      comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, radio(s, `fight-${contact.id}`, `Contact! Engaging in ${contact.square}.`)] },
-    };
+    const contact = here ? contactIn(s, here) : undefined;
+    if (contact) {
+      const ambush = contact.status === 'hidden';
+      const surprise = !ambush && team.decisions[contact.square] === 'attack';
+      const enemy = ENEMY_STRENGTH * contact.strength * (surprise ? 0.5 : 1);
+      let rng = s.rng;
+      let operators = team.operators;
+      if (ambush) {
+        for (let k = 0; k < 2; k++) {
+          const standing = operators.filter(alive);
+          let r: number;
+          [r, rng] = nextRandom(rng);
+          const target = standing[Math.floor(r * standing.length)];
+          operators = operators.map((o) => (o === target ? { ...o, health: Math.max(0, o.health - AMBUSH_HIT) } : o));
+        }
+      }
+      const text = ambush ? `Ambush in ${contact.square}! Returning fire.` : `Contact! Engaging in ${contact.square}.`;
+      return {
+        ...s,
+        rng,
+        contacts: ambush ? s.contacts.map((c) => (c === contact ? { ...c, status: 'revealed' as const } : c)) : s.contacts,
+        team: {
+          ...team,
+          operators,
+          holdFor: null,
+          fight: { contactId: contact.id, eventId: `contact-${contact.id}`, square: contact.square, enemy, full: enemy, startedMs: s.elapsedMs },
+          activity: `Engaged in ${contact.square}`,
+        },
+        comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, radio(s, `fight-${contact.id}`, text)] },
+      };
+    }
   }
 
   if (team.fight) {
@@ -81,7 +105,7 @@ export const firefightSystem: System = (s, dt) => {
       [r, rng] = nextRandom(rng);
       const target = standing[Math.floor(r * standing.length)];
       const cover = hasBuff(s, 'signals') ? 0.7 : 1;
-      const dmg = ENEMY_DPS * (fight.enemy / ENEMY_STRENGTH) * cover * secs;
+      const dmg = ENEMY_DPS * (fight.enemy / ENEMY_STRENGTH) * cover * secs; // weaker as it wears down
       operators = operators.map((o) => (o === target ? { ...o, health: Math.max(0, o.health - dmg) } : o));
     }
 
@@ -100,6 +124,7 @@ export const firefightSystem: System = (s, dt) => {
       ...s,
       rng,
       events: enemy <= 0 ? s.events.map((e) => (e.id === fight.eventId ? { ...e, status: 'resolved' as const } : e)) : s.events,
+      contacts: enemy <= 0 ? s.contacts.map((c) => (c.id === fight.contactId ? { ...c, status: 'cleared' as const } : c)) : s.contacts,
       team: { ...team, operators, fight: null, activity: wounded ? 'Treating wounded' : team.activity },
       comms: { ...s.comms, messages: [...s.comms.messages, radio(s, `fight-${fight.eventId}-end`, text)] },
     };

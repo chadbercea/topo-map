@@ -50,10 +50,11 @@ html, body {
 .slot-intel { grid-area: intel; align-self: start; }
 .slot-timer { grid-area: timer; align-self: start; }
 .slot-team { grid-area: team; align-self: end; }
-.slot-map { grid-area: map; min-height: 0; position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 6px; }
-.map-area { grid-area: 1 / 1; min-height: 0; }
+.slot-map { grid-area: map; min-height: 0; position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 6px; }
+/* Rows: alerts / map / controls. The map refits between them, so nothing covers a square. */
+.map-area { grid-area: 2 / 1; min-height: 0; }
 
-/* Panels that pop in over the map edge: alerts on top, the event card at the bottom. */
+/* Alerts get their own row above the map; the event card pops in over its bottom edge. */
 .alerts {
   grid-area: 1 / 1;
   align-self: start;
@@ -80,7 +81,7 @@ html, body {
 .alert[data-kind='request'] b, .event-card[data-kind='request'] h2 { color: #f2c14e; }
 
 .event-card {
-  grid-area: 1 / 1;
+  grid-area: 2 / 1;
   align-self: end;
   justify-self: center;
   width: min(360px, 100%);
@@ -94,7 +95,7 @@ html, body {
 /* Mini game companion panel: takes the row under the map (the map refits above it), so
    it can never cover a square the player has to tap. */
 .minigame {
-  grid-area: 2 / 1;
+  grid-area: 3 / 1;
   justify-self: center;
   width: min(360px, 100%);
   display: grid;
@@ -140,7 +141,7 @@ html, body {
 
 .views {
   /* Its own row under the map, so it never covers a grid square. */
-  grid-area: 2 / 1;
+  grid-area: 3 / 1;
   justify-self: end;
   display: flex;
   align-items: center;
@@ -149,7 +150,7 @@ html, body {
 }
 
 .square-actions {
-  grid-area: 2 / 1;
+  grid-area: 3 / 1;
   justify-self: start;
   display: flex;
   align-items: center;
@@ -435,6 +436,7 @@ html, body {
 
 /* Phone portrait: top bar (intel, timer), map, bottom bar (team). */
 @media (max-aspect-ratio: 1/1) {
+  .alert { font-size: 11px; min-height: 30px; padding: 4px 8px; }
   .hud {
     gap: 8px;
     grid-template-columns: minmax(0, 1fr) auto;

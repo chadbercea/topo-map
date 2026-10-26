@@ -3,6 +3,7 @@ import { squareCenter } from '../map/grid';
 import { legSpeed, BASE_SPEED, teamFatigue } from './movement';
 import { initialState, MISSION_MS, ROUTE, type GameState } from './state';
 import { step } from './systems';
+import { walking } from './testkit';
 
 const run = (s: GameState, seconds: number) => {
   for (let i = 0; i < seconds * 10; i++) s = step(s, 100);
@@ -26,7 +27,7 @@ describe('team movement', () => {
   });
 
   it('moves on its own toward the next waypoint', () => {
-    const s0 = initialState();
+    const s0 = walking();
     const goal = squareCenter(ROUTE[1])!;
     const d = (s: GameState) => Math.hypot(goal.x - s.team.position.x, goal.y - s.team.position.y);
     const s1 = run(s0, 5);
@@ -34,7 +35,7 @@ describe('team movement', () => {
   });
 
   it('walks the whole route in order inside the mission time, then holds', () => {
-    let s = initialState();
+    let s = walking();
     const reached: number[] = [];
     let seconds = 0;
     while (s.team.waypoint < ROUTE.length && seconds < MISSION_MS / 1000) {
@@ -52,14 +53,14 @@ describe('team movement', () => {
   });
 
   it('builds fatigue climbing, more for heavier loads', () => {
-    const s = run(initialState(), 60);
+    const s = run(walking(), 60);
     const by = Object.fromEntries(s.team.operators.map((o) => [o.role, o.fatigue]));
     expect(teamFatigue(s.team.operators)).toBeGreaterThan(0);
     expect(by['Heavy gunner']).toBeGreaterThan(by.Medic);
   });
 
   it('does not move while paused', () => {
-    const s = { ...run(initialState(), 3), phase: 'paused' as const };
+    const s = { ...run(walking(), 3), phase: 'paused' as const };
     expect(run(s, 5).team.position).toEqual(s.team.position);
   });
 });
