@@ -6,11 +6,13 @@ test('mission clock runs in real time and freezes on pause', async ({ page, isMo
   await page.goto('');
   await expect(page.getByTestId('clock')).toHaveText('06:00');
 
-  // 10 ticks a second: after ~1.5 s of wall time we should be well past 10 ticks.
+  // 10 ticks a second, measured from the first tick so slow page loads don't count.
+  await expect.poll(() => tick(page)).toBeGreaterThan(0);
+  const start = await tick(page);
   await page.waitForTimeout(1500);
-  const running = await tick(page);
-  expect(running).toBeGreaterThanOrEqual(10);
-  expect(running).toBeLessThanOrEqual(30);
+  const ran = (await tick(page)) - start;
+  expect(ran).toBeGreaterThanOrEqual(10);
+  expect(ran).toBeLessThanOrEqual(20);
   await expect(page.getByTestId('clock')).toHaveText(/05:5\d/);
 
   const pause = page.getByTestId('pause-toggle');
