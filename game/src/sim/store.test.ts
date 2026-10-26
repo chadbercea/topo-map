@@ -1,0 +1,74 @@
+import { describe, expect, it, vi } from 'vitest';
+import { initialState, MISSION_MS } from './state';
+import { createStore } from './store';
+import { step, type System } from './systems';
+
+describe('step', () => {
+  it('advances tick, mission time and the timer', () => {
+    const s = step(initialState(), 100);
+    expect(s.tick).toBe(1);
+    expect(s.elapsedMs).toBe(100);
+    expect(s.timer.remainingMs).toBe(MISSION_MS - 100);
+  });
+
+  it('never mutates the previous state', () => {
+    const before = initialState();
+    const copy = structuredClone(before);
+    step(before, 100);
+    expect(before).toEqual(copy);
+  });
+
+  it('runs every system in order with the tick length', () => {
+    const calls: string[] = [];
+    const a: System = (s, dt) => (calls.push(`a${dt}`), s);
+    const b: System = (s, dt) => (calls.push(`b${dt}`), s);
+    step(initialState(), 100, [a, b]);
+    expect(calls).toEqual(['a100', 'b100']);
+  });
+
+  it('ends the mission when the timer runs out, then stops', () => {
+    let s = { ...initialState(), timer: { remainingMs: 150 } };
+    s = step(s, 100);
+    expect(s.phase).toBe('running');
+    s = step(s, 100);
+    expect(s.timer.remainingMs).toBe(0);
+    expect(s.phase).toBe('ended');
+    expect(step(s, 100)).toBe(s);
+  });
+});
+
+describe('store', () => {
+  it('notifies subscribers on change only', () => {
+    const store = createStore();
+    const listener = vi.fn();
+    const off = store.subscribe(listener);
+    store.tick(100);
+    store.resume(); // already running: no change
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+    store.tick(100);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('freezes everything while paused and picks up where it left off', () => {
+    const store = createStore();
+    store.tick(100);
+    store.pause();
+    const frozen = store.get();
+    for (let i = 0; i < 50; i++) store.tick(100);
+    expect(store.get()).toBe(frozen);
+    expect(frozen.phase).toBe('paused');
+    store.resume();
+    store.tick(100);
+    expect(store.get().tick).toBe(2);
+    expect(store.get().timer.remainingMs).toBe(MISSION_MS - 200);
+  });
+
+  it('restarts from a fresh mission', () => {
+    const store = createStore();
+    store.tick(100);
+    store.pause();
+    store.restart();
+    expect(store.get()).toEqual(initialState());
+  });
+});
