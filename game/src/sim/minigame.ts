@@ -8,12 +8,13 @@ import { reveal } from './contacts';
 import { spendWeapon, WEAPON, type Weapon } from './ordnance';
 import { CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
 import { makeNoise, NOISE } from './noise';
+import { finishSignal, type Signal } from './signal';
 
 // Mini games play on the theater map itself (GDD). Starting one puts the map in that game's
 // mode and opens a companion panel; the result feeds back into the mission: the team gets
 // what it asked for (or doesn't) and the matching intel type jumps ahead.
 
-export type MiniGameKind = 'gridScan' | 'seekDestroy';
+export type MiniGameKind = 'gridScan' | 'seekDestroy' | 'signal';
 export type MiniGameStatus = 'active' | 'won' | 'lost';
 
 export type MiniGame = {
@@ -35,6 +36,8 @@ export type MiniGame = {
   roundsLeft?: number;
   nextShotMs?: number;
   spotted?: number[]; // cells the team already saw a fighter in (observe)
+  // Signal intercept only:
+  signal?: Signal;
 };
 
 type Def = {
@@ -95,6 +98,16 @@ export const MINIGAMES: Record<MiniGameKind, Def> = {
     build: (s, square) => [[square], s.rng],
     won: 'Target destroyed.',
     lost: 'Some of them got away.',
+  },
+  signal: {
+    title: 'Signal intercept',
+    instructions: 'Tune until the signal peaks and hold it there, then shift the cipher until it reads.',
+    intel: 'signals',
+    durationMs: 30_000,
+    callsign: 'SIGINT',
+    build: (s, square) => [[square], s.rng],
+    won: 'Decoded.',
+    lost: 'Lost it.',
   },
 };
 
@@ -196,6 +209,7 @@ export function tapMiniGame(s: GameState, square: SquareId, cell?: number): Game
   const m = s.minigame;
   if (!m || m.status !== 'active') return s;
   if (m.kind === 'seekDestroy') return seekTap(s, square, cell);
+  if (m.kind === 'signal') return s; // played in the panel, not on the map
   if (square !== m.targets[m.hits]) return { ...s, minigame: { ...m, misses: m.misses + 1 } };
   const hits = m.hits + 1;
   const next = { ...s, minigame: { ...m, hits, hitAt: [...m.hitAt, s.elapsedMs] } };
@@ -221,6 +235,7 @@ const radio = (s: GameState, from: string, id: string, text: string, status: Mes
 function finish(s: GameState, status: 'won' | 'lost'): GameState {
   const m = s.minigame!;
   if (m.kind === 'seekDestroy') return finishSeek(s, status);
+  if (m.kind === 'signal') return finishSignal(s, status);
   const def = MINIGAMES[m.kind];
   let next: GameState = { ...s, minigame: { ...m, status } };
   if (status === 'won') {

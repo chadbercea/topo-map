@@ -12,7 +12,7 @@ import { BOARD } from '../sim/minigame';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
-const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf } as const;
+const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff } as const;
 const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 
@@ -107,6 +107,14 @@ export class MapScene extends Phaser.Scene {
     this.modeLabels.forEach((l) => l.setVisible(false));
     if (!m) return;
     if (m.kind === 'seekDestroy') return this.drawBoard(g, m);
+    if (m.kind === 'signal') {
+      // Roughly where the signal comes from: the square and its neighbours, pulsing.
+      const sq = parseSquare(m.square)!;
+      const a = 0.08 + 0.08 * Math.abs(Math.sin(time / 300));
+      g.fillStyle(0x8fb8ff, a).fillRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
+      g.lineStyle((1.5 * DPR) / this.zoom, 0x8fb8ff, 0.7).strokeRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
+      return;
+    }
     const color = m.status === 'lost' ? 0xe5484d : TEAL;
     for (let c = 0; c < COLS; c++)
       for (let r = 0; r < ROWS; r++)
