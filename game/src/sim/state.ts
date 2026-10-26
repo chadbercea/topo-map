@@ -1,9 +1,10 @@
-import { roster, type Operator } from './team';
+import { roster, vitalsFor, type Operator } from './team';
 import type { SquareId } from '../map/grid';
 import { squareCenter } from '../map/grid';
 import { DEMO_SCHEDULE, type MapEvent, type Scheduled } from './events';
 import { initialComms, type Comms } from './comms';
 import type { Capability } from './responses';
+import type { Fight, Treatment } from './firefight';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -29,6 +30,10 @@ export type GameState = {
     activity: string;
     holdFor: string | null; // radio call the team is waiting on HQ to answer
     holdUntilMs: number; // mission time a timed hold ends
+    activeUntilMs: number; // the readout stays in Mode B until then (fights, wounds, healing)
+    vitals: string; // health/ammo/meds last tick, to notice them changing
+    fight: Fight | null;
+    treating: Treatment | null; // the medic at work
   };
   map: { cols: number; rows: number; scanned: string[]; selected: string | null };
   events: MapEvent[];
@@ -37,6 +42,7 @@ export type GameState = {
   comms: Comms;
   resources: { budget: number; scans: number };
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
+  rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
 };
 
@@ -46,6 +52,7 @@ export const ROUTE: SquareId[] = ['G5', 'F4', 'E3', 'D3', 'C2', 'B1'];
 export const MISSION_MS = 6 * 60 * 1000; // GDD: start with six minutes and tune by feel
 
 export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
+  const operators = roster();
   return {
     tick: 0,
     elapsedMs: 0,
@@ -53,13 +60,17 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     timer: { remainingMs: MISSION_MS },
     team: {
       callsign: 'ALPHA',
-      operators: roster(),
+      operators,
       position: squareCenter(ROUTE[0])!,
       route: ROUTE,
       waypoint: 1,
       activity: `Moving to ${ROUTE[1]}`,
       holdFor: null,
       holdUntilMs: 0,
+      activeUntilMs: 0,
+      vitals: vitalsFor(operators),
+      fight: null,
+      treating: null,
     },
     map: { cols: 8, rows: 5, scanned: [], selected: null },
     events: [],
@@ -68,6 +79,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     comms: initialComms(),
     resources: { budget: 0, scans: 3 },
     capabilities: ['imagery'],
+    rng: 1234,
     settings,
   };
 }

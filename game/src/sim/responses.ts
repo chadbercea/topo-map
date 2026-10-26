@@ -29,7 +29,7 @@ export const TREE: Record<string, CallNode> = {
     responses: [
       { id: 'eyes', label: 'Get eyes on it', requires: { scans: 1, capability: 'imagery' }, spend: { scans: 1 }, scan: true, reply: 'Copy, waiting on imagery.', follow: 'contact-imaged' },
       { id: 'wait', label: 'Hold 20 s', hold: 20_000, reply: 'Holding. Moving in 20.' },
-      { id: 'push', label: 'Push through', release: true, resolve: true, reply: 'Moving through.' },
+      { id: 'push', label: 'Push through', release: true, reply: 'Moving through. Expect contact.' },
     ],
   },
   'contact-imaged': {

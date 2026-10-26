@@ -52,3 +52,11 @@ export const roster = (): Operator[] => [
 // Supply bars on the readout panel: share of this operator's own full load.
 export const ammoLeft = (o: Operator) => o.ammo / LOADOUT[o.role].ammo;
 export const medsLeft = (o: Operator) => o.meds / LOADOUT[o.role].meds;
+
+// Heartbeat colour bands (GDD: green, yellow, red, like Resident Evil).
+export type Condition = 'fine' | 'caution' | 'danger' | 'down';
+export const condition = (o: Operator): Condition =>
+  o.health <= 0 ? 'down' : o.health >= 70 ? 'fine' : o.health >= 35 ? 'caution' : 'danger';
+
+// Health, ammo and meds as one string, so a tick can tell whether any of them changed.
+export const vitalsFor = (ops: Operator[]) => ops.map((o) => `${o.health}|${o.ammo}|${o.meds}`).join(',');

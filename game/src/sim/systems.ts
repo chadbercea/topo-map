@@ -2,6 +2,8 @@ import type { GameState } from './state';
 import { movementSystem } from './movement';
 import { eventSystem } from './events';
 import { commsSystem } from './comms';
+import { vitalsFor } from './team';
+import { firefightSystem } from './firefight';
 
 // A system reads the state and returns the next one for a fixed slice of mission time.
 // New systems (movement, comms, intel) slot into SYSTEMS in the order they should run.
@@ -16,7 +18,17 @@ export const timerSystem: System = (s, dt) => {
   };
 };
 
-export const SYSTEMS: System[] = [timerSystem, eventSystem, commsSystem, movementSystem];
+// Any change to health, ammo or meds (a fight, a wound, the medic at work) keeps the team
+// readout in its full Mode B for a few seconds after it stops.
+export const ACTIVE_MS = 5_000;
+
+export const readoutSystem: System = (s) => {
+  const vitals = vitalsFor(s.team.operators);
+  if (vitals === s.team.vitals) return s;
+  return { ...s, team: { ...s.team, vitals, activeUntilMs: s.elapsedMs + ACTIVE_MS } };
+};
+
+export const SYSTEMS: System[] = [timerSystem, eventSystem, commsSystem, firefightSystem, movementSystem, readoutSystem];
 
 // One fixed tick: advance the clocks, then let every system have its turn.
 export function step(state: GameState, dtMs: number, systems: System[] = SYSTEMS): GameState {
@@ -25,3 +37,5 @@ export function step(state: GameState, dtMs: number, systems: System[] = SYSTEMS
   for (const system of systems) next = system(next, dtMs);
   return next;
 }
+
+export const teamMode = (s: GameState): 'A' | 'B' => (s.elapsedMs < s.team.activeUntilMs ? 'B' : 'A');
