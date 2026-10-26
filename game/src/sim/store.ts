@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { initialState, type GameState } from './state';
+import { initialState, type GameState, type Settings } from './state';
 import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
@@ -23,7 +23,10 @@ export function createStore(initial: GameState = initialState()) {
     tick: (dtMs: number) => set(step(state, dtMs)),
     pause: () => state.phase === 'running' && set({ ...state, phase: 'paused' }),
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
-    restart: () => set(initialState()),
+    // No saves in the MVP: retry and restart both start the mission over.
+    restart: () => set(initialState(state.settings)),
+    exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
+    setSettings: (patch: Partial<Settings>) => set({ ...state, settings: { ...state.settings, ...patch } }),
   };
 }
 

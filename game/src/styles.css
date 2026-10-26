@@ -98,6 +98,59 @@ html, body {
 
 .pause:disabled { opacity: 0.4; cursor: default; }
 
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: rgba(11, 15, 13, 0.6);
+  pointer-events: auto;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(320px, 100%);
+  padding: 16px;
+}
+
+.menu button {
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.menu button:hover,
+.menu button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+
+.menu fieldset {
+  border: 1px solid var(--line);
+  margin: 0;
+  padding: 8px 12px 12px;
+  color: var(--dim);
+}
+
+.menu legend { padding: 0 4px; font-size: 11px; letter-spacing: 0.12em; }
+
+.menu label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.menu input { accent-color: var(--accent); width: 18px; height: 18px; }
+
 @media (max-width: 600px) {
   .hud { flex-direction: column; }
   .stack { align-items: stretch; }

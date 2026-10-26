@@ -72,3 +72,27 @@ describe('store', () => {
     expect(store.get()).toEqual(initialState());
   });
 });
+
+describe('pause menu actions', () => {
+  it('keeps settings across a restart', () => {
+    const store = createStore();
+    store.setSettings({ sound: false });
+    store.tick(100);
+    store.restart();
+    expect(store.get().tick).toBe(0);
+    expect(store.get().phase).toBe('running');
+    expect(store.get().settings.sound).toBe(false);
+  });
+
+  it('exit stops the mission and restart brings it back', () => {
+    const store = createStore();
+    store.exit();
+    store.tick(100);
+    expect(store.get().phase).toBe('exited');
+    expect(store.get().tick).toBe(0);
+    store.resume(); // resume only applies to a paused mission
+    expect(store.get().phase).toBe('exited');
+    store.restart();
+    expect(store.get().phase).toBe('running');
+  });
+});

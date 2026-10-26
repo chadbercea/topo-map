@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { bus, EV, getSceneStatus, type SceneStatus } from '../game/events';
 import { MissionTimer } from './MissionTimer';
+import { PauseMenu } from './PauseMenu';
 
 // Placeholder HUD: proves React sits over the canvas and hears the scene.
 // The real radio, tools and team panels come with ILI-1118.
@@ -35,6 +36,7 @@ export function Hud() {
           )}
         </section>
       </div>
+      <PauseMenu />
     </div>
   );
 }
