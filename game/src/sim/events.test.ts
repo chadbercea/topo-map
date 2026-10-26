@@ -4,7 +4,7 @@ import { initialState, type GameState } from './state';
 import { createStore } from './store';
 import { run } from './testkit';
 
-const SCHEDULE: Scheduled[] = [{ atMs: 2_000, event: { id: 'x', kind: 'contact', square: 'B4', title: 'Test' } }];
+const SCHEDULE: Scheduled[] = [{ atMs: 2_000, id: 'x', event: { id: 'x', kind: 'contact', square: 'B4', title: 'Test' } }];
 const scheduled = (): GameState => ({ ...initialState(), schedule: SCHEDULE });
 
 describe('events', () => {

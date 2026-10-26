@@ -5,8 +5,8 @@ import { startMiniGame } from './minigame';
 import { applyEffect } from './contacts';
 
 // Radio traffic from the team (GDD: text only, clearly marked as incoming). Calls come from
-// a timed script, from the team stopping short of a square (contacts.ts), and from the team
-// reaching its objective. A call that "holds" stops the team until HQ answers, or until it
+// the mission script (events.ts, script.ts), from the team stopping short of a square
+// (contacts.ts), and from the team reaching its objective. A call that "holds" stops the team until HQ answers, or until it
 // gives up waiting and does what its tree node says.
 
 export type MessageStatus = 'new' | 'read' | 'dismissed';
@@ -36,10 +36,6 @@ export type Comms = {
 export const HOLD_TIMEOUT_MS = 20_000; // the team pushes on if HQ stays silent this long
 export const CHATTER_MS = 8_000; // routine calls mark themselves read after this
 
-// Placeholder script until the mission script lands (ILI-1139).
-const TIMED: { atMs: number; id: string; text: string }[] = [
-  { atMs: 3_000, id: 'insert', text: 'Boots on the ground at G5.' },
-];
 
 
 export const initialComms = (): Comms => ({ messages: [], queued: [], minimized: false, lastWaypoint: 1 });
@@ -56,10 +52,8 @@ const call = (s: GameState, id: string, text: string, holds = false, eventId?: s
 
 export const commsSystem: System = (s) => {
   const { comms, team } = s;
-  const have = new Set(comms.messages.map((m) => m.id));
   const incoming: Message[] = [];
 
-  for (const t of TIMED) if (t.atMs <= s.elapsedMs && !have.has(t.id)) incoming.push(call(s, t.id, t.text));
   const due = comms.queued.filter((m) => m.atMs <= s.elapsedMs);
   incoming.push(...due.map((m) => ({ ...m, atMs: s.elapsedMs })));
   if (team.waypoint !== comms.lastWaypoint && team.waypoint >= team.route.length)

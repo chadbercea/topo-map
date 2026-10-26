@@ -1,13 +1,15 @@
 import { roster, vitalsFor, type Operator } from './team';
 import type { SquareId } from '../map/grid';
 import { squareCenter } from '../map/grid';
-import { DEMO_SCHEDULE, type MapEvent, type Scheduled } from './events';
+import type { MapEvent, Scheduled } from './events';
 import { initialComms, type Comms } from './comms';
 import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
 import { initialIntel, type Buff, type Intel } from './intel';
 import type { MiniGame } from './minigame';
-import { DEMO_CONTACTS, type Contact, type Decision } from './contacts';
+import type { Contact, Decision } from './contacts';
+import { BLACK_BOX } from './missions/blackBox';
+import type { MissionDef } from './script';
 import { initialOrdnance, type Ordnance } from './ordnance';
 import { initialMission, type Mission } from './mission';
 
@@ -55,16 +57,17 @@ export type GameState = {
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
   ordnance: Ordnance;
   noise: number; // 0-100, how loud the PMC has been
+  script: { mission: string; fired: string[] }; // the mission script and which triggers have run
   stats: { searched: number; decoded: number }; // for the wrap-up
   alerted: boolean; // the enemy knows a PMC is in the area
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
 };
 
-// The mission route: A (infil, G5), B (the crash site, D3), C (exfil, B1). See mission.ts.
-export const ROUTE: SquareId[] = ['G5', 'F4', 'E3', 'D3', 'C2', 'B1'];
-
-export const MISSION_MS = 6 * 60 * 1000; // GDD: start with six minutes and tune by feel
+// The mission being played; see missions/. Its route runs A (infil), B (the crash site), C (exfil).
+export const MISSION: MissionDef = BLACK_BOX;
+export const ROUTE: SquareId[] = MISSION.route;
+export const MISSION_MS = MISSION.durationMs; // GDD: start with six minutes and tune by feel
 
 export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
   const operators = roster();
@@ -91,17 +94,18 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
       decisions: {},
     },
     map: { cols: 8, rows: 5, scanned: [ROUTE[0]], selected: null }, // the insertion point is known ground
-    contacts: DEMO_CONTACTS,
+    contacts: MISSION.contacts(),
     events: [],
-    schedule: DEMO_SCHEDULE,
+    schedule: MISSION.schedule,
     openEvent: null,
     comms: initialComms(),
-    intel: initialIntel(),
+    intel: initialIntel(MISSION.feed),
     minigame: null,
     resources: { budget: 0, scans: 3, rechargeAtMs: null },
     capabilities: ['imagery'],
     ordnance: initialOrdnance(),
     noise: 0,
+    script: { mission: MISSION.id, fired: [] },
     stats: { searched: 0, decoded: 0 },
     alerted: false,
     rng: 1234,

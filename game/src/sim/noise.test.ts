@@ -44,7 +44,7 @@ describe('noise', () => {
   it('past the threshold the enemy is alerted: HQ warns, live contacts harden', () => {
     const s = step({ ...withContacts(), noise: ALERT_AT + 1 }, 100);
     expect(s.alerted).toBe(true);
-    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'HQ', text: expect.stringMatching(/know a PMC is in the area/) });
+    expect(s.comms.messages.find((m) => m.id === 'enemy-alerted')).toMatchObject({ from: 'HQ', text: expect.stringMatching(/know a PMC is in the area/) });
     expect(s.contacts[0].strength).toBeCloseTo(ALERT_HARDEN);
     expect(s.contacts[1].strength).toBeCloseTo(0.7 * ALERT_HARDEN);
     expect(step(s, 100).contacts[0].strength).toBeCloseTo(ALERT_HARDEN); // once, not every tick
