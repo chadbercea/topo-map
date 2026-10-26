@@ -587,15 +587,15 @@ function openRect() {
   return innerWidth > 760 ? { x0: r.right, x1: t.left, y0: 0, y1: innerHeight } : { x0: 0, x1: innerWidth, y0: t.bottom, y1: r.top };
 }
 
-function flyTo(g, k = cam.k) {
-  const o = openRect();
-  fly = { from: { cx: cam.cx, cy: cam.cy, k: cam.k }, to: g, k,
-    off: [(o.x0 + o.x1) / 2 - innerWidth / 2, (o.y0 + o.y1) / 2 - innerHeight / 2], t0: performance.now(), ms: CALM ? 0 : 800 };
+// Flies the camera so g sits in the middle of rect o (the open map by default), zooming to k on the way.
+function flyTo(g, k = cam.k, { ms = 800, o = openRect(), curve = ease, delay = 0 } = {}) {
+  fly = { from: { cx: cam.cx, cy: cam.cy, k: cam.k }, to: g, k, curve,
+    off: [(o.x0 + o.x1) / 2 - innerWidth / 2, (o.y0 + o.y1) / 2 - innerHeight / 2], t0: performance.now() + delay, ms: CALM ? 0 : ms };
 }
 
 function stepFly(now) {
   if (!fly) return;
-  const t = fly.ms ? clamp((now - fly.t0) / fly.ms, 0, 1) : 1, e = ease(t);
+  const t = fly.ms ? clamp((now - fly.t0) / fly.ms, 0, 1) : 1, e = fly.curve(t);
   cam.k = fly.from.k + (fly.k - fly.from.k) * e;
   const s = baseScale() * cam.k;
   cam.cx = fly.from.cx + (fly.to[0] - fly.off[0] / s - fly.from.cx) * e;
@@ -604,10 +604,16 @@ function stepFly(now) {
   if (t >= 1) fly = null;
 }
 
+const easeInOut = t => t < .5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+
+// The load-in's last step: from the whole canyon, a slow zoom until the grid fills the browser. The panels sit over
+// its outer columns, which the mission doesn't use. On a phone the panels are top and bottom, so it fills the gap between.
 function fitAO() {
-  const [x0, y0, x1, y1] = aoBox(), o = openRect(), pad = .94;
+  const [x0, y0, x1, y1] = aoBox(), pad = .96;
+  const o = innerWidth > 760 ? { x0: 0, x1: innerWidth, y0: 0, y1: innerHeight } : openRect();
   const k = Math.min((o.x1 - o.x0) * pad / ((x1 - x0) * baseScale()), (o.y1 - o.y0) * pad / ((y1 - y0) * baseScale()));
-  flyTo([(x0 + x1) / 2, (y0 + y1) / 2], clamp(k, 1, 4));
+  cam.k = 1; cam.cx = state.gw / 2; cam.cy = state.gh / 2; applyCam();
+  flyTo([(x0 + x1) / 2, (y0 + y1) / 2], clamp(k, 1, 4), { ms: 2200, o, curve: easeInOut, delay: 500 });
 }
 
 // ---------- The mission ----------
