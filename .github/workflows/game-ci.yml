@@ -17,6 +17,9 @@ concurrency:
 jobs:
   game-ci:
     runs-on: ubuntu-latest
+    # Browsers and their system libraries come preinstalled; installing them per run took ~9 minutes.
+    # Keep the tag in step with @playwright/test in game/package.json.
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
     defaults:
       run:
         working-directory: game
@@ -30,7 +33,6 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: npx playwright install --with-deps chromium-headless-shell
       - run: npm run e2e
       - uses: actions/upload-artifact@v4
         if: failure()
