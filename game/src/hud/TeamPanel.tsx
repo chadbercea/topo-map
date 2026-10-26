@@ -1,56 +1,39 @@
-import { game, useGame } from '../sim/store';
+import { useState } from 'react';
+import { useGame } from '../sim/store';
 import { teamFatigue } from '../sim/movement';
-import { currentCall, waitingCalls as callsWaiting } from '../sim/comms';
-import { blocked } from '../sim/responses';
-import { teamMode } from '../sim/systems';
 import { OperatorRow } from './OperatorRow';
 import { BUFF_EFFECT } from '../sim/intel';
-import { objectiveText } from '../sim/mission';
-import { useState } from 'react';
 
-const clock = (ms: number) => {
-  const s = Math.floor(ms / 1000);
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-};
-
-// Team panel (GDD). Mode A: callsign, activity, general status. Mode B opens by itself
-// while the team fights, bleeds or heals: a row per operator with heartbeat and supplies.
-// Mode C: the radio comms window slides open under it when a call comes in.
+// Team panel (ILI-1172). It keeps one size: a compact row per operator (heartbeat, name,
+// key supply, status) that reacts to the fight instead of the panel opening up, and a red
+// edge while ALPHA is engaged. Tap the header for the full readout; tap again to close it.
+// Calls live in their own card (CallCard).
 export function TeamPanel() {
   const callsign = useGame((s) => s.team.callsign);
   const activity = useGame((s) => s.team.activity);
+  const fighting = useGame((s) => !!s.team.fight);
   const fit = useGame((s) => s.team.operators.filter((o) => o.health > 0).length);
   const size = useGame((s) => s.team.operators.length);
   const fatigue = useGame((s) => Math.round(teamFatigue(s.team.operators)));
   const buffs = useGame((s) => s.team.buffs);
-  const mission = useGame((s) => s.mission);
   const now = useGame((s) => s.elapsedMs);
-  const active = buffs.filter((b) => b.untilMs > now);
-  const comms = useGame((s) => s.comms);
-  const state = useGame((s) => s);
   const operators = useGame((s) => s.team.operators);
-  const auto = useGame(teamMode);
-  const [pinned, setPinned] = useState(false);
-  const readout = auto === 'B' || pinned;
-  // Several calls can wait at once (ALPHA holding while the client calls): cycle through them.
-  const [focus, setFocus] = useState<string | null>(null);
-  const waitingCalls = callsWaiting(comms);
-  const call = waitingCalls.find((m) => m.id === focus) ?? currentCall(comms);
-  const others = waitingCalls.filter((m) => m.id !== call?.id);
-  const waiting = callsWaiting(comms).length;
-  const mode = call && !comms.minimized ? 'C' : readout ? 'B' : 'A';
+  const active = buffs.filter((b) => b.untilMs > now);
+  const [open, setOpen] = useState(false);
 
   return (
-    <section className="panel team" data-testid="team-panel" data-mode={mode}>
-      <button className="panel-toggle team-head" onClick={() => setPinned(!pinned)} aria-expanded={readout}>
+    <section className="panel team" data-testid="team-panel" data-open={open} data-fight={fighting}>
+      <button className="panel-toggle team-head" onClick={() => setOpen(!open)} aria-expanded={open}>
         <h2>{callsign}</h2>
-        <span className="hint">{readout ? '▾' : '▸'}</span>
+        <span className="hint">{open ? '▾' : '▸'}</span>
       </button>
-      <p className="objective" data-testid="objective">
-        ◆ {objectiveText(mission)}
-      </p>
       <p className="activity">{activity}</p>
-      <p>
+      <ul className={open ? 'readout' : 'rows'} data-testid={open ? 'readout' : 'team-rows'}>
+        {operators.map((o) => (
+          <OperatorRow key={o.id} o={o} compact={!open} />
+        ))}
+      </ul>
+      <p className="stats">
         {fit}/{size} fit · fatigue {fatigue}%
       </p>
       {active.length > 0 && (
@@ -61,61 +44,6 @@ export function TeamPanel() {
             </span>
           ))}
         </p>
-      )}
-      {readout && (
-        <ul className="readout" data-testid="readout">
-          {operators.map((o) => (
-            <OperatorRow key={o.id} o={o} />
-          ))}
-        </ul>
-      )}
-      {call && comms.minimized && (
-        <button className="comms-badge" onClick={() => game.setCommsMinimized(false)} data-testid="comms-badge">
-          ◂ {waiting} incoming
-        </button>
-      )}
-      {mode === 'C' && call && (
-        <div className="comms" data-testid="comms" role="log" aria-live="polite">
-          <div className="incoming">
-            <span className="dot" aria-hidden /> INCOMING · {call.from} · {clock(call.atMs)}
-            <button className="min" onClick={() => game.setCommsMinimized(true)} aria-label="Minimize comms">
-              –
-            </button>
-          </div>
-          <p className="text" data-testid="comms-text">
-            {call.text}
-          </p>
-          {others.length > 0 && (
-            <button className="more-calls" onClick={() => setFocus(others[0].id)} data-testid="more-calls">
-              ▸ {others.length} more waiting · {others[0].from}
-            </button>
-          )}
-          <div className="actions" data-testid="responses">
-            {call.responses ? (
-              call.responses.map((r, i) => {
-                const why = blocked(state, r);
-                return (
-                  <button
-                    key={r.id}
-                    className={i === 0 && !why ? 'primary' : undefined}
-                    disabled={!!why}
-                    onClick={() => game.respond(call.id, r.id)}
-                  >
-                    {r.label}
-                    {why && <small> · {why}</small>}
-                  </button>
-                );
-              })
-            ) : (
-              <button className="primary" onClick={() => game.confirmCall(call.id)}>
-                {call.holds ? 'Copy, proceed' : 'Copy'}
-              </button>
-            )}
-            <button className="quiet" onClick={() => game.dismissCall(call.id)}>
-              Dismiss
-            </button>
-          </div>
-        </div>
       )}
     </section>
   );

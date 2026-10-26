@@ -6,7 +6,8 @@ import { MapArea } from './MapArea';
 import { MapViews } from './MapViews';
 import { MiniGamePanel } from './MiniGamePanel';
 import { SquareActions } from './SquareActions';
-import { MissionTimer } from './MissionTimer';
+import { MissionBar } from './MissionBar';
+import { CallCard } from './CallCard';
 import { PauseMenu } from './PauseMenu';
 import { WrapUp } from './WrapUp';
 import { TeamPanel } from './TeamPanel';
@@ -15,31 +16,36 @@ const debug = new URLSearchParams(location.search).has('debug');
 // Tests and debugging drive the game directly through window.game when ?debug is on.
 if (debug) Object.assign(window, { game });
 
-// War room layout (GDD HUD anatomy): intel on the left, the mission timer on the right,
-// the team panel bottom left, and the theater map in the space between. On a phone in
-// portrait the panels become a top and a bottom bar and intel collapses.
+// War room layout (ILI-1170). Two panels stay on screen: the mission bar along the top and
+// the team column on the right. Intel is a tab on the left edge that opens a drawer. The
+// map's grid fits the space between them, over the full-screen terrain. The band under the
+// grid holds whatever needs an answer (target menu, call card, mini game) and the map
+// controls. On a phone in portrait it all stacks: bar, grid, tools, heartbeats, the band.
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   return (
     <div className="hud" data-playing={playing}>
+      <div className="slot-bar">
+        <MissionBar />
+      </div>
       <div className="slot-intel">
         <IntelPanel />
       </div>
-      <div className="slot-timer">
-        <MissionTimer />
+      <EventAlerts />
+      <MapArea />
+      <div className="slot-team">
+        <TeamPanel />
       </div>
-      <div className="slot-map">
-        <MapArea />
+      <div className="slot-band">
+        <div className="band-cards">
+          <EventCard />
+          <CallCard />
+          <MiniGamePanel />
+        </div>
         <div className="map-controls">
           <SquareActions />
           <MapViews />
         </div>
-        <EventAlerts />
-        <EventCard />
-        <MiniGamePanel />
-      </div>
-      <div className="slot-team">
-        <TeamPanel />
       </div>
       {debug && <DebugPanel />}
       <PauseMenu />

@@ -34,29 +34,35 @@ html, body {
 #hud { pointer-events: none; }
 
 .hud {
+  --band: 140px;
   height: 100%;
   padding: max(var(--gutter), env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right))
     max(var(--gutter), env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
   display: grid;
-  gap: var(--gutter);
-  /* Landscape (ideal: tablet): intel and team down the left, timer on the right. */
-  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) minmax(170px, 200px);
-  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 8px var(--gutter);
+  /* Landscape (ideal: tablet): the mission bar on top, the intel tab on the left edge, the
+     team column on the right, and the grid between. The band under the grid holds the
+     card that needs an answer and the map controls. */
+  grid-template-columns: auto minmax(0, 1fr) minmax(200px, 230px);
+  grid-template-rows: auto minmax(36px, auto) minmax(0, 1fr) minmax(var(--band), auto);
   grid-template-areas:
-    'intel map timer'
-    'team  map timer';
+    'bar   bar    bar'
+    'intel alerts team'
+    'intel map    team'
+    'intel band   team';
 }
 
-.slot-intel { grid-area: intel; align-self: start; }
-.slot-timer { grid-area: timer; align-self: start; }
-.slot-team { grid-area: team; align-self: end; }
-.slot-map { grid-area: map; min-height: 0; position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 6px; }
-/* Rows: alerts / map / controls. The map refits between them, so nothing covers a square. */
-.map-area { grid-area: 2 / 1; min-height: 0; }
+.slot-bar { grid-area: bar; min-width: 0; }
+.slot-intel { grid-area: intel; align-self: start; position: relative; z-index: 5; }
+.slot-team { grid-area: team; align-self: start; min-height: 0; max-height: 100%; overflow-y: auto; pointer-events: auto; }
+.map-area { grid-area: map; min-height: 0; }
+.slot-band { grid-area: band; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+.band-cards { display: grid; gap: 6px; justify-items: center; align-content: end; min-width: 0; }
+.band-cards > * { width: min(420px, 100%); }
 
-/* Alerts get their own row above the map; the event card pops in over its bottom edge. */
+/* Alerts get their own row above the map. */
 .alerts {
-  grid-area: 1 / 1;
+  grid-area: alerts;
   align-self: start;
   justify-self: center;
   display: flex;
@@ -81,10 +87,6 @@ html, body {
 .alert[data-kind='request'] b, .event-card[data-kind='request'] h2 { color: #f2c14e; }
 
 .event-card {
-  grid-area: 2 / 1;
-  align-self: end;
-  justify-self: center;
-  width: min(360px, 100%);
   display: grid;
   gap: 6px;
   animation: alert-in 160ms ease-out;
@@ -134,12 +136,9 @@ html, body {
 .target-menu .options button small { color: var(--dim); font-size: 10px; }
 .target-menu .options button:disabled { opacity: 0.45; cursor: default; border-color: var(--line); }
 
-/* Mini game companion panel: takes the row under the map (the map refits above it), so
-   it can never cover a square the player has to tap. */
+/* Mini game companion panel: in the band under the map, so it never covers a square the
+   player has to tap. */
 .minigame {
-  grid-area: 3 / 1;
-  justify-self: center;
-  width: min(360px, 100%);
   display: grid;
   gap: 6px;
   z-index: 2;
@@ -189,8 +188,8 @@ html, body {
   padding: 3px;
 }
 
-/* The row under the map: square actions on the left, map views on the right. */
-.map-controls { grid-area: 3 / 1; display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* Map controls: a small cluster at the band's right end. */
+.map-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .map-controls:empty { display: none; }
 .square-actions {
   display: flex;
@@ -213,16 +212,16 @@ html, body {
   cursor: pointer;
 }
 .square-actions button:disabled { opacity: 0.45; cursor: default; }
-.timer .recharge { color: var(--dim); }
-.timer .side-job { color: #f2c14e; font-size: 11px; }
-.timer .inbound { color: var(--accent); font-size: 11px; }
-.timer .deniability { font-size: 11px; color: #f2c14e; }
-.timer .deniability[data-state='disowned'] { color: #e5484d; }
-.timer .noise { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
-.timer .noise .bar { height: 5px; }
-.timer .noise .bar > span { background: #f2c14e; }
-.timer .noise[data-alerted='true'] { color: #e5484d; }
-.timer .noise[data-alerted='true'] .bar > span { background: #e5484d; }
+.bar-top .recharge { color: var(--dim); }
+.bar-top .side-job { color: #f2c14e; font-size: 11px; }
+.bar-top .inbound { color: var(--accent); font-size: 11px; }
+.bar-top .deniability { font-size: 11px; color: #f2c14e; }
+.bar-top .deniability[data-state='disowned'] { color: #e5484d; }
+.bar-top .noise { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
+.bar-top .noise .bar { height: 5px; }
+.bar-top .noise .bar > span { background: #f2c14e; }
+.bar-top .noise[data-alerted='true'] { color: #e5484d; }
+.bar-top .noise[data-alerted='true'] .bar > span { background: #e5484d; }
 
 .views button {
   font: inherit;
@@ -284,13 +283,13 @@ html, body {
   letter-spacing: 0.04em;
 }
 
-.timer[data-phase='paused'] .clock { color: var(--dim); }
+.bar-top[data-phase='paused'] .clock { color: var(--dim); }
 .clock[data-warn='amber'] { color: #f2c14e; }
 .clock[data-warn='red'] { color: #e5484d; }
 .banner { font-size: 12px; color: var(--ink); border-color: #e5484d; max-width: 100%; animation: alert-in 160ms ease-out; }
 .banner b { color: #e5484d; letter-spacing: 0.08em; margin-right: 4px; }
-.log-toggle { font: inherit; font-size: 10px; letter-spacing: 0.08em; color: var(--dim); background: none; border: none; padding: 2px 0; cursor: pointer; text-align: left; }
-.radio-log { position: fixed; right: var(--gutter); top: calc(var(--gutter) + 150px); width: min(380px, calc(100vw - 32px)); max-height: 55dvh; overflow-y: auto; z-index: 6; background: var(--bg); display: grid; gap: 6px; }
+.log-toggle { pointer-events: auto; font: inherit; font-size: 10px; letter-spacing: 0.08em; color: var(--dim); background: none; border: none; padding: 2px 0; cursor: pointer; text-align: left; }
+.radio-log { position: fixed; right: var(--gutter); top: calc(var(--gutter) + 72px); width: min(380px, calc(100vw - 32px)); max-height: 55dvh; overflow-y: auto; z-index: 6; background: var(--bg); display: grid; gap: 6px; }
 .radio-log h2 { display: flex; justify-content: space-between; align-items: center; }
 .radio-log h2 button { font: inherit; color: var(--dim); background: none; border: 1px solid var(--line); min-width: 32px; min-height: 28px; cursor: pointer; }
 .radio-log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 11px; }
@@ -420,7 +419,6 @@ html, body {
 .bar > span { display: block; height: 100%; background: var(--accent); }
 
 .team .activity { color: var(--ink); }
-.team .objective { color: #f2c14e; font-size: 11px; }
 .team-head .hint { color: var(--dim); }
 
 /* Mode B readout: a row per operator. */
@@ -450,13 +448,12 @@ html, body {
 
 @keyframes ecg { to { transform: translateX(-40px); } }
 
-/* Mode C: radio comms under the team readout, unmistakably an incoming call. */
+/* The call card: unmistakably a call that needs an answer. */
 .comms {
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid #f2c14e;
   display: grid;
   gap: 6px;
+  border-color: #f2c14e;
+  background: var(--bg);
   animation: alert-in 160ms ease-out;
 }
 
@@ -471,16 +468,6 @@ html, body {
 
 .incoming .dot { width: 7px; height: 7px; border-radius: 50%; background: #f2c14e; animation: blink 1s steps(2) infinite; }
 
-.incoming .min {
-  margin-left: auto;
-  font: inherit;
-  color: var(--dim);
-  background: none;
-  border: 1px solid var(--line);
-  min-width: 32px;
-  min-height: 28px;
-  cursor: pointer;
-}
 
 .comms .text { color: var(--ink); font-size: 14px; line-height: 1.4; }
 
@@ -504,11 +491,68 @@ html, body {
 .comms .actions button:disabled { opacity: 0.45; cursor: default; }
 .comms .actions small { font-size: 10px; text-transform: none; letter-spacing: 0; }
 .comms .actions .quiet { color: var(--dim); border-color: transparent; }
-.more-calls { justify-self: start; font: inherit; font-size: 11px; color: #f2c14e; background: none; border: none; padding: 4px 0; cursor: pointer; }
-.timer .resources { color: var(--ink); }
-.comms-badge { margin-top: 8px; color: #f2c14e; border-color: #f2c14e; min-height: 36px; }
+.incoming .deadline { color: var(--ink); font-variant-numeric: tabular-nums; }
+.pager { display: flex; align-items: center; gap: 4px; color: var(--ink); letter-spacing: 0; }
+.incoming .min { margin-left: auto; }
+.incoming .min, .pager button { font: inherit; color: var(--dim); background: none; border: 1px solid var(--line); min-width: 32px; min-height: 28px; cursor: pointer; }
+.bar-top .resources { color: var(--ink); }
+.comms-badge { flex: none; color: #f2c14e; border-color: #f2c14e; min-height: 36px; }
+.comms-badge:disabled { opacity: 0.6; cursor: default; }
 
 @keyframes blink { 50% { opacity: 0.2; } }
+
+/* Mission bar (ILI-1173): phases, now and next, resources, the clock. */
+.bar-top { display: flex; align-items: center; gap: 18px; padding: 8px 14px; }
+.bar-top h2 { margin: 0 0 2px; }
+.bar-top .mission { flex: none; }
+.pips { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px; font-size: 10px; color: var(--dim); }
+.pips li { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.pip { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid var(--line); font-size: 9px; font-weight: 600; }
+.pips li[data-state='done'] .pip { background: var(--accent); border-color: var(--accent); color: #0b0f0d; }
+.pips li[data-state='current'] { color: var(--ink); }
+.pips li[data-state='current'] .pip { border-color: #f2c14e; color: #f2c14e; }
+.pip-detail { color: #f2c14e; }
+.now-next { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.bar-top .objective { color: #f2c14e; font-size: 11px; }
+.now-next .lines { display: flex; gap: 16px; min-width: 0; }
+.now-next .lines span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now-next .now { color: var(--ink); flex: none; max-width: 50%; }
+.next[data-tone='call'], .next[data-tone='job'] { color: #f2c14e; }
+.next[data-tone='threat'] { color: #e5484d; }
+.next[data-tone='support'] { color: var(--accent); }
+.bar-top .stats { flex: none; display: grid; gap: 1px; font-size: 11px; min-width: 150px; }
+.bar-top .clock { font-size: 26px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 1280px) { .pips li:not([data-state='current']) .pip-label { display: none; } }
+
+/* Team column (ILI-1172): one size, rows that react; red edge in a fight. */
+.team[data-fight='true'] { border-color: #e5484d; }
+.team[data-fight='true'] h2 { color: #e5484d; }
+.team .rows { gap: 4px; margin-top: 6px; }
+.op.compact { grid-template-areas: none; display: grid; grid-template-columns: 40px minmax(0, 1fr) 36px 48px; align-items: center; gap: 6px; }
+.op.compact .ecg { width: 40px; height: 14px; }
+.op.compact .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op.compact .bar { height: 5px; }
+.op.compact .status { text-align: right; }
+.team .stats { margin-top: 6px; font-size: 10px; }
+
+/* Intel: a tab on the left edge; the drawer opens beside it, over the map. */
+.intel { padding: 10px 6px; }
+.intel > .panel-toggle { writing-mode: vertical-rl; gap: 8px; justify-content: flex-start; }
+.intel > .panel-toggle h2 { margin: 0; }
+.intel .ready-badge { margin: 0; }
+.intel .panel-body { display: none; }
+.intel[data-open='true'] .panel-body {
+  display: grid;
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 0;
+  width: 260px;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
 
 .debug {
   position: fixed;
@@ -519,55 +563,66 @@ html, body {
   pointer-events: none; /* read-only; never steal a tap from the map */
 }
 
-/* Phone portrait: top bar (intel, timer), map, bottom bar (team). */
+/* Phone portrait: the bar, the grid at full width, a tools row (intel, map controls), the
+   heartbeat strip, and the band for whatever needs an answer. */
 @media (max-aspect-ratio: 1/1) {
   .alert { font-size: 11px; min-height: 30px; padding: 4px 8px; }
   .hud {
-    gap: 8px;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 6px;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
     grid-template-areas:
-      'intel timer'
-      'map   map'
-      'team  team';
+      'bar    bar'
+      'alerts alerts'
+      'map    map'
+      'intel  tools'
+      'team   team'
+      'band   band';
   }
+  .alerts:empty { display: none; }
+  .slot-intel { align-self: center; }
+  .slot-band { display: contents; }
+  .band-cards { grid-area: band; }
+  .band-cards:empty { display: none; }
+  .band-cards > * { width: 100%; }
+  .map-controls { grid-area: tools; flex-direction: row; justify-content: flex-end; flex-wrap: wrap; }
+  .slot-team { max-height: none; overflow: visible; }
 
-  .slot-intel { position: relative; align-self: stretch; z-index: 5; }
-  .slot-intel .panel { height: 100%; }
-  .panel-toggle .chevron { display: inline; }
-  .intel .panel-body { display: none; }
-  /* Expanded intel drops down over the map rather than pushing it around. */
-  .intel[data-open='true'] .panel-body {
-    display: grid;
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + 4px);
-    padding: 10px 12px;
-    background: var(--bg); /* opaque: it drops over the alerts and the map */
-    border: 1px solid var(--line);
-    z-index: 1;
-  }
+  .bar-top { flex-wrap: wrap; gap: 2px 10px; padding: 6px 10px; }
+  .bar-top h2, .bar-top .objective, .bar-top .now { display: none; }
+  .now-next { order: 1; flex-basis: 100%; font-size: 11px; }
+  .bar-top .stats { order: 2; flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 0 10px; font-size: 10px; }
+  .bar-top .noise { min-width: 110px; }
+  .comms-badge { order: 3; min-height: 30px; font-size: 10px; }
+  .bar-top .timer-row { margin-left: auto; gap: 8px; }
+  .bar-top .clock { font-size: 22px; }
+  .pips { gap: 6px; }
+  .pips li:not([data-state='current']) .pip-label { display: none; }
+  .log-toggle { font-size: 9px; }
 
-  .clock { font-size: 22px; }
-  .timer h2, .timer p:not(.resources):not(.noise):not(.side-job):not(.deniability):not(.inbound) { display: none; }
-  .timer .log-toggle { font-size: 9px; }
-  .timer .noise { font-size: 10px; }
-  .timer .resources { font-size: 11px; }
+  .intel { padding: 6px 10px; }
+  .intel > .panel-toggle { writing-mode: horizontal-tb; }
+  .intel[data-open='true'] .panel-body { left: 0; top: auto; bottom: calc(100% + 4px); width: min(340px, calc(100vw - 32px)); }
+
+  /* The heartbeat strip: five small traces; tap it for the full readout. */
+  .team { padding: 6px 10px; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; }
+  .team-head { width: auto; gap: 6px; }
+  .team .activity { text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .team .rows, .team .readout, .team .stats, .team .buffs { grid-column: 1 / -1; }
+  .team .rows { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 4px; }
+  .op.compact { grid-template-columns: 1fr; justify-items: center; gap: 0; }
+  .op.compact .ecg { width: 100%; height: 14px; }
+  .op.compact .bar, .op.compact .status, .team:not([data-open='true']) .stats { display: none; }
+  .op.compact .name { font-size: 9px; max-width: 100%; }
+  .op:not(.compact) { grid-template-columns: 1fr 72px 1.4fr; grid-template-areas: 'who vitals supplies'; }
+
   .debug { bottom: auto; top: 40%; }
-  /* A mini game is short; on a phone it gets the team bar's room so the board is tappable. */
+  /* A mini game is short; on a phone it gets the team strip's room so the board is tappable. */
   .hud[data-playing='true'] .slot-team { display: none; }
   .hud[data-playing='true'] .minigame .instructions { display: none; }
-  /* On a phone a call has to fit beside the map: tighter text and buttons, no stats line,
-     and no Dismiss (minimize does the same job). */
-  .team[data-mode='C'] > p:not(.activity):not(.objective) { display: none; }
-  .team[data-mode='C'] .objective { display: none; }
-  .comms { gap: 4px; margin-top: 4px; padding-top: 4px; }
+  /* On a phone a call has to fit under the map: tighter text and buttons. */
+  .comms { gap: 4px; }
   .comms .text { font-size: 12px; }
   .comms .actions { gap: 4px; }
   .comms .actions button { min-height: 34px; padding: 0 8px; font-size: 10px; }
-  .comms .actions .quiet { display: none; }
-  /* On a phone the comms window replaces the readout rather than stacking under it. */
-  .team[data-mode='C'] .readout { display: none; }
-  .op { grid-template-columns: 1fr 72px 1.4fr; grid-template-areas: 'who vitals supplies'; }
 }

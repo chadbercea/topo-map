@@ -44,6 +44,12 @@ export const BLACK_BOX: MissionDef = registerMission({
     { atMs: 150_000, project: { id: 'vehicle-ids', type: 'target', title: 'Vehicle IDs', durationMs: 45_000 } },
   ],
 
+  // The patrol's move on the crash site, once someone has found it.
+  threats: (s) => {
+    const p = s.contacts.find((c) => c.id === 'patrol');
+    if (p?.status !== 'revealed' || s.script.fired.includes('patrol-moves') || s.mission.blackBox) return [];
+    return [{ text: `Patrol moves on ${s.mission.b}`, atMs: s.flags.jammed ? PATROL_JAMMED_MS : PATROL_MOVES_MS }];
+  },
   triggers: [
     // The first contact found by imagery or an intercept (a marker on the map, not an
     // ambush): HQ points at the options.

@@ -117,6 +117,12 @@ export class MapScene extends Phaser.Scene {
     this.loop.advance(this.lastFrame === null ? 0 : Math.min(now - this.lastFrame, MAX_FRAME_MS));
     this.lastFrame = now;
     this.drawTeam();
+    const st = game.get();
+    const key = `${st.team.waypoint}|${st.team.route.join()}|${st.map.scanned.length}|${st.contacts.filter((c) => c.status === 'revealed').map((c) => c.square)}`;
+    if (key !== this.routeKey) {
+      this.routeKey = key;
+      this.drawRoute();
+    }
     this.drawMarkers(_time);
     this.drawFight(_time);
     this.drawMiniGame(_time);
@@ -445,15 +451,40 @@ export class MapScene extends Phaser.Scene {
     });
   }
 
-  // The route still ahead of the team: a thin amber line through the waypoint squares.
+  // The route's state (ILI-1173): walked legs faint, imaged legs ahead solid, unimaged legs
+  // dashed (ALPHA will stop and ask), and a leg into a known contact red.
   private drawRoute() {
-    const { route, waypoint, position } = game.get().team;
-    const g = this.routeGfx.clear().lineStyle((1.5 * DPR) / this.zoom, TEAM, 0.55);
-    const points = [position, ...route.slice(waypoint).map((id) => squareCenter(id)!)];
-    for (let i = 1; i < points.length; i++) g.lineBetween(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
-    g.fillStyle(TEAM, 0.8);
-    for (const p of points.slice(1)) g.fillCircle(p.x, p.y, (3 * DPR) / this.zoom);
+    const s = game.get();
+    const { route, waypoint, position } = s.team;
+    const w = (1.5 * DPR) / this.zoom;
+    const g = this.routeGfx.clear();
+    const walked = [...route.slice(0, waypoint).map((id) => squareCenter(id)!), position];
+    g.lineStyle(w, TEAM, 0.2);
+    for (let i = 1; i < walked.length; i++) g.lineBetween(walked[i - 1].x, walked[i - 1].y, walked[i].x, walked[i].y);
+    let from = position;
+    for (const id of route.slice(waypoint)) {
+      const to = squareCenter(id)!;
+      const contact = s.contacts.some((c) => c.square === id && c.status === 'revealed');
+      g.lineStyle(w, contact ? EVENT_COLOR.contact : TEAM, contact ? 0.8 : 0.55);
+      if (contact || s.map.scanned.includes(id)) g.lineBetween(from.x, from.y, to.x, to.y);
+      else this.dashed(g, from, to, (6 * DPR) / this.zoom);
+      g.fillStyle(contact ? EVENT_COLOR.contact : TEAM, 0.8).fillCircle(to.x, to.y, (3 * DPR) / this.zoom);
+      from = to;
+    }
   }
+
+  private dashed(g: Phaser.GameObjects.Graphics, a: { x: number; y: number }, b: { x: number; y: number }, dash: number) {
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    const ux = (b.x - a.x) / len;
+    const uy = (b.y - a.y) / len;
+    for (let d = 0; d < len; d += dash * 2) {
+      const e = Math.min(d + dash, len);
+      g.lineBetween(a.x + ux * d, a.y + uy * d, a.x + ux * e, a.y + uy * e);
+    }
+  }
+
+  // The route redraws when the team moves, and when a scan or a reveal changes a leg's state.
+  private routeKey = '';
 
   private lastTeam = { x: NaN, y: NaN };
 

@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { fastForward } from './helpers';
 
-test('a wound opens the full readout, then it settles back to Mode A', async ({ page }) => {
+test('a wound shows in the team rows without the panel opening up, then heals', async ({ page }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
-  await expect(page.getByTestId('readout')).toHaveCount(0);
+  const panel = page.getByTestId('team-panel');
+  const before = (await panel.boundingBox())!;
 
   await page.evaluate(() => {
     const s = window.game.get();
@@ -12,23 +13,24 @@ test('a wound opens the full readout, then it settles back to Mode A', async ({ 
     window.game.set({ ...s, team: { ...s.team, operators } });
   });
   await fastForward(page, 200);
-  // Mode B (on a phone the open comms window covers it, so check it's there, not visible).
-  await expect(page.getByTestId('readout')).toBeAttached();
   const gunner = page.getByTestId('op-gunner');
   await expect(gunner).toHaveAttribute('data-condition', 'caution');
   await expect(gunner).toContainText('Okafor');
-  await expect(gunner).toContainText('CAUTION');
-  await expect(page.getByTestId('op-medic')).toContainText('FINE');
-  await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
-
-  // The medic treats the gunner twice (50 → 85 → 100, 4 s each), then the readout settles
-  // after 5 quiet seconds: 13 s, so give it 20.
-  await fastForward(page, 20_000);
+  await expect(page.getByTestId('team-rows').locator('li')).toHaveCount(5);
   await expect(page.getByTestId('readout')).toHaveCount(0);
+  expect((await panel.boundingBox())!.height).toBeCloseTo(before.height, 0); // the panel keeps its size
+
+  // The medic treats the gunner twice (50 → 85 → 100, 4 s each).
+  await fastForward(page, 10_000);
+  await expect(gunner).toHaveAttribute('data-condition', 'fine');
 });
 
-test('tapping the team header pins the readout open', async ({ page }) => {
+test('tapping the team header opens the full readout, and again closes it', async ({ page }) => {
   await page.goto('');
-  await page.getByTestId('team-panel').getByRole('button', { name: /ALPHA/ }).click();
-  await expect(page.getByTestId('readout')).toBeAttached();
+  const head = page.getByTestId('team-panel').getByRole('button', { name: /ALPHA/ });
+  await head.click();
+  await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
+  await expect(page.getByTestId('op-medic')).toContainText('MEDS');
+  await head.click();
+  await expect(page.getByTestId('readout')).toHaveCount(0);
 });
