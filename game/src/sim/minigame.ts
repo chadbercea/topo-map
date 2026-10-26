@@ -6,6 +6,7 @@ import type { GameState } from './state';
 import type { System } from './systems';
 import { reveal } from './contacts';
 import { spendWeapon, WEAPON, type Weapon } from './ordnance';
+import { CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
 
 // Mini games play on the theater map itself (GDD). Starting one puts the map in that game's
 // mode and opens a companion panel; the result feeds back into the mission: the team gets
@@ -149,7 +150,7 @@ function seekTap(s: GameState, square: SquareId, cell: number | undefined): Game
   const shots = [...(m.shots ?? []), ...cells.map((x) => ({ cell: x, hit: kills.includes(x), atMs: s.elapsedMs }))];
   const units = c.units.filter((u) => !kills.includes(u));
   const next: GameState = {
-    ...s,
+    ...earn(s, kills.length * CASH_PER_STRIKE_KILL), // confirmed kills pay
     contacts: s.contacts.map((x) => (x === c ? { ...x, units } : x)),
     minigame: {
       ...m,
@@ -248,8 +249,10 @@ function finishSeek(s: GameState, status: 'won' | 'lost'): GameState {
       contacts: next.contacts.map((x) => (x.id === c.id ? { ...x, status: 'cleared' as const } : x)),
       events: next.events.map((e) => (e.id === m.eventId ? { ...e, status: 'resolved' as const } : e)),
     };
+    next = markSite(next, c);
   }
-  const text = status === 'won' ? `${m.square}: target destroyed. ${m.hits} down.` : `${m.square}: ${m.hits} down, ${left} still in there.`;
+  const pay = m.hits ? ` +$${(m.hits * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` : '';
+  const text = status === 'won' ? `${m.square}: target destroyed. ${m.hits} down.${pay}` : `${m.square}: ${m.hits} down, ${left} still in there.${pay}`;
   const report = radio(s, CALLSIGN[m.weapon!], `seek-${m.startedMs}`, text, 'new');
   return { ...next, comms: { ...next.comms, messages: [...next.comms.messages, report] } };
 }

@@ -48,6 +48,14 @@ export const TREE: Record<string, CallNode> = {
       { id: 'avoid', label: 'Go around', effect: 'avoid', reply: 'Going around.' },
     ],
   },
+  site: {
+    text: ({ square }) => `At the kill site in ${square}. Want us to search it? It'll cost us time.`,
+    timeout: 'pass',
+    responses: [
+      { id: 'search', label: 'Search it', effect: 'search', reply: 'Searching. Give us fifteen.' },
+      { id: 'pass', label: 'Keep moving', effect: 'pass', reply: 'Moving on.' },
+    ],
+  },
   'contact-observed': {
     text: ({ square, label }) => `Eyes on ${square}: ${label}, dug in, not moving. Hit it or go around?`,
     timeout: 'push',

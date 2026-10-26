@@ -66,7 +66,7 @@ describe('seek and destroy', () => {
     expect(s.minigame!.status).toBe('won');
     expect(s.contacts[0].status).toBe('cleared');
     expect(s.events[0].status).toBe('resolved');
-    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'REAPER-1', text: 'E3: target destroyed. 4 down.' });
+    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'REAPER-1', text: 'E3: target destroyed. 4 down. +$6,000.' });
   });
 
   it('a partial result weakens the contact for the fight that follows', () => {
@@ -75,7 +75,7 @@ describe('seek and destroy', () => {
     store.tapMiniGame('E3', 0); // only covers 0, 1, 4, 5
     expect(store.get().minigame!.status).toBe('lost');
     expect(store.get().contacts[0].units).toEqual([6, 9, 10]);
-    expect(store.get().comms.messages.at(-1)?.text).toBe('E3: 1 down, 3 still in there.');
+    expect(store.get().comms.messages.at(-1)?.text).toBe('E3: 1 down, 3 still in there. +$1,500.');
   });
 
   it('taps outside the target square do nothing', () => {
