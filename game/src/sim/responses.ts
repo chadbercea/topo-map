@@ -80,7 +80,7 @@ export const TREE: Record<string, CallNode> = {
     ],
   },
   'contact-observed': {
-    text: ({ square, label }) => `Eyes on ${square}: ${label}, dug in, not moving. Hit it or go around?`,
+    text: ({ square, label }) => `Eyes on ${square}: ${label}, dug in, not moving. Target's painted for you. Hit it, or go around?`,
     timeout: 'push',
     responses: [
       { id: 'attack', label: 'Attack', effect: 'attack', reply: 'Moving in hard.' },

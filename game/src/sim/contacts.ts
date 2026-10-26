@@ -27,6 +27,7 @@ export type Contact = {
   units: number[];
   total: number;
   intent?: string; // what an intercept of its radio reveals it's doing
+  painted?: boolean; // ALPHA has a laser on it: strikes see every fighter
 };
 
 // What the team decided about a square on its route.
@@ -147,11 +148,12 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
     case 'attack':
       return { ...s, team: decide(effect) };
     case 'observe': {
-      // The team watches for a while: target intel, and a look at the squares next door.
+      // The team watches for a while and paints the target for the war room: target intel,
+      // a look at the squares next door, and a laser on every fighter.
       if (!contact) return s;
       let next: GameState = {
         ...s,
-        contacts: s.contacts.map((c) => (c === contact ? { ...c, observed: true } : c)),
+        contacts: s.contacts.map((c) => (c === contact ? { ...c, observed: true, painted: true } : c)),
         team: { ...s.team, holdUntilMs: s.elapsedMs + OBSERVE_MS },
       };
       next = boostIntel(next, 'target', 0.3);
