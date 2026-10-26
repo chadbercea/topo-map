@@ -177,18 +177,17 @@ html, body {
 }
 
 .views {
-  /* Its own row under the map, so it never covers a grid square. */
-  grid-area: 3 / 1;
-  justify-self: end;
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 2px;
   padding: 3px;
 }
 
+/* The row under the map: square actions on the left, map views on the right. */
+.map-controls { grid-area: 3 / 1; display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+.map-controls:empty { display: none; }
 .square-actions {
-  grid-area: 3 / 1;
-  justify-self: start;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -536,6 +535,15 @@ html, body {
   /* A mini game is short; on a phone it gets the team bar's room so the board is tappable. */
   .hud[data-playing='true'] .slot-team { display: none; }
   .hud[data-playing='true'] .minigame .instructions { display: none; }
+  /* On a phone a call has to fit beside the map: tighter text and buttons, no stats line,
+     and no Dismiss (minimize does the same job). */
+  .team[data-mode='C'] > p:not(.activity):not(.objective) { display: none; }
+  .team[data-mode='C'] .objective { display: none; }
+  .comms { gap: 4px; margin-top: 4px; padding-top: 4px; }
+  .comms .text { font-size: 12px; }
+  .comms .actions { gap: 4px; }
+  .comms .actions button { min-height: 34px; padding: 0 8px; font-size: 10px; }
+  .comms .actions .quiet { display: none; }
   /* On a phone the comms window replaces the readout rather than stacking under it. */
   .team[data-mode='C'] .readout { display: none; }
   .op { grid-template-columns: 1fr 72px 1.4fr; grid-template-areas: 'who vitals supplies'; }

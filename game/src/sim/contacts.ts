@@ -134,7 +134,7 @@ function holdOn(s: GameState, c: { node: string; id: string; square: SquareId; l
 }
 
 // The effects HQ's answers have on a contact or an unimaged square.
-export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'accept-job' | 'decline-job';
+export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'accept-job' | 'decline-job' | 'guide' | 'distract';
 
 export function applyEffect(s: GameState, effect: Effect, square: SquareId): GameState {
   const decide = (d: Decision) => ({ ...s.team, decisions: { ...s.team.decisions, [square]: d } });
@@ -162,6 +162,18 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
       return search(s, square);
     case 'pass':
       return pass(s, square);
+    case 'guide': {
+      // The fixer walks them in: the square is known ground now, and he says what's there.
+      const known = { ...s, map: { ...s.map, scanned: s.map.scanned.includes(square) ? s.map.scanned : [...s.map.scanned, square] } };
+      return reveal(known, [square], 'FIXER');
+    }
+    case 'distract':
+      // Half of them chase the fixer's distraction while ALPHA goes in.
+      return {
+        ...s,
+        contacts: s.contacts.map((c) => (c === contact ? { ...c, strength: c.strength * 0.5 } : c)),
+        team: decide('attack'),
+      };
     case 'accept-job':
       return acceptJob(s);
     case 'decline-job':
