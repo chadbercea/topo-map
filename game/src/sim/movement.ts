@@ -29,7 +29,7 @@ export const movementSystem: System = (s, dt) => {
   const { team } = s;
   const target = team.route[team.waypoint];
   const goal = target && squareCenter(target);
-  if (!goal || team.holdFor || s.elapsedMs < team.holdUntilMs) return s; // holding
+  if (!goal || team.holdFor || team.fight || team.treating || s.elapsedMs < team.holdUntilMs) return s; // holding, fighting or treating
 
   const t = theater();
   const { x, y } = team.position;

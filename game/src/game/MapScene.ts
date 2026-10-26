@@ -30,6 +30,7 @@ export class MapScene extends Phaser.Scene {
   private teamGfx!: Phaser.GameObjects.Graphics;
   private teamLabel!: Phaser.GameObjects.Text;
   private markerGfx!: Phaser.GameObjects.Graphics;
+  private fightGfx!: Phaser.GameObjects.Graphics;
   private labels: Phaser.GameObjects.Text[] = [];
   private pointer = 'none';
   private unsubscribe?: () => void;
@@ -48,6 +49,7 @@ export class MapScene extends Phaser.Scene {
     this.selectGfx = this.add.graphics();
     this.routeGfx = this.add.graphics();
     this.markerGfx = this.add.graphics();
+    this.fightGfx = this.add.graphics();
     this.teamGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
@@ -82,6 +84,19 @@ export class MapScene extends Phaser.Scene {
     this.loop.advance(delta);
     this.drawTeam();
     this.drawMarkers(_time);
+    this.drawFight(_time);
+  }
+
+  // A firefight: red rings pulsing out from the team.
+  private drawFight(time: number) {
+    const g = this.fightGfx.clear();
+    const { fight, position } = game.get().team;
+    if (!fight) return;
+    const r = (10 * DPR) / this.zoom;
+    for (const phase of [0, 0.5]) {
+      const t = ((time / 700 + phase) % 1);
+      g.lineStyle((2 * DPR) / this.zoom, 0xe5484d, 1 - t).strokeCircle(position.x, position.y, r * (1 + t * 2.5));
+    }
   }
 
   // Markers sit in the top-right corner of their square, clear of the team's route line.

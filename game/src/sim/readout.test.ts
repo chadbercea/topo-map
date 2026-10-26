@@ -19,7 +19,7 @@ describe('team readout mode', () => {
 
   it('switches to Mode B when health, ammo or meds change, and back after it settles', () => {
     let s = run(initialState(), 1_000);
-    s = step(wound(s, 'gunner', 60), 100);
+    s = step(wound(s, 'gunner', 95), 100); // a graze: no treatment to keep it busy
     expect(teamMode(s)).toBe('B');
     s = run(s, ACTIVE_MS - 200);
     expect(teamMode(s)).toBe('B');

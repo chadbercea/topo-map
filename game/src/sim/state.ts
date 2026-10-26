@@ -4,6 +4,7 @@ import { squareCenter } from '../map/grid';
 import { DEMO_SCHEDULE, type MapEvent, type Scheduled } from './events';
 import { initialComms, type Comms } from './comms';
 import type { Capability } from './responses';
+import type { Fight, Treatment } from './firefight';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -31,6 +32,8 @@ export type GameState = {
     holdUntilMs: number; // mission time a timed hold ends
     activeUntilMs: number; // the readout stays in Mode B until then (fights, wounds, healing)
     vitals: string; // health/ammo/meds last tick, to notice them changing
+    fight: Fight | null;
+    treating: Treatment | null; // the medic at work
   };
   map: { cols: number; rows: number; scanned: string[]; selected: string | null };
   events: MapEvent[];
@@ -39,6 +42,7 @@ export type GameState = {
   comms: Comms;
   resources: { budget: number; scans: number };
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
+  rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
 };
 
@@ -65,6 +69,8 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
       holdUntilMs: 0,
       activeUntilMs: 0,
       vitals: vitalsFor(operators),
+      fight: null,
+      treating: null,
     },
     map: { cols: 8, rows: 5, scanned: [], selected: null },
     events: [],
@@ -73,6 +79,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     comms: initialComms(),
     resources: { budget: 0, scans: 3 },
     capabilities: ['imagery'],
+    rng: 1234,
     settings,
   };
 }

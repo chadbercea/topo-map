@@ -22,8 +22,9 @@ test('a wound opens the full readout, then it settles back to Mode A', async ({ 
   await expect(page.getByTestId('op-medic')).toContainText('FINE');
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
 
-  await fastForward(page, 6_000);
-  await expect(panel).toHaveAttribute('data-mode', 'A');
+  // The medic treats the gunner (4 s), then the readout settles after 5 quiet seconds.
+  await fastForward(page, 12_000);
+  await expect(page.getByTestId('readout')).toHaveCount(0);
 });
 
 test('tapping the team header pins the readout open', async ({ page }) => {

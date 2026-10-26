@@ -17,8 +17,20 @@ export const fastForward = (page: Page, ms: number) =>
 // Mirror MapScene's camera fit: the grid is centred in the map area between the panels.
 const WORLD_W = 1600, WORLD_H = 1000, CELL = 200, MARGIN = 8;
 
+// The map area resizes when panels grow (a radio call, the readout); wait for it to settle.
+async function mapBox(page: Page) {
+  let box = (await page.getByTestId('map-area').boundingBox())!;
+  for (let i = 0; i < 20; i++) {
+    await page.waitForTimeout(100);
+    const next = (await page.getByTestId('map-area').boundingBox())!;
+    if (next.x === box.x && next.y === box.y && next.width === box.width && next.height === box.height) break;
+    box = next;
+  }
+  return box;
+}
+
 export async function worldToScreen(page: Page, wx: number, wy: number) {
-  const box = (await page.getByTestId('map-area').boundingBox())!;
+  const box = await mapBox(page);
   const zoom = Math.min((box.width - MARGIN * 2) / WORLD_W, (box.height - MARGIN * 2) / WORLD_H);
   return { x: box.x + box.width / 2 + (wx - WORLD_W / 2) * zoom, y: box.y + box.height / 2 + (wy - WORLD_H / 2) * zoom };
 }

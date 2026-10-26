@@ -20,14 +20,21 @@ describe('response tree', () => {
     }
   });
 
-  it('push through: the team replies, moves, and the contact is closed', () => {
+  it('push through: the team replies and moves on, into the contact', () => {
     const store = atContact();
     store.respond(CONTACT, 'push');
     const s = store.get();
     expect(msg(s, CONTACT)).toMatchObject({ status: 'read', answer: 'push' });
-    expect(msg(s, `${CONTACT}-push`)?.text).toBe('Moving through.');
+    expect(msg(s, `${CONTACT}-push`)?.text).toBe('Moving through. Expect contact.');
     expect(s.team.holdFor).toBeNull();
-    expect(s.events.find((e) => e.id === 'contact-e3')?.status).toBe('resolved');
+    expect(s.events.find((e) => e.id === 'contact-e3')?.status).not.toBe('resolved'); // the fight settles it
+  });
+
+  it('go around: the contact is avoided and closed', () => {
+    const store = atContact();
+    store.respond(CONTACT, 'eyes');
+    store.respond(`${CONTACT}-contact-imaged`, 'bypass');
+    expect(store.get().events.find((e) => e.id === 'contact-e3')?.status).toBe('resolved');
   });
 
   it('hold 20 s: the team waits, then moves on its own', () => {
