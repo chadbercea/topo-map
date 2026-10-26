@@ -30,8 +30,10 @@ export function Hud() {
       </div>
       <div className="slot-map">
         <MapArea />
-        <MapViews />
-        <SquareActions />
+        <div className="map-controls">
+          <SquareActions />
+          <MapViews />
+        </div>
         <EventAlerts />
         <EventCard />
         <MiniGamePanel />
