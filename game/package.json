@@ -12,12 +12,14 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "d3-contour": "^4.0.2",
     "phaser": "^4.2.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
+    "@types/d3-contour": "^3.0.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",

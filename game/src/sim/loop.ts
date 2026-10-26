@@ -3,7 +3,9 @@
 // result, whatever the frame rate.
 
 export const STEP_MS = 100; // 10 ticks a second
-const MAX_FRAME_MS = 250; // after a stall (tab switch, breakpoint) don't fast-forward
+// Slow devices still keep real time (up to 10 ticks a frame); only a real stall, like a
+// breakpoint, is cut short. Hiding the tab pauses the mission (PauseMenu), so no catch-up.
+const MAX_FRAME_MS = 1000;
 
 export function createLoop(tick: (dtMs: number) => void, stepMs = STEP_MS) {
   let carry = 0;
