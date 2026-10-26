@@ -191,6 +191,11 @@ html, body {
 }
 .square-actions button:disabled { opacity: 0.45; cursor: default; }
 .timer .recharge { color: var(--dim); }
+.timer .noise { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
+.timer .noise .bar { height: 5px; }
+.timer .noise .bar > span { background: #f2c14e; }
+.timer .noise[data-alerted='true'] { color: #e5484d; }
+.timer .noise[data-alerted='true'] .bar > span { background: #e5484d; }
 
 .views button {
   font: inherit;
@@ -483,7 +488,8 @@ html, body {
   }
 
   .clock { font-size: 22px; }
-  .timer h2, .timer p:not(.resources) { display: none; }
+  .timer h2, .timer p:not(.resources):not(.noise) { display: none; }
+  .timer .noise { font-size: 10px; }
   .timer .resources { font-size: 11px; }
   .debug { bottom: auto; top: 40%; }
   /* A mini game is short; on a phone it gets the team bar's room so the board is tappable. */

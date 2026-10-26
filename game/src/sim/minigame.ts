@@ -7,6 +7,7 @@ import type { System } from './systems';
 import { reveal } from './contacts';
 import { spendWeapon, WEAPON, type Weapon } from './ordnance';
 import { CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
+import { makeNoise, NOISE } from './noise';
 
 // Mini games play on the theater map itself (GDD). Starting one puts the map in that game's
 // mode and opens a companion panel; the result feeds back into the mission: the team gets
@@ -149,8 +150,9 @@ function seekTap(s: GameState, square: SquareId, cell: number | undefined): Game
   const kills = c.units.filter((u) => cells.includes(u));
   const shots = [...(m.shots ?? []), ...cells.map((x) => ({ cell: x, hit: kills.includes(x), atMs: s.elapsedMs }))];
   const units = c.units.filter((u) => !kills.includes(u));
+  const loud = m.weapon === 'drone' ? NOISE.drone : m.weapon === 'heli' ? NOISE.heli / WEAPON.heli.rounds : NOISE.sniperRound;
   const next: GameState = {
-    ...earn(s, kills.length * CASH_PER_STRIKE_KILL), // confirmed kills pay
+    ...makeNoise(earn(s, kills.length * CASH_PER_STRIKE_KILL), loud), // kills pay; every shot is heard
     contacts: s.contacts.map((x) => (x === c ? { ...x, units } : x)),
     minigame: {
       ...m,
