@@ -6,6 +6,7 @@ import type { Message } from './comms';
 import { hasBuff } from './intel';
 import { contactIn, effectiveStrength } from './contacts';
 import { CASH_PER_TEAM_KILL, earn, markSite } from './sites';
+import { ALERT_AMBUSH, makeNoise, NOISE } from './noise';
 
 // Contact resolves on its own (GDD: the player doesn't control the team). Walking into a
 // square with a live contact starts a firefight: an attack on a found contact has surprise
@@ -66,12 +67,13 @@ export const firefightSystem: System = (s, dt) => {
           let r: number;
           [r, rng] = nextRandom(rng);
           const target = standing[Math.floor(r * standing.length)];
-          operators = operators.map((o) => (o === target ? { ...o, health: Math.max(0, o.health - AMBUSH_HIT) } : o));
+          const hit = AMBUSH_HIT * (s.alerted ? ALERT_AMBUSH : 1); // an alerted enemy is waiting
+          operators = operators.map((o) => (o === target ? { ...o, health: Math.max(0, o.health - hit) } : o));
         }
       }
       const text = ambush ? `Ambush in ${contact.square}! Returning fire.` : `Contact! Engaging in ${contact.square}.`;
       return {
-        ...s,
+        ...makeNoise(s, NOISE.firefight),
         rng,
         contacts: ambush ? s.contacts.map((c) => (c === contact ? { ...c, status: 'revealed' as const } : c)) : s.contacts,
         team: {

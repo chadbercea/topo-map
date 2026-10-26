@@ -50,3 +50,11 @@ test('drone: one blast over all four fighters destroys the target', async ({ pag
   await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
   await expect(page.getByTestId('alerts')).toContainText('KILL SITE E3');
 });
+
+test('a drone strike is loud: the noise meter jumps', async ({ page, isMobile }) => {
+  await targetE3(page);
+  await expect(page.getByTestId('noise').getByRole('meter')).toHaveAttribute('aria-valuenow', '0');
+  await page.getByTestId('fire-drone').click();
+  await tapAt(page, isMobile, await e3Cell(page, 0));
+  await expect.poll(async () => Number(await page.getByTestId('noise').getByRole('meter').getAttribute('aria-valuenow'))).toBeGreaterThan(30);
+});

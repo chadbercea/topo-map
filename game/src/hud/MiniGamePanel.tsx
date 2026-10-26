@@ -1,5 +1,6 @@
 import { MINIGAMES, timeLeft } from '../sim/minigame';
 import { WEAPON } from '../sim/ordnance';
+import { SignalControls } from './SignalControls';
 import { game, useGame } from '../sim/store';
 
 // Companion panel for the mini game on the map: what to do, the countdown, progress, and
@@ -24,7 +25,9 @@ export function MiniGamePanel() {
             </span>
             <span className="secs">{(left / 1000).toFixed(1)}s</span>
           </div>
-          {seek ? (
+          {m.kind === 'signal' ? (
+            <SignalControls />
+          ) : seek ? (
             <p>
               <span data-testid="minigame-progress">{m.hits} down</span> · {m.roundsLeft} round{m.roundsLeft === 1 ? '' : 's'} left
               {m.weapon === 'drone' ? ' · 2×2 blast' : ''}
@@ -42,7 +45,11 @@ export function MiniGamePanel() {
       ) : (
         <>
           <p className="result" data-testid="minigame-result">
-            {seek
+            {m.kind === 'signal'
+              ? m.status === 'won'
+                ? `Decoded: “${m.signal!.plain}”`
+                : 'Lost it. The traffic went quiet.'
+              : seek
               ? m.status === 'won'
                 ? `Target destroyed. ${m.hits} down.`
                 : `${m.hits} down. The rest are still in ${m.square}.`

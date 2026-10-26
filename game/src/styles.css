@@ -92,6 +92,25 @@ html, body {
 
 .event-card .title { color: var(--ink); font-size: 14px; }
 .target-menu { display: grid; gap: 6px; }
+.alert[data-kind='signal'] { border-color: #8fb8ff; }
+.alert[data-kind='signal'] b, .event-card[data-kind='signal'] h2 { color: #8fb8ff; }
+.event-card .intercept, .signal .send {
+  font: inherit; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #0b0f0d; background: #8fb8ff; border: 1px solid #8fb8ff; min-height: 40px; padding: 0 16px; cursor: pointer; justify-self: start;
+}
+.signal { display: grid; gap: 8px; }
+.signal .dial-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.signal .freq { font-size: 20px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.signal .meter { display: flex; gap: 2px; }
+.signal .meter i { width: 6px; height: 16px; background: var(--line); }
+.signal .meter i[data-on='true'] { background: #8fb8ff; }
+.signal input[type='range'] { width: 100%; accent-color: #8fb8ff; height: 28px; }
+.signal .fine { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.signal .fine button:not(.send) {
+  font: inherit; font-size: 12px; color: var(--ink); background: none; border: 1px solid var(--line); min-width: 44px; min-height: 40px; cursor: pointer;
+}
+.signal .lock { flex: 1; text-align: center; font-size: 11px; letter-spacing: 0.1em; color: #8fb8ff; }
+.signal .cipher { font-size: 15px; letter-spacing: 0.12em; color: var(--ink); word-break: break-word; }
 .target-menu .options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .target-menu .options button {
   display: grid;
@@ -191,6 +210,11 @@ html, body {
 }
 .square-actions button:disabled { opacity: 0.45; cursor: default; }
 .timer .recharge { color: var(--dim); }
+.timer .noise { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
+.timer .noise .bar { height: 5px; }
+.timer .noise .bar > span { background: #f2c14e; }
+.timer .noise[data-alerted='true'] { color: #e5484d; }
+.timer .noise[data-alerted='true'] .bar > span { background: #e5484d; }
 
 .views button {
   font: inherit;
@@ -483,7 +507,8 @@ html, body {
   }
 
   .clock { font-size: 22px; }
-  .timer h2, .timer p:not(.resources) { display: none; }
+  .timer h2, .timer p:not(.resources):not(.noise) { display: none; }
+  .timer .noise { font-size: 10px; }
   .timer .resources { font-size: 11px; }
   .debug { bottom: auto; top: 40%; }
   /* A mini game is short; on a phone it gets the team bar's room so the board is tappable. */

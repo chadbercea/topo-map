@@ -1,7 +1,7 @@
 import { game, useGame } from '../sim/store';
 import { TargetMenu } from './TargetMenu';
 
-const LABEL = { contact: 'CONTACT', request: 'REQUEST', site: 'KILL SITE' } as const;
+const LABEL = { contact: 'CONTACT', request: 'REQUEST', site: 'KILL SITE', signal: 'SIGNAL' } as const;
 
 // Alerts strip at the top of the map: one chip per event the player hasn't opened yet.
 export function EventAlerts() {
@@ -34,6 +34,14 @@ export function EventCard() {
       <p className="title">{e.title}</p>
       {e.kind === 'contact' && e.id.startsWith('contact-') ? (
         <TargetMenu contactId={e.id.slice('contact-'.length)} />
+      ) : e.kind === 'signal' ? (
+        e.status === 'resolved' ? (
+          <p>Gone quiet.</p>
+        ) : (
+          <button className="intercept" onClick={() => game.intercept(e.id)}>
+            Intercept
+          </button>
+        )
       ) : e.kind === 'site' ? (
         <p>{e.status === 'resolved' ? 'Searched or passed.' : 'ALPHA can search it for intel when it gets there.'}</p>
       ) : call ? (

@@ -12,6 +12,8 @@ export function MissionTimer() {
   const phase = useGame((s) => s.phase);
   const tick = useGame((s) => s.tick);
   const scans = useGame((s) => s.resources.scans);
+  const noise = useGame((s) => Math.round(s.noise));
+  const alerted = useGame((s) => s.alerted);
   const budget = useGame((s) => s.resources.budget);
   const recharge = useGame((s) => (s.resources.rechargeAtMs === null ? null : Math.ceil((s.resources.rechargeAtMs - s.elapsedMs) / 1000)));
 
@@ -35,6 +37,10 @@ export function MissionTimer() {
       <p>
         {phase === 'running' ? 'LIVE' : phase.toUpperCase()} · tick{' '}
         <span data-testid="tick">{tick}</span>
+      </p>
+      <p className="noise" data-testid="noise" data-alerted={alerted}>
+        noise <span className="bar" role="meter" aria-label="Noise" aria-valuenow={noise}><span style={{ width: `${noise}%` }} /></span>
+        {alerted && <b> ALERTED</b>}
       </p>
       <p className="resources" data-testid="resources">
         scans {scans}/{MAX_SCANS}

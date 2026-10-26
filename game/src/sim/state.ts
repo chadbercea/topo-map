@@ -52,6 +52,8 @@ export type GameState = {
   resources: { budget: number; scans: number; rechargeAtMs: number | null }; // next scan back from the satellite
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
   ordnance: Ordnance;
+  noise: number; // 0-100, how loud the PMC has been
+  alerted: boolean; // the enemy knows a PMC is in the area
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
 };
@@ -95,6 +97,8 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     resources: { budget: 0, scans: 3, rechargeAtMs: null },
     capabilities: ['imagery'],
     ordnance: initialOrdnance(),
+    noise: 0,
+    alerted: false,
     rng: 1234,
     settings,
   };
