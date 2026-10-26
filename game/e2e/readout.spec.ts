@@ -22,8 +22,9 @@ test('a wound opens the full readout, then it settles back to Mode A', async ({ 
   await expect(page.getByTestId('op-medic')).toContainText('FINE');
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
 
-  // The medic treats the gunner (4 s), then the readout settles after 5 quiet seconds.
-  await fastForward(page, 12_000);
+  // The medic treats the gunner twice (50 → 85 → 100, 4 s each), then the readout settles
+  // after 5 quiet seconds: 13 s, so give it 20.
+  await fastForward(page, 20_000);
   await expect(page.getByTestId('readout')).toHaveCount(0);
 });
 

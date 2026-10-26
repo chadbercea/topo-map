@@ -1,4 +1,5 @@
 import { game, useGame } from '../sim/store';
+import { MAX_SCANS } from '../sim/scans';
 
 const clock = (ms: number) => {
   const s = Math.ceil(ms / 1000);
@@ -12,6 +13,7 @@ export function MissionTimer() {
   const tick = useGame((s) => s.tick);
   const scans = useGame((s) => s.resources.scans);
   const budget = useGame((s) => s.resources.budget);
+  const recharge = useGame((s) => (s.resources.rechargeAtMs === null ? null : Math.ceil((s.resources.rechargeAtMs - s.elapsedMs) / 1000)));
 
   return (
     <section className="panel timer" data-testid="mission-timer" data-phase={phase}>
@@ -35,7 +37,8 @@ export function MissionTimer() {
         <span data-testid="tick">{tick}</span>
       </p>
       <p className="resources" data-testid="resources">
-        scans {scans} · ${budget.toLocaleString('en-US')}
+        scans {scans}/{MAX_SCANS}
+        {recharge !== null && <span className="recharge"> +1 in {recharge}s</span>} · ${budget.toLocaleString('en-US')}
       </p>
     </section>
   );

@@ -70,7 +70,7 @@ describe('response tree', () => {
     const eyes = TREE.contact.responses.find((r) => r.id === 'eyes')!;
     const broke = { ...store.get(), resources: { ...store.get().resources, scans: 0 } };
     expect(blocked(broke, eyes)).toBe('No scans left');
-    const rich = { ...store.get(), capabilities: ['imagery', 'strike'] as GameState['capabilities'], resources: { budget: 10_000, scans: 3 } };
+    const rich = { ...store.get(), capabilities: ['imagery', 'strike'] as GameState['capabilities'], resources: { budget: 10_000, scans: 3, rechargeAtMs: null } };
     expect(blocked(rich, strike)).toBeNull();
   });
 
