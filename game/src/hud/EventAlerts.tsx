@@ -38,9 +38,14 @@ export function EventCard() {
         e.status === 'resolved' ? (
           <p>Gone quiet.</p>
         ) : (
-          <button className="intercept" onClick={() => game.intercept(e.id)}>
-            Intercept
-          </button>
+          <div className="signal-options">
+            <button className="intercept" onClick={() => game.intercept(e.id)}>
+              Intercept
+            </button>
+            <button className="jam" onClick={() => game.jam(e.id)} title="Slows the enemy, but you won't learn what they're planning">
+              Jam
+            </button>
+          </div>
         )
       ) : e.kind === 'site' ? (
         <p>{e.status === 'resolved' ? 'Searched or passed.' : 'ALPHA can search it for intel when it gets there.'}</p>

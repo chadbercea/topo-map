@@ -7,7 +7,7 @@ import { manualScan } from './scans';
 import { abortMiniGame, closeMiniGame, startMiniGame, startSeek, tapMiniGame, type MiniGameKind } from './minigame';
 import { weaponBlocked, type Weapon } from './ordnance';
 import { applyEffect } from './contacts';
-import { shiftGuess, startIntercept, submitDecode, tune } from './signal';
+import { jam, shiftGuess, startIntercept, submitDecode, tune } from './signal';
 import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
@@ -67,6 +67,7 @@ export function createStore(initial: GameState = initialState()) {
     },
     manualScan: (square: string) => set(manualScan(state, square)),
     intercept: (eventId: string) => set(startIntercept(state, eventId)),
+    jam: (eventId: string) => set(jam(state, eventId)),
     tune: (mhz: number) => set(tune(state, mhz)),
     shiftCipher: (delta: number) => set(shiftGuess(state, delta)),
     submitDecode: () => set(submitDecode(state)),

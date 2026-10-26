@@ -4,6 +4,7 @@ import { registerMission, say, type MissionDef } from '../script';
 import { offerJob } from '../sidejob';
 
 export const PATROL_MOVES_MS = 150_000;
+export const PATROL_JAMMED_MS = 240_000; // jamming its net slows it down
 
 // Operation Black Box, the MVP mission (GDD): infil at A, recover the downed drone's black
 // box at B, exfil at C. Six minutes on the contract window.
@@ -58,11 +59,12 @@ export const BLACK_BOX: MissionDef = registerMission({
         say(s, 'HQ', 'checkpoint-brief', 'That\u2019s a fortified checkpoint in E3. Too strong for ALPHA to walk through. Soften it with ordnance first, or go around.'),
     },
     // The patrol reaches the crash site, unless it's already dead or ALPHA has the drive.
+    // Jamming its net (signal card) slows it down.
     {
       id: 'patrol-moves',
       when: (s) => {
         const p = s.contacts.find((c) => c.id === 'patrol');
-        return s.elapsedMs >= PATROL_MOVES_MS && !!p && (p.status === 'hidden' || p.status === 'revealed') && !s.mission.blackBox;
+        return s.elapsedMs >= (s.flags.jammed ? PATROL_JAMMED_MS : PATROL_MOVES_MS) && !!p && (p.status === 'hidden' || p.status === 'revealed') && !s.mission.blackBox;
       },
       then: (s) => {
         const known = s.contacts.find((c) => c.id === 'patrol')!.status === 'revealed';
