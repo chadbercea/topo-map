@@ -107,14 +107,13 @@ export class MapScene extends Phaser.Scene {
     this.layout();
   }
 
-  // Elapsed time comes from the frame timestamp, not Phaser's delta: with the frame-rate
-  // cap, Phaser's smoothed delta drifts from wall time and the mission clock ran fast.
+  // Elapsed time: wall time, but never more than Phaser's smoothed delta and never more
+  // than MAX_FRAME_MS. With the 30 fps cap Phaser's delta runs ahead of wall time (the
+  // clock ran fast); on a slow renderer (CI) the smoothed delta keeps the sim in slow motion.
   private lastFrame: number | null = null;
-  update(_time: number) {
+  update(_time: number, delta: number) {
     const now = performance.now();
-    // Wall time, so the clock stays real-time at any frame rate, but capped per frame: a slow
-    // frame (a stalled tab, CI's software renderer) runs in slow motion instead of jumping.
-    this.loop.advance(this.lastFrame === null ? 0 : Math.min(now - this.lastFrame, MAX_FRAME_MS));
+    this.loop.advance(this.lastFrame === null ? 0 : Math.min(now - this.lastFrame, delta, MAX_FRAME_MS));
     this.lastFrame = now;
     this.drawTeam();
     const st = game.get();
