@@ -5,6 +5,7 @@ import { blocked } from '../sim/responses';
 import { teamMode } from '../sim/systems';
 import { OperatorRow } from './OperatorRow';
 import { BUFF_EFFECT } from '../sim/intel';
+import { objectiveText } from '../sim/mission';
 import { useState } from 'react';
 
 const clock = (ms: number) => {
@@ -22,6 +23,7 @@ export function TeamPanel() {
   const size = useGame((s) => s.team.operators.length);
   const fatigue = useGame((s) => Math.round(teamFatigue(s.team.operators)));
   const buffs = useGame((s) => s.team.buffs);
+  const mission = useGame((s) => s.mission);
   const now = useGame((s) => s.elapsedMs);
   const active = buffs.filter((b) => b.untilMs > now);
   const comms = useGame((s) => s.comms);
@@ -40,6 +42,9 @@ export function TeamPanel() {
         <h2>{callsign}</h2>
         <span className="hint">{readout ? '▾' : '▸'}</span>
       </button>
+      <p className="objective" data-testid="objective">
+        ◆ {objectiveText(mission)}
+      </p>
       <p className="activity">{activity}</p>
       <p>
         {fit}/{size} fit · fatigue {fatigue}%
