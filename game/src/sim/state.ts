@@ -12,7 +12,10 @@ export type Operator = {
   fatigue: number; // 0..100
 };
 
-export type Phase = 'running' | 'paused' | 'ended';
+// paused: pause menu open. ended: timer ran out. exited: player left the mission.
+export type Phase = 'running' | 'paused' | 'ended' | 'exited';
+
+export type Settings = { sound: boolean };
 
 export type GameState = {
   tick: number;
@@ -27,6 +30,7 @@ export type GameState = {
   };
   map: { cols: number; rows: number; scanned: string[] };
   resources: { budget: number; scans: number };
+  settings: Settings; // survives restart
 };
 
 export const MISSION_MS = 6 * 60 * 1000; // GDD: start with six minutes and tune by feel
@@ -43,7 +47,7 @@ const operator = (name: string, role: Role, ammo: number, meds: number): Operato
   fatigue: 0,
 });
 
-export function initialState(): GameState {
+export function initialState(settings: Settings = { sound: true }): GameState {
   return {
     tick: 0,
     elapsedMs: 0,
@@ -63,5 +67,6 @@ export function initialState(): GameState {
     },
     map: { cols: 8, rows: 5, scanned: [] },
     resources: { budget: 0, scans: 3 },
+    settings,
   };
 }
