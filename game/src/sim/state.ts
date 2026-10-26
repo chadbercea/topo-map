@@ -8,6 +8,7 @@ import type { Fight, Treatment } from './firefight';
 import { initialIntel, type Buff, type Intel } from './intel';
 import type { MiniGame } from './minigame';
 import { DEMO_CONTACTS, type Contact, type Decision } from './contacts';
+import { initialOrdnance, type Ordnance } from './ordnance';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -50,6 +51,7 @@ export type GameState = {
   minigame: MiniGame | null; // the mini game on the map, or its result until closed
   resources: { budget: number; scans: number; rechargeAtMs: number | null }; // next scan back from the satellite
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
+  ordnance: Ordnance;
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
 };
@@ -92,6 +94,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     minigame: null,
     resources: { budget: 0, scans: 3, rechargeAtMs: null },
     capabilities: ['imagery'],
+    ordnance: initialOrdnance(),
     rng: 1234,
     settings,
   };

@@ -11,17 +11,41 @@ import { treeCall } from './responses';
 // Walking into a contact nobody found is an ambush.
 
 export type ContactStatus = 'hidden' | 'revealed' | 'cleared' | 'avoided';
-export type Contact = { id: string; square: SquareId; label: string; strength: number; status: ContactStatus; observed: boolean };
+// units: the cells (0-15, a 4x4 board over the square, row by row) where its fighters
+// are; seek and destroy shoots at them. strength scales with how many are left.
+export type Contact = {
+  id: string;
+  square: SquareId;
+  label: string;
+  strength: number;
+  status: ContactStatus;
+  observed: boolean;
+  units: number[];
+  total: number;
+};
 
 // What the team decided about a square on its route.
 export type Decision = 'blind' | 'attack' | 'push';
 
 // Placeholder placement until the mission script lands (ILI-1139).
+const contact = (id: string, square: SquareId, label: string, strength: number, units: number[]): Contact => ({
+  id,
+  square,
+  label,
+  strength,
+  status: 'hidden',
+  observed: false,
+  units,
+  total: units.length,
+});
 export const DEMO_CONTACTS: Contact[] = [
-  { id: 'technicals', square: 'E3', label: 'two technicals', strength: 1, status: 'hidden', observed: false },
-  { id: 'patrol', square: 'C2', label: 'a foot patrol', strength: 0.7, status: 'hidden', observed: false },
-  { id: 'post', square: 'C3', label: 'an observation post', strength: 0.5, status: 'hidden', observed: false },
+  contact('technicals', 'E3', 'two technicals', 1, [5, 6, 9, 10]),
+  contact('patrol', 'C2', 'a foot patrol', 0.7, [1, 7, 12]),
+  contact('post', 'C3', 'an observation post', 0.5, [10, 11]),
 ];
+
+// How hard it fights: its strength, scaled by the fighters it has left.
+export const effectiveStrength = (c: Contact) => c.strength * (c.units.length / c.total);
 
 export const OBSERVE_MS = 8_000;
 

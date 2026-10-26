@@ -4,7 +4,7 @@ import type { System } from './systems';
 import type { Operator, Role } from './team';
 import type { Message } from './comms';
 import { hasBuff } from './intel';
-import { contactIn } from './contacts';
+import { contactIn, effectiveStrength } from './contacts';
 
 // Contact resolves on its own (GDD: the player doesn't control the team). Walking into a
 // square with a live contact starts a firefight: an attack on a found contact has surprise
@@ -56,7 +56,7 @@ export const firefightSystem: System = (s, dt) => {
     if (contact) {
       const ambush = contact.status === 'hidden';
       const surprise = !ambush && team.decisions[contact.square] === 'attack';
-      const enemy = ENEMY_STRENGTH * contact.strength * (surprise ? 0.5 : 1);
+      const enemy = ENEMY_STRENGTH * effectiveStrength(contact) * (surprise ? 0.5 : 1);
       let rng = s.rng;
       let operators = team.operators;
       if (ambush) {

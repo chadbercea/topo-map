@@ -10,7 +10,7 @@ const atContact = () => {
   const s = walking();
   const store = createStore({
     ...s,
-    contacts: [{ id: 'technicals', square: 'E3', label: 'two technicals', strength: 1, status: 'revealed', observed: false }],
+    contacts: [{ id: 'technicals', square: 'E3', label: 'two technicals', strength: 1, status: 'revealed', observed: false, units: [5, 6, 9, 10], total: 4 }],
   });
   store.set(run(store.get(), 30_000));
   return store;

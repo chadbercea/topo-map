@@ -1,4 +1,5 @@
 import { game, useGame } from '../sim/store';
+import { TargetMenu } from './TargetMenu';
 
 const LABEL = { contact: 'CONTACT', request: 'REQUEST' } as const;
 
@@ -31,7 +32,9 @@ export function EventCard() {
         {LABEL[e.kind]} · {e.square}
       </h2>
       <p className="title">{e.title}</p>
-      {call ? (
+      {e.kind === 'contact' && e.id.startsWith('contact-') ? (
+        <TargetMenu contactId={e.id.slice('contact-'.length)} />
+      ) : call ? (
         <p>
           {call.from}: “{call.text}” {call.status === 'new' && call.holds ? 'Answer in comms.' : ''}
         </p>
