@@ -1,39 +1,46 @@
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
-import { initialState, type GameState } from './state';
-import { createStore } from './store';
+import type { Contact } from './contacts';
+import type { GameState } from './state';
 import { step } from './systems';
 import { LOADOUT } from './team';
+import { playUntil, run, walking } from './testkit';
 
-const run = (s: GameState, ms: number) => {
-  for (let t = 0; t < ms; t += 100) s = step(s, 100);
-  return s;
-};
-// The team standing in E3 with an uncleared contact there, no radio hold in the way.
-const inContact = (): GameState => {
-  const s = initialState();
+// The team standing in E3 with a contact there: found and attacked, or never found.
+const inContact = (status: Contact['status'] = 'revealed', attack = true): GameState => {
+  const s = walking();
   return {
     ...s,
     elapsedMs: 20_000,
-    schedule: [],
-    events: [{ id: 'c', kind: 'contact', square: 'E3', title: 'Test', atMs: 0, status: 'seen' }],
-    comms: { ...s.comms, messages: [{ id: 'event-c', from: 'ALPHA', text: '', atMs: 0, status: 'read', holds: true, eventId: 'c' }] },
-    team: { ...s.team, position: squareCenter('E3')!, waypoint: 3 },
+    contacts: [{ id: 'c', square: 'E3', label: 'test', strength: 1, status, observed: false }],
+    team: { ...s.team, position: squareCenter('E3')!, waypoint: 3, decisions: attack ? { E3: 'attack' } : {} },
   };
 };
 const totalAmmo = (s: GameState) => s.team.operators.reduce((n, o) => n + o.ammo, 0);
 const totalHealth = (s: GameState) => s.team.operators.reduce((n, o) => n + o.health, 0);
 
 describe('firefight', () => {
-  it('starts when the team stands in a square with an uncleared contact', () => {
+  it('starts when the team stands in a square with a live contact', () => {
     const s = step(inContact(), 100);
-    expect(s.team.fight).toMatchObject({ eventId: 'c', square: 'E3' });
+    expect(s.team.fight).toMatchObject({ contactId: 'c', square: 'E3' });
     expect(s.team.activity).toBe('Engaged in E3');
     expect(s.comms.messages.at(-1)?.text).toBe('Contact! Engaging in E3.');
   });
 
+  it('an attack on a found contact has surprise: the enemy starts at half strength', () => {
+    expect(step(inContact('revealed', true), 100).team.fight!.full).toBe(50);
+    expect(step(inContact('revealed', false), 100).team.fight!.full).toBe(100);
+  });
+
+  it('a contact nobody found is an ambush: full strength and an opening volley', () => {
+    const s = step(inContact('hidden', false), 100);
+    expect(s.team.fight!.full).toBe(100);
+    expect(s.comms.messages.at(-1)?.text).toBe('Ambush in E3! Returning fire.');
+    expect(totalHealth(s)).toBeLessThan(500 - 20);
+  });
+
   it('burns ammo by role, wounds the team, and holds it in place', () => {
-    const start = step(inContact(), 100);
+    const start = step(inContact('revealed', false), 100);
     const s = run(start, 3_000);
     expect(s.team.fight).not.toBeNull();
     expect(totalAmmo(s)).toBeLessThan(totalAmmo(start));
@@ -48,20 +55,18 @@ describe('firefight', () => {
 
   it('ends with the contact cleared and a report on the radio', () => {
     const s = run(inContact(), 30_000);
-    expect(s.events[0].status).toBe('resolved');
+    expect(s.contacts[0].status).toBe('cleared');
     expect(s.comms.messages.some((m) => /^E3 clear\./.test(m.text))).toBe(true);
   });
 
   it('the medic treats the wounded with their own meds, then the team moves on', () => {
-    let s = run(inContact(), 30_000);
-    s = run(s, 30_000);
+    const s = run(inContact('hidden', false), 60_000);
     const medic = s.team.operators.find((o) => o.role === 'Medic')!;
     expect(medic.meds).toBeLessThan(LOADOUT.Medic.meds);
     expect(s.team.operators.filter((o) => o.health > 0).every((o) => o.health >= 90)).toBe(true);
     expect(s.team.treating).toBeNull();
     expect(s.comms.messages.some((m) => m.text === 'Patched up. Moving.')).toBe(true);
-    const before = s.team.position;
-    expect(run(s, 2_000).team.position).not.toEqual(before);
+    expect(run(s, 2_000).team.position).not.toEqual(s.team.position);
   });
 
   it('plays out the same way every time', () => {
@@ -73,11 +78,12 @@ describe('firefight', () => {
     expect(run(s, 5_000)).toBe(s);
   });
 
-  it('pushing through on the radio leads into a fight', () => {
-    const store = createStore(run(initialState(), 15_000));
-    store.respond('event-contact-e3', 'push');
-    let s = store.get();
-    for (let i = 0; i < 1200 && !s.team.fight; i++) s = step(s, 100);
-    expect(s.team.fight?.square).toBe('E3');
+  it('pushing through unimaged ground into a hidden contact is an ambush', () => {
+    const store = playUntil(walking(), (s) => !!s.team.fight);
+    expect(store.get().team.fight).toBeNull(); // walking(): no contacts, so no fight
+    const blind = { ...walking(), contacts: [{ id: 'c', square: 'F4', label: 'test', strength: 1, status: 'hidden' as const, observed: false }] };
+    const s = playUntil(blind, (x) => !!x.team.fight).get();
+    expect(s.team.fight?.square).toBe('F4');
+    expect(s.comms.messages.some((m) => m.text.startsWith('Ambush in F4'))).toBe(true);
   });
 });

@@ -1,29 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { DEMO_SCHEDULE } from './events';
+import type { Scheduled } from './events';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { step } from './systems';
+import { run } from './testkit';
 
-const run = (s: GameState, ms: number) => {
-  for (let t = 0; t < ms; t += 100) s = step(s, 100);
-  return s;
-};
+const SCHEDULE: Scheduled[] = [{ atMs: 2_000, event: { id: 'x', kind: 'contact', square: 'B4', title: 'Test' } }];
+const scheduled = (): GameState => ({ ...initialState(), schedule: SCHEDULE });
 
 describe('events', () => {
   it('appear on schedule as new, once each', () => {
-    const first = DEMO_SCHEDULE[0];
-    let s = run(initialState(), first.atMs - 100);
+    let s = run(scheduled(), 1_900);
     expect(s.events).toEqual([]);
     s = run(s, 100);
     expect(s.events).toHaveLength(1);
-    expect(s.events[0]).toMatchObject({ ...first.event, status: 'new', atMs: first.atMs });
-    s = run(s, 1000);
-    expect(s.events.filter((e) => e.id === first.event.id)).toHaveLength(1);
+    expect(s.events[0]).toMatchObject({ ...SCHEDULE[0].event, status: 'new', atMs: 2_000 });
+    expect(run(s, 1_000).events).toHaveLength(1);
   });
 
   it('do not appear while paused', () => {
-    const s = { ...initialState(), phase: 'paused' as const };
-    expect(run(s, 60_000).events).toEqual([]);
+    expect(run({ ...scheduled(), phase: 'paused' }, 10_000).events).toEqual([]);
   });
 
   it('opening one marks it seen and shows its card; closing hides it', () => {
@@ -38,11 +33,10 @@ describe('events', () => {
     expect(store.get().events[0].status).toBe('seen');
   });
 
-  it('restart clears events and reschedules them', () => {
+  it('restart clears events', () => {
     const store = createStore();
     store.addEvent({ id: 'x', kind: 'contact', square: 'B2', title: 'Test' });
     store.restart();
     expect(store.get().events).toEqual([]);
-    expect(store.get().schedule).toEqual(DEMO_SCHEDULE);
   });
 });

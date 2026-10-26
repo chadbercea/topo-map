@@ -18,11 +18,9 @@ export type MapEvent = {
 
 export type Scheduled = { atMs: number; event: Omit<MapEvent, 'atMs' | 'status'> };
 
-// Placeholder schedule until the mission script lands (ILI-1139).
-export const DEMO_SCHEDULE: Scheduled[] = [
-  { atMs: 15_000, event: { id: 'contact-e3', kind: 'contact', square: 'E3', title: 'Unknown contact' } },
-  { atMs: 45_000, event: { id: 'request-c2', kind: 'request', square: 'C2', title: 'ALPHA requests imagery' } },
-];
+// Scheduled events for the mission script (ILI-1139). Contacts now come from imagery
+// (contacts.ts), so nothing is scheduled yet.
+export const DEMO_SCHEDULE: Scheduled[] = [];
 
 export const eventSystem: System = (s) => {
   const due = s.schedule.filter((x) => x.atMs <= s.elapsedMs);

@@ -7,6 +7,7 @@ import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
 import { initialIntel, type Buff, type Intel } from './intel';
 import type { MiniGame } from './minigame';
+import { DEMO_CONTACTS, type Contact, type Decision } from './contacts';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -37,8 +38,10 @@ export type GameState = {
     fight: Fight | null;
     treating: Treatment | null; // the medic at work
     buffs: Buff[]; // intel HQ has sent the team
+    decisions: Record<string, Decision>; // what HQ decided about squares on the route
   };
   map: { cols: number; rows: number; scanned: string[]; selected: string | null };
+  contacts: Contact[]; // hidden until imagery finds them
   events: MapEvent[];
   schedule: Scheduled[]; // events still to come, by mission time
   openEvent: string | null; // the event card on screen
@@ -77,8 +80,10 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
       fight: null,
       treating: null,
       buffs: [],
+      decisions: {},
     },
-    map: { cols: 8, rows: 5, scanned: [], selected: null },
+    map: { cols: 8, rows: 5, scanned: [ROUTE[0]], selected: null }, // the insertion point is known ground
+    contacts: DEMO_CONTACTS,
     events: [],
     schedule: DEMO_SCHEDULE,
     openEvent: null,

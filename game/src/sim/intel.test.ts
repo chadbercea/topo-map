@@ -4,6 +4,7 @@ import { hasBuff, ready } from './intel';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
 import { step } from './systems';
+import { walking } from './testkit';
 
 const run = (s: GameState, ms: number) => {
   for (let t = 0; t < ms; t += 100) s = step(s, 100);
@@ -68,7 +69,7 @@ describe('sending intel', () => {
 
   it('imagery makes the team move faster', () => {
     const walk = (s: GameState) => {
-      const flat = { ...s, schedule: [], team: { ...s.team, position: squareCenter('G5')!, waypoint: 1, holdFor: null } };
+      const flat = { ...s, contacts: [], map: { ...s.map, scanned: walking().map.scanned }, team: { ...s.team, position: squareCenter('G5')!, waypoint: 1, holdFor: null } };
       const a = run(flat, 3_000).team.position;
       return Math.hypot(a.x - flat.team.position.x, a.y - flat.team.position.y);
     };

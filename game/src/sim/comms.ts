@@ -1,11 +1,13 @@
 import type { GameState } from './state';
 import type { System } from './systems';
-import { blocked, TREE, type Response } from './responses';
+import { blocked, TREE, treeCall, type Response } from './responses';
 import { startMiniGame } from './minigame';
+import { applyEffect } from './contacts';
 
 // Radio traffic from the team (GDD: text only, clearly marked as incoming). Calls come from
-// a timed script, from map events, and from the team reaching its objective. A call that
-// "holds" stops the team until HQ answers, or until it gives up waiting and pushes on.
+// a timed script, from the team stopping short of a square (contacts.ts), and from the team
+// reaching its objective. A call that "holds" stops the team until HQ answers, or until it
+// gives up waiting and does what its tree node says.
 
 export type MessageStatus = 'new' | 'read' | 'dismissed';
 
@@ -17,13 +19,16 @@ export type Message = {
   status: MessageStatus;
   holds: boolean; // the team waits on this call
   eventId?: string;
+  node?: string; // response tree node it came from
   square?: string;
+  label?: string;
   responses?: Response[]; // from the response tree; none means a plain "Copy"
   answer?: string; // id of the response HQ sent
 };
 
 export type Comms = {
   messages: Message[];
+  queued: Message[]; // calls that come in later (an observation's report), by atMs
   minimized: boolean;
   lastWaypoint: number; // to notice the team arriving somewhere
 };
@@ -33,11 +38,11 @@ export const CHATTER_MS = 8_000; // routine calls mark themselves read after thi
 
 // Placeholder script until the mission script lands (ILI-1139).
 const TIMED: { atMs: number; id: string; text: string }[] = [
-  { atMs: 3_000, id: 'insert', text: 'Boots on the ground at G5. Moving to F4.' },
+  { atMs: 3_000, id: 'insert', text: 'Boots on the ground at G5.' },
 ];
 
 
-export const initialComms = (): Comms => ({ messages: [], minimized: false, lastWaypoint: 1 });
+export const initialComms = (): Comms => ({ messages: [], queued: [], minimized: false, lastWaypoint: 1 });
 
 const call = (s: GameState, id: string, text: string, holds = false, eventId?: string): Message => ({
   id,
@@ -49,20 +54,14 @@ const call = (s: GameState, id: string, text: string, holds = false, eventId?: s
   eventId,
 });
 
-// A call from the response tree, about a square and maybe a map event.
-const treeCall = (s: GameState, id: string, node: string, square: string, eventId?: string): Message => {
-  const n = TREE[node];
-  return { ...call(s, id, n.text(square), n.holds, eventId), square, responses: n.responses };
-};
-
 export const commsSystem: System = (s) => {
   const { comms, team } = s;
   const have = new Set(comms.messages.map((m) => m.id));
   const incoming: Message[] = [];
 
   for (const t of TIMED) if (t.atMs <= s.elapsedMs && !have.has(t.id)) incoming.push(call(s, t.id, t.text));
-  for (const e of s.events)
-    if (!have.has(`event-${e.id}`) && TREE[e.kind]) incoming.push(treeCall(s, `event-${e.id}`, e.kind, e.square, e.id));
+  const due = comms.queued.filter((m) => m.atMs <= s.elapsedMs);
+  incoming.push(...due.map((m) => ({ ...m, atMs: s.elapsedMs })));
   if (team.waypoint !== comms.lastWaypoint && team.waypoint >= team.route.length)
     incoming.push(call(s, 'in-position', `In position at ${team.route.at(-1)}. Holding.`));
 
@@ -75,10 +74,13 @@ export const commsSystem: System = (s) => {
     return m;
   });
   const timedOut = messages.find((m) => m.holds && m.id === holdFor && s.elapsedMs - m.atMs >= HOLD_TIMEOUT_MS);
+  let decided = s;
   if (timedOut) {
     holdFor = null;
     messages = messages.map((m) => (m === timedOut ? { ...m, status: 'read' as const } : m));
     incoming.push(call(s, `${timedOut.id}-timeout`, 'No word from HQ. Pushing on.'));
+    // Silence means the node's default: push on blind, or walk into the contact.
+    if (timedOut.node && timedOut.square) decided = applyEffect(s, TREE[timedOut.node].timeout, timedOut.square);
   }
 
   const holder = incoming.find((m) => m.holds);
@@ -88,10 +90,12 @@ export const commsSystem: System = (s) => {
     return s;
 
   return {
-    ...s,
-    team: { ...team, holdFor, activity: holdFor ? 'Holding for HQ' : team.activity },
+    ...decided,
+    // Only a new hold changes what the team says it's doing.
+    team: { ...decided.team, holdFor, activity: holdFor && holdFor !== team.holdFor ? 'Holding for HQ' : decided.team.activity },
     comms: {
       messages: [...messages, ...incoming],
+      queued: comms.queued.filter((m) => !due.includes(m)),
       // A new call always opens the comms window.
       minimized: incoming.length ? false : comms.minimized,
       lastWaypoint: team.waypoint,
@@ -142,7 +146,8 @@ export function respond(s: GameState, id: string, responseId: string): GameState
   if (!m || !r || m.status !== 'new' || blocked(s, r)) return s;
 
   const reply: Message = { ...call(s, `${id}-${r.id}`, r.reply), status: 'read' };
-  const follow = r.follow && m.square ? treeCall(s, `${id}-${r.follow}`, r.follow, m.square, m.eventId) : undefined;
+  // A follow-up waits for its hold (an observation) before it comes in; see followSystem.
+  const follow = r.follow && m.square ? treeCall(s, `${id}-${r.follow}`, r.follow, m.square, m.eventId, m.label) : undefined;
   const messages = [
     ...s.comms.messages.map((x) => (x.id === id ? { ...x, status: 'read' as const, answer: r.id } : x)),
     reply,
@@ -150,11 +155,11 @@ export function respond(s: GameState, id: string, responseId: string): GameState
   ];
 
   let holdFor = s.team.holdFor === id ? null : s.team.holdFor;
-  if (follow?.holds) holdFor = follow.id;
+  if (follow) holdFor = follow.id;
   else if (holdFor === null) holdFor = nextHold(messages);
   const holdUntilMs = r.hold ? s.elapsedMs + r.hold : s.team.holdUntilMs;
 
-  const answered: GameState = {
+  let answered: GameState = {
     ...s,
     team: { ...s.team, holdFor, holdUntilMs, activity: holdFor ? 'Holding for HQ' : r.hold ? 'Holding' : s.team.activity },
     resources: {
@@ -162,10 +167,13 @@ export function respond(s: GameState, id: string, responseId: string): GameState
       scans: s.resources.scans - (r.spend?.scans ?? 0),
       budget: s.resources.budget - (r.spend?.budget ?? 0),
     },
-    map: r.scan && m.square && !s.map.scanned.includes(m.square) ? { ...s.map, scanned: [...s.map.scanned, m.square] } : s.map,
-    events: r.resolve && m.eventId ? s.events.map((e) => (e.id === m.eventId ? { ...e, status: 'resolved' as const } : e)) : s.events,
-    openEvent: r.resolve && s.openEvent === m.eventId ? null : s.openEvent,
     comms: { ...s.comms, messages },
   };
+  if (r.effect && m.square) answered = applyEffect(answered, r.effect, m.square);
+  if (follow) {
+    // Observing takes time: the follow-up call comes in when the observation ends.
+    const atMs = Math.max(answered.team.holdUntilMs, s.elapsedMs);
+    answered = { ...answered, comms: { ...answered.comms, messages: answered.comms.messages.filter((x) => x.id !== follow.id), queued: [...answered.comms.queued, { ...follow, atMs }] } };
+  }
   return r.minigame && m.square ? startMiniGame(answered, r.minigame, m.square, id, m.eventId) : answered;
 }

@@ -1,15 +1,21 @@
 import { describe, expect, it } from 'vitest';
+import { OBSERVE_MS } from './contacts';
 import { blocked, TREE } from './responses';
-import { initialState, type GameState } from './state';
+import type { GameState } from './state';
 import { createStore } from './store';
-import { step } from './systems';
+import { run, walking } from './testkit';
 
-const run = (s: GameState, ms: number) => {
-  for (let t = 0; t < ms; t += 100) s = step(s, 100);
-  return s;
+// ALPHA at F4 with the technicals in E3 found: it holds short and asks what to do.
+const atContact = () => {
+  const s = walking();
+  const store = createStore({
+    ...s,
+    contacts: [{ id: 'technicals', square: 'E3', label: 'two technicals', strength: 1, status: 'revealed', observed: false }],
+  });
+  store.set(run(store.get(), 30_000));
+  return store;
 };
-const atContact = () => createStore(run(initialState(), 15_000));
-const CONTACT = 'event-contact-e3';
+const CALL = 'contact-call-technicals';
 const msg = (s: GameState, id: string) => s.comms.messages.find((m) => m.id === id);
 
 describe('response tree', () => {
@@ -20,65 +26,68 @@ describe('response tree', () => {
     }
   });
 
-  it('push through: the team replies and moves on, into the contact', () => {
+  it('a found contact on the route makes the team hold short and ask', () => {
+    const s = atContact().get();
+    expect(s.team.holdFor).toBe(CALL);
+    expect(msg(s, CALL)?.text).toBe('Contact in E3, two technicals, on our route. Observe, hit it, or go around?');
+    expect(s.team.activity).toBe('Holding short of E3');
+  });
+
+  it('attack: the team moves in and fights with surprise', () => {
     const store = atContact();
-    store.respond(CONTACT, 'push');
+    store.respond(CALL, 'attack');
+    expect(msg(store.get(), CALL)).toMatchObject({ status: 'read', answer: 'attack' });
+    expect(store.get().team.holdFor).toBeNull();
+    let s = store.get();
+    for (let i = 0; i < 600 && !s.team.fight; i++) s = run(s, 100);
+    expect(s.team.fight).toMatchObject({ square: 'E3', full: 50 });
+  });
+
+  it('observe: the team watches, earns target intel and a look next door, then asks again', () => {
+    const store = atContact();
+    const before = store.get().intel.projects.target?.progress ?? 0;
+    store.respond(CALL, 'observe');
+    let s = store.get();
+    expect(s.contacts[0].observed).toBe(true);
+    if (s.intel.projects.target) expect(s.intel.projects.target.progress).toBeGreaterThan(before);
+    const held = s.team.position;
+    s = run(s, OBSERVE_MS - 500);
+    expect(s.team.position).toEqual(held);
+    expect(msg(s, `${CALL}-contact-observed`)).toBeUndefined(); // still watching
+    s = run(s, 1_000);
+    expect(msg(s, `${CALL}-contact-observed`)?.text).toMatch(/^Eyes on E3: two technicals, dug in/);
+    expect(s.team.holdFor).toBe(`${CALL}-contact-observed`);
+  });
+
+  it('go around: the route detours through a neighbour and the contact is avoided', () => {
+    const store = atContact();
+    store.respond(CALL, 'avoid');
     const s = store.get();
-    expect(msg(s, CONTACT)).toMatchObject({ status: 'read', answer: 'push' });
-    expect(msg(s, `${CONTACT}-push`)?.text).toBe('Moving through. Expect contact.');
-    expect(s.team.holdFor).toBeNull();
-    expect(s.events.find((e) => e.id === 'contact-e3')?.status).not.toBe('resolved'); // the fight settles it
+    expect(s.team.route).not.toContain('E3');
+    expect(s.team.route[2]).toBe('E4'); // touches F4 before and D3 after
+    expect(s.contacts[0].status).toBe('avoided');
   });
 
-  it('go around: the contact is avoided and closed', () => {
+  it('the detour square needs imagery of its own', () => {
     const store = atContact();
-    store.respond(CONTACT, 'eyes');
-    store.respond(`${CONTACT}-contact-imaged`, 'bypass');
-    expect(store.get().events.find((e) => e.id === 'contact-e3')?.status).toBe('resolved');
+    const s0 = store.get();
+    store.set({ ...s0, map: { ...s0.map, scanned: s0.map.scanned.filter((sq) => sq !== 'E4') } });
+    store.respond(CALL, 'avoid');
+    const s = run(store.get(), 500);
+    expect(s.team.holdFor).toMatch(/^unimaged-E4/);
   });
 
-  it('hold 20 s: the team waits, then moves on its own', () => {
-    const store = atContact();
-    store.respond(CONTACT, 'wait');
-    const held = store.get().team.position;
-    store.set(run(store.get(), 19_000));
-    expect(store.get().team.position).toEqual(held);
-    store.set(run(store.get(), 2_000));
-    expect(store.get().team.position).not.toEqual(held);
-  });
+  it('send imagery is gated by scans; an answered call cannot be answered again', () => {
+    const send = TREE.unimaged.responses.find((r) => r.id === 'send')!;
+    const s = walking();
+    expect(blocked(s, send)).toBeNull();
+    expect(blocked({ ...s, resources: { ...s.resources, scans: 0 } }, send)).toBe('No scans left');
+    expect(blocked({ ...s, capabilities: [] }, send)).toBe('Unavailable');
 
-  it('get eyes on it spends a scan, images the square and leads to a follow-up call', () => {
     const store = atContact();
-    const scans = store.get().resources.scans;
-    store.respond(CONTACT, 'eyes');
-    const s = store.get();
-    expect(s.resources.scans).toBe(scans - 1);
-    expect(s.map.scanned).toContain('E3');
-    const follow = msg(s, `${CONTACT}-contact-imaged`);
-    expect(follow?.text).toMatch(/two technicals in E3/);
-    expect(s.team.holdFor).toBe(follow?.id); // still waiting, now on the follow-up
-  });
-
-  it('options are gated by capability, budget and scans', () => {
-    const store = atContact();
-    store.respond(CONTACT, 'eyes');
-    const strike = TREE['contact-imaged'].responses.find((r) => r.id === 'strike')!;
-    expect(blocked(store.get(), strike)).toBe('Not unlocked');
-    store.respond(`${CONTACT}-contact-imaged`, 'strike'); // ignored
-    expect(msg(store.get(), `${CONTACT}-contact-imaged`)?.status).toBe('new');
-
-    const eyes = TREE.contact.responses.find((r) => r.id === 'eyes')!;
-    const broke = { ...store.get(), resources: { ...store.get().resources, scans: 0 } };
-    expect(blocked(broke, eyes)).toBe('No scans left');
-    const rich = { ...store.get(), capabilities: ['imagery', 'strike'] as GameState['capabilities'], resources: { budget: 10_000, scans: 3, rechargeAtMs: null } };
-    expect(blocked(rich, strike)).toBeNull();
-  });
-
-  it('an answered call cannot be answered again', () => {
-    const store = atContact();
-    store.respond(CONTACT, 'push');
+    store.respond(CALL, 'attack');
     const after = store.get();
-    store.respond(CONTACT, 'wait');
+    store.respond(CALL, 'avoid');
     expect(store.get()).toBe(after);
   });
 });

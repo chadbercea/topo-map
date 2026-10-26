@@ -4,6 +4,7 @@ import { boostIntel, type IntelType } from './intel';
 import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
+import { reveal } from './contacts';
 
 // Mini games play on the theater map itself (GDD). Starting one puts the map in that game's
 // mode and opens a companion panel; the result feeds back into the mission: the team gets
@@ -70,7 +71,7 @@ export const MINIGAMES: Record<MiniGameKind, Def> = {
       }
       return [[square, ...picks], rng];
     },
-    won: 'Imagery is good. Area clear. Moving.',
+    won: 'Imagery received.',
     lost: 'No usable imagery. Moving anyway.',
   },
 };
@@ -127,7 +128,7 @@ function finish(s: GameState, status: 'won' | 'lost'): GameState {
   if (status === 'won') {
     next = boostIntel(next, def.intel);
     const scanned = [...new Set([...next.map.scanned, ...m.targets])];
-    next = { ...next, map: { ...next.map, scanned } };
+    next = reveal({ ...next, map: { ...next.map, scanned } }, m.targets, def.callsign);
   }
   const sat = radio(s, def.callsign, `minigame-${m.startedMs}-sat`,
     status === 'won' ? `${m.targets.join(', ')} imaged. Downlinked to ${s.team.callsign}.` : 'Pass ended. No usable imagery.', 'read');
