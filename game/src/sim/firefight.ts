@@ -83,7 +83,8 @@ export const firefightSystem: System = (s, dt) => {
           fight: { contactId: contact.id, eventId: `contact-${contact.id}`, square: contact.square, enemy, full: enemy, startedMs: s.elapsedMs },
           activity: `Engaged in ${contact.square}`,
         },
-        comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, radio(s, `fight-${contact.id}`, text)] },
+        // An ambush is news nobody saw coming: a banner. A planned fight shows on the map.
+        comms: { ...s.comms, messages: [...s.comms.messages, { ...radio(s, `fight-${contact.id}`, text), alert: ambush }] },
       };
     }
   }

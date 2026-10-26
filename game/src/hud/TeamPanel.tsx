@@ -1,6 +1,6 @@
 import { game, useGame } from '../sim/store';
 import { teamFatigue } from '../sim/movement';
-import { currentCall } from '../sim/comms';
+import { currentCall, waitingCalls as callsWaiting } from '../sim/comms';
 import { blocked } from '../sim/responses';
 import { teamMode } from '../sim/systems';
 import { OperatorRow } from './OperatorRow';
@@ -34,10 +34,10 @@ export function TeamPanel() {
   const readout = auto === 'B' || pinned;
   // Several calls can wait at once (ALPHA holding while the client calls): cycle through them.
   const [focus, setFocus] = useState<string | null>(null);
-  const waitingCalls = comms.messages.filter((m) => m.status === 'new' && (m.holds || m.responses));
+  const waitingCalls = callsWaiting(comms);
   const call = waitingCalls.find((m) => m.id === focus) ?? currentCall(comms);
   const others = waitingCalls.filter((m) => m.id !== call?.id);
-  const waiting = comms.messages.filter((m) => m.status === 'new').length;
+  const waiting = callsWaiting(comms).length;
   const mode = call && !comms.minimized ? 'C' : readout ? 'B' : 'A';
 
   return (

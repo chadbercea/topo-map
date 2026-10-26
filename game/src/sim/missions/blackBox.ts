@@ -31,6 +31,7 @@ export const BLACK_BOX: MissionDef = registerMission({
       id: 'hq-traffic-c2',
       event: { id: 'traffic-c2', kind: 'signal', square: 'C2', title: 'Enemy radio traffic' },
       radio: 'Picking up enemy radio traffic near C2. Intercept it?',
+      alert: true,
     },
   ],
 
@@ -49,14 +50,19 @@ export const BLACK_BOX: MissionDef = registerMission({
     {
       id: 'first-contact-hint',
       when: (s) => s.events.some((e) => e.kind === 'contact' && e.id.startsWith('contact-')) && !s.team.fight,
-      then: (s) => say(s, 'HQ', 'hint-first-contact', 'Contact on the map. Tap it to hit it with ordnance, or let ALPHA decide when it gets there.'),
+      then: (s) => say(s, 'HQ', 'hint-first-contact', 'Contact on the map. Tap it to hit it with ordnance, or let ALPHA decide when it gets there.', true),
     },
     // The checkpoint found: HQ calls it what it is.
     {
       id: 'checkpoint-found',
       when: (s) => s.contacts.some((c) => c.id === 'checkpoint' && c.status === 'revealed'),
-      then: (s) =>
-        say(s, 'HQ', 'checkpoint-brief', 'That\u2019s a fortified checkpoint in E3. Too strong for ALPHA to walk through. Soften it with ordnance first, or go around.'),
+      // Folded into the target menu (ILI-1171) instead of a radio card.
+      then: (s) => ({
+        ...s,
+        contacts: s.contacts.map((c) =>
+          c.id === 'checkpoint' ? { ...c, note: 'Fortified: too strong for ALPHA to walk through. Soften it with ordnance first, or go around.' } : c,
+        ),
+      }),
     },
     // The patrol reaches the crash site, unless it's already dead or ALPHA has the drive.
     // Jamming its net (signal card) slows it down.
@@ -70,7 +76,9 @@ export const BLACK_BOX: MissionDef = registerMission({
         const known = s.contacts.find((c) => c.id === 'patrol')!.status === 'revealed';
         const next = moveContact(s, 'patrol', s.mission.b);
         // HQ only knows if someone found it; otherwise it's a surprise at the crash site.
-        return known ? say(next, 'HQ', 'patrol-at-crash-site', `The patrol is moving onto the crash site in ${s.mission.b}. Hit it before ALPHA gets there.`) : next;
+        return known
+          ? say(next, 'HQ', 'patrol-at-crash-site', `Patrol moving onto the crash site in ${s.mission.b}: nobody stopped it. Hit it before ALPHA gets there.`, true)
+          : next;
       },
     },
     // ALPHA recovering the drive when the patrol walks in: the fight is at the crash site.
@@ -80,7 +88,7 @@ export const BLACK_BOX: MissionDef = registerMission({
         const here = squareAt(s.team.position.x, s.team.position.y);
         return here === s.mission.b && !!contactIn(s, s.mission.b) && s.mission.phase === 'objective';
       },
-      then: (s) => say(s, s.team.callsign, 'crash-site-hit', 'They\u2019re here for the drone too! Taking fire at the crash site.'),
+      then: (s) => say(s, s.team.callsign, 'crash-site-hit', 'They\u2019re here for the drone too! Taking fire at the crash site.', true),
     },
     // The client's side job (GDD event 3): extra pay for fresh imagery of a radar site,
     // against the clock and the scan pool ALPHA needs.

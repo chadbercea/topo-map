@@ -63,7 +63,7 @@ export const supportSystem: System = (s) => {
           return { ...o, id: `${o.role}-${s.elapsedMs}-${spare}`, name, health: 100, fatigue: 0, ...LOADOUT[o.role] };
         }),
       },
-      comms: { ...next.comms, minimized: false, messages: [...next.comms.messages, radio(s, 'DUSTOFF-2', `reinforce-${s.elapsedMs}`, 'Replacements on the ground. ALPHA is back to strength.')] },
+      comms: { ...next.comms, messages: [...next.comms.messages, radio(s, 'DUSTOFF-2', `reinforce-${s.elapsedMs}`, 'Replacements on the ground. ALPHA is back to strength.')] },
     };
   }
   // A bird arriving: everyone standing is topped up to a full load.
@@ -76,7 +76,7 @@ export const supportSystem: System = (s) => {
         ...next.team,
         operators: next.team.operators.map((o) => (o.health > 0 ? { ...o, ...LOADOUT[o.role] } : o)),
       },
-      comms: { ...next.comms, minimized: false, messages: [...next.comms.messages, radio(s, 'DUSTOFF-2', `resupply-${s.elapsedMs}`, 'Bundle on the ground. Full reload for ALPHA.')] },
+      comms: { ...next.comms, messages: [...next.comms.messages, radio(s, 'DUSTOFF-2', `resupply-${s.elapsedMs}`, 'Bundle on the ground. Full reload for ALPHA.')] },
     };
   }
   return next;

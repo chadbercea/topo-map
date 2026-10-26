@@ -23,14 +23,14 @@ export const makeNoise = (s: GameState, amount: number): GameState => ({ ...s, n
 export const noiseSystem: System = (s, dt) => {
   let next = s.noise > 0 ? { ...s, noise: Math.max(0, s.noise - (FADE_PER_S * dt) / 1000) } : s;
   if (!s.alerted && s.noise >= ALERT_AT) next = alert(next);
-  if (s.deniability === 'clean' && s.noise >= WARN_AT) next = client(next, 'warned', 'client-warning', 'This is getting loud. Keep it quiet or we don\u2019t know you.');
+  if (s.deniability === 'clean' && s.noise >= WARN_AT) next = client(next, 'warned', 'client-warning', `This is getting loud (noise ${Math.round(s.noise)}). Keep it quiet or we don\u2019t know you.`);
   if (s.deniability === 'warned' && s.noise >= DISOWN_AT) next = disown(next);
   return next;
 };
 
 function client(s: GameState, deniability: Deniability, id: string, text: string): GameState {
-  const m: Message = { id, from: 'CLIENT', text, atMs: s.elapsedMs, status: 'new', holds: false };
-  return { ...s, deniability, comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, m] } };
+  const m: Message = { id, from: 'CLIENT', text, atMs: s.elapsedMs, status: 'new', holds: false, alert: true };
+  return { ...s, deniability, comms: { ...s.comms, messages: [...s.comms.messages, m] } };
 }
 
 function disown(s: GameState): GameState {
@@ -45,15 +45,16 @@ function alert(s: GameState): GameState {
   const call: Message = {
     id: 'enemy-alerted',
     from: 'HQ',
-    text: 'Enemy radio net just lit up. They know a PMC is in the area. Expect them ready.',
+    text: 'Enemy radio net just lit up: they heard the strikes. They know a PMC is in the area.',
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,
+    alert: true,
   };
   return {
     ...s,
     alerted: true,
     contacts: s.contacts.map((c) => (c.status === 'hidden' || c.status === 'revealed' ? { ...c, strength: c.strength * ALERT_HARDEN } : c)),
-    comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, call] },
+    comms: { ...s.comms, messages: [...s.comms.messages, call] },
   };
 }

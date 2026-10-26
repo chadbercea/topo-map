@@ -50,7 +50,7 @@ export const missionSystem: System = (s, dt) => {
       ...s,
       mission: { ...mission, phase: 'objective', recoverUntilMs: s.elapsedMs + RECOVER_MS },
       team: { ...team, holdUntilMs: s.elapsedMs + RECOVER_MS, activity: `Recovering the black box at ${mission.b}` },
-      comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, radio(s, 'at-crash-site', `At the crash site in ${mission.b}. Pulling the drive.`)] },
+      comms: { ...s.comms, messages: [...s.comms.messages, radio(s, 'at-crash-site', `At the crash site in ${mission.b}. Pulling the drive.`)] },
     };
   }
   // A fight or the medic at work stops the recovery; it picks up again after.
@@ -64,7 +64,6 @@ export const missionSystem: System = (s, dt) => {
       mission: { ...mission, phase: 'exfil', blackBox: true, recoverUntilMs: null },
       comms: {
         ...next.comms,
-        minimized: false,
         messages: [...next.comms.messages, radio(s, 'got-black-box', `Got the black box, and some paperwork. Heading for exfil at ${mission.c}.`)],
       },
     };

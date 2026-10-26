@@ -44,7 +44,8 @@ export const scriptSystem: System = (s) => {
 };
 
 // Helpers for writing triggers.
-export const say = (s: GameState, from: string, id: string, text: string): GameState => {
-  const m: Message = { id, from, text, atMs: s.elapsedMs, status: 'new', holds: false };
-  return { ...s, comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, m] } };
+// say: a radio line (log only, unless alert: a short banner for news the map doesn't show).
+export const say = (s: GameState, from: string, id: string, text: string, alert = false): GameState => {
+  const m: Message = { id, from, text, atMs: s.elapsedMs, status: 'new', holds: false, alert };
+  return { ...s, comms: { ...s.comms, messages: [...s.comms.messages, m] } };
 };

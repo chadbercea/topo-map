@@ -1,5 +1,6 @@
 import { game, useGame } from '../sim/store';
 import { MAX_SCANS } from '../sim/scans';
+import { RadioLog } from './RadioLog';
 
 const clock = (ms: number) => {
   const s = Math.ceil(ms / 1000);
@@ -25,7 +26,7 @@ export function MissionTimer() {
     <section className="panel timer" data-testid="mission-timer" data-phase={phase}>
       <h2>MISSION</h2>
       <div className="timer-row">
-        <span className="clock" data-testid="clock">
+        <span className="clock" data-testid="clock" data-warn={remaining <= 60_000 ? 'red' : remaining <= 180_000 ? 'amber' : undefined}>
           {clock(remaining)}
         </span>
         <button
@@ -61,6 +62,7 @@ export function MissionTimer() {
           {i.kind === 'resupply' ? 'resupply bird' : 'reinforcements'} inbound · {Math.max(0, Math.ceil((i.arrivesMs - now) / 1000))}s
         </p>
       ))}
+      <RadioLog />
       <p className="resources" data-testid="resources">
         scans {scans}/{MAX_SCANS}
         {recharge !== null && <span className="recharge"> +1 in {recharge}s</span>} · ${budget.toLocaleString('en-US')}

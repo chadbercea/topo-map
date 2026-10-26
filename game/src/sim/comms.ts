@@ -24,7 +24,14 @@ export type Message = {
   label?: string;
   responses?: Response[]; // from the response tree; none means a plain "Copy"
   answer?: string; // id of the response HQ sent
+  alert?: boolean; // news the map doesn't show: a short banner, not a card
 };
+
+// What a message is for (ILI-1171). Only calls that need an answer open the comms card;
+// alerts show as a short banner; everything else goes to the radio log only.
+export type MessageKind = 'call' | 'alert' | 'log';
+export const kindOf = (m: Message): MessageKind => (m.holds || m.responses ? 'call' : m.alert ? 'alert' : 'log');
+export const ALERT_MS = 6_000; // how long an alert banner stays up, in mission time
 
 export type Comms = {
   messages: Message[];
@@ -91,17 +98,23 @@ export const commsSystem: System = (s) => {
       messages: [...messages, ...incoming],
       queued: comms.queued.filter((m) => !due.includes(m)),
       // A new call always opens the comms window.
-      minimized: incoming.length ? false : comms.minimized,
+      minimized: incoming.some((m) => kindOf(m) === 'call') ? false : comms.minimized,
       lastWaypoint: team.waypoint,
     },
   };
 };
 
-// The call on screen in the comms window: the oldest unanswered hold, else the newest new call.
+// The call on screen in the comms card: the oldest unanswered hold, else the newest call
+// waiting for an answer. Log lines and alerts never take the card.
 export function currentCall(c: Comms): Message | undefined {
-  const fresh = c.messages.filter((m) => m.status === 'new');
+  const fresh = c.messages.filter((m) => m.status === 'new' && kindOf(m) === 'call');
   return fresh.find((m) => m.holds) ?? fresh.at(-1);
 }
+
+export const waitingCalls = (c: Comms) => c.messages.filter((m) => m.status === 'new' && kindOf(m) === 'call');
+
+// Alerts still on screen: the newest few raised in the last few seconds.
+export const liveAlerts = (c: Comms, now: number) => c.messages.filter((m) => m.alert && now - m.atMs < ALERT_MS).slice(-3);
 
 // HQ acknowledges a call. If the team was holding on it, it moves again.
 export function confirm(s: GameState, id: string): GameState {
