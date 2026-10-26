@@ -73,6 +73,19 @@ python3 -m http.server 8000
 
 **Deploys.** GitHub Actions publishes the repo to GitHub Pages on every push to `main` (`.github/workflows/deploy.yml`).
 
+## The game build (`game/`)
+
+War Room is moving from single HTML prototypes to a real web project in `game/`: Vite, TypeScript, **Phaser 4** for the map and mini games, and **React 19** for the HUD panels. Phaser and React each own one full-screen layer. The HUD passes touches through to the map except where a panel sits, and the two talk over one event bus (`game/src/game/events.ts`). Right now it's an empty shell: a grid scene and two placeholder panels.
+
+```sh
+cd game
+npm install
+npm run dev      # http://localhost:5173/game/
+npm run build    # typecheck + production build into game/dist
+```
+
+**Deploys.** The repo is connected to Vercel's GitHub app (project `topo-map`). Every PR gets a preview deploy, linked on the PR, and merging to `main` deploys to production. The root `vercel.json` builds `game/` and puts it together with the HTML prototypes in `site/`. The prototypes keep their paths (`/war-room.html` and so on) and the game is at `/game/`. GitHub Pages still serves the prototypes too.
+
 ## Work tracking
 
 Every change starts from a Linear issue in the **Topo Map** project, gets a branch and PR named after the issue key, and merges to `main`.
