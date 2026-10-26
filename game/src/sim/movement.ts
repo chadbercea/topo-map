@@ -29,7 +29,7 @@ export const movementSystem: System = (s, dt) => {
   const { team } = s;
   const target = team.route[team.waypoint];
   const goal = target && squareCenter(target);
-  if (!goal) return s;
+  if (!goal || team.holdFor) return s; // holding for HQ
 
   const t = theater();
   const { x, y } = team.position;

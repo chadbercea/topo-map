@@ -136,7 +136,7 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .alert, .event-card { animation: none; }
+  .alert, .event-card, .comms, .incoming .dot { animation: none; }
 }
 
 .panel {
@@ -261,6 +261,61 @@ html, body {
 .bar > span { display: block; height: 100%; background: var(--accent); }
 
 .team .activity { color: var(--ink); }
+
+/* Mode C: radio comms under the team readout, unmistakably an incoming call. */
+.comms {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f2c14e;
+  display: grid;
+  gap: 6px;
+  animation: alert-in 160ms ease-out;
+}
+
+.incoming {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #f2c14e;
+}
+
+.incoming .dot { width: 7px; height: 7px; border-radius: 50%; background: #f2c14e; animation: blink 1s steps(2) infinite; }
+
+.incoming .min {
+  margin-left: auto;
+  font: inherit;
+  color: var(--dim);
+  background: none;
+  border: 1px solid var(--line);
+  min-width: 32px;
+  min-height: 28px;
+  cursor: pointer;
+}
+
+.comms .text { color: var(--ink); font-size: 14px; line-height: 1.4; }
+
+.comms .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.comms .actions button,
+.comms-badge {
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line);
+  min-height: 40px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.comms .actions .primary { color: #0b0f0d; background: #f2c14e; border-color: #f2c14e; }
+.comms-badge { margin-top: 8px; color: #f2c14e; border-color: #f2c14e; min-height: 36px; }
+
+@keyframes blink { 50% { opacity: 0.2; } }
 
 .debug {
   position: fixed;

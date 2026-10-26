@@ -1,12 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { squarePoint, tapAt } from './helpers';
 
-declare global {
-  interface Window {
-    game: { addEvent: (e: object) => void };
-  }
-}
-
 test('a new event flags an alert and a marker; tapping the marker opens its card', async ({ page, isMobile }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);

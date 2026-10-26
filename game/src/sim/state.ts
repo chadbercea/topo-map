@@ -2,6 +2,7 @@ import { roster, type Operator } from './team';
 import type { SquareId } from '../map/grid';
 import { squareCenter } from '../map/grid';
 import { DEMO_SCHEDULE, type MapEvent, type Scheduled } from './events';
+import { initialComms, type Comms } from './comms';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -25,11 +26,13 @@ export type GameState = {
     route: SquareId[]; // squares the team walks through, in order
     waypoint: number; // index into route of the square it's heading for
     activity: string;
+    holdFor: string | null; // radio call the team is waiting on HQ to answer
   };
   map: { cols: number; rows: number; scanned: string[]; selected: string | null };
   events: MapEvent[];
   schedule: Scheduled[]; // events still to come, by mission time
   openEvent: string | null; // the event card on screen
+  comms: Comms;
   resources: { budget: number; scans: number };
   settings: Settings; // survives restart
 };
@@ -52,11 +55,13 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
       route: ROUTE,
       waypoint: 1,
       activity: `Moving to ${ROUTE[1]}`,
+      holdFor: null,
     },
     map: { cols: 8, rows: 5, scanned: [], selected: null },
     events: [],
     schedule: DEMO_SCHEDULE,
     openEvent: null,
+    comms: initialComms(),
     resources: { budget: 0, scans: 3 },
     settings,
   };
