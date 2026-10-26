@@ -12,6 +12,9 @@ export function createGame(parent: HTMLElement) {
     backgroundColor: '#0b0f0d',
     scale: { mode: Phaser.Scale.NONE, ...size(), zoom: 1 / DPR },
     render: { antialias: true, roundPixels: false },
+    // The map is mostly still: 30 frames a second looks the same and halves the drawing work
+    // (phone batteries, and CI's software renderer). Game time runs on its own fixed step.
+    fps: { limit: 30, target: 30 },
     banner: false,
     scene: [MapScene],
   });

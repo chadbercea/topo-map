@@ -16,6 +16,8 @@ const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, sign
 const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 const MAX_TEXTURE = 4096;
+const OUTSIDE_DIM = 0.45; // how much of the ground outside the grid shows through
+const FAR_SCALE = 0.2; // texture px per world unit for the coarse layer, before DPR
 
 // The theater map: contour lines of the fictional terrain under the A1–H5 grid. The camera
 // fits the grid to the screen; line widths and labels are redrawn per zoom so they stay crisp.
@@ -56,7 +58,7 @@ export class MapScene extends Phaser.Scene {
     this.contours = traceContours(theater());
     this.farContours = traceContours(outerTheater());
     this.city = generateCity();
-    this.farRelief = this.makeRelief(outerTheater(), 'relief-far', -6);
+    this.farRelief = this.makeRelief(outerTheater(), 'relief-far', -6).setAlpha(OUTSIDE_DIM);
     this.nearBg = this.add.graphics().fillStyle(0x0b0f0d, 1).fillRect(FINE.x, FINE.y, FINE.w, FINE.h).setDepth(-3);
     this.relief = this.makeRelief(theater(), 'relief', -4);
     this.outsideGfx = this.add.graphics();
@@ -104,8 +106,13 @@ export class MapScene extends Phaser.Scene {
     this.layout();
   }
 
-  update(_time: number, delta: number) {
-    this.loop.advance(delta);
+  // Elapsed time comes from the frame timestamp, not Phaser's delta: with the frame-rate
+  // cap, Phaser's smoothed delta drifts from wall time and the mission clock ran fast.
+  private lastFrame: number | null = null;
+  update(_time: number) {
+    const now = performance.now();
+    this.loop.advance(this.lastFrame === null ? 0 : now - this.lastFrame);
+    this.lastFrame = now;
     this.drawTeam();
     this.drawMarkers(_time);
     this.drawFight(_time);
@@ -293,25 +300,30 @@ export class MapScene extends Phaser.Scene {
     // Two layers fill the screen: the fine contours over the grid and its margin, and the
     // coarse ones out to the edges. Textures stay under 4096 px a side (the safe limit on
     // phones); the coarse layer is dimmed and faint, so a lower resolution doesn't show.
-    const s = Math.min(2 * DPR, this.baseZoom, MAX_TEXTURE / Math.max(FINE.w, FINE.h));
+    // Bake scales come in steps (x1.25), so small zoom changes, like the layout settling as
+    // the panels report in, don't trigger a re-bake.
+    const want = Math.min(2 * DPR, this.baseZoom, MAX_TEXTURE / Math.max(FINE.w, FINE.h));
+    const s = Math.pow(1.25, Math.ceil(Math.log(want) / Math.log(1.25)));
     if (s === this.bakedScale) return;
     this.bakedScale = s;
     this.terrain?.destroy();
     this.terrain = this.bakeContours('terrain', this.contours, FINE, s, 1).setDepth(-2);
-    this.farTerrain?.destroy();
-    const far = Math.min(s, MAX_TEXTURE / Math.max(COARSE.w, COARSE.h));
-    this.farTerrain = this.bakeContours('terrain-far', this.farContours, COARSE, far, 0.8).setDepth(-5);
+    // The coarse layer is dimmed and faint: bake it once, at a fixed modest scale.
+    // Line weight scales with bake-to-screen ratio so the lines look as fine as the near ones.
+    const far = FAR_SCALE * DPR;
+    // Baked already dimmed, so no full-screen overlay has to dim it every frame.
+    this.farTerrain ??= this.bakeContours('terrain-far', this.farContours, COARSE, far, (0.8 * far) / this.baseZoom, OUTSIDE_DIM).setDepth(-5);
     this.drawCity(s);
     this.shown = undefined;
     this.applyView();
   }
 
-  private bakeContours(key: string, lines: ContourLine[], area: Area, s: number, weight: number) {
+  private bakeContours(key: string, lines: ContourLine[], area: Area, s: number, weight: number, dim = 1) {
     const g = this.make.graphics({}, false);
     const X = (x: number) => (x - area.x) * s;
     const Y = (y: number) => (y - area.y) * s;
     for (const line of lines) {
-      g.lineStyle((line.index ? 1.4 : 0.8) * DPR * weight, TEAL, line.index ? 0.38 : 0.16);
+      g.lineStyle((line.index ? 1.4 : 0.8) * DPR * weight, TEAL, (line.index ? 0.38 : 0.16) * dim);
       for (const ring of line.rings) {
         if (ring.length < 2) continue;
         g.beginPath();
@@ -376,10 +388,12 @@ export class MapScene extends Phaser.Scene {
     this.status();
   }
 
-  // Ground outside the grid stays on screen but dimmed, so the eye lands on the theater.
+  // Ground outside the grid stays on screen but dimmed, so the eye lands on the theater. The
+  // coarse layer is baked dimmed; this only dims the fine layer's margin around the grid,
+  // which keeps full-screen layers (expensive on phones without much GPU) to a minimum.
   private drawOutside() {
-    const g = this.outsideGfx.clear().fillStyle(0x0b0f0d, 0.55);
-    const { x, y, w, h } = COARSE;
+    const g = this.outsideGfx.clear().fillStyle(0x0b0f0d, 1 - OUTSIDE_DIM);
+    const { x, y, w, h } = FINE;
     g.fillRect(x, y, w, -y); // above
     g.fillRect(x, WORLD_H, w, y + h - WORLD_H); // below
     g.fillRect(x, 0, -x, WORLD_H); // left
