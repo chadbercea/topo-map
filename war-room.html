@@ -18,6 +18,7 @@
     --teal: #3fd0c0;
     --tealhi: #a8fff2;
     --accent: #ff6a3d;
+    --caution: #f2b84b;
     --text: #f5e6cf;
     --muted: #8f7a5a;
     --side: 300px;
@@ -186,7 +187,10 @@
 
   /* Team: a tab per team (one for now), its status, route, operators and support. */
   #team { position: fixed; right: 16px; top: 16px; width: 260px; }
-  .tabs { display: flex; gap: 4px; margin-bottom: -4px; }
+  .tabs { display: flex; justify-content: space-between; align-items: center; gap: 4px; margin-bottom: -4px; }
+  .tabs [role="tablist"] { display: flex; gap: 4px; }
+  .tabx { font-size: 9px; letter-spacing: .14em; color: var(--muted); white-space: nowrap; }
+  .tabx #arty { font-size: 10px; letter-spacing: .2em; }
   .tab { font: inherit; font-size: 10px; font-weight: 600; letter-spacing: .16em; padding: 4px 10px; display: flex; align-items: center; gap: 6px;
     color: var(--muted); background: none; border: 1px solid rgba(226,185,127,.3); cursor: pointer; }
   .tab[aria-selected="true"] { color: var(--tealhi); border-color: var(--teal); background: rgba(63,208,192,.1); }
@@ -194,21 +198,30 @@
   .tab.alert .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
   #t-status { font-size: 12px; color: var(--tealhi); letter-spacing: .1em; min-height: 17px; }
   #t-status.alert { color: var(--accent); }
-  #legs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11px; font-weight: 600; letter-spacing: .08em; }
-  #legs span { padding: 2px 5px; border: 1px dashed rgba(226,185,127,.45); color: var(--muted); }
+  #legs { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+  #legs span { padding: 1px 4px; border: 1px dashed rgba(226,185,127,.45); color: var(--muted); }
   #legs span.clear { border: 1px solid var(--teal); color: var(--tealhi); }
   #legs span.hot { border: 1px solid var(--accent); color: var(--accent); background: rgba(255,106,61,.12); }
   #legs span.cold { border: 1px solid var(--muted); color: var(--muted); text-decoration: line-through; }
   #legs span.here { box-shadow: 0 0 0 1px var(--tealhi); }
-  #legs i { font-style: normal; color: var(--muted); font-weight: 400; }
-  #ops { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-  .op { display: grid; gap: 3px; font-size: 9px; letter-spacing: .12em; color: var(--text); }
-  .op .hb { height: 4px; background: rgba(226,185,127,.15); }
-  .op .hb i { display: block; height: 100%; background: var(--teal); }
-  .op .st { font-size: 8px; color: var(--muted); }
-  .op.wia, .op.wia .st { color: var(--accent); } .op.wia .hb i { background: var(--accent); }
+  #legs i { font-style: normal; color: var(--muted); font-weight: 400; font-size: 9px; }
+  /* Operators, one row each: status icon, call sign and role, a heartbeat trace, and condition (as on Resident Evil's status screen). */
+  #ops { display: flex; flex-direction: column; gap: 2px; }
+  .op { display: grid; grid-template-columns: 12px 58px 1fr 50px; align-items: center; gap: 6px; height: 19px; font-size: 9px; letter-spacing: .12em; }
+  .op .ic { display: grid; place-items: center; color: var(--teal); }
+  .op .ic svg { width: 10px; height: 10px; fill: currentColor; stroke: currentColor; }
+  .op .nm { display: grid; line-height: 1.05; }
+  .op .nm b { font-weight: 600; color: var(--text); }
+  .op .nm span { font-size: 8px; color: var(--muted); letter-spacing: .14em; }
+  .op canvas { display: block; width: 100%; height: 18px; background: rgba(0,0,0,.4); border: 1px solid rgba(226,185,127,.14); box-sizing: border-box; }
+  .op .cd { text-align: right; font-weight: 600; letter-spacing: .14em; }
+  .op.fine .cd, .op.fine .ic { color: var(--tealhi); }
+  .op.caution .cd, .op.caution .ic { color: var(--caution); }
+  .op.danger .cd, .op.danger .ic { color: var(--accent); }
+  .op.dead { opacity: .55; } .op.dead .cd, .op.dead .ic { color: var(--muted); }
+  .op.fighting .ic { color: var(--accent); }
   .row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
-  #arty { color: var(--accent); letter-spacing: .3em; font-size: 12px; }
+  #arty { color: var(--accent); }
 
   /* Mission bar: the operation, the clock, the phases. */
   #mbar { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); flex-direction: row; align-items: center; gap: 14px; padding: 6px 14px;
@@ -241,6 +254,10 @@
     #left .panel { border-width: 1px 0 0; padding: 8px 12px; }
     #latest { padding: 6px 9px; } #latest .msg { font-size: 11px; }
     .tool { gap: 6px; } .tdesc { font-size: 10px; }
+    #ops { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    .op { grid-template-columns: 10px 1fr; grid-template-rows: auto 16px; height: auto; gap: 2px 4px; }
+    .op .nm span, .op .cd { display: none; }
+    .op canvas { grid-column: 1 / -1; height: 16px; }
   }
 </style>
 </head>
@@ -275,11 +292,11 @@
 <div id="mbar" class="panel" aria-label="Mission"><span class="hide-sm">OP DRY CREEK</span><span class="clock" id="clock">T+00:00</span><ol id="phases"></ol></div>
 
 <aside id="team" class="panel" aria-label="Teams">
-  <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" id="tab-alpha"><span class="dot"></span>ALPHA</button></div>
+  <div class="tabs"><span role="tablist"><button class="tab" role="tab" aria-selected="true" id="tab-alpha"><span class="dot"></span>ALPHA</button></span>
+    <span class="tabx"><span id="t-fit">5/5 FIT</span> · <span title="Fire missions left">ARTY <span id="arty"></span></span></span></div>
   <div id="t-status">STANDING BY</div>
   <div><div class="ph"><span>ROUTE</span><span id="r-state">—</span></div><div id="legs" style="margin-top:6px"></div></div>
-  <div><div class="ph hide-sm"><span>OPERATORS</span><span id="t-fit">5/5 FIT</span></div><div id="ops" style="margin-top:6px"></div></div>
-  <div class="row hide-sm"><span class="label">ARTILLERY · FIRE MISSIONS</span><span id="arty"></span></div>
+  <div id="ops" aria-label="Operators"></div>
 </aside>
 
 <aside id="brief" class="side sheet" aria-label="Briefing">
@@ -331,6 +348,24 @@ const OBSERVE_R = 1600;      // m: ALPHA has to be this close to observe a conta
 const PATIENCE = 20;         // s ALPHA waits for imagery on the next square before pushing on blind
 const EARLIER = 3;           // lines the radio keeps under the latest one
 const BARK = 5;              // s ALPHA's last transmission stays on the map
+const ROLES = ["LEAD", "MEDIC", "RTO", "GUNNER", "MARKSMAN"];
+// Condition, as on Resident Evil's status screen: how hard the heart is working, and the colour of the trace.
+const CONDITION = {
+  fine: { word: "FINE", bpm: 72, amp: 1, color: "#a8fff2" },
+  caution: { word: "CAUTION", bpm: 96, amp: .9, color: "#f2b84b" },
+  danger: { word: "DANGER", bpm: 128, amp: .7, color: "#ff6a3d" },
+  dead: { word: "KIA", bpm: 0, amp: 0, color: "#8f7a5a" },
+};
+const ECG_SPEED = 40;        // px a second the trace scrolls
+// The four operator states, as in ground-truth.html's battle panel: a bolt, a dot, a cross, an X.
+const icon = d => `<svg viewBox="0 0 10 10" aria-hidden="true">${d}</svg>`;
+const ICONS = {
+  fighting: icon('<path d="M6.2 0 1.5 5.6h3L3.6 10l4.9-6H5.4z"/>'),
+  idle: icon('<circle cx="5" cy="5" r="2.6"/>'),
+  healing: icon('<path d="M3.8 1h2.4v2.8H9v2.4H6.2V9H3.8V6.2H1V3.8h2.8z"/>'),
+  dead: icon('<path d="M2 2l6 6M8 2 2 8" fill="none" stroke-width="1.8"/>'),
+};
+const STATE_WORD = { fighting: "ENGAGED", idle: "READY", healing: "WOUNDED", dead: "KIA" };
 
 // The area of operations: an 8 x 5 grid of 1 km squares, A1 in the north-west corner. Fixed to the ground, so a
 // square's name is the same on every screen.
@@ -656,6 +691,7 @@ function newGame() {
   for (const c of Object.values(game.contacts)) $(`c-${c.n}`).addEventListener("click", e => { e.stopPropagation(); openMenu(c); });
   status("ON THE GROUND AT THE LZ");
   for (const n of game.scanned) drawSquare(n);
+  buildOps();
   drawScan(); drawLegs(); drawTeam(); drawPhases();
 }
 
@@ -695,10 +731,90 @@ function status(text, alert = false) {
 
 const wounded = () => game.team.ops.filter(hp => hp < 50).length;
 
-// The team panel's operators and support.
+// ---------- Operators: a row each, with a heartbeat ----------
+const condition = hp => hp <= 0 ? "dead" : hp < 50 ? "danger" : hp < 75 ? "caution" : "fine";
+// What an operator is doing: in a fight, ready, wounded, or dead.
+function opState(i) {
+  const t = game.team, hp = t.ops[i];
+  return hp <= 0 ? "dead" : t.mode === "ambush" ? "fighting" : hp < 50 ? "healing" : "idle";
+}
+
+// One heartbeat: P wave, QRS spike, T wave, for p from 0 to 1 through the beat.
+function pqrst(p) {
+  const g = (c, w, a) => a * Math.exp(-(((p - c) / w) ** 2));
+  return g(.12, .025, .1) - g(.235, .008, .14) + g(.26, .011, 1) - g(.29, .01, .26) + g(.46, .045, .2);
+}
+
+let ecgs = [];
+function buildOps() {
+  $("ops").innerHTML = ROLES.map((r, i) => `<div class="op fine idle" id="op-${i}">
+      <span class="ic">${ICONS.idle}</span><span class="nm"><b>A${i + 1}</b><span>${r}</span></span>
+      <canvas aria-hidden="true"></canvas><span class="cd">FINE</span></div>`).join("");
+  ecgs = ROLES.map((_, i) => ({ el: $(`op-${i}`), cv: $(`op-${i}`).querySelector("canvas"), buf: [], phase: Math.random(), key: "", acc: 0 }));
+  sizeEcgs();
+}
+
+// Each trace keeps one sample per CSS pixel, newest at the right.
+function sizeEcgs() {
+  const dpr = devicePixelRatio || 1;
+  for (const e of ecgs) {
+    const w = Math.max(20, Math.round(e.cv.clientWidth)), h = Math.round(e.cv.clientHeight) || 20;
+    e.cv.width = w * dpr; e.cv.height = h * dpr; e.w = w; e.h = h;
+    e.buf = []; e.acc = 0;
+    while (e.buf.length < w) sample(e, 1 / ECG_SPEED);
+  }
+}
+
+// One pixel of trace. The spike is narrower than a pixel, so each pixel takes the peak of a few sub-samples.
+function sample(e, dt) {
+  const k = CONDITION[e.cond || "fine"];
+  let v = 0;
+  for (let j = 0; j < 4; j++) {
+    e.phase = (e.phase + dt / 4 * k.bpm / 60) % 1;
+    const y = pqrst(e.phase);
+    if (Math.abs(y) > Math.abs(v)) v = y;
+  }
+  const ragged = e.cond === "danger" ? (Math.random() - .5) * .1 : 0;
+  e.buf.push(k.bpm ? v * k.amp + ragged : (Math.random() - .5) * .02);
+  if (e.buf.length > e.w) e.buf.shift();
+}
+
+function drawEcgs(dt) {
+  if (!game) return;
+  const dpr = devicePixelRatio || 1;
+  ecgs.forEach((e, i) => {
+    const hp = game.team.ops[i], cond = condition(hp), st = opState(i), key = cond + st + Math.round(hp);
+    e.cond = cond;
+    if (key !== e.key) {
+      e.key = key;
+      e.el.className = `op ${cond} ${st}`;
+      e.el.title = `A${i + 1} ${ROLES[i]}: ${STATE_WORD[st]}, ${Math.max(0, Math.round(hp))} hp`;
+      e.el.querySelector(".ic").innerHTML = ICONS[st];
+      e.el.querySelector(".cd").textContent = CONDITION[cond].word;
+    }
+    if (!CALM) { e.acc += dt * ECG_SPEED; while (e.acc >= 1) { e.acc--; sample(e, 1 / ECG_SPEED); } }
+    else if (key !== e.drawn) { e.buf = []; while (e.buf.length < e.w) sample(e, 1 / ECG_SPEED); }
+    if (CALM && e.drawn === key) return;
+    e.drawn = key;
+    const c = e.cv.getContext("2d"), { w, h } = e, mid = h * .7, amp = h * .62;
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, w, h);
+    c.strokeStyle = "rgba(226,185,127,.08)"; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(0, mid + .5); c.lineTo(w, mid + .5); c.stroke();
+    // The trace fades toward the left, so the newest beat reads brightest.
+    const col = CONDITION[cond].color;
+    c.lineWidth = 1.4; c.lineJoin = "round"; c.strokeStyle = col;
+    for (let x = 1; x < e.buf.length; x++) {
+      c.globalAlpha = .15 + .85 * (x / e.buf.length) ** 1.6;
+      c.beginPath(); c.moveTo(x - 1, mid - e.buf[x - 1] * amp); c.lineTo(x, mid - e.buf[x] * amp); c.stroke();
+    }
+    c.globalAlpha = 1; c.fillStyle = col;
+    c.beginPath(); c.arc(e.buf.length - 1, mid - e.buf.at(-1) * amp, 1.6, 0, Math.PI * 2); c.fill();
+  });
+}
+
+// The team panel's fit count and support.
 function drawTeam() {
-  $("ops").innerHTML = game.team.ops.map((hp, i) => `<div class="op${hp < 50 ? " wia" : ""}" title="A${i + 1}: ${Math.round(hp)} hp">` +
-    `<span>A${i + 1}</span><span class="hb"><i style="width:${clamp(hp, 0, 100)}%"></i></span><span class="st">${hp < 50 ? "WOUNDED" : "FIT"}</span></div>`).join("");
   $("t-fit").textContent = `${5 - wounded()}/5 FIT`;
   $("arty").textContent = "◆".repeat(game.fires) + "◇".repeat(FIRES - game.fires);
 }
@@ -1177,6 +1293,7 @@ function frame(now) {
     $("clock").textContent = clock(game.T);
   }
   placeMarks();
+  drawEcgs(dt);
   requestAnimationFrame(frame);
 }
 
@@ -1276,7 +1393,7 @@ async function load() {
   }
 }
 
-addEventListener("resize", () => { if (state) applyCam(); });
+addEventListener("resize", () => { if (state) applyCam(); if (ecgs.length) sizeEcgs(); });
 load();
 </script>
 </body>
