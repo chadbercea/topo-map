@@ -313,6 +313,10 @@ html, body {
 }
 
 .comms .actions .primary { color: #0b0f0d; background: #f2c14e; border-color: #f2c14e; }
+.comms .actions button:disabled { opacity: 0.45; cursor: default; }
+.comms .actions small { font-size: 10px; text-transform: none; letter-spacing: 0; }
+.comms .actions .quiet { color: var(--dim); border-color: transparent; }
+.timer .resources { color: var(--ink); }
 .comms-badge { margin-top: 8px; color: #f2c14e; border-color: #f2c14e; min-height: 36px; }
 
 @keyframes blink { 50% { opacity: 0.2; } }
@@ -355,6 +359,7 @@ html, body {
   }
 
   .clock { font-size: 22px; }
-  .timer h2, .timer p { display: none; }
+  .timer h2, .timer p:not(.resources) { display: none; }
+  .timer .resources { font-size: 11px; }
   .debug { bottom: auto; top: 40%; }
 }

@@ -1,6 +1,7 @@
 import { game, useGame } from '../sim/store';
 import { teamFatigue } from '../sim/movement';
 import { currentCall } from '../sim/comms';
+import { blocked } from '../sim/responses';
 
 const clock = (ms: number) => {
   const s = Math.floor(ms / 1000);
@@ -16,6 +17,7 @@ export function TeamPanel() {
   const size = useGame((s) => s.team.operators.length);
   const fatigue = useGame((s) => Math.round(teamFatigue(s.team.operators)));
   const comms = useGame((s) => s.comms);
+  const state = useGame((s) => s);
   const call = currentCall(comms);
   const waiting = comms.messages.filter((m) => m.status === 'new').length;
   const mode = call && !comms.minimized ? 'C' : 'A';
@@ -43,11 +45,30 @@ export function TeamPanel() {
           <p className="text" data-testid="comms-text">
             {call.text}
           </p>
-          <div className="actions">
-            <button className="primary" onClick={() => game.confirmCall(call.id)}>
-              {call.holds ? 'Copy, proceed' : 'Copy'}
+          <div className="actions" data-testid="responses">
+            {call.responses ? (
+              call.responses.map((r, i) => {
+                const why = blocked(state, r);
+                return (
+                  <button
+                    key={r.id}
+                    className={i === 0 && !why ? 'primary' : undefined}
+                    disabled={!!why}
+                    onClick={() => game.respond(call.id, r.id)}
+                  >
+                    {r.label}
+                    {why && <small> · {why}</small>}
+                  </button>
+                );
+              })
+            ) : (
+              <button className="primary" onClick={() => game.confirmCall(call.id)}>
+                {call.holds ? 'Copy, proceed' : 'Copy'}
+              </button>
+            )}
+            <button className="quiet" onClick={() => game.dismissCall(call.id)}>
+              Dismiss
             </button>
-            <button onClick={() => game.dismissCall(call.id)}>Dismiss</button>
           </div>
         </div>
       )}
