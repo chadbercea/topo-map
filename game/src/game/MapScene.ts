@@ -107,7 +107,10 @@ export class MapScene extends Phaser.Scene {
       const x = sq.col * CELL;
       const y = sq.row * CELL;
       const next = m.status === 'active' && i === m.hits;
-      if (i < m.hits || m.status === 'won') g.fillStyle(color, 0.28).fillRect(x, y, CELL, CELL);
+      // Just imaged: the prototype's scanning pulse for a moment, then a steady fill.
+      const since = i < m.hits ? game.get().elapsedMs - m.hitAt[i] : Infinity;
+      if (since < 700) g.fillStyle(color, 0.15 + 0.3 * Math.abs(Math.sin(time / 90))).fillRect(x, y, CELL, CELL);
+      else if (i < m.hits || m.status === 'won') g.fillStyle(color, 0.28).fillRect(x, y, CELL, CELL);
       const pulse = next ? 0.7 + 0.3 * Math.sin(time / 120) : 1; // pulses, never vanishes
       g.lineStyle(((next ? 3 : 2) * DPR) / this.zoom, color, pulse).strokeRect(x + 3 / this.zoom, y + 3 / this.zoom, CELL - 6 / this.zoom, CELL - 6 / this.zoom);
       const label = (this.modeLabels[i] ??= this.add.text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${22 * DPR}px`, color: '#35d0a5' }).setOrigin(0.5));
@@ -282,6 +285,17 @@ export class MapScene extends Phaser.Scene {
 
   private drawSelection() {
     const g = this.selectGfx.clear();
+    // Imaged squares stay faintly lit, with a corner tick, like the prototype's "clear".
+    for (const id of game.get().map.scanned) {
+      const sq = parseSquare(id);
+      if (!sq) continue;
+      const x = sq.col * CELL;
+      const y = sq.row * CELL;
+      const t = CELL * 0.12;
+      g.fillStyle(TEAL, 0.07).fillRect(x, y, CELL, CELL);
+      g.lineStyle((1.5 * DPR) / this.zoom, TEAL, 0.7).lineBetween(x + CELL - t, y + 4 / this.zoom, x + CELL - 4 / this.zoom, y + 4 / this.zoom);
+      g.lineBetween(x + CELL - 4 / this.zoom, y + 4 / this.zoom, x + CELL - 4 / this.zoom, y + t);
+    }
     const id = game.get().map.selected;
     const sq = id && parseSquare(id);
     if (!sq) return;

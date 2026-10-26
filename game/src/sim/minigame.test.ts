@@ -85,3 +85,31 @@ it('a won scan boosts imagery intel that is still in progress', () => {
   for (const sq of store.get().minigame!.targets) store.tapMiniGame(sq);
   expect(store.get().intel.projects.imagery!.progress).toBeGreaterThan(before + 0.2);
 });
+
+describe('grid scan, ported from the prototype', () => {
+  it('images the square asked about, then unimaged squares ahead on the route', () => {
+    const store = atRequest();
+    const { route, waypoint } = store.get().team;
+    store.respond(REQUEST, 'send');
+    const { targets } = store.get().minigame!;
+    expect(targets[0]).toBe('C2');
+    const ahead = route.slice(waypoint).filter((sq) => sq !== 'C2');
+    expect(targets.slice(1, 1 + Math.min(3, ahead.length))).toEqual(ahead.slice(0, 3));
+  });
+
+  it('ORION-3 calls the pass and the result', () => {
+    const store = atRequest();
+    store.respond(REQUEST, 'send');
+    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: expect.stringMatching(/^Pass over C2/) });
+    for (const sq of store.get().minigame!.targets) store.tapMiniGame(sq);
+    const sat = store.get().comms.messages.filter((m) => m.from === 'ORION-3').at(-1);
+    expect(sat?.text).toMatch(/imaged\. Downlinked to ALPHA\./);
+  });
+
+  it('records when each square was imaged', () => {
+    const store = atRequest();
+    store.respond(REQUEST, 'send');
+    store.tapMiniGame(store.get().minigame!.targets[0]);
+    expect(store.get().minigame!.hitAt).toEqual([store.get().elapsedMs]);
+  });
+});
