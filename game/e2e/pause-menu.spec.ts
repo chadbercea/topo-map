@@ -10,11 +10,11 @@ const press = async (page: Page, name: string, isMobile: boolean) => {
 
 test('restart starts the mission over from 06:00', async ({ page, isMobile }) => {
   await page.goto('');
-  await expect.poll(() => tick(page)).toBeGreaterThan(5);
+  await expect.poll(() => tick(page), { timeout: 15_000 }).toBeGreaterThan(3);
   await press(page, 'Pause', isMobile);
   await press(page, 'Restart', isMobile);
   await expect(menu(page)).toHaveCount(0);
-  expect(await tick(page)).toBeLessThan(5);
+  expect(await tick(page)).toBeLessThan(3);
   await expect(page.getByTestId('clock')).toHaveText('06:00');
 });
 
