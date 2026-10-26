@@ -1,4 +1,4 @@
-import type { Settings } from '../sim/state';
+import { DEFAULT_SETTINGS, type Settings } from '../sim/state';
 
 // Settings are a per-device preference; storage can be missing (private mode), so fail quietly.
 const KEY = 'pmc-war-room:settings';
@@ -6,7 +6,7 @@ const KEY = 'pmc-war-room:settings';
 export function loadSettings(): Settings | undefined {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { sound: true, ...JSON.parse(raw) } : undefined;
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : undefined;
   } catch {
     return undefined;
   }

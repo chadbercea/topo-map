@@ -4,7 +4,7 @@ import * as Phaser from 'phaser';
 // React panels listen, and send commands back the same way.
 export const bus = new Phaser.Events.EventEmitter();
 
-export type SceneStatus = { width: number; height: number; renderer: string; pointer: string };
+export type SceneStatus = { width: number; height: number; renderer: string; pointer: string; layers: string };
 
 export const EV = {
   sceneStatus: 'scene-status',
