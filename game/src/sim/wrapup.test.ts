@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CASUALTY_PENALTY, CONTRACT, outcomeOf, wrapUp } from './wrapup';
 import { initialState, MISSION_MS, type GameState } from './state';
 import { run, walking } from './testkit';
+import { createStore } from './store';
 
 const until = (s: GameState, done: (x: GameState) => boolean, maxMs = 600_000) => {
   for (let t = 0; t < maxMs && !done(s); t += 100) s = run(s, 100);
@@ -28,7 +29,7 @@ describe('wrap-up', () => {
   });
 
   it('time running out before exfil is a failure: no contract', () => {
-    const s = run({ ...initialState(), timer: { remainingMs: 1_000 } }, 1_100);
+    const s = run({ ...initialState(), timer: { remainingMs: 1_000, totalMs: 360_000 } }, 1_100);
     expect(s.phase).toBe('ended');
     const w = wrapUp(s);
     expect(w.outcome).toBe('failed');
@@ -52,5 +53,24 @@ describe('wrap-up', () => {
 
   it('the six-minute clock is the limit', () => {
     expect(MISSION_MS).toBe(360_000);
+  });
+});
+
+describe('mission length', () => {
+  it('can be tuned, and Retry keeps the tuned length', () => {
+    const store = createStore();
+    store.setMissionLength(8);
+    expect(store.get().timer).toEqual({ remainingMs: 480_000, totalMs: 480_000 });
+    store.tick(100);
+    store.restart();
+    expect(store.get().timer.remainingMs).toBe(480_000);
+  });
+
+  it('stays within 1 to 30 minutes', () => {
+    const store = createStore();
+    store.setMissionLength(0.1);
+    expect(store.get().timer.totalMs).toBe(60_000);
+    store.setMissionLength(99);
+    expect(store.get().timer.totalMs).toBe(1_800_000);
   });
 });

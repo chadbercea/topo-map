@@ -14,6 +14,7 @@ export function MissionTimer() {
   const scans = useGame((s) => s.resources.scans);
   const noise = useGame((s) => Math.round(s.noise));
   const alerted = useGame((s) => s.alerted);
+  const deniability = useGame((s) => s.deniability);
   const job = useGame((s) => s.sideJob);
   const now = useGame((s) => s.elapsedMs);
   const budget = useGame((s) => s.resources.budget);
@@ -44,6 +45,11 @@ export function MissionTimer() {
         noise <span className="bar" role="meter" aria-label="Noise" aria-valuenow={noise}><span style={{ width: `${noise}%` }} /></span>
         {alerted && <b> ALERTED</b>}
       </p>
+      {deniability !== 'clean' && (
+        <p className="deniability" data-testid="deniability" data-state={deniability}>
+          client: {deniability === 'warned' ? 'warning, keep it quiet' : 'DISOWNED, no contract, no support'}
+        </p>
+      )}
       {job?.status === 'active' && job.deadlineMs !== null && (
         <p className="side-job" data-testid="side-job">
           side job: {job.square} imagery · {Math.ceil((job.deadlineMs - now) / 1000)}s · +${job.reward.toLocaleString('en-US')}

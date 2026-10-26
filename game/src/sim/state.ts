@@ -11,6 +11,7 @@ import type { Contact, Decision } from './contacts';
 import { BLACK_BOX } from './missions/blackBox';
 import type { MissionDef } from './script';
 import type { SideJob } from './sidejob';
+import type { Deniability } from './noise';
 import { initialOrdnance, type Ordnance } from './ordnance';
 import { initialMission, type Mission } from './mission';
 
@@ -28,7 +29,7 @@ export type GameState = {
   tick: number;
   elapsedMs: number; // mission time actually played, excludes pauses
   phase: Phase;
-  timer: { remainingMs: number };
+  timer: { remainingMs: number; totalMs: number }; // totalMs: this mission's length
   mission: Mission;
   team: {
     callsign: string;
@@ -62,6 +63,7 @@ export type GameState = {
   stats: { searched: number; decoded: number; bonus: number }; // for the wrap-up
   sideJob: SideJob | null; // the client's side offer
   alerted: boolean; // the enemy knows a PMC is in the area
+  deniability: Deniability; // how the client feels about the noise
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
 };
@@ -71,13 +73,14 @@ export const MISSION: MissionDef = BLACK_BOX;
 export const ROUTE: SquareId[] = MISSION.route;
 export const MISSION_MS = MISSION.durationMs; // GDD: start with six minutes and tune by feel
 
-export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
+// missionMs: the mission's length, the script's six minutes unless tuned (?minutes=).
+export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS): GameState {
   const operators = roster();
   return {
     tick: 0,
     elapsedMs: 0,
     phase: 'running',
-    timer: { remainingMs: MISSION_MS },
+    timer: { remainingMs: missionMs, totalMs: missionMs },
     mission: initialMission(ROUTE),
     team: {
       callsign: 'ALPHA',
@@ -111,6 +114,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     stats: { searched: 0, decoded: 0, bonus: 0 },
     sideJob: null,
     alerted: false,
+    deniability: 'clean',
     rng: 1234,
     settings,
   };
