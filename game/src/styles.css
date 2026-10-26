@@ -99,6 +99,11 @@ html, body {
   color: #0b0f0d; background: #8fb8ff; border: 1px solid #8fb8ff; min-height: 40px; padding: 0 16px; cursor: pointer; justify-self: start;
 }
 .signal { display: grid; gap: 8px; }
+.signal-options { display: flex; gap: 6px; }
+.event-card .jam {
+  font: inherit; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #8fb8ff; background: none; border: 1px solid #8fb8ff; min-height: 40px; padding: 0 16px; cursor: pointer;
+}
 .signal .dial-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .signal .freq { font-size: 20px; font-variant-numeric: tabular-nums; color: var(--ink); }
 .signal .meter { display: flex; gap: 2px; }

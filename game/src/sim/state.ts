@@ -60,6 +60,7 @@ export type GameState = {
   ordnance: Ordnance;
   noise: number; // 0-100, how loud the PMC has been
   script: { mission: string; fired: string[] }; // the mission script and which triggers have run
+  flags: Record<string, boolean>; // choices the mission script reacts to (jammed, ...)
   stats: { searched: number; decoded: number; bonus: number }; // for the wrap-up
   sideJob: SideJob | null; // the client's side offer
   alerted: boolean; // the enemy knows a PMC is in the area
@@ -111,6 +112,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     ordnance: initialOrdnance(),
     noise: 0,
     script: { mission: MISSION.id, fired: [] },
+    flags: {},
     stats: { searched: 0, decoded: 0, bonus: 0 },
     sideJob: null,
     alerted: false,

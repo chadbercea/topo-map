@@ -42,7 +42,7 @@ export const cipherText = (g: Signal) => caesar(g.plain, g.shift - g.guess);
 const WORD: Record<string, string> = { patrol: 'PATROL', checkpoint: 'CHECKPOINT', post: 'OBSERVATION POST' };
 
 export function startIntercept(s: GameState, eventId: string): GameState {
-  const e = s.events.find((x) => x.id === eventId);
+  const e = s.events.find((x) => x.id === eventId && x.status !== 'resolved'); // jammed or gone quiet: nothing to hear
   if (!e || s.minigame?.status === 'active') return s;
   // The traffic comes from whoever is near the signal; prefer a contact nobody has found.
   const c = s.contacts.find((x) => x.square === e.square && x.status === 'hidden') ?? s.contacts.find((x) => x.square === e.square);
@@ -123,5 +123,28 @@ export function finishSignal(s: GameState, status: 'won' | 'lost'): GameState {
     ...next,
     events: next.events.map((e) => (e.id === m.eventId ? { ...e, status: 'resolved' as const } : e)),
     comms: { ...next.comms, messages: [...next.comms.messages, report] },
+  };
+}
+
+// Jamming (GDD PMC mechanics): block the enemy's radios instead of listening to them. The
+// enemy is slower to coordinate (the mission script decides what that means), and whatever
+// the intercept would have revealed stays unknown.
+export function jam(s: GameState, eventId: string): GameState {
+  const e = s.events.find((x) => x.id === eventId && x.kind === 'signal' && x.status !== 'resolved');
+  if (!e || s.minigame?.status === 'active') return s;
+  const m: Message = {
+    id: `jam-${eventId}`,
+    from: 'HQ',
+    text: `Jamming their net near ${e.square}. They'll be slow to coordinate, but we won't hear what they're planning.`,
+    atMs: s.elapsedMs,
+    status: 'new',
+    holds: false,
+  };
+  return {
+    ...s,
+    flags: { ...s.flags, jammed: true },
+    openEvent: null,
+    events: s.events.map((x) => (x === e ? { ...x, status: 'resolved' as const } : x)),
+    comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, m] },
   };
 }

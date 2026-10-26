@@ -32,3 +32,14 @@ test('intercept: tune with the dial controls, lock on, shift the cipher until it
   await panel.getByRole('button', { name: 'Close' }).click();
   await expect(page.getByTestId('alerts')).toContainText('CONTACT C2');
 });
+
+test('jam instead: the traffic is gone, and HQ says what it costs', async ({ page }) => {
+  await page.goto('?debug');
+  await page.waitForFunction(() => window.game);
+  await fastForward(page, 50_000);
+  await page.getByTestId('alerts').getByRole('button', { name: /SIGNAL C2/ }).click();
+  await page.getByRole('button', { name: 'Jam', exact: true }).click();
+  await expect(page.getByTestId('event-card')).toHaveCount(0);
+  const log = await page.evaluate(() => window.game.get().comms.messages.map((m) => m.text));
+  expect(log.some((t) => /Jamming their net near C2/.test(t))).toBe(true);
+});
