@@ -10,7 +10,8 @@ const press = async (page: Page, name: string, isMobile: boolean) => {
 };
 
 test('restart starts the mission over from 06:00', async ({ page, isMobile }) => {
-  await page.goto('');
+  await page.goto('?debug');
+  await page.waitForFunction(() => window.game);
   await fastForward(page, 2_000); // well into the mission: 20+ ticks
   await press(page, 'Pause', isMobile);
   await press(page, 'Restart', isMobile);

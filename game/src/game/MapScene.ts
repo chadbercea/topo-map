@@ -18,6 +18,7 @@ const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 const MAX_TEXTURE = 4096;
 const OUTSIDE_DIM = 0.45; // how much of the ground outside the grid shows through
 const FAR_SCALE = 0.2; // texture px per world unit for the coarse layer, before DPR
+const MAX_FRAME_MS = 50; // the most sim time one rendered frame may advance
 
 // The theater map: contour lines of the fictional terrain under the A1–H5 grid. The camera
 // fits the grid to the screen; line widths and labels are redrawn per zoom so they stay crisp.
@@ -111,7 +112,9 @@ export class MapScene extends Phaser.Scene {
   private lastFrame: number | null = null;
   update(_time: number) {
     const now = performance.now();
-    this.loop.advance(this.lastFrame === null ? 0 : now - this.lastFrame);
+    // Wall time, so the clock stays real-time at any frame rate, but capped per frame: a slow
+    // frame (a stalled tab, CI's software renderer) runs in slow motion instead of jumping.
+    this.loop.advance(this.lastFrame === null ? 0 : Math.min(now - this.lastFrame, MAX_FRAME_MS));
     this.lastFrame = now;
     this.drawTeam();
     this.drawMarkers(_time);
