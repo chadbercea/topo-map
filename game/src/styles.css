@@ -210,6 +210,7 @@ html, body {
 }
 .square-actions button:disabled { opacity: 0.45; cursor: default; }
 .timer .recharge { color: var(--dim); }
+.timer .side-job { color: #f2c14e; font-size: 11px; }
 .timer .noise { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
 .timer .noise .bar { height: 5px; }
 .timer .noise .bar > span { background: #f2c14e; }
@@ -480,6 +481,7 @@ html, body {
 .comms .actions button:disabled { opacity: 0.45; cursor: default; }
 .comms .actions small { font-size: 10px; text-transform: none; letter-spacing: 0; }
 .comms .actions .quiet { color: var(--dim); border-color: transparent; }
+.more-calls { justify-self: start; font: inherit; font-size: 11px; color: #f2c14e; background: none; border: none; padding: 4px 0; cursor: pointer; }
 .timer .resources { color: var(--ink); }
 .comms-badge { margin-top: 8px; color: #f2c14e; border-color: #f2c14e; min-height: 36px; }
 
@@ -525,7 +527,7 @@ html, body {
   }
 
   .clock { font-size: 22px; }
-  .timer h2, .timer p:not(.resources):not(.noise) { display: none; }
+  .timer h2, .timer p:not(.resources):not(.noise):not(.side-job) { display: none; }
   .timer .noise { font-size: 10px; }
   .timer .resources { font-size: 11px; }
   .debug { bottom: auto; top: 40%; }

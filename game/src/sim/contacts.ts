@@ -6,6 +6,7 @@ import type { System } from './systems';
 import { treeCall } from './responses';
 import { pass, search } from './sites';
 import { isMissionPoint } from './mission';
+import { acceptJob, declineJob } from './sidejob';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -133,7 +134,7 @@ function holdOn(s: GameState, c: { node: string; id: string; square: SquareId; l
 }
 
 // The effects HQ's answers have on a contact or an unimaged square.
-export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass';
+export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'accept-job' | 'decline-job';
 
 export function applyEffect(s: GameState, effect: Effect, square: SquareId): GameState {
   const decide = (d: Decision) => ({ ...s.team, decisions: { ...s.team.decisions, [square]: d } });
@@ -161,6 +162,10 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
       return search(s, square);
     case 'pass':
       return pass(s, square);
+    case 'accept-job':
+      return acceptJob(s);
+    case 'decline-job':
+      return declineJob(s);
   }
 }
 

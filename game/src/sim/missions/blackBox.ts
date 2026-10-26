@@ -1,6 +1,7 @@
 import { contactIn, makeContact, moveContact } from '../contacts';
 import { squareAt } from '../../map/grid';
 import { registerMission, say, type MissionDef } from '../script';
+import { offerJob } from '../sidejob';
 
 export const PATROL_MOVES_MS = 150_000;
 
@@ -78,6 +79,13 @@ export const BLACK_BOX: MissionDef = registerMission({
         return here === s.mission.b && !!contactIn(s, s.mission.b) && s.mission.phase === 'objective';
       },
       then: (s) => say(s, s.team.callsign, 'crash-site-hit', 'They\u2019re here for the drone too! Taking fire at the crash site.'),
+    },
+    // The client's side job (GDD event 3): extra pay for fresh imagery of a radar site,
+    // against the clock and the scan pool ALPHA needs.
+    {
+      id: 'client-offer',
+      when: (s) => s.elapsedMs >= 90_000 && s.mission.phase !== 'complete',
+      then: (s) => offerJob(s, { square: 'G2', reward: 10_000, windowMs: 120_000, answerMs: 30_000 }),
     },
     // The contract window, called out as it closes.
     {
