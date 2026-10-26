@@ -26,40 +26,36 @@
     font: 12px/1.45 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em;
     -webkit-user-select: none; user-select: none; }
   #map { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; opacity: 0; transition: opacity .6s;
-    touch-action: none; cursor: grab; }
+    touch-action: none; cursor: crosshair; }
   #map.ready { opacity: 1; }
   #map.panning { cursor: grabbing; }
   #map.moving #major { filter: none; }
-  #map.hud { cursor: crosshair; }
   #minor path { fill: none; stroke: var(--line); stroke-width: .8; vector-effect: non-scaling-stroke; }
   #major path { fill: none; stroke: var(--major); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
   #river { fill: none; stroke: var(--major); stroke-opacity: .5; stroke-width: 1; stroke-dasharray: 2 5;
     vector-effect: non-scaling-stroke; }
   #route { fill: none; stroke: var(--tealhi); stroke-width: 1.6; stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
+  #route.held { stroke: var(--major); }
+  /* Everything outside the area of operations sits in the dark, so the grid is the focus. */
+  #dim { fill: rgba(4,8,10,.78); pointer-events: none; }
 
   /* The map grid over the area of operations: 1 km squares, labelled A1 to H5. */
-  #squares rect { fill: transparent; stroke: rgba(226,185,127,.22); stroke-width: 1; vector-effect: non-scaling-stroke; transition: fill .2s; }
-  #squares text { fill: rgba(226,185,127,.5); font-family: "JetBrains Mono", monospace; font-weight: 600; letter-spacing: .08em; }
-  #squares .ao { fill: none; stroke: rgba(226,185,127,.45); stroke-width: 1.2; stroke-dasharray: 6 4; }
-  #map.hud #squares rect { stroke: rgba(226,185,127,.35); }
-  #map.hud #squares text { fill: rgba(255,226,184,.85); }
-  #squares rect.under { fill: rgba(63,208,192,.08); stroke: rgba(63,208,192,.5); }
-  #squares rect.aim { fill: rgba(63,208,192,.2); stroke: var(--tealhi); stroke-width: 1.6; }
-  #squares rect.shot { fill: rgba(63,208,192,.16); stroke: var(--teal); stroke-width: 1.6; }
-  #squares rect.wasted { fill: rgba(255,106,61,.12); stroke: var(--accent); }
-  #squares rect.missed { fill: rgba(255,106,61,.06); stroke: rgba(255,106,61,.6); stroke-dasharray: 3 3; }
-  #squares text.tasked { fill: var(--tealhi); }
-
-  /* The satellite's swath: a band that sweeps the area of operations from the east. */
-  #swath rect.band { fill: url(#swathFill); }
-  #swath line { stroke: var(--tealhi); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+  #squares rect { fill: transparent; stroke: rgba(226,185,127,.3); stroke-width: 1; vector-effect: non-scaling-stroke; transition: fill .25s, stroke .25s; }
+  #squares text { fill: rgba(255,226,184,.75); font-family: "JetBrains Mono", monospace; font-weight: 600; letter-spacing: .08em; pointer-events: none; }
+  #squares .ao { fill: none; stroke: rgba(255,226,184,.6); stroke-width: 1.4; }
+  #squares rect.onroute { stroke: rgba(168,255,242,.35); }
+  #squares rect.aim { fill: rgba(63,208,192,.1); stroke: var(--teal); }
+  #squares rect.sel { fill: rgba(63,208,192,.2); stroke: var(--tealhi); stroke-width: 2; }
+  #squares rect.scanning { animation: scan .6s ease-in-out infinite alternate; stroke: var(--tealhi); stroke-width: 2; }
+  @keyframes scan { from { fill: rgba(63,208,192,.08); } to { fill: rgba(63,208,192,.32); } }
+  #squares rect.clear { fill: rgba(63,208,192,.07); }
+  #squares rect.hot { fill: rgba(255,106,61,.16); stroke: var(--accent); stroke-width: 1.6; }
+  #squares rect.cold { fill: rgba(143,122,90,.12); }
+  #squares text.clear { fill: var(--tealhi); }
+  #squares text.hot { fill: var(--accent); }
 
   .overlay { position: fixed; inset: 0; pointer-events: none; }
-  #grid { background-image:
-      linear-gradient(rgba(226,185,127,.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(226,185,127,.06) 1px, transparent 1px);
-    background-size: 80px 80px; background-position: center; }
-  #vignette { background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.7) 100%); }
+  #vignette { background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.6) 100%); }
 
   .label { color: var(--muted); font-size: 9px; letter-spacing: .18em; }
   .title { font-size: 22px; font-weight: 600; letter-spacing: .08em; line-height: 1.05; margin: 4px 0 2px; color: var(--major); }
@@ -71,19 +67,48 @@
   .mk[hidden] { display: none; }
   .mk .tag { position: absolute; left: 12px; top: -6px; }
   .mk.lz i { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border: 1.5px solid var(--major); }
-  .mk.lz .tag { color: var(--major); }
+  .mk.lz .tag, .mk.obj .tag { color: var(--major); }
+  .mk.obj i { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 1.5px solid var(--major); border-radius: 50%; }
+  .mk.obj i::after { content: ""; position: absolute; inset: 5px; background: var(--major); border-radius: 50%; }
+  .mk.obj .tag { left: 14px; font-weight: 600; }
   .mk.team b { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--tealhi);
-    box-shadow: 0 0 6px var(--teal); }
+    box-shadow: 0 0 6px var(--teal); transition: background .3s; }
+  .mk.team b.wia { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
   .mk.team .tag { color: var(--tealhi); left: 16px; top: -16px; }
-  /* What the imagery found. */
-  .mk.find i { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border: 1.5px solid var(--accent); transform: rotate(45deg);
-    animation: pop .4s ease-out; }
-  .mk.find .tag { color: var(--accent); left: 12px; top: 6px; font-weight: 600; }
-  .mk.find.clear i { border-color: var(--teal); border-radius: 50%; transform: none; }
-  .mk.find.clear .tag { color: var(--tealhi); }
-  .mk.sat { color: var(--tealhi); font-weight: 600; }
-  .mk.sat .tag { left: 8px; top: 8px; }
+  /* A contact: a button you tap for ALPHA's options. */
+  .mk.contact { pointer-events: auto; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; font-size: 9px; letter-spacing: .16em; color: var(--accent); }
+  .mk.contact i { position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 1.5px solid var(--accent); background: rgba(255,106,61,.25);
+    transform: rotate(45deg); animation: pop .4s ease-out; }
+  .mk.contact::before { content: ""; position: absolute; left: -18px; top: -18px; width: 36px; height: 36px; }
+  .mk.contact .tag { left: 14px; top: -7px; font-weight: 600; background: rgba(4,8,10,.75); padding: 1px 4px; }
+  .mk.contact.call i { animation: call 1s ease-in-out infinite alternate; }
+  @keyframes call { to { box-shadow: 0 0 0 6px rgba(255,106,61,.35); background: rgba(255,106,61,.6); } }
+  .mk.contact.destroyed, .mk.contact.avoided { color: var(--muted); }
+  .mk.contact.destroyed i { border-color: var(--muted); background: none; transform: none; border: 0; }
+  .mk.contact.destroyed i::before, .mk.contact.destroyed i::after { content: ""; position: absolute; left: 6px; top: -1px; width: 1.5px; height: 16px; background: var(--muted); }
+  .mk.contact.destroyed i::before { transform: rotate(45deg); } .mk.contact.destroyed i::after { transform: rotate(-45deg); }
+  .mk.contact.avoided i { border-color: var(--muted); background: none; }
   @keyframes pop { from { transform: rotate(45deg) scale(2.4); opacity: 0; } }
+  /* Artillery landing: rings out from the impact. */
+  .boom { position: fixed; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+  .boom i { position: absolute; left: -20px; top: -20px; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--major);
+    animation: boom .7s ease-out forwards; }
+  @keyframes boom { from { transform: scale(.2); opacity: 1; background: rgba(255,226,184,.5); } to { transform: scale(2.2); opacity: 0; } }
+
+  /* The contact menu: what ALPHA can do about it. */
+  #menu { position: fixed; left: 0; top: 0; z-index: 4; width: 230px; box-sizing: border-box; padding: 10px; display: flex; flex-direction: column; gap: 7px;
+    background: rgba(8,8,6,.92); border: 1px solid var(--accent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: arrive .2s ease-out; }
+  #menu[hidden] { display: none; }
+  #menu .mh { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: .16em; color: var(--accent); }
+  #menu .mh button { font: inherit; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0 2px; }
+  #menu .md { font-size: 10px; line-height: 1.45; color: var(--text); }
+  #menu .opt { display: grid; gap: 1px; text-align: left; font: inherit; color: var(--text); background: rgba(226,185,127,.06); cursor: pointer;
+    border: 1px solid rgba(226,185,127,.35); padding: 6px 8px; }
+  #menu .opt b { font-size: 11px; letter-spacing: .16em; }
+  #menu .opt span { font-size: 9px; letter-spacing: .06em; color: var(--muted); }
+  #menu .opt:hover:not(:disabled) { border-color: var(--major); background: rgba(226,185,127,.12); }
+  #menu .opt.attack b { color: var(--accent); } #menu .opt.observe b { color: var(--tealhi); } #menu .opt.avoid b { color: var(--major); }
+  #menu .opt:disabled { opacity: .4; cursor: default; }
 
   /* Frosted panels, as on the survey map. */
   .side { position: fixed; top: 16px; width: var(--side); max-height: calc(100vh - 32px); box-sizing: border-box;
@@ -103,31 +128,32 @@
     border: 1px solid rgba(226,185,127,.4); padding: 4px 8px; }
   .btn:hover { border-color: var(--major); color: var(--major); }
   .btn.go { border-color: var(--teal); color: var(--tealhi); font-size: 10px; padding: 7px 14px; }
-  .btn.go:hover { background: rgba(63,208,192,.12); }
+  .btn.go:hover:not(:disabled) { background: rgba(63,208,192,.12); }
   .btn:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
   .btn:disabled { opacity: .35; cursor: default; }
 
-  /* The request from the ground: what they need, and, once you take it, the HUD for the mini game. */
-  #req { display: flex; flex-direction: column; gap: 9px; padding: 10px 11px; border-left: 3px solid var(--major); background: rgba(226,185,127,.08);
-    animation: arrive .4s ease-out; }
-  #req[hidden] { display: none; }
-  #req .kind { font-size: 9px; letter-spacing: .2em; color: var(--major); display: flex; justify-content: space-between; }
-  #req .ask { font-size: 12px; line-height: 1.5; }
-  #req.live { border-left-color: var(--teal); background: rgba(63,208,192,.08); }
-  #req.live .kind { color: var(--tealhi); }
+  /* The satellite: pick up to three squares, scan, wait for it to recharge. */
+  .card { display: flex; flex-direction: column; gap: 8px; padding: 10px 11px; border-left: 3px solid var(--teal); background: rgba(63,208,192,.07); }
+  .card .kind { font-size: 9px; letter-spacing: .2em; color: var(--tealhi); display: flex; justify-content: space-between; }
+  .card .kind .st.busy { color: var(--major); }
+  .card .ask { font-size: 10px; line-height: 1.45; color: var(--muted); }
   .chips { display: flex; gap: 6px; }
-  .chip { flex: 1; text-align: center; padding: 6px 0; font-size: 14px; font-weight: 600; letter-spacing: .1em;
-    border: 1px solid rgba(226,185,127,.4); color: var(--major); }
-  .chip.shot { border-color: var(--teal); background: rgba(63,208,192,.16); color: var(--tealhi); }
-  .chip.shot::after { content: " ✓"; }
-  .chip.missed { border-color: var(--accent); color: var(--accent); text-decoration: line-through; }
-  .hudrow { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: .14em; color: var(--muted); }
-  .hudrow b { color: var(--tealhi); font-weight: 600; letter-spacing: .3em; }
-  .hudrow b.out { color: var(--accent); }
+  .chip { flex: 1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 600; letter-spacing: .1em;
+    border: 1px dashed rgba(63,208,192,.4); color: var(--tealhi); min-height: 18px; }
+  .chip.on { border-style: solid; border-color: var(--tealhi); background: rgba(63,208,192,.16); }
+  .card .go { width: 100%; }
   .bar { height: 3px; background: rgba(63,208,192,.18); }
   .bar i { display: block; height: 100%; width: 0; background: var(--teal); }
-  .grade { font-size: 16px; font-weight: 600; letter-spacing: .14em; }
-  .grade.clean { color: var(--tealhi); } .grade.partial { color: var(--major); } .grade.failed { color: var(--accent); }
+  /* ALPHA's route, square by square, coloured by what you know about each one. */
+  .card.route { border-left-color: var(--major); background: rgba(226,185,127,.07); }
+  .card.route .kind { color: var(--major); }
+  #legs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11px; font-weight: 600; letter-spacing: .08em; }
+  #legs span { padding: 2px 5px; border: 1px dashed rgba(226,185,127,.45); color: var(--muted); }
+  #legs span.clear { border: 1px solid var(--teal); color: var(--tealhi); }
+  #legs span.hot { border: 1px solid var(--accent); color: var(--accent); background: rgba(255,106,61,.12); }
+  #legs span.cold { border: 1px solid var(--muted); color: var(--muted); text-decoration: line-through; }
+  #legs span.here { box-shadow: 0 0 0 1px var(--tealhi); }
+  #legs i { font-style: normal; color: var(--muted); font-weight: 400; }
 
   #comms { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 10px; line-height: 1.45; }
   #comms li { animation: arrive .4s ease-out; }
@@ -143,7 +169,8 @@
   .row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
   #pips { display: flex; gap: 6px; }
   .pip { width: 16px; height: 16px; box-sizing: border-box; border: 1px solid var(--teal); background: rgba(63,208,192,.55); }
-  /* The mission's phases: where you are, and what's next. */
+  .pip.wia { border-color: var(--accent); background: repeating-linear-gradient(45deg, rgba(255,106,61,.6) 0 3px, transparent 3px 6px); }
+  #arty { color: var(--accent); letter-spacing: .3em; font-size: 12px; }
   #phases { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 10px; letter-spacing: .12em; }
   #phases li { display: grid; grid-template-columns: 16px 1fr auto; gap: 6px; color: var(--muted); }
   #phases li .r { font-size: 9px; }
@@ -159,39 +186,41 @@
   .sheet .go { align-self: flex-start; }
   .sheet .fine { font-size: 9px; color: var(--muted); letter-spacing: .12em; }
   .sheet[hidden] { display: none; }
+  #d-title.win { color: var(--tealhi); } #d-title.loss { color: var(--accent); }
+  #d-rows { display: flex; flex-direction: column; gap: 6px; font-size: 10px; line-height: 1.5; }
+  #d-rows div { display: grid; grid-template-columns: 26px 1fr; gap: 8px; }
+  #d-rows b { color: var(--major); }
+  #d-rows .good { color: var(--tealhi); } #d-rows .bad { color: var(--accent); }
 
   @media (max-width: 760px) {
     #team { top: 10px; left: 10px; right: 10px; width: auto; padding: 10px 12px; gap: 8px; }
     #team .clock { font-size: 16px; }
     .hide-sm { display: none !important; }
-    #radio { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 42vh; border-width: 1px 0 0; padding: 10px 12px 12px; }
+    #radio { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 44vh; border-width: 1px 0 0; padding: 10px 12px 12px; gap: 8px; }
     #comms li:nth-child(n+3) { display: none; }
+    .card { padding: 8px 10px; gap: 6px; }
   }
 </style>
 </head>
 <body>
-<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic map of the Snake River canyon at Twin Falls, with a 1 km grid over the area of operations.">
+<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic map of the Snake River canyon at Twin Falls, with a 1 km grid over the area of operations. Tap squares to pick them for a satellite scan.">
   <defs>
     <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
       <feGaussianBlur stdDeviation="1.6" result="b"/>
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <linearGradient id="swathFill" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0" stop-color="#3fd0c0" stop-opacity=".22"/>
-      <stop offset=".8" stop-color="#3fd0c0" stop-opacity=".08"/>
-      <stop offset="1" stop-color="#3fd0c0" stop-opacity="0"/>
-    </linearGradient>
   </defs>
   <g id="minor"></g>
   <g id="major" filter="url(#glow)"></g>
   <path id="river"></path>
+  <path id="dim" fill-rule="evenodd"></path>
   <g id="squares"></g>
-  <g id="swath" style="display:none"><rect class="band"></rect><line></line></g>
   <path id="route"></path>
 </svg>
-<div id="grid" class="overlay"></div>
 <div id="vignette" class="overlay"></div>
 <div id="marks"></div>
+<div id="booms"></div>
+<div id="menu" hidden role="dialog" aria-label="Contact options"></div>
 
 <aside id="radio" class="side" aria-label="Radio">
   <div class="hide-sm">
@@ -199,7 +228,17 @@
     <div class="title">RADIO</div>
     <div class="label">SNAKE RIVER CANYON · <a href="./">MAP</a></div>
   </div>
-  <div id="req" hidden aria-live="polite"></div>
+  <div class="card">
+    <div class="kind"><span>SATELLITE · ORION-3</span><span class="st" id="s-state">READY</span></div>
+    <div class="ask hide-sm">Tap up to three squares on the map, then scan.</div>
+    <div class="chips" id="s-chips"></div>
+    <button class="btn go" id="scan" disabled>SCAN ▸</button>
+    <div class="bar"><i id="s-bar"></i></div>
+  </div>
+  <div class="card route">
+    <div class="kind"><span>ALPHA ROUTE</span><span id="r-state">—</span></div>
+    <div id="legs"></div>
+  </div>
   <div class="sect"><span>COMMS</span></div>
   <ol id="comms" aria-live="polite"></ol>
 </aside>
@@ -208,6 +247,7 @@
   <div class="sect"><span>TEAM ALPHA</span><span class="hide-sm">5 OPERATORS</span></div>
   <div class="row"><span class="clock" id="clock">T+00:00</span><div id="pips"></div></div>
   <div id="t-status">STANDING BY</div>
+  <div class="row"><span class="label">FIRE MISSIONS</span><span id="arty"></span></div>
   <div class="sect hide-sm"><span>MISSION</span></div>
   <ol id="phases" class="hide-sm"></ol>
 </aside>
@@ -215,57 +255,66 @@
 <aside id="brief" class="side sheet" aria-label="Briefing">
   <div class="label">WAR ROOM // BRIEFING</div>
   <div class="title">OPERATION DRY CREEK</div>
-  <p>Team ALPHA is going in on the south rim of the Snake River canyon to take down a hostile cell. You're mission control: the voice in their ear, with the eyes in the sky.</p>
+  <p>Team ALPHA is crossing the south rim of the Snake River canyon to an enemy outpost at <b>C2</b>. You're mission control: the voice in their ear, with the eyes in the sky.</p>
   <ul>
-    <li>ALPHA will <b>call in support</b> when they need it. Each request is a job you run on the map.</li>
-    <li>How well you run it decides <b>what intel they get</b>, and the intel decides how the next part goes.</li>
-    <li>The map has a <b>1 km grid</b> over the area of operations, columns <b>A–H</b> west to east and rows <b>1–5</b> north to south. Drag to look around, scroll or pinch to zoom.</li>
+    <li>ALPHA calls in its <b>route</b>, square by square. Anything on that route that nobody has found is an <b>ambush</b>.</li>
+    <li><b>Scan</b> whenever the satellite is ready: tap up to three squares, then SCAN. It needs a few seconds to recharge after each scan.</li>
+    <li>When you find a contact, ALPHA holds short of it. <b>Tap the contact</b> to choose: <b>observe</b> it for free intel, <b>attack</b> it with artillery (two fire missions), or <b>avoid</b> it and sneak around.</li>
+    <li>Three operators wounded and ALPHA pulls out. The grid runs <b>A–H</b> west to east and <b>1–5</b> north to south. Drag to look around, scroll or pinch to zoom.</li>
   </ul>
   <button class="btn go" id="begin">BEGIN</button>
   <div class="fine">LOADING ELEVATION DATA…</div>
 </aside>
 
 <aside id="debrief" class="side sheet" aria-label="Debrief" hidden>
-  <div class="label">WAR ROOM // PHASE 1 DEBRIEF</div>
+  <div class="label">WAR ROOM // APPROACH DEBRIEF</div>
   <div class="title" id="d-title"></div>
   <p id="d-sum"></p>
+  <div id="d-rows"></div>
   <p class="fine">NEXT: ALPHA PAINTS THE OUTPOST AND CALLS FOR ORDNANCE. THAT RUN IS THE NEXT BUILD.</p>
   <button class="btn go" id="again">RUN IT AGAIN</button>
 </aside>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
-// War Room (ILI-1097): you're mission control for team ALPHA on the south rim of the Snake River canyon. ALPHA calls in
-// support, each request is a mini game played on the map, and how well you run it decides the intel ALPHA moves on.
-// One fixed mission; this build is phase 1, the satellite pass. A fictional exercise.
+// War Room (ILI-1097, scan-and-decide since ILI-1098): you're mission control for team ALPHA crossing the south rim of the
+// Snake River canyon to an outpost. ALPHA calls its route; you scan squares ahead of it with the satellite, three at a
+// time, and decide what ALPHA does about each contact you find: observe it, shell it, or sneak around it. Anything
+// nobody found is an ambush. One fixed mission. A fictional exercise.
 // The terrain loading, river tracing, camera and route planning follow ground-truth.html.
 const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
 const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
 const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const SPEED = 140;           // m/s ALPHA covers on flat ground (game time, so the move plays out in about 30 s)
-const CALL_AT = 3;           // s into the mission ALPHA calls for imagery
-const ACQUIRE = 3;           // s of countdown before the pass starts
-const PASS = 18;             // s the swath takes to cross the area of operations
-const SWATH = 2;             // squares wide
-const FRAMES = 4;            // frames the satellite can take on one pass
+const SPEED = 110;           // m/s ALPHA covers on flat ground (game time, so a square takes about 10 s)
+const STEP_OFF = 12;         // s into the mission ALPHA starts moving
+const PICK = 3;              // squares per scan
+const SCAN_TIME = 2.5;       // s the satellite spends over the squares
+const RECHARGE = 12;         // s before it can scan again
+const OBSERVE_TIME = 5;      // s ALPHA spends watching a contact
+const FIRE_TIME = 4;         // s from calling a fire mission to splash
+const FIRES = 2;             // fire missions for the whole approach
+const AMBUSH_TIME = 3;       // s an ambush holds ALPHA
+const LOOK = 350;            // m ahead ALPHA checks for a contact you've found, and holds short of it
+const OBSERVE_R = 1600;      // m: ALPHA has to be this close to observe a contact
 
 // The area of operations: an 8 x 5 grid of 1 km squares, A1 in the north-west corner. Fixed to the ground, so a
 // square's name is the same on every screen.
 const AO = { lat: 42.6060, lon: -114.4578, cols: 8, rows: 5, dLat: 1000 / 111320, dLon: 1000 / (111320 * Math.cos(42.59 * Math.PI / 180)) };
 const COLS = "ABCDEFGH";
 
-// Operation Dry Creek, phase 1. ALPHA needs imagery on three squares before it moves west from the LZ.
+// Operation Dry Creek: the approach. ALPHA walks from the LZ in H3 to the outpost in C2.
 const OP = {
   lz: [42.5850, -114.3700],
-  tasked: ["C2", "E3", "F3"],
-  // What's on the ground in the tasked squares.
-  finds: {
-    C2: { at: [42.5905, -114.4320], tag: "OUTPOST · 6 PAX · 2 TECHNICALS", outpost: true },
-    E3: { at: [42.5830, -114.4050], tag: "2 VEHICLES · PATROL" },
-    F3: { at: [42.5862, -114.3900], tag: "CLEAR · ROAD OPEN", clear: true },
+  route: ["H3", "G3", "F3", "E3", "D2", "C2"],
+  objective: "C2",
+  outpost: [42.5905, -114.4320],
+  // What's out there. Each hit wounds an operator (drops them under 50) if ALPHA walks into it unwarned.
+  contacts: {
+    F3: { tag: "VEHICLE PATROL", detail: "Two technicals and about eight fighters, parked on the road facing east.", hits: [[55, 75], [52, 65]] },
+    F4: { tag: "MORTAR TEAM", detail: "A four-man mortar crew dug in, watching the road to the north.", hits: [[55, 70], [52, 65]] },
+    D2: { tag: "SNIPER PAIR", detail: "Two shooters on the rim with a long view east over E3.", hits: [[60, 80]] },
   },
-  staging: [42.5893, -114.4228],   // ALPHA's position on the outpost, if it knows where the outpost is
 };
 
 const $ = id => document.getElementById(id);
@@ -280,6 +329,7 @@ const pad = (n, w = 2) => String(n).padStart(w, "0");
 const clock = s => `T+${pad(Math.floor(s / 60))}:${pad(Math.floor(s % 60))}`;
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const meters = (a, b) => dist(a, b) * state.mpg;
+const rand = ([a, b]) => a + Math.random() * (b - a);
 
 // ---------- Terrain (as in ground-truth.html) ----------
 function loadImg(url) {
@@ -475,7 +525,9 @@ function plan(from, to) {
   return pts;
 }
 
+
 // ---------- The map grid ----------
+const NAMES = [...COLS].flatMap(c => [1, 2, 3, 4, 5].map(r => c + r));
 // A square's corners in map space: [x0, y0, x1, y1].
 function square(name) {
   const c = COLS.indexOf(name[0]), r = +name.slice(1) - 1;
@@ -483,23 +535,26 @@ function square(name) {
   const [x1, y1] = toGrid([AO.lat - (r + 1) * AO.dLat, AO.lon + (c + 1) * AO.dLon]);
   return [x0, y0, x1, y1];
 }
-const names = () => [...COLS].flatMap(c => [1, 2, 3, 4, 5].map(r => c + r));
+const center = n => { const [x0, y0, x1, y1] = square(n); return [(x0 + x1) / 2, (y0 + y1) / 2]; };
 const aoBox = () => { const a = square("A1"), b = square("H5"); return [a[0], a[1], b[2], b[3]]; };
+const squareAt = g => NAMES.find(n => { const [x0, y0, x1, y1] = square(n); return g[0] >= x0 && g[0] < x1 && g[1] >= y0 && g[1] < y1; }) || null;
+const rectOf = n => $("squares").querySelector(`rect[data-sq="${n}"]`);
+const textOf = n => $("squares").querySelector(`text[data-sq="${n}"]`);
+// The squares next to one, south and north first: the ground ALPHA can see from where it's watching.
+function neighbours(n) {
+  const c = COLS.indexOf(n[0]), r = +n.slice(1);
+  return [[c, r + 1], [c, r - 1], [c - 1, r], [c + 1, r]].filter(([c, r]) => c >= 0 && c < AO.cols && r >= 1 && r <= AO.rows).map(([c, r]) => COLS[c] + r);
+}
 
 function buildSquares() {
-  const g = $("squares"), [ax0, ay0, ax1, ay1] = aoBox(), fs = (square("A1")[2] - square("A1")[0]) * .15;
-  g.innerHTML = names().map(n => {
+  const fs = (square("A1")[2] - square("A1")[0]) * .15, [ax0, ay0, ax1, ay1] = aoBox();
+  $("squares").innerHTML = NAMES.map(n => {
     const [x0, y0, x1, y1] = square(n);
     return `<rect data-sq="${n}" x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"/>` +
       `<text data-sq="${n}" x="${x0 + fs * .45}" y="${y0 + fs * 1.15}" font-size="${fs}">${n}</text>`;
   }).join("") + `<rect class="ao" x="${ax0}" y="${ay0}" width="${ax1 - ax0}" height="${ay1 - ay0}"/>`;
+  $("dim").setAttribute("d", `M-1e4,-1e4H1e4V1e4H-1e4Z M${ax0},${ay0}V${ay1}H${ax1}V${ay0}Z`);
 }
-
-function squareAt(g) {
-  return names().find(n => { const [x0, y0, x1, y1] = square(n); return g[0] >= x0 && g[0] < x1 && g[1] >= y0 && g[1] < y1; }) || null;
-}
-const rectOf = n => $("squares").querySelector(`rect[data-sq="${n}"]`);
-const textOf = n => $("squares").querySelector(`text[data-sq="${n}"]`);
 
 // ---------- Camera: fit the area of operations into the open middle of the screen ----------
 function openRect() {
@@ -525,7 +580,7 @@ function stepFly(now) {
 }
 
 function fitAO() {
-  const [x0, y0, x1, y1] = aoBox(), o = openRect(), pad = .92;
+  const [x0, y0, x1, y1] = aoBox(), o = openRect(), pad = .94;
   const k = Math.min((o.x1 - o.x0) * pad / ((x1 - x0) * baseScale()), (o.y1 - o.y0) * pad / ((y1 - y0) * baseScale()));
   flyTo([(x0 + x1) / 2, (y0 + y1) / 2], clamp(k, 1, 4));
 }
@@ -533,22 +588,27 @@ function fitAO() {
 // ---------- The mission ----------
 function newGame() {
   game = {
-    T: 0, running: false, phase: 1, stage: "insert", pass: null, intel: { outpost: false }, results: [],
-    team: { pos: toGrid(OP.lz), route: [], seg: 0 },
+    T: 0, running: false, over: false, called: false, fires: FIRES, menu: null,
+    scanned: new Set(),
+    scan: { sel: [], busy: 0, cool: 0 },
+    contacts: Object.fromEntries(Object.entries(OP.contacts).map(([n, c]) => [n,
+      { ...c, n, found: false, observed: false, status: "active", how: null, hurt: 0 }])),
+    team: { pos: toGrid(OP.lz), path: [], seg: 0, goals: OP.route.slice(1), avoid: new Set(),
+      mode: "wait", timer: 0, on: null, held: null, ops: [100, 100, 100, 100, 100] },
   };
   $("comms").innerHTML = "";
-  $("req").hidden = true;
   $("route").removeAttribute("d");
-  $("swath").style.display = "none";
-  svg.classList.remove("hud");
+  $("menu").hidden = true;
   buildSquares();
+  for (const n of OP.route) rectOf(n).classList.add("onroute");
   $("marks").innerHTML = `
     <div class="mk lz" id="m-lz"><i></i><span class="tag">LZ</span></div>
-    <div class="mk team" id="m-team">${"<b></b>".repeat(5)}<span class="tag">ALPHA</span></div>
-    <div class="mk sat" id="m-sat" hidden><span class="tag"></span></div>`;
-  $("pips").innerHTML = '<span class="pip"></span>'.repeat(5);
-  drawPhases();
-  status("INSERTED AT THE LZ");
+    <div class="mk obj" id="m-obj"><i></i><span class="tag">OBJECTIVE · OUTPOST</span></div>
+    <div class="mk team" id="m-team">${"<b></b>".repeat(5)}<span class="tag">ALPHA</span></div>` +
+    Object.values(game.contacts).map(c => `<button class="mk contact" id="c-${c.n}" hidden aria-label="Contact in ${c.n}: ${c.tag}"><i></i><span class="tag">${c.n} · ${c.tag}</span></button>`).join("");
+  for (const c of Object.values(game.contacts)) $(`c-${c.n}`).addEventListener("click", e => { e.stopPropagation(); openMenu(c); });
+  status("ON THE GROUND AT THE LZ");
+  drawScan(); drawLegs(); drawTeam(); drawPhases();
 }
 
 function radio(text, cls = "") {
@@ -563,197 +623,348 @@ function status(text, alert = false) {
   $("t-status").classList.toggle("alert", alert);
 }
 
-const PHASES = [
-  ["INSERT", "SATELLITE IMAGERY"],
-  ["OUTPOST", "ORDNANCE"],
-  ["OBJECTIVE", "—"],
-  ["EXFIL", "MEDEVAC LZ"],
-];
-function drawPhases() {
+const wounded = () => game.team.ops.filter(hp => hp < 50).length;
+
+function drawTeam() {
+  $("pips").innerHTML = game.team.ops.map(hp => `<span class="pip${hp < 50 ? " wia" : ""}"></span>`).join("");
+  $("arty").textContent = "◆".repeat(game.fires) + "◇".repeat(FIRES - game.fires);
+}
+
+const PHASES = [["APPROACH", "SCAN · DECIDE"], ["OUTPOST", "ORDNANCE"], ["OBJECTIVE", "—"], ["EXFIL", "MEDEVAC LZ"]];
+function drawPhases(result) {
   $("phases").innerHTML = PHASES.map(([name, job], i) => {
-    const n = i + 1, r = game.results[i];
-    const cls = n < game.phase || r ? `done${r && r !== "CLEAN" ? " bad" : ""}` : n === game.phase ? "now" : "";
-    return `<li class="${cls}"><span>${r ? (r === "FAILED" ? "✗" : "✓") : n === game.phase ? "▸" : n}</span><span>${name}</span><span class="r">${r || job}</span></li>`;
+    const r = i === 0 ? result : null;
+    return `<li class="${r ? `done${r === "FAILED" ? " bad" : ""}` : i === 0 ? "now" : ""}"><span>${r ? (r === "FAILED" ? "✗" : "✓") : i === 0 ? "▸" : i + 1}</span><span>${name}</span><span class="r">${r || job}</span></li>`;
   }).join("");
 }
 
-// ALPHA calls for imagery: the request card, waiting on you.
-function callImagery() {
-  game.stage = "request";
-  radio(`ALPHA: Overwatch, ALPHA. On the ground. Need imagery on ${OP.tasked.join(", ")} before we move.`, "alpha");
-  status("WAITING ON IMAGERY");
-  const req = $("req");
-  req.className = "";
-  req.hidden = false;
-  req.innerHTML = `<div class="kind"><span>ALPHA REQUESTS</span><span>SATELLITE IMAGERY</span></div>
-    <div class="ask">Image these three squares on the next pass. The swath comes in from the east.</div>
-    <div class="chips">${OP.tasked.map(n => `<span class="chip">${n}</span>`).join("")}</div>
-    <button class="btn go" id="accept">TASK THE SATELLITE ▸</button>`;
-  $("accept").addEventListener("click", startPass);
-  for (const n of OP.tasked) textOf(n).classList.add("tasked");
+// What you know about a square: clear, a live contact, a contact dealt with, or nothing yet.
+function known(n) {
+  const c = game.contacts[n];
+  if (c?.found) return c.status === "active" ? "hot" : "cold";
+  return game.scanned.has(n) ? "clear" : "";
 }
 
-// ---------- Mini game: the satellite pass ----------
-function startPass() {
-  if (game.stage !== "request") return;
-  game.stage = "pass";
-  const [x0, , x1] = aoBox(), w = (x1 - x0) / AO.cols;
-  game.pass = { t: -ACQUIRE, frames: FRAMES, shots: [], wasted: [], from: x1 + w * .2, to: x0 - w * SWATH, w: w * SWATH };
-  radio("OVERWATCH: Satellite tasked. Acquiring.");
-  status("IMAGERY PASS IN PROGRESS");
-  svg.classList.add("hud");
-  fitAO();
-  const [, y0, , y1] = aoBox();
-  const band = $("swath").querySelector(".band"), edge = $("swath").querySelector("line");
-  band.setAttribute("y", y0); band.setAttribute("height", y1 - y0); band.setAttribute("width", game.pass.w);
-  edge.setAttribute("y1", y0); edge.setAttribute("y2", y1);
-  const req = $("req");
-  req.className = "live";
-  req.innerHTML = `<div class="kind"><span>SATELLITE PASS</span><span id="p-state">ACQUIRING</span></div>
-    <div class="ask">Tap a square while the swath is over it to take a frame.</div>
-    <div class="chips">${OP.tasked.map(n => `<span class="chip" id="chip-${n}">${n}</span>`).join("")}</div>
-    <div class="hudrow"><span>FRAMES</span><b id="p-frames"></b></div>
-    <div class="bar"><i id="p-time"></i></div>`;
-  drawPass();
+// The route strip: each leg coloured by what you know, ALPHA's square ringed.
+function drawLegs() {
+  const here = squareAt(game.team.pos);
+  $("legs").innerHTML = OP.route.map(n => {
+    const avoided = game.team.avoid.has(n);
+    return `<span class="${avoided ? "cold" : known(n)}${n === here ? " here" : ""}">${n}</span>`;
+  }).join("<i>›</i>");
+  const unknown = OP.route.filter(n => !known(n) && !game.team.avoid.has(n)).length;
+  $("r-state").textContent = unknown ? `${unknown} UNSCANNED` : "ALL SCANNED";
 }
 
-// Where the swath is: its east and west edges in map space.
-function swathSpan() {
-  const p = game.pass, f = clamp(p.t / PASS, 0, 1), lead = p.from + (p.to - p.from) * f;
-  return [lead, lead + p.w];
+function drawSquare(n) {
+  const k = known(n), r = rectOf(n), t = textOf(n);
+  r.classList.remove("clear", "hot", "cold");
+  t.classList.remove("clear", "hot");
+  if (k) r.classList.add(k);
+  if (k === "clear" || k === "hot") t.classList.add(k);
 }
-const underSwath = n => { const [x0, , x1] = square(n), [a, b] = swathSpan(); return game.pass.t >= 0 && x1 > a && x0 < b; };
-// A square the swath has fully passed is gone for this pass.
-const passed = n => game.pass.t >= 0 && square(n)[2] > swathSpan()[1];
 
-function tickPass(dt) {
-  const p = game.pass;
-  p.t += dt;
-  if (p.t >= PASS) return endPass();
-  const [a, b] = swathSpan();
-  if (p.t >= 0) {
-    $("swath").style.display = "";
-    $("swath").querySelector(".band").setAttribute("x", a);
-    const edge = $("swath").querySelector("line");
-    edge.setAttribute("x1", a); edge.setAttribute("x2", a);
-  }
-  for (const n of names()) {
-    const r = rectOf(n);
-    r.classList.toggle("under", underSwath(n) && !p.shots.includes(n) && !p.wasted.includes(n));
-    if (OP.tasked.includes(n) && passed(n) && !p.shots.includes(n) && !r.classList.contains("missed")) {
-      r.classList.add("missed");
-      radio(`OVERWATCH: Swath is past ${n}. No frame.`, "alert");
+// ---------- The satellite: pick up to three squares, scan, recharge ----------
+function pick(n) {
+  const s = game.scan;
+  if (s.busy || s.cool) return radio(`ORION-3: ${s.busy ? "Busy scanning." : `Recharging, ${Math.ceil(s.cool)} s.`}`, "alert");
+  if (s.sel.includes(n)) s.sel = s.sel.filter(x => x !== n);
+  else if (known(n)) return radio(`ORION-3: ${n} is already ${known(n) === "clear" ? "clear" : "imaged"}.`);
+  else if (s.sel.length >= PICK) return radio(`ORION-3: Three squares per scan.`, "alert");
+  else s.sel.push(n);
+  drawScan();
+}
+
+function scan() {
+  const s = game.scan;
+  if (!game.running || s.busy || s.cool || !s.sel.length) return;
+  s.busy = SCAN_TIME;
+  for (const n of s.sel) rectOf(n).classList.add("scanning");
+  radio(`ORION-3: Scanning ${s.sel.join(", ")}.`);
+  drawScan();
+}
+
+function tickScan(dt) {
+  const s = game.scan;
+  if (s.busy) {
+    s.busy = Math.max(0, s.busy - dt);
+    if (!s.busy) {
+      const clear = [];
+      for (const n of s.sel) { rectOf(n).classList.remove("scanning"); if (!reveal(n, "ORION-3")) clear.push(n); }
+      if (clear.length) radio(`ORION-3: ${clear.join(", ")} clear.`, "alpha");
+      s.sel = []; s.cool = RECHARGE;
+      drawLegs();
     }
+  } else if (s.cool) s.cool = Math.max(0, s.cool - dt);
+  drawScan();
+}
+
+// A square imaged, by the satellite or by ALPHA's own eyes. Returns the contact if there is one.
+function reveal(n, by) {
+  game.scanned.add(n);
+  const c = game.contacts[n];
+  if (c && !c.found) {
+    c.found = true;
+    $(`c-${n}`).hidden = false;
+    radio(`${by}: Contact in ${n}: ${c.tag.toLowerCase()}.`, "intel");
+    if (OP.route.includes(n) && !game.team.avoid.has(n)) radio(`ALPHA: ${n} is on our route. Tell us what you want done.`, "alpha");
   }
-  drawPass();
+  drawSquare(n);
+  return c || null;
 }
 
-function drawPass() {
-  const p = game.pass;
-  $("p-state").textContent = p.t < 0 ? `ACQUIRING ${Math.ceil(-p.t)}` : `${Math.ceil(PASS - p.t)} s`;
-  $("p-frames").textContent = "■".repeat(p.frames) + "□".repeat(FRAMES - p.frames);
-  $("p-frames").classList.toggle("out", !p.frames);
-  $("p-time").style.width = `${clamp(p.t / PASS, 0, 1) * 100}%`;
-  for (const n of OP.tasked) $(`chip-${n}`).className = `chip${p.shots.includes(n) ? " shot" : rectOf(n).classList.contains("missed") ? " missed" : ""}`;
-  // The satellite's tag rides the leading edge of the swath.
-  const sat = $("m-sat");
-  sat.hidden = p.t < 0;
+let scanKey = "";
+function drawScan() {
+  const s = game.scan;
+  const st = s.busy ? "SCANNING" : s.cool ? `RECHARGING ${Math.ceil(s.cool)} s` : "READY";
+  const key = st + s.sel.join() + game.running;
+  $("s-bar").style.width = `${s.busy ? (1 - s.busy / SCAN_TIME) * 100 : s.cool ? (1 - s.cool / RECHARGE) * 100 : 100}%`;
+  if (key === scanKey) return;
+  scanKey = key;
+  $("s-state").textContent = st;
+  $("s-state").classList.toggle("busy", !!(s.busy || s.cool));
+  $("s-chips").innerHTML = [0, 1, 2].map(i => `<span class="chip${s.sel[i] ? " on" : ""}">${s.sel[i] || ""}</span>`).join("");
+  $("scan").disabled = !game.running || !!s.busy || !!s.cool || !s.sel.length;
+  $("scan").textContent = s.busy ? "SCANNING…" : `SCAN ${s.sel.length ? s.sel.length + " " : ""}▸`;
+  for (const n of NAMES) rectOf(n).classList.toggle("sel", s.sel.includes(n));
 }
 
-// A tap during the pass: take a frame of that square, if the swath is over it.
-function shoot(g) {
-  const p = game.pass, n = squareAt(g);
-  if (!n || p.t < 0) return;
-  if (p.shots.includes(n) || p.wasted.includes(n)) return;
-  if (!underSwath(n)) { radio(`OVERWATCH: ${n} isn't under the swath.`, "alert"); return; }
-  if (!p.frames) { radio("OVERWATCH: Out of frames.", "alert"); return; }
-  p.frames--;
-  const r = rectOf(n);
-  if (OP.tasked.includes(n)) { p.shots.push(n); r.classList.add("shot"); radio(`OVERWATCH: Frame on ${n}.`, "intel"); }
-  else { p.wasted.push(n); r.classList.add("wasted"); radio(`OVERWATCH: Frame on ${n}. That one wasn't tasked.`, "alert"); }
-  drawPass();
-  if (OP.tasked.every(t => p.shots.includes(t))) endPass();
+// ---------- Contacts: tap one for ALPHA's options ----------
+function openMenu(c) {
+  if (!game.running || !c.found) return;
+  game.menu = c;
+  const t = game.team, near = meters(t.pos, center(c.n)) < OBSERVE_R, active = c.status === "active";
+  const busy = t.mode === "observe" || t.mode === "fire";
+  const opts = active ? `
+    <button class="opt observe" data-do="observe"${c.observed || !near || busy ? " disabled" : ""}><b>OBSERVE</b>
+      <span>${c.observed ? "Already watched." : near ? "Watch it. Detail, and a free look at a square next to it." : "ALPHA is too far away to see it."}</span></button>
+    <button class="opt attack" data-do="attack"${!game.fires || busy ? " disabled" : ""}><b>ATTACK</b>
+      <span>${game.fires ? `Call artillery on ${c.n}. ${game.fires} fire mission${game.fires > 1 ? "s" : ""} left.` : "No fire missions left."}</span></button>
+    <button class="opt avoid" data-do="avoid"${busy ? " disabled" : ""}><b>AVOID</b>
+      <span>Sneak around ${c.n}. The detour may cross unscanned ground.</span></button>`
+    : `<div class="md">${c.status === "destroyed" ? "Destroyed." : "ALPHA is going around it."}</div>`;
+  $("menu").innerHTML = `<div class="mh"><span>${c.n} · ${c.tag}</span><button aria-label="Close">✕</button></div>
+    ${c.observed ? `<div class="md">${c.detail}</div>` : ""}${opts}`;
+  $("menu").querySelector(".mh button").addEventListener("click", closeMenu);
+  for (const b of $("menu").querySelectorAll(".opt")) b.addEventListener("click", () => act(c, b.dataset.do));
+  $("menu").hidden = false;
+  placeMenu();
 }
 
-// The pass is over: grade it, show what the frames found, and hand ALPHA the intel.
-function endPass() {
-  const p = game.pass;
-  game.stage = "result";
-  $("swath").style.display = "none";
-  $("m-sat").hidden = true;
-  svg.classList.remove("hud");
-  for (const n of names()) rectOf(n).classList.remove("under");
-  const got = p.shots.length, result = got === 3 ? "CLEAN" : got ? "PARTIAL" : "FAILED";
-  game.results[0] = result;
-  game.intel.outpost = p.shots.includes("C2") ? true : false;
-  for (const n of p.shots) {
-    const f = OP.finds[n], el = document.createElement("div");
-    el.className = `mk find${f.clear ? " clear" : ""}`;
-    el.dataset.at = JSON.stringify(f.at);
-    el.innerHTML = `<i></i><span class="tag">${n} · ${f.tag}</span>`;
-    $("marks").append(el);
-    radio(`OVERWATCH: ${n}: ${f.tag.toLowerCase()}.`, f.clear ? "alpha" : "intel");
-  }
-  const req = $("req");
-  req.className = "";
-  req.innerHTML = `<div class="kind"><span>SATELLITE PASS</span><span>${got}/3 IMAGED</span></div>
-    <div class="grade ${result.toLowerCase()}">${result}</div>
-    <div class="ask">${game.intel.outpost ? "The outpost is located. ALPHA can move on it." : "No frame on the outpost. ALPHA goes in without knowing where it is."}</div>`;
-  drawPhases();
-  setTimeout(() => game.running && moveOut(), 1800);
+function closeMenu() { game.menu = null; $("menu").hidden = true; }
+
+// The menu sits beside its contact, kept on screen and out from under the panels.
+function placeMenu() {
+  const c = game.menu;
+  if (!c) return;
+  const el = $("menu"), m = svg.getScreenCTM(), g = center(c.n), x = m.a * g[0] + m.e, y = m.d * g[1] + m.f;
+  const o = openRect(), w = el.offsetWidth, h = el.offsetHeight;
+  const left = x + 24 + w < o.x1 - 8 ? x + 24 : x - 24 - w;
+  el.style.transform = `translate(${clamp(left, o.x0 + 8, o.x1 - w - 8)}px, ${clamp(y - h / 2, o.y0 + 8, o.y1 - h - 8)}px)`;
 }
 
-// ALPHA moves on whatever the imagery gave it.
-function moveOut() {
-  game.stage = "move";
+function act(c, what) {
   const t = game.team;
-  if (game.intel.outpost) {
-    radio("ALPHA: Copy the outpost at C2. Moving to a position east of it.", "alpha");
-    status("MOVING ON THE OUTPOST");
+  if (!game.running || c.status !== "active") return;
+  closeMenu();
+  if (what === "observe") {
+    t.mode = "observe"; t.timer = OBSERVE_TIME; t.on = c;
+    radio(`ALPHA: Copy. Glassing ${c.n}.`, "alpha");
+    status(`OBSERVING ${c.n}`);
+  } else if (what === "attack") {
+    game.fires--;
+    t.mode = "fire"; t.timer = FIRE_TIME; t.on = c;
+    radio(`ALPHA: Fire mission, ${c.n}, ${c.tag.toLowerCase()}. Over.`, "alpha");
+    radio("GUNS: Shot, over.");
+    status(`FIRE MISSION ON ${c.n}`, true);
+    drawTeam();
   } else {
-    radio("ALPHA: No picture of C2. Moving west along the rim, slow.", "alert");
-    status("MOVING BLIND", true);
+    c.status = "avoided"; c.how = "avoided";
+    t.avoid.add(c.n);
+    t.goals = t.goals.filter(n => n !== c.n);
+    radio(`ALPHA: Copy, going around ${c.n}. Moving quiet.`, "alpha");
+    $(`c-${c.n}`).classList.add("avoided");
+    replan();
+    if (t.held === c) { t.held = null; if (t.mode === "hold") resume(); }
+    drawSquare(c.n); drawLegs();
   }
-  t.route = plan(t.pos, toGrid(OP.staging)); t.seg = 0;
-  $("route").setAttribute("d", "M" + t.route.map(p => p.map(v => v.toFixed(1)).join(",")).join("L"));
-  flyTo(toGrid(OP.staging), Math.max(cam.k, 1.6));
+  $(`c-${c.n}`).classList.remove("call");
+}
+
+// ---------- ALPHA: walks the route, holds at what you've found, gets hit by what you haven't ----------
+// The route from where ALPHA is through the squares it still has to cross, keeping out of avoided squares.
+function replan() {
+  const t = game.team, banned = bannedCells(t.avoid);
+  let from = t.pos;
+  t.path = [[...from]];
+  for (const n of t.goals) {
+    const leg = route(from, center(n), banned);
+    t.path.push(...leg.slice(1));
+    from = center(n);
+  }
+  t.seg = 0;
+  $("route").setAttribute("d", "M" + t.path.map(p => p.map(v => v.toFixed(1)).join(",")).join("L"));
+}
+
+// Cells in or near avoided squares: a margin of a few cells keeps the detour clearly inside the next square over.
+function bannedCells(avoid) {
+  const out = new Uint8Array(state.gw * state.gh), m = 3;
+  for (const n of avoid) {
+    const [x0, y0, x1, y1] = square(n);
+    for (let y = Math.max(0, Math.floor(y0) - m); y < Math.min(state.gh, Math.ceil(y1) + m); y++)
+      for (let x = Math.max(0, Math.floor(x0) - m); x < Math.min(state.gw, Math.ceil(x1) + m); x++) out[y * state.gw + x] = 1;
+  }
+  return out;
+}
+
+// As plan(), with avoided squares made all but impassable.
+function route(from, to, banned) {
+  const goal = cellOf(to);
+  const costOf = j => { const g = grade[j]; return 1 + g * 6 + (g > .4 ? 30 : 0) + (banned[j] ? 400 : 0); };
+  const gx = goal % state.gw, gy = (goal / state.gw) | 0;
+  const cells = cheapest([cellOf(from)], costOf, i => i === goal, j => Math.hypot(j % state.gw - gx, ((j / state.gw) | 0) - gy));
+  if (!cells) return [from, to];
+  const pts = smooth(cells, 3);
+  pts[0] = [...from]; pts[pts.length - 1] = [...to];
+  return pts;
+}
+
+// A contact you've found, on the path just ahead: ALPHA holds short of it.
+function aheadFound() {
+  const t = game.team, lim = LOOK / state.mpg;
+  let d = 0, p = t.pos;
+  for (let i = t.seg + 1; i < t.path.length && d < lim; i++) {
+    d += dist(p, t.path[i]); p = t.path[i];
+    const c = game.contacts[squareAt(p)];
+    if (c && c.found && c.status === "active") return c;
+  }
+  return null;
 }
 
 function moveTeam(dt) {
   const t = game.team;
-  let budget = SPEED / state.mpg / (1 + grade[cellOf(t.pos)] * 4) * dt;
-  while (budget > 0 && t.seg < t.route.length - 1) {
-    const to = t.route[t.seg + 1], d = dist(t.pos, to);
+  const ahead = aheadFound();
+  if (ahead) return hold(ahead);
+  let budget = SPEED / state.mpg / (1 + grade[cellOf(t.pos)] * 4) * dt * (t.avoid.size ? .85 : 1);
+  while (budget > 0 && t.seg < t.path.length - 1) {
+    const to = t.path[t.seg + 1], d = dist(t.pos, to);
     if (d <= budget) { t.pos = [...to]; t.seg++; budget -= d; }
     else { t.pos = [t.pos[0] + (to[0] - t.pos[0]) * budget / d, t.pos[1] + (to[1] - t.pos[1]) * budget / d]; budget = 0; }
   }
-  if (t.seg >= t.route.length - 1) inPosition();
+  const here = squareAt(t.pos), c = game.contacts[here];
+  if (here !== t.last) { t.last = here; drawLegs(); }
+  if (c && !c.found && c.status === "active") return ambush(c);
+  // Squares ALPHA walks through are ones it has seen for itself.
+  if (here && !game.scanned.has(here) && !c) { game.scanned.add(here); drawSquare(here); drawLegs(); }
+  if (meters(t.pos, center(OP.objective)) < 150 || t.seg >= t.path.length - 1) arrive();
 }
 
-// End of phase 1: ALPHA on the outpost, or spotted on the way.
-function inPosition() {
-  game.stage = "done";
-  $("route").removeAttribute("d");
-  if (game.intel.outpost) {
-    radio("ALPHA: In position on the outpost. Eyes on six fighters, two technicals. Ready to paint.", "alpha");
-    status("IN POSITION");
-  } else {
-    radio("ALPHA: Contact! Outpost at C2. They saw us first. Pulling back to cover.", "alert");
-    status("SPOTTED AT THE OUTPOST", true);
-    game.results[0] = game.results[0] === "CLEAN" ? "CLEAN" : "FAILED";
+function hold(c) {
+  const t = game.team;
+  t.mode = "hold"; t.held = c;
+  $("route").classList.add("held");
+  $(`c-${c.n}`).classList.add("call");
+  radio(`ALPHA: Holding short of ${c.n}, ${c.tag.toLowerCase()} ahead. Your call.`, "alert");
+  status(`HOLDING · YOUR CALL ON ${c.n}`, true);
+  openMenu(c);
+}
+
+// Walked into something nobody found: it hurts, ALPHA fights through, and the contact is done.
+function ambush(c) {
+  const t = game.team;
+  c.found = true; c.status = "destroyed"; c.how = "ambush";
+  game.scanned.add(c.n);
+  $(`c-${c.n}`).hidden = false;
+  $(`c-${c.n}`).classList.add("destroyed");
+  const fit = t.ops.map((hp, i) => i).filter(i => t.ops[i] >= 50).sort(() => Math.random() - .5);
+  c.hits.forEach((h, k) => { if (fit[k] !== undefined) { t.ops[fit[k]] -= rand(h); c.hurt++; } });
+  radio(`ALPHA: AMBUSH in ${c.n}! ${c.tag[0] + c.tag.slice(1).toLowerCase()}! Taking fire!`, "alert");
+  status(`AMBUSHED IN ${c.n}`, true);
+  boom(center(c.n), 2);
+  t.mode = "ambush"; t.timer = AMBUSH_TIME; t.on = c;
+  drawTeam(); drawSquare(c.n); drawLegs();
+  if (wounded() >= 3) end(false);
+}
+
+function boom(g, n = 3) {
+  for (let i = 0; i < n; i++) setTimeout(() => {
+    const el = document.createElement("div");
+    el.className = "boom"; el.dataset.at = JSON.stringify([g[0] + (Math.random() - .5) * 6, g[1] + (Math.random() - .5) * 6]);
+    el.innerHTML = "<i></i>";
+    $("booms").append(el);
+    setTimeout(() => el.remove(), 800);
+  }, CALM ? 0 : i * 220);
+}
+
+function stepTeam(dt) {
+  const t = game.team;
+  if (t.mode === "wait") {
+    if (game.T >= STEP_OFF) { t.mode = "move"; radio("ALPHA: Stepping off.", "alpha"); status(`MOVING TO ${t.goals[0]}`); }
+    return;
   }
-  game.phase = 2;
-  drawPhases();
-  setTimeout(debrief, 2200);
+  if (t.mode === "move") return moveTeam(dt);
+  if (t.mode === "hold") return;
+  t.timer -= dt;
+  if (t.timer > 0) return;
+  const c = t.on;
+  if (t.mode === "observe") {
+    c.observed = true;
+    radio(`ALPHA: Eyes on ${c.n}. ${c.detail}`, "intel");
+    const look = neighbours(c.n).find(n => !game.scanned.has(n));
+    if (look && !reveal(look, "ALPHA")) radio(`ALPHA: From here we can see ${look}. It's clear.`, "alpha");
+    drawLegs();
+  } else if (t.mode === "fire") {
+    c.status = "destroyed"; c.how = "artillery";
+    radio(`GUNS: Splash. ${c.n} is destroyed.`, "alpha");
+    $(`c-${c.n}`).classList.add("destroyed");
+    boom(center(c.n));
+    drawSquare(c.n); drawLegs();
+  } else if (t.mode === "ambush") {
+    radio(`ALPHA: ${c.n} is clear. ${wounded() ? `${wounded()} wounded.` : "Nobody down."} Pushing on.`, wounded() ? "alert" : "alpha");
+  }
+  t.on = null;
+  resume();
+  if (c.observed && t.held === c && c.status === "active") openMenu(c);
 }
 
-function debrief() {
-  game.running = false;
-  const r = game.results[0], p = game.pass;
-  $("d-title").textContent = `IMAGERY · ${r}`;
-  $("d-sum").textContent = `${p.shots.length} of 3 tasked squares imaged${p.wasted.length ? `, ${p.wasted.length} frame${p.wasted.length > 1 ? "s" : ""} wasted` : ""}. ` +
-    (game.intel.outpost ? "ALPHA knew where the outpost was and got into position unseen."
-      : "Nobody had eyes on C2, so ALPHA walked into the outpost's sight line and lost the element of surprise.");
+// After a task: back to holding if the contact ALPHA held at is still there, otherwise on the move (or waiting to step off).
+function resume() {
+  const t = game.team;
+  if (t.held && t.held.status !== "active") t.held = null;
+  if (t.held) { t.mode = "hold"; status(`HOLDING · YOUR CALL ON ${t.held.n}`, true); return; }
+  $("route").classList.remove("held");
+  if (game.T < STEP_OFF) { t.mode = "wait"; return; }
+  t.mode = "move";
+  status(`MOVING TO ${t.goals.find(n => squareAt(t.pos) !== n) || OP.objective}`);
+}
+
+function arrive() {
+  radio("ALPHA: At the objective. Eyes on the outpost in C2. Ready to paint.", "alpha");
+  status("IN POSITION ON THE OUTPOST");
+  end(true);
+}
+
+function end(won) {
+  if (game.over) return;
+  game.over = true; game.running = false;
+  closeMenu();
+  const r = !won ? "FAILED" : wounded() ? "WOUNDED" : "CLEAN";
+  drawPhases(r);
+  if (!won) { radio("ALPHA: Three wounded. We're combat ineffective. Pulling back to the LZ.", "alert"); status("COMBAT INEFFECTIVE", true); }
+  setTimeout(() => debrief(won, r), 1800);
+}
+
+function debrief(won, r) {
+  $("d-title").textContent = won ? `APPROACH COMPLETE · ${r}` : "APPROACH FAILED";
+  $("d-title").className = `title ${won ? "win" : "loss"}`;
+  const w = wounded(), fired = FIRES - game.fires;
+  $("d-sum").textContent = `${clock(game.T)} on the approach. ${w ? `${w} operator${w > 1 ? "s" : ""} wounded` : "Nobody hurt"}. ` +
+    `${game.scanned.size} of 40 squares imaged. ${fired} fire mission${fired === 1 ? "" : "s"} used.`;
+  $("d-rows").innerHTML = Object.values(game.contacts).map(c => {
+    const [txt, cls] = c.how === "artillery" ? ["Found and shelled.", "good"] : c.how === "avoided" ? ["Found and avoided.", "good"]
+      : c.how === "ambush" ? [`Never found. Ambushed ALPHA: ${c.hurt} hit.`, "bad"] : c.found ? ["Found, and left alone.", ""] : ["Never found. ALPHA never went near it.", ""];
+    return `<div><b>${c.n}</b><span><span>${c.tag}.</span> <span class="${cls}">${txt}</span></span></div>`;
+  }).join("");
   $("debrief").hidden = false;
 }
 
@@ -763,15 +974,16 @@ function placeMarks() {
   const at = (el, g) => { el.style.transform = `translate(${m.a * g[0] + m.e}px, ${m.d * g[1] + m.f}px)`; };
   const t = game.team, WEDGE = [[0, -7], [-6, -1], [6, -1], [-10, 6], [10, 6]];
   at($("m-lz"), toGrid(OP.lz));
+  at($("m-obj"), toGrid(OP.outpost));
   const team = $("m-team");
   at(team, t.pos);
-  team.querySelectorAll("b").forEach((b, i) => { b.style.transform = `translate(${WEDGE[i][0]}px, ${WEDGE[i][1]}px)`; });
-  for (const el of document.querySelectorAll(".mk.find")) at(el, toGrid(JSON.parse(el.dataset.at)));
-  if (game.pass && !$("m-sat").hidden) {
-    const [a] = swathSpan(), [, y0] = aoBox();
-    at($("m-sat"), [a, y0]);
-    $("m-sat").querySelector(".tag").textContent = "◂ ORION-3";
-  }
+  team.querySelectorAll("b").forEach((b, i) => {
+    b.style.transform = `translate(${WEDGE[i][0]}px, ${WEDGE[i][1]}px)`;
+    b.classList.toggle("wia", t.ops[i] < 50);
+  });
+  for (const c of Object.values(game.contacts)) at($(`c-${c.n}`), center(c.n));
+  for (const el of $("booms").children) at(el, JSON.parse(el.dataset.at));
+  placeMenu();
 }
 
 function frame(now) {
@@ -780,16 +992,32 @@ function frame(now) {
   stepFly(now);
   if (game.running) {
     game.T += dt;
-    if (game.stage === "insert" && game.T >= CALL_AT) callImagery();
-    else if (game.stage === "pass") tickPass(dt);
-    else if (game.stage === "move") moveTeam(dt);
+    if (!game.called && game.T >= 2) {
+      game.called = true;
+      replan();
+      radio(`ALPHA: Overwatch, ALPHA. Route is ${OP.route.join(", ")}. Objective C2. Stepping off in ${STEP_OFF - 2}.`, "alpha");
+      status(`STEPPING OFF IN ${STEP_OFF - 2} s`);
+    }
+    tickScan(dt);
+    stepTeam(dt);
+    if (game.team.mode === "wait" && game.called) status(`STEPPING OFF IN ${Math.max(0, Math.ceil(STEP_OFF - game.T))} s`);
     $("clock").textContent = clock(game.T);
   }
   placeMarks();
   requestAnimationFrame(frame);
 }
 
-// ---------- Input: drag pans, two fingers pinch, a tap takes a frame during the pass, the wheel zooms ----------
+// ---------- Input: a tap picks a square (or opens its contact), drag pans, two fingers pinch, the wheel zooms ----------
+function tap(x, y) {
+  if (!game?.running) return;
+  const n = squareAt(screenToGrid(x, y));
+  if (!n) return closeMenu();
+  const c = game.contacts[n];
+  if (c?.found) return openMenu(c);
+  closeMenu();
+  pick(n);
+}
+
 const ptrs = new Map();
 let gesture = null;
 svg.addEventListener("pointerdown", e => {
@@ -800,11 +1028,11 @@ svg.addEventListener("pointerdown", e => {
   if (ptrs.size === 1) gesture = { kind: "tap", x: e.clientX, y: e.clientY, cx: cam.cx, cy: cam.cy };
   else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; gesture = { kind: "pinch", d: dist(a, b) || 1, k: cam.k }; }
 });
+let aimed = null;
 svg.addEventListener("pointermove", e => {
-  if (game?.stage === "pass" && !ptrs.size) {
+  if (game?.running && !ptrs.size) {
     const n = squareAt(screenToGrid(e.clientX, e.clientY));
-    for (const r of $("squares").querySelectorAll("rect.aim")) r.classList.remove("aim");
-    if (n && underSwath(n) && !game.pass.shots.includes(n) && !game.pass.wasted.includes(n)) rectOf(n).classList.add("aim");
+    if (n !== aimed) { aimed && rectOf(aimed).classList.remove("aim"); aimed = n; n && !known(n) && rectOf(n).classList.add("aim"); }
   }
   if (!ptrs.has(e.pointerId)) return;
   ptrs.set(e.pointerId, [e.clientX, e.clientY]);
@@ -824,7 +1052,7 @@ svg.addEventListener("pointermove", e => {
 const lift = e => {
   if (!ptrs.has(e.pointerId)) return;
   ptrs.delete(e.pointerId);
-  if (gesture?.kind === "tap" && e.type === "pointerup" && game?.stage === "pass") shoot(screenToGrid(gesture.x, gesture.y));
+  if (gesture?.kind === "tap" && e.type === "pointerup") tap(gesture.x, gesture.y);
   if (!ptrs.size) { gesture = null; svg.classList.remove("panning"); }
   else gesture = { kind: "done" };
 };
@@ -837,8 +1065,11 @@ svg.addEventListener("wheel", e => {
   zoomAt(e.clientX, e.clientY, cam.k * Math.exp(-e.deltaY * .0015));
 }, { passive: false });
 addEventListener("keydown", e => {
-  if (e.key === "Enter" && game?.stage === "request") { e.preventDefault(); startPass(); }
+  if (!game?.running) return;
+  if (e.key === "Enter") { e.preventDefault(); scan(); }
+  else if (e.key === "Escape") closeMenu();
 });
+$("scan").addEventListener("click", scan);
 
 $("begin").addEventListener("click", () => {
   if (!state) return;
@@ -846,6 +1077,7 @@ $("begin").addEventListener("click", () => {
   game.running = true;
   radio("WAR ROOM: Operation Dry Creek is go. ALPHA is on the ground at the LZ.");
   fitAO();
+  drawScan();
 });
 $("again").addEventListener("click", () => {
   $("debrief").hidden = true;
