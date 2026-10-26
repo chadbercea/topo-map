@@ -29,7 +29,10 @@ export type CallNode = {
   timeout: Effect; // what the team does if HQ stays silent
 };
 
-// Placeholder wording until the mission script lands (ILI-1139).
+export const FIXER_GUIDE = 2_000;
+export const FIXER_DISTRACTION = 3_000;
+
+// The tree's wording.
 export const TREE: Record<string, CallNode> = {
   unimaged: {
     text: ({ square }) => `Holding short of ${square}. No imagery on it. Scan it, or tell us to push?`,
@@ -37,6 +40,8 @@ export const TREE: Record<string, CallNode> = {
     responses: [
       { id: 'send', label: 'Send imagery', requires: { scans: 1, capability: 'imagery' }, spend: { scans: 1 }, minigame: 'gridScan', reply: 'Standing by for imagery.' },
       { id: 'blind', label: 'Push through', effect: 'blind', reply: 'Copy, moving in blind.' },
+      // The local fixer (GDD PMC mechanics): a paid guide instead of a scan.
+      { id: 'fixer', label: `Pay a fixer ($${FIXER_GUIDE.toLocaleString('en-US')})`, requires: { budget: FIXER_GUIDE }, spend: { budget: FIXER_GUIDE }, effect: 'guide', reply: 'Local says he knows the ground. Following him in.' },
     ],
   },
   contact: {
@@ -62,6 +67,8 @@ export const TREE: Record<string, CallNode> = {
     responses: [
       { id: 'attack', label: 'Attack', effect: 'attack', reply: 'Moving in hard.' },
       { id: 'avoid', label: 'Go around', effect: 'avoid', reply: 'Going around.' },
+      // The local fixer: a distraction pulls half of them away while ALPHA goes in.
+      { id: 'distract', label: `Fixer distraction ($${FIXER_DISTRACTION.toLocaleString('en-US')})`, requires: { budget: FIXER_DISTRACTION }, spend: { budget: FIXER_DISTRACTION }, effect: 'distract', reply: 'Fixer is pulling them away. Going in now.' },
     ],
   },
 };

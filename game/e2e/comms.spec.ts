@@ -52,3 +52,18 @@ test('Send imagery: a won scan finds the checkpoint in E3 and ALPHA asks to obse
   await responses.getByRole('button', { name: 'Go around' }).click();
   await expect.poll(() => page.evaluate(() => window.game.get().team.route)).toContain('E4');
 });
+
+test('the local fixer is on offer, greyed out until there is money for it', async ({ page }) => {
+  await page.goto('?debug');
+  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  const fixer = page.getByTestId('responses').getByRole('button', { name: /Pay a fixer/ });
+  await expect(fixer).toBeDisabled();
+  await expect(fixer).toContainText('Over budget');
+  await page.evaluate(() => {
+    const s = window.game.get();
+    window.game.set({ ...s, resources: { ...s.resources, budget: 5_000 } });
+  });
+  await expect(fixer).toBeEnabled();
+  await fixer.click();
+  await expect(page.getByTestId('resources')).toContainText('$3,000');
+});
