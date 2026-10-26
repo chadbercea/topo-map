@@ -1,5 +1,4 @@
 import type { Terrain } from './terrain';
-import { SAMPLE } from './terrain';
 
 // Shaded relief: light from the north-west across the same height samples the contours
 // use, so both views line up with the grid exactly. One RGBA pixel per sample.
@@ -13,7 +12,7 @@ export function hillshade(t: Terrain): Uint8ClampedArray {
   const px = new Uint8ClampedArray(t.cols * t.rows * 4);
   const h = (i: number, j: number) =>
     t.heights[Math.min(t.rows - 1, Math.max(0, j)) * t.cols + Math.min(t.cols - 1, Math.max(0, i))];
-  const z = 1 / (SAMPLE * 5); // metres per world unit is 5
+  const z = 1 / (t.sample * 5); // metres per world unit is 5
   for (let j = 0; j < t.rows; j++) {
     for (let i = 0; i < t.cols; i++) {
       const dx = (h(i + 1, j) - h(i - 1, j)) * z * 0.5;

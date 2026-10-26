@@ -3,7 +3,7 @@
   --ink: #cfe8dc;
   --dim: #6f8a7d;
   --accent: #35d0a5;
-  --panel: rgba(11, 15, 13, 0.78);
+  --panel: rgba(11, 15, 13, 0.66);
   --line: rgba(53, 208, 165, 0.35);
   --gutter: 16px;
 }
@@ -251,6 +251,9 @@ html, body {
 .panel {
   pointer-events: auto;
   background: var(--panel);
+  /* Panels float over the theater: the map shows through, softened. */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid var(--line);
   padding: 10px 12px;
   font-size: 12px;
