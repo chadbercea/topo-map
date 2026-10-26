@@ -4,6 +4,7 @@ import { currentCall } from '../sim/comms';
 import { blocked } from '../sim/responses';
 import { teamMode } from '../sim/systems';
 import { OperatorRow } from './OperatorRow';
+import { BUFF_EFFECT } from '../sim/intel';
 import { useState } from 'react';
 
 const clock = (ms: number) => {
@@ -20,6 +21,9 @@ export function TeamPanel() {
   const fit = useGame((s) => s.team.operators.filter((o) => o.health > 0).length);
   const size = useGame((s) => s.team.operators.length);
   const fatigue = useGame((s) => Math.round(teamFatigue(s.team.operators)));
+  const buffs = useGame((s) => s.team.buffs);
+  const now = useGame((s) => s.elapsedMs);
+  const active = buffs.filter((b) => b.untilMs > now);
   const comms = useGame((s) => s.comms);
   const state = useGame((s) => s);
   const operators = useGame((s) => s.team.operators);
@@ -40,6 +44,15 @@ export function TeamPanel() {
       <p>
         {fit}/{size} fit · fatigue {fatigue}%
       </p>
+      {active.length > 0 && (
+        <p className="buffs" data-testid="buffs">
+          {active.map((b) => (
+            <span key={b.kind} title={BUFF_EFFECT[b.kind]}>
+              ▲ {b.title} {Math.ceil((b.untilMs - now) / 1000)}s
+            </span>
+          ))}
+        </p>
+      )}
       {readout && (
         <ul className="readout" data-testid="readout">
           {operators.map((o) => (

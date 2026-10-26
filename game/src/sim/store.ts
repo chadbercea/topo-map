@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { confirm, dismiss, respond } from './comms';
+import { boostIntel, sendIntel, type IntelType } from './intel';
 import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
@@ -43,6 +44,8 @@ export function createStore(initial: GameState = initialState()) {
     closeEvent: () => state.openEvent && set({ ...state, openEvent: null }),
     confirmCall: (id: string) => set(confirm(state, id)),
     respond: (id: string, responseId: string) => set(respond(state, id, responseId)),
+    sendIntel: (type: IntelType) => set(sendIntel(state, type)),
+    boostIntel: (type: IntelType, amount?: number) => set(boostIntel(state, type, amount)),
     dismissCall: (id: string) => set(dismiss(state, id)),
     setCommsMinimized: (minimized: boolean) => set({ ...state, comms: { ...state.comms, minimized } }),
     setSettings: (patch: Partial<Settings>) => set({ ...state, settings: { ...state.settings, ...patch } }),

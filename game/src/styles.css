@@ -254,8 +254,25 @@ html, body {
 
 .panel ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
 
-.intel li { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px; color: var(--ink); }
-.intel li.note { display: block; color: var(--dim); }
+.intel li { display: grid; grid-template-columns: 56px 1fr; grid-template-areas: 'type title' 'type bar'; align-items: center; gap: 2px 8px; color: var(--ink); }
+.intel li .type { grid-area: type; color: var(--dim); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+.intel li .title { grid-area: title; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.intel li .bar, .intel li .send { grid-area: bar; }
+.intel li[data-ready='true'] .title { color: var(--accent); }
+.intel li.note { display: block; color: var(--dim); font-size: 10px; }
+.intel .send {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0b0f0d;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  min-height: 32px;
+  cursor: pointer;
+}
+.ready-badge { margin-left: auto; margin-right: 8px; font-size: 10px; color: #0b0f0d; background: var(--accent); padding: 1px 6px; }
+.team .buffs { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--accent); font-size: 10px; }
 
 .bar { display: block; height: 6px; border: 1px solid var(--line); }
 .bar > span { display: block; height: 100%; background: var(--accent); }
@@ -370,7 +387,7 @@ html, body {
       'team  team';
   }
 
-  .slot-intel { position: relative; align-self: stretch; }
+  .slot-intel { position: relative; align-self: stretch; z-index: 5; }
   .slot-intel .panel { height: 100%; }
   .panel-toggle .chevron { display: inline; }
   .intel .panel-body { display: none; }
@@ -382,7 +399,7 @@ html, body {
     right: 0;
     top: calc(100% + 4px);
     padding: 10px 12px;
-    background: var(--panel);
+    background: var(--bg); /* opaque: it drops over the alerts and the map */
     border: 1px solid var(--line);
     z-index: 1;
   }
