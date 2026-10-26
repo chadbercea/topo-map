@@ -3,6 +3,7 @@ import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { confirm, dismiss, respond } from './comms';
 import { boostIntel, sendIntel, type IntelType } from './intel';
+import { abortMiniGame, closeMiniGame, startMiniGame, tapMiniGame, type MiniGameKind } from './minigame';
 import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
@@ -46,6 +47,10 @@ export function createStore(initial: GameState = initialState()) {
     respond: (id: string, responseId: string) => set(respond(state, id, responseId)),
     sendIntel: (type: IntelType) => set(sendIntel(state, type)),
     boostIntel: (type: IntelType, amount?: number) => set(boostIntel(state, type, amount)),
+    startMiniGame: (kind: MiniGameKind, square: string) => set(startMiniGame(state, kind, square)),
+    tapMiniGame: (square: string) => state.phase === 'running' && set(tapMiniGame(state, square)),
+    abortMiniGame: () => set(abortMiniGame(state)),
+    closeMiniGame: () => set(closeMiniGame(state)),
     dismissCall: (id: string) => set(dismiss(state, id)),
     setCommsMinimized: (minimized: boolean) => set({ ...state, comms: { ...state.comms, minimized } }),
     setSettings: (patch: Partial<Settings>) => set({ ...state, settings: { ...state.settings, ...patch } }),

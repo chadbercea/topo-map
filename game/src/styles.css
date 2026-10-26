@@ -91,6 +91,39 @@ html, body {
 
 .event-card .title { color: var(--ink); font-size: 14px; }
 
+/* Mini game companion panel: takes the row under the map (the map refits above it), so
+   it can never cover a square the player has to tap. */
+.minigame {
+  grid-area: 2 / 1;
+  justify-self: center;
+  width: min(360px, 100%);
+  display: grid;
+  gap: 6px;
+  z-index: 2;
+  border-color: var(--accent);
+  background: var(--bg);
+  animation: alert-in 160ms ease-out;
+}
+.minigame[data-status='lost'] { border-color: #e5484d; }
+.minigame[data-status='lost'] h2 { color: #e5484d; }
+.minigame .instructions, .minigame .result { color: var(--ink); font-size: 13px; }
+.minigame .countdown { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.minigame .countdown .bar { height: 8px; }
+.minigame .secs { font-variant-numeric: tabular-nums; color: var(--ink); }
+.minigame button {
+  justify-self: start;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line);
+  min-height: 40px;
+  padding: 0 16px;
+  cursor: pointer;
+}
+
 .event-card button {
   justify-self: start;
   font: inherit;
@@ -136,7 +169,7 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .alert, .event-card, .comms, .incoming .dot, .ecg .trace { animation: none; }
+  .alert, .event-card, .comms, .incoming .dot, .ecg .trace, .minigame { animation: none; }
 }
 
 .panel {

@@ -1,4 +1,5 @@
 import type { GameState } from './state';
+import type { MiniGameKind } from './minigame';
 
 // The response tree for radio calls (GDD: answer through a menu tree; options depend on
 // capabilities and budget). Each call offers one to three responses; a response can move
@@ -17,6 +18,7 @@ export type Response = {
   resolve?: boolean; // close the map event this call came from
   reply: string; // what the team radios back
   follow?: string; // next call in the tree
+  minigame?: MiniGameKind; // HQ plays a mini game on the map; its result settles the call
 };
 
 export type CallNode = { text: (square: string) => string; holds: boolean; responses: Response[] };
@@ -44,7 +46,7 @@ export const TREE: Record<string, CallNode> = {
     text: (sq) => `Need eyes on ${sq} before we move in. Holding.`,
     holds: true,
     responses: [
-      { id: 'send', label: 'Send imagery', requires: { scans: 1, capability: 'imagery' }, spend: { scans: 1 }, scan: true, release: true, resolve: true, reply: 'Got it. Looks clear. Moving.' },
+      { id: 'send', label: 'Send imagery', requires: { scans: 1, capability: 'imagery' }, spend: { scans: 1 }, minigame: 'gridScan', reply: 'Standing by for imagery.' },
       { id: 'refuse', label: 'Negative, push on', release: true, resolve: true, reply: 'Copy, moving without it.' },
     ],
   },
