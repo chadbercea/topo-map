@@ -2,11 +2,12 @@ import * as Phaser from 'phaser';
 import { bus, EV, type SceneStatus } from './events';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
-import { CELL, COLS, ROWS, squareAt, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
-import { generateTerrain, traceContours, type ContourLine } from '../map/terrain';
+import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
+import { theater, traceContours, type ContourLine } from '../map/terrain';
 import { DPR } from './dpr';
 
 const TEAL = 0x35d0a5;
+const TEAM = 0xf2c14e; // the team stands out from the map in amber
 const MARGIN = 24 * DPR; // 24 CSS px around the grid
 
 // The theater map: contour lines of the fictional terrain under the A1–H5 grid. The camera
@@ -16,6 +17,9 @@ export class MapScene extends Phaser.Scene {
   private terrain?: Phaser.GameObjects.Image;
   private gridGfx!: Phaser.GameObjects.Graphics;
   private selectGfx!: Phaser.GameObjects.Graphics;
+  private routeGfx!: Phaser.GameObjects.Graphics;
+  private teamGfx!: Phaser.GameObjects.Graphics;
+  private teamLabel!: Phaser.GameObjects.Text;
   private labels: Phaser.GameObjects.Text[] = [];
   private pointer = 'none';
   private unsubscribe?: () => void;
@@ -27,9 +31,16 @@ export class MapScene extends Phaser.Scene {
   }
 
   create() {
-    this.contours = traceContours(generateTerrain());
+    this.contours = traceContours(theater());
     this.gridGfx = this.add.graphics();
     this.selectGfx = this.add.graphics();
+    this.routeGfx = this.add.graphics();
+    this.teamGfx = this.add.graphics();
+    this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: `${11 * DPR}px`,
+      color: '#f2c14e',
+    });
     for (let c = 0; c < COLS; c++)
       for (let r = 0; r < ROWS; r++)
         this.labels.push(
@@ -51,6 +62,7 @@ export class MapScene extends Phaser.Scene {
 
   update(_time: number, delta: number) {
     this.loop.advance(delta);
+    this.drawTeam();
   }
 
   private get zoom() {
@@ -65,6 +77,8 @@ export class MapScene extends Phaser.Scene {
     this.drawTerrain();
     this.drawGrid();
     this.drawSelection();
+    this.lastTeam = { x: NaN, y: NaN }; // zoom changed: redraw at the new scale
+    this.drawTeam();
     this.labels.forEach((label, i) => {
       label.setScale(1 / this.zoom);
       const c = Math.floor(i / ROWS);
@@ -113,6 +127,35 @@ export class MapScene extends Phaser.Scene {
     if (!sq) return;
     g.fillStyle(TEAL, 0.12).fillRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
     g.lineStyle((2 * DPR) / this.zoom, TEAL, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+  }
+
+  // The route still ahead of the team: a thin amber line through the waypoint squares.
+  private drawRoute() {
+    const { route, waypoint, position } = game.get().team;
+    const g = this.routeGfx.clear().lineStyle((1.5 * DPR) / this.zoom, TEAM, 0.55);
+    const points = [position, ...route.slice(waypoint).map((id) => squareCenter(id)!)];
+    for (let i = 1; i < points.length; i++) g.lineBetween(points[i - 1].x, points[i - 1].y, points[i].x, points[i].y);
+    g.fillStyle(TEAM, 0.8);
+    for (const p of points.slice(1)) g.fillCircle(p.x, p.y, (3 * DPR) / this.zoom);
+  }
+
+  private lastTeam = { x: NaN, y: NaN };
+
+  private drawTeam() {
+    const { position } = game.get().team;
+    if (position.x === this.lastTeam.x && position.y === this.lastTeam.y) return;
+    this.lastTeam = position;
+    const r = (6 * DPR) / this.zoom;
+    this.teamGfx
+      .clear()
+      .fillStyle(TEAM, 0.25)
+      .fillCircle(position.x, position.y, r * 2)
+      .fillStyle(TEAM, 1)
+      .fillCircle(position.x, position.y, r)
+      .lineStyle((1.5 * DPR) / this.zoom, 0x0b0f0d, 1)
+      .strokeCircle(position.x, position.y, r);
+    this.teamLabel.setScale(1 / this.zoom).setPosition(position.x + r * 1.8, position.y - r * 2.6);
+    this.drawRoute();
   }
 
   private onDown(p: Phaser.Input.Pointer) {

@@ -1,4 +1,5 @@
 import type { GameState } from './state';
+import { movementSystem } from './movement';
 
 // A system reads the state and returns the next one for a fixed slice of mission time.
 // New systems (movement, comms, intel) slot into SYSTEMS in the order they should run.
@@ -13,7 +14,7 @@ export const timerSystem: System = (s, dt) => {
   };
 };
 
-export const SYSTEMS: System[] = [timerSystem];
+export const SYSTEMS: System[] = [timerSystem, movementSystem];
 
 // One fixed tick: advance the clocks, then let every system have its turn.
 export function step(state: GameState, dtMs: number, systems: System[] = SYSTEMS): GameState {
