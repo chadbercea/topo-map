@@ -5,6 +5,7 @@ import { IntelPanel } from './IntelPanel';
 import { MapArea } from './MapArea';
 import { MapViews } from './MapViews';
 import { MiniGamePanel } from './MiniGamePanel';
+import { SquareActions } from './SquareActions';
 import { MissionTimer } from './MissionTimer';
 import { PauseMenu } from './PauseMenu';
 import { TeamPanel } from './TeamPanel';
@@ -28,6 +29,7 @@ export function Hud() {
       <div className="slot-map">
         <MapArea />
         <MapViews />
+        <SquareActions />
         <EventAlerts />
         <EventCard />
         <MiniGamePanel />

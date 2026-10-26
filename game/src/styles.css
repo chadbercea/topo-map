@@ -148,6 +148,31 @@ html, body {
   padding: 3px;
 }
 
+.square-actions {
+  grid-area: 2 / 1;
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 3px 3px 12px;
+}
+.square-actions .sq { color: var(--accent); font-weight: 600; }
+.square-actions .note { color: var(--dim); font-size: 11px; }
+.square-actions button {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0b0f0d;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  min-height: 32px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+.square-actions button:disabled { opacity: 0.45; cursor: default; }
+.timer .recharge { color: var(--dim); }
+
 .views button {
   font: inherit;
   font-size: 11px;

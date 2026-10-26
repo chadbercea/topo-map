@@ -45,7 +45,7 @@ export type GameState = {
   comms: Comms;
   intel: Intel;
   minigame: MiniGame | null; // the mini game on the map, or its result until closed
-  resources: { budget: number; scans: number };
+  resources: { budget: number; scans: number; rechargeAtMs: number | null }; // next scan back from the satellite
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
@@ -85,7 +85,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     comms: initialComms(),
     intel: initialIntel(),
     minigame: null,
-    resources: { budget: 0, scans: 3 },
+    resources: { budget: 0, scans: 3, rechargeAtMs: null },
     capabilities: ['imagery'],
     rng: 1234,
     settings,

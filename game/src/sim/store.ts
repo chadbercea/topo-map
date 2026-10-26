@@ -3,6 +3,7 @@ import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { confirm, dismiss, respond } from './comms';
 import { boostIntel, sendIntel, type IntelType } from './intel';
+import { manualScan } from './scans';
 import { abortMiniGame, closeMiniGame, startMiniGame, tapMiniGame, type MiniGameKind } from './minigame';
 import { step } from './systems';
 
@@ -49,6 +50,7 @@ export function createStore(initial: GameState = initialState()) {
     boostIntel: (type: IntelType, amount?: number) => set(boostIntel(state, type, amount)),
     startMiniGame: (kind: MiniGameKind, square: string) => set(startMiniGame(state, kind, square)),
     tapMiniGame: (square: string) => state.phase === 'running' && set(tapMiniGame(state, square)),
+    manualScan: (square: string) => set(manualScan(state, square)),
     abortMiniGame: () => set(abortMiniGame(state)),
     closeMiniGame: () => set(closeMiniGame(state)),
     dismissCall: (id: string) => set(dismiss(state, id)),
