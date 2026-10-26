@@ -105,6 +105,32 @@ html, body {
   cursor: pointer;
 }
 
+.views {
+  grid-area: 1 / 1;
+  align-self: end;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+}
+
+.views button {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+  background: none;
+  border: 1px solid transparent;
+  min-height: 32px;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.views button[aria-pressed='true'] { color: var(--accent); border-color: var(--line); }
+.views .sep { width: 1px; align-self: stretch; margin: 4px 2px; background: var(--line); }
+
 @keyframes alert-in {
   from { opacity: 0; transform: translateY(-4px); }
 }

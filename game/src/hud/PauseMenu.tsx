@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { game, useGame } from '../sim/store';
-import { saveSettings } from './settings';
 
 const TITLES = { paused: 'PAUSED', ended: 'TIME UP', exited: 'MISSION ABORTED' } as const;
 
@@ -27,7 +26,6 @@ export function PauseMenu() {
     };
   }, []);
 
-  useEffect(() => saveSettings(game.get().settings), [sound]);
   useEffect(() => first.current?.focus(), [phase]);
 
   if (phase === 'running') return null;

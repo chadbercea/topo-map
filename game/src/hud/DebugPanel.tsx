@@ -25,6 +25,8 @@ export function DebugPanel() {
           <br />
           pointer: {status.pointer}
           <br />
+          layers: <span data-testid="layers">{status.layers}</span>
+          <br />
           square: <span data-testid="selected-square">{selected ?? '—'}</span>
           <br />
           team:{' '}

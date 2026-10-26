@@ -3,6 +3,7 @@ import { EventAlerts, EventCard } from './EventAlerts';
 import { game } from '../sim/store';
 import { IntelPanel } from './IntelPanel';
 import { MapArea } from './MapArea';
+import { MapViews } from './MapViews';
 import { MissionTimer } from './MissionTimer';
 import { PauseMenu } from './PauseMenu';
 import { TeamPanel } from './TeamPanel';
@@ -25,6 +26,7 @@ export function Hud() {
       </div>
       <div className="slot-map">
         <MapArea />
+        <MapViews />
         <EventAlerts />
         <EventCard />
       </div>

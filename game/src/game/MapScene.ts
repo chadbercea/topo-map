@@ -3,7 +3,10 @@ import { bus, EV, getMapRect, type SceneStatus } from './events';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
 import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
-import { theater, traceContours, type ContourLine } from '../map/terrain';
+import { SAMPLE, theater, traceContours, type ContourLine } from '../map/terrain';
+import { generateCity, type City } from '../map/city';
+import { hillshade } from '../map/relief';
+import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
 
 const TEAL = 0x35d0a5;
@@ -17,6 +20,10 @@ const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 export class MapScene extends Phaser.Scene {
   private contours: ContourLine[] = [];
   private terrain?: Phaser.GameObjects.Image;
+  private relief!: Phaser.GameObjects.Image;
+  private cityImg?: Phaser.GameObjects.Image;
+  private city!: City;
+  private shown?: Settings;
   private gridGfx!: Phaser.GameObjects.Graphics;
   private selectGfx!: Phaser.GameObjects.Graphics;
   private routeGfx!: Phaser.GameObjects.Graphics;
@@ -35,6 +42,8 @@ export class MapScene extends Phaser.Scene {
 
   create() {
     this.contours = traceContours(theater());
+    this.city = generateCity();
+    this.relief = this.makeRelief();
     this.gridGfx = this.add.graphics();
     this.selectGfx = this.add.graphics();
     this.routeGfx = this.add.graphics();
@@ -56,7 +65,10 @@ export class MapScene extends Phaser.Scene {
     bus.on(EV.mapRect, this.layout, this);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.track, this);
-    this.unsubscribe = game.subscribe(() => this.drawSelection());
+    this.unsubscribe = game.subscribe(() => {
+      this.drawSelection();
+      this.applyView();
+    });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.layout, this);
       bus.off(EV.mapRect, this.layout, this);
@@ -161,6 +173,55 @@ export class MapScene extends Phaser.Scene {
     g.destroy();
     this.terrain?.destroy();
     this.terrain = this.add.image(0, 0, 'terrain').setOrigin(0).setScale(1 / s).setDepth(-1);
+    this.drawCity(s);
+    this.shown = undefined;
+    this.applyView();
+  }
+
+  // Relief view: one pixel per height sample, stretched over the world. Sample i sits at
+  // world i * SAMPLE, so the image starts half a sample up and left of the origin.
+  private makeRelief() {
+    const t = theater();
+    const canvas = document.createElement('canvas');
+    canvas.width = t.cols;
+    canvas.height = t.rows;
+    canvas.getContext('2d')!.putImageData(new ImageData(hillshade(t) as ImageDataArray, t.cols, t.rows), 0, 0);
+    this.textures.addCanvas('relief', canvas);
+    return this.add.image(-SAMPLE / 2, -SAMPLE / 2, 'relief').setOrigin(0).setScale(SAMPLE).setDepth(-2);
+  }
+
+  // City overlay, baked like the contours: highways, streets, building footprints.
+  private drawCity(s: number) {
+    const g = this.make.graphics({}, false);
+    const line = (pts: [number, number][]) => {
+      g.beginPath();
+      g.moveTo(pts[0][0] * s, pts[0][1] * s);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0] * s, pts[i][1] * s);
+      g.strokePath();
+    };
+    g.lineStyle(3 * DPR, 0xb8c4bf, 0.45);
+    this.city.roads.forEach(line);
+    g.lineStyle(1 * DPR, 0xb8c4bf, 0.3);
+    this.city.streets.forEach(line);
+    g.fillStyle(0xb8c4bf, 0.5);
+    for (const b of this.city.blocks) g.fillRect(b.x * s, b.y * s, b.w * s, b.h * s);
+    if (this.textures.exists('city')) this.textures.remove('city');
+    g.generateTexture('city', Math.ceil(WORLD_W * s), Math.ceil(WORLD_H * s));
+    g.destroy();
+    this.cityImg?.destroy();
+    this.cityImg = this.add.image(0, 0, 'city').setOrigin(0).setScale(1 / s).setDepth(-1);
+  }
+
+  // Show the chosen view: contours alone, or relief with faint contours; city on top.
+  private applyView() {
+    const settings = game.get().settings;
+    if (settings === this.shown || !this.terrain || !this.cityImg) return;
+    this.shown = settings;
+    const relief = settings.mapView === 'relief';
+    this.relief.setVisible(relief);
+    this.terrain.setAlpha(relief ? 0.35 : 1);
+    this.cityImg.setVisible(settings.city);
+    this.status();
   }
 
   private drawGrid() {
@@ -227,6 +288,7 @@ export class MapScene extends Phaser.Scene {
       height: Math.round(this.scale.height / DPR),
       renderer: this.game.renderer.type === Phaser.WEBGL ? 'WebGL' : 'Canvas',
       pointer: this.pointer,
+      layers: [game.get().settings.mapView, game.get().settings.city && 'city'].filter(Boolean).join('+'),
     };
     bus.emit(EV.sceneStatus, s);
   }

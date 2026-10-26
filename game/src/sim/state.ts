@@ -9,7 +9,9 @@ import { DEMO_SCHEDULE, type MapEvent, type Scheduled } from './events';
 // paused: pause menu open. ended: timer ran out. exited: player left the mission.
 export type Phase = 'running' | 'paused' | 'ended' | 'exited';
 
-export type Settings = { sound: boolean };
+export type MapView = 'topo' | 'relief';
+export type Settings = { sound: boolean; mapView: MapView; city: boolean };
+export const DEFAULT_SETTINGS: Settings = { sound: true, mapView: 'topo', city: true };
 
 export type GameState = {
   tick: number;
@@ -37,7 +39,7 @@ export const ROUTE: SquareId[] = ['G5', 'F4', 'E3', 'D3', 'C2', 'B1'];
 
 export const MISSION_MS = 6 * 60 * 1000; // GDD: start with six minutes and tune by feel
 
-export function initialState(settings: Settings = { sound: true }): GameState {
+export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
   return {
     tick: 0,
     elapsedMs: 0,

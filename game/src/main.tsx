@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createGame } from './game/createGame';
 import { Hud } from './hud/Hud';
-import { loadSettings } from './hud/settings';
+import { loadSettings, saveSettings } from './hud/settings';
 import { game } from './sim/store';
 import './styles.css';
 
@@ -10,6 +10,10 @@ import './styles.css';
 // so StrictMode's double mount never spins up a second canvas.
 const saved = loadSettings();
 if (saved) game.setSettings(saved);
+let settings = game.get().settings;
+game.subscribe(() => {
+  if (game.get().settings !== settings) saveSettings((settings = game.get().settings));
+});
 
 const phaser = createGame(document.getElementById('game')!);
 
