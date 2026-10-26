@@ -12,6 +12,7 @@ import { BLACK_BOX } from './missions/blackBox';
 import type { MissionDef } from './script';
 import type { SideJob } from './sidejob';
 import type { Deniability } from './noise';
+import type { Inbound } from './support';
 import { initialOrdnance, type Ordnance } from './ordnance';
 import { initialMission, type Mission } from './mission';
 
@@ -63,6 +64,7 @@ export type GameState = {
   flags: Record<string, boolean>; // choices the mission script reacts to (jammed, ...)
   stats: { searched: number; decoded: number; bonus: number }; // for the wrap-up
   sideJob: SideJob | null; // the client's side offer
+  inbound: Inbound[]; // support on its way
   alerted: boolean; // the enemy knows a PMC is in the area
   deniability: Deniability; // how the client feels about the noise
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
@@ -115,6 +117,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     flags: {},
     stats: { searched: 0, decoded: 0, bonus: 0 },
     sideJob: null,
+    inbound: [],
     alerted: false,
     deniability: 'clean',
     rng: 1234,

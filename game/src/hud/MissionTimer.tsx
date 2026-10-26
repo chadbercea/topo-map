@@ -16,6 +16,7 @@ export function MissionTimer() {
   const alerted = useGame((s) => s.alerted);
   const deniability = useGame((s) => s.deniability);
   const job = useGame((s) => s.sideJob);
+  const inbound = useGame((s) => s.inbound);
   const now = useGame((s) => s.elapsedMs);
   const budget = useGame((s) => s.resources.budget);
   const recharge = useGame((s) => (s.resources.rechargeAtMs === null ? null : Math.ceil((s.resources.rechargeAtMs - s.elapsedMs) / 1000)));
@@ -55,6 +56,11 @@ export function MissionTimer() {
           side job: {job.square} imagery · {Math.ceil((job.deadlineMs - now) / 1000)}s · +${job.reward.toLocaleString('en-US')}
         </p>
       )}
+      {inbound.map((i) => (
+        <p key={i.kind} className="inbound" data-testid={`inbound-${i.kind}`}>
+          resupply bird inbound · {Math.max(0, Math.ceil((i.arrivesMs - now) / 1000))}s
+        </p>
+      ))}
       <p className="resources" data-testid="resources">
         scans {scans}/{MAX_SCANS}
         {recharge !== null && <span className="recharge"> +1 in {recharge}s</span>} · ${budget.toLocaleString('en-US')}
