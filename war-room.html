@@ -103,32 +103,15 @@
     animation: boom .7s ease-out forwards; }
   @keyframes boom { from { transform: scale(.2); opacity: 1; background: rgba(255,226,184,.5); } to { transform: scale(2.2); opacity: 0; } }
 
-  /* The contact menu: what ALPHA can do about it. */
-  #menu { position: fixed; left: 0; top: 0; z-index: 4; width: 230px; box-sizing: border-box; padding: 10px; display: flex; flex-direction: column; gap: 7px;
-    background: rgba(8,8,6,.92); border: 1px solid var(--accent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: arrive .2s ease-out; }
-  #menu[hidden] { display: none; }
-  #menu .mh { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 600; letter-spacing: .16em; color: var(--accent); }
-  #menu .mh button { font: inherit; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0 2px; }
-  #menu .md { font-size: 10px; line-height: 1.45; color: var(--text); }
-  #menu .opt { display: grid; gap: 1px; text-align: left; font: inherit; color: var(--text); background: rgba(226,185,127,.06); cursor: pointer;
-    border: 1px solid rgba(226,185,127,.35); padding: 6px 8px; }
-  #menu .opt b { font-size: 11px; letter-spacing: .16em; }
-  #menu .opt span { font-size: 9px; letter-spacing: .06em; color: var(--muted); }
-  #menu .opt:hover:not(:disabled) { border-color: var(--major); background: rgba(226,185,127,.12); }
-  #menu .opt.attack b { color: var(--accent); } #menu .opt.observe b { color: var(--tealhi); } #menu .opt.avoid b { color: var(--major); }
-  #menu .opt:disabled { opacity: .4; cursor: default; }
-
-  /* Frosted panels, as on the survey map. */
+  /* Frosted sheets (briefing, debrief), as on the survey map. */
   .side { position: fixed; top: 16px; width: var(--side); max-height: calc(100vh - 32px); box-sizing: border-box;
     padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 12px; overflow: auto; scrollbar-width: none;
     background: linear-gradient(180deg, rgba(20,16,10,.62), rgba(8,8,6,.5));
     -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
     border: 1px solid rgba(226,185,127,.22); box-shadow: inset 0 1px 0 rgba(255,226,184,.08), 0 10px 40px rgba(0,0,0,.35); }
-  .side::before, .side::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--line); }
-  .side::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
-  .side::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
-  #radio { left: 16px; }
-  #team { right: 16px; width: 260px; }
+  .side::before, .side::after, .panel::before, .panel::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--line); }
+  .side::before, .panel::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .side::after, .panel::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
   .sect { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 9px;
     letter-spacing: .2em; padding-bottom: 6px; border-bottom: 1px solid rgba(226,185,127,.18); }
 
@@ -139,29 +122,78 @@
   .btn.go:hover:not(:disabled) { background: rgba(63,208,192,.12); }
   .btn:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
   .btn:disabled { opacity: .35; cursor: default; }
+  @keyframes arrive { from { opacity: 0; transform: translateX(-12px); } }
 
-  /* The satellite: pick up to three squares, scan, wait for it to recharge. */
-  .card { display: flex; flex-direction: column; gap: 8px; padding: 10px 11px; border-left: 3px solid var(--teal); background: rgba(63,208,192,.07); }
-  .card .kind { font-size: 9px; letter-spacing: .2em; color: var(--tealhi); display: flex; justify-content: space-between; }
-  .card .kind .st.busy { color: var(--major); }
-  .card .ask { font-size: 10px; line-height: 1.45; color: var(--muted); }
+  /* ---------- The HUD: radio, tools and team panels, and a mission bar ---------- */
+  .panel { position: relative; box-sizing: border-box; padding: 11px 12px; display: flex; flex-direction: column; gap: 9px;
+    background: linear-gradient(180deg, rgba(20,16,10,.7), rgba(8,8,6,.6));
+    -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+    border: 1px solid rgba(226,185,127,.22); box-shadow: inset 0 1px 0 rgba(255,226,184,.08), 0 10px 40px rgba(0,0,0,.35); }
+  .ph { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: 9px; letter-spacing: .2em;
+    padding-bottom: 5px; border-bottom: 1px solid rgba(226,185,127,.18); }
+  .ph b { color: var(--major); font-weight: 600; }
+  #left { position: fixed; left: 16px; top: 16px; width: var(--side); max-height: calc(100vh - 32px); display: flex; flex-direction: column; gap: 10px; }
+
+  /* Radio: the latest transmission, big, and the few before it. */
+  #latest { display: grid; gap: 4px; padding: 9px 10px; border-left: 3px solid var(--muted); background: rgba(226,185,127,.06); }
+  #latest .lh { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: .2em; color: var(--muted); }
+  #latest .who { font-weight: 600; color: var(--major); }
+  #latest .msg { font-size: 13px; line-height: 1.45; }
+  #latest.alpha { border-left-color: var(--teal); } #latest.alpha .who { color: var(--tealhi); }
+  #latest.intel { border-left-color: var(--major); }
+  #latest.alert { border-left-color: var(--accent); background: rgba(255,106,61,.09); } #latest.alert .who { color: var(--accent); }
+  #latest.fresh { animation: fresh .6s ease-out; }
+  @keyframes fresh { from { background: rgba(255,226,184,.28); } }
+  #comms { list-style: none; margin: -3px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 10px; line-height: 1.4; opacity: .6; }
+  #comms li { animation: arrive .3s ease-out; }
+  #comms .when { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
+  #comms .alpha { color: var(--tealhi); } #comms .alert { color: var(--accent); } #comms .intel { color: var(--major); }
+
+  /* Tools: whatever the task needs right now. */
+  #tools { border-left: 3px solid var(--teal); }
+  #tools.ask { border-left-color: var(--major); }
+  #tools.contact { border-left-color: var(--accent); }
+  #tools.task { border-left-color: var(--major); }
+  .tool { display: flex; flex-direction: column; gap: 8px; }
+  .tool.in { animation: slide .3s ease-out; }
+  @keyframes slide { from { opacity: 0; transform: translateX(-18px); } }
+  .tk { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 9px; letter-spacing: .2em; color: var(--tealhi); }
+  .tk .st { color: var(--muted); } .tk .st.ready { color: var(--tealhi); }
+  .tk button { font: inherit; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 9px; letter-spacing: .16em; padding: 0; }
+  .tk button:hover { color: var(--major); }
+  .tool.ask .tk:first-child, .tool.task .tk:first-child { color: var(--major); }
+  .tool.contact .tk:first-child { color: var(--accent); font-weight: 600; }
+  .tdesc { font-size: 11px; line-height: 1.45; color: var(--text); }
+  .tdesc.dim { color: var(--muted); font-size: 10px; }
   .chips { display: flex; gap: 6px; }
   .chip { flex: 1; text-align: center; padding: 6px 0; font-size: 13px; font-weight: 600; letter-spacing: .1em;
     border: 1px dashed rgba(63,208,192,.4); color: var(--tealhi); min-height: 18px; }
   .chip.on { border-style: solid; border-color: var(--tealhi); background: rgba(63,208,192,.16); }
-  .card .go { width: 100%; }
+  .tool .go { width: 100%; }
+  .acts { display: flex; gap: 6px; }
+  .acts .go { flex: 1; width: auto; }
   .bar { height: 3px; background: rgba(63,208,192,.18); }
   .bar i { display: block; height: 100%; width: 0; background: var(--teal); }
-  /* ALPHA's route, square by square, coloured by what you know about each one. */
-  .card.route { border-left-color: var(--major); background: rgba(226,185,127,.07); }
-  /* ALPHA asking for imagery before it crosses unscanned ground. */
-  .card.need { border-left-color: var(--major); background: rgba(255,226,184,.1); animation: arrive .3s ease-out; }
-  .card.need[hidden] { display: none; }
-  .card.need .kind { color: var(--major); }
-  .card.need .ask { color: var(--text); font-size: 11px; }
-  .card.need .acts { display: flex; gap: 6px; }
-  .card.need .acts .go { flex: 1; width: auto; }
-  .card.route .kind { color: var(--major); }
+  .tool.task .bar, .tool.ask .bar.patience { background: rgba(255,226,184,.15); }
+  .tool.task .bar i, .tool.ask .bar.patience i { background: var(--major); }
+  .opt { display: grid; gap: 1px; text-align: left; font: inherit; color: var(--text); background: rgba(226,185,127,.06); cursor: pointer;
+    border: 1px solid rgba(226,185,127,.35); padding: 6px 8px; }
+  .opt b { font-size: 11px; letter-spacing: .16em; }
+  .opt span { font-size: 9px; letter-spacing: .06em; color: var(--muted); }
+  .opt:hover:not(:disabled) { border-color: var(--major); background: rgba(226,185,127,.12); }
+  .opt.attack b { color: var(--accent); } .opt.observe b { color: var(--tealhi); } .opt.avoid b { color: var(--major); }
+  .opt:disabled { opacity: .4; cursor: default; }
+
+  /* Team: a tab per team (one for now), its status, route, operators and support. */
+  #team { position: fixed; right: 16px; top: 16px; width: 260px; }
+  .tabs { display: flex; gap: 4px; margin-bottom: -4px; }
+  .tab { font: inherit; font-size: 10px; font-weight: 600; letter-spacing: .16em; padding: 4px 10px; display: flex; align-items: center; gap: 6px;
+    color: var(--muted); background: none; border: 1px solid rgba(226,185,127,.3); cursor: pointer; }
+  .tab[aria-selected="true"] { color: var(--tealhi); border-color: var(--teal); background: rgba(63,208,192,.1); }
+  .tab .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+  .tab.alert .dot { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  #t-status { font-size: 12px; color: var(--tealhi); letter-spacing: .1em; min-height: 17px; }
+  #t-status.alert { color: var(--accent); }
   #legs { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 11px; font-weight: 600; letter-spacing: .08em; }
   #legs span { padding: 2px 5px; border: 1px dashed rgba(226,185,127,.45); color: var(--muted); }
   #legs span.clear { border: 1px solid var(--teal); color: var(--tealhi); }
@@ -169,30 +201,22 @@
   #legs span.cold { border: 1px solid var(--muted); color: var(--muted); text-decoration: line-through; }
   #legs span.here { box-shadow: 0 0 0 1px var(--tealhi); }
   #legs i { font-style: normal; color: var(--muted); font-weight: 400; }
-
-  #comms { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 10px; line-height: 1.45; }
-  #comms li { animation: arrive .4s ease-out; }
-  #comms li + li { opacity: .5; }
-  #comms .when { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
-  #comms .alpha { color: var(--tealhi); }
-  #comms .alert { color: var(--accent); }
-  #comms .intel { color: var(--major); }
-  @keyframes arrive { from { opacity: 0; transform: translateX(-12px); } }
-
-  .clock { font-size: 22px; font-weight: 600; color: var(--major); font-variant-numeric: tabular-nums; letter-spacing: .06em; }
-  #t-status { font-size: 12px; color: var(--tealhi); letter-spacing: .1em; min-height: 17px; }
-  #t-status.alert { color: var(--accent); }
+  #ops { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .op { display: grid; gap: 3px; font-size: 9px; letter-spacing: .12em; color: var(--text); }
+  .op .hb { height: 4px; background: rgba(226,185,127,.15); }
+  .op .hb i { display: block; height: 100%; background: var(--teal); }
+  .op .st { font-size: 8px; color: var(--muted); }
+  .op.wia, .op.wia .st { color: var(--accent); } .op.wia .hb i { background: var(--accent); }
   .row { display: flex; justify-content: space-between; align-items: center; font-size: 10px; }
-  #pips { display: flex; gap: 6px; }
-  .pip { width: 16px; height: 16px; box-sizing: border-box; border: 1px solid var(--teal); background: rgba(63,208,192,.55); }
-  .pip.wia { border-color: var(--accent); background: repeating-linear-gradient(45deg, rgba(255,106,61,.6) 0 3px, transparent 3px 6px); }
   #arty { color: var(--accent); letter-spacing: .3em; font-size: 12px; }
-  #phases { list-style: none; margin: -4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; font-size: 10px; letter-spacing: .12em; }
-  #phases li { display: grid; grid-template-columns: 16px 1fr auto; gap: 6px; color: var(--muted); }
-  #phases li .r { font-size: 9px; }
+
+  /* Mission bar: the operation, the clock, the phases. */
+  #mbar { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); flex-direction: row; align-items: center; gap: 14px; padding: 6px 14px;
+    font-size: 9px; letter-spacing: .18em; color: var(--muted); white-space: nowrap; }
+  .clock { font-size: 17px; font-weight: 600; color: var(--major); font-variant-numeric: tabular-nums; letter-spacing: .06em; }
+  #phases { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px; }
   #phases li.now { color: var(--major); font-weight: 600; }
-  #phases li.done { color: var(--tealhi); }
-  #phases li.done.bad { color: var(--accent); }
+  #phases li.done { color: var(--tealhi); } #phases li.done.bad { color: var(--accent); }
 
   /* Briefing and debrief. */
   .sheet { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(500px, calc(100vw - 32px)); z-index: 5; gap: 14px; }
@@ -209,12 +233,14 @@
   #d-rows .good { color: var(--tealhi); } #d-rows .bad { color: var(--accent); }
 
   @media (max-width: 760px) {
-    #team { top: 10px; left: 10px; right: 10px; width: auto; padding: 10px 12px; gap: 8px; }
-    #team .clock { font-size: 16px; }
     .hide-sm { display: none !important; }
-    #radio { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 44vh; border-width: 1px 0 0; padding: 10px 12px 12px; gap: 8px; }
-    #comms li:nth-child(n+3) { display: none; }
-    .card { padding: 8px 10px; gap: 6px; }
+    #mbar { top: 8px; left: 8px; right: 8px; transform: none; justify-content: space-between; padding: 5px 10px; }
+    #phases li:not(.now) { display: none; }
+    #team { top: 48px; left: 8px; right: 8px; width: auto; padding: 8px 10px; gap: 7px; }
+    #left { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 50vh; gap: 0; flex-direction: column-reverse; }
+    #left .panel { border-width: 1px 0 0; padding: 8px 12px; }
+    #latest { padding: 6px 9px; } #latest .msg { font-size: 11px; }
+    .tool { gap: 6px; } .tdesc { font-size: 10px; }
   }
 </style>
 </head>
@@ -236,41 +262,24 @@
 <div id="vignette" class="overlay"></div>
 <div id="marks"></div>
 <div id="booms"></div>
-<div id="menu" hidden role="dialog" aria-label="Contact options"></div>
+<div id="left">
+  <section id="radio" class="panel" aria-label="Radio">
+    <div class="ph hide-sm"><span><b>RADIO</b> · WAR ROOM</span><a href="./">MAP</a></div>
+    <div id="latest" aria-live="polite"><div class="lh"><span class="who">WAR ROOM</span><span class="when"></span></div><div class="msg">Standing by.</div></div>
+    <div class="ph hide-sm"><span>EARLIER</span></div>
+    <ol id="comms" class="hide-sm"></ol>
+  </section>
+  <section id="tools" class="panel" aria-label="Tools"></section>
+</div>
 
-<aside id="radio" class="side" aria-label="Radio">
-  <div class="hide-sm">
-    <div class="label">WAR ROOM // OP DRY CREEK</div>
-    <div class="title">RADIO</div>
-    <div class="label">SNAKE RIVER CANYON · <a href="./">MAP</a></div>
-  </div>
-  <div class="card">
-    <div class="kind"><span>SATELLITE · ORION-3</span><span class="st" id="s-state">READY</span></div>
-    <div class="ask hide-sm">Tap up to three squares on the map, then scan.</div>
-    <div class="chips" id="s-chips"></div>
-    <button class="btn go" id="scan" disabled>SCAN ▸</button>
-    <div class="bar"><i id="s-bar"></i></div>
-  </div>
-  <div class="card need" id="ask" hidden>
-    <div class="kind"><span>IMAGERY REQUEST</span><span id="a-time"></span></div>
-    <div class="ask" id="a-text"></div>
-    <div class="acts"><button class="btn go" id="a-scan"></button><button class="btn" id="a-push">PUSH THROUGH</button></div>
-  </div>
-  <div class="card route">
-    <div class="kind"><span>ALPHA ROUTE</span><span id="r-state">—</span></div>
-    <div id="legs"></div>
-  </div>
-  <div class="sect"><span>COMMS</span></div>
-  <ol id="comms" aria-live="polite"></ol>
-</aside>
+<div id="mbar" class="panel" aria-label="Mission"><span class="hide-sm">OP DRY CREEK</span><span class="clock" id="clock">T+00:00</span><ol id="phases"></ol></div>
 
-<aside id="team" class="side" aria-label="Team ALPHA">
-  <div class="sect"><span>TEAM ALPHA</span><span class="hide-sm">5 OPERATORS</span></div>
-  <div class="row"><span class="clock" id="clock">T+00:00</span><div id="pips"></div></div>
+<aside id="team" class="panel" aria-label="Teams">
+  <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" id="tab-alpha"><span class="dot"></span>ALPHA</button></div>
   <div id="t-status">STANDING BY</div>
-  <div class="row"><span class="label">FIRE MISSIONS</span><span id="arty"></span></div>
-  <div class="sect hide-sm"><span>MISSION</span></div>
-  <ol id="phases" class="hide-sm"></ol>
+  <div><div class="ph"><span>ROUTE</span><span id="r-state">—</span></div><div id="legs" style="margin-top:6px"></div></div>
+  <div><div class="ph hide-sm"><span>OPERATORS</span><span id="t-fit">5/5 FIT</span></div><div id="ops" style="margin-top:6px"></div></div>
+  <div class="row hide-sm"><span class="label">ARTILLERY · FIRE MISSIONS</span><span id="arty"></span></div>
 </aside>
 
 <aside id="brief" class="side sheet" aria-label="Briefing">
@@ -299,7 +308,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
-// War Room (ILI-1097, scan-and-decide since ILI-1098): you're mission control for team ALPHA crossing the south rim of the
+// War Room (ILI-1097, scan-and-decide since ILI-1098, three-panel HUD since ILI-1101): you're mission control for team ALPHA crossing the south rim of the
 // Snake River canyon to an outpost. ALPHA calls its route; you scan squares ahead of it with the satellite, three at a
 // time, and decide what ALPHA does about each contact you find: observe it, shell it, or sneak around it. Anything
 // nobody found is an ambush. One fixed mission. A fictional exercise.
@@ -320,7 +329,7 @@ const AMBUSH_TIME = 3;       // s an ambush holds ALPHA
 const LOOK = 350;            // m ahead ALPHA checks for a contact you've found, and holds short of it
 const OBSERVE_R = 1600;      // m: ALPHA has to be this close to observe a contact
 const PATIENCE = 20;         // s ALPHA waits for imagery on the next square before pushing on blind
-const COMMS = 4;             // lines the comms log keeps
+const EARLIER = 3;           // lines the radio keeps under the latest one
 const BARK = 5;              // s ALPHA's last transmission stays on the map
 
 // The area of operations: an 8 x 5 grid of 1 km squares, A1 in the north-west corner. Fixed to the ground, so a
@@ -583,19 +592,19 @@ function buildSquares() {
 
 // ---------- Camera: fit the area of operations into the open middle of the screen ----------
 function openRect() {
-  const r = $("radio").getBoundingClientRect(), t = $("team").getBoundingClientRect();
-  return innerWidth > 760 ? { x0: r.right, x1: t.left, y0: 0, y1: innerHeight } : { x0: 0, x1: innerWidth, y0: t.bottom, y1: r.top };
+  const l = $("left").getBoundingClientRect(), t = $("team").getBoundingClientRect();
+  return innerWidth > 760 ? { x0: l.right, x1: t.left, y0: 0, y1: innerHeight } : { x0: 0, x1: innerWidth, y0: t.bottom, y1: l.top };
 }
 
-function flyTo(g, k = cam.k) {
-  const o = openRect();
-  fly = { from: { cx: cam.cx, cy: cam.cy, k: cam.k }, to: g, k,
-    off: [(o.x0 + o.x1) / 2 - innerWidth / 2, (o.y0 + o.y1) / 2 - innerHeight / 2], t0: performance.now(), ms: CALM ? 0 : 800 };
+// Flies the camera so g sits in the middle of rect o (the open map by default), zooming to k on the way.
+function flyTo(g, k = cam.k, { ms = 800, o = openRect(), curve = ease, delay = 0 } = {}) {
+  fly = { from: { cx: cam.cx, cy: cam.cy, k: cam.k }, to: g, k, curve,
+    off: [(o.x0 + o.x1) / 2 - innerWidth / 2, (o.y0 + o.y1) / 2 - innerHeight / 2], t0: performance.now() + delay, ms: CALM ? 0 : ms };
 }
 
 function stepFly(now) {
   if (!fly) return;
-  const t = fly.ms ? clamp((now - fly.t0) / fly.ms, 0, 1) : 1, e = ease(t);
+  const t = fly.ms ? clamp((now - fly.t0) / fly.ms, 0, 1) : 1, e = fly.curve(t);
   cam.k = fly.from.k + (fly.k - fly.from.k) * e;
   const s = baseScale() * cam.k;
   cam.cx = fly.from.cx + (fly.to[0] - fly.off[0] / s - fly.from.cx) * e;
@@ -604,16 +613,22 @@ function stepFly(now) {
   if (t >= 1) fly = null;
 }
 
+const easeInOut = t => t < .5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+
+// The load-in's last step: from the whole canyon, a slow zoom until the grid fills the browser. The panels sit over
+// its outer columns, which the mission doesn't use. On a phone the panels are top and bottom, so it fills the gap between.
 function fitAO() {
-  const [x0, y0, x1, y1] = aoBox(), o = openRect(), pad = .94;
+  const [x0, y0, x1, y1] = aoBox(), pad = .96;
+  const o = innerWidth > 760 ? { x0: 0, x1: innerWidth, y0: 0, y1: innerHeight } : openRect();
   const k = Math.min((o.x1 - o.x0) * pad / ((x1 - x0) * baseScale()), (o.y1 - o.y0) * pad / ((y1 - y0) * baseScale()));
-  flyTo([(x0 + x1) / 2, (y0 + y1) / 2], clamp(k, 1, 4));
+  cam.k = 1; cam.cx = state.gw / 2; cam.cy = state.gh / 2; applyCam();
+  flyTo([(x0 + x1) / 2, (y0 + y1) / 2], clamp(k, 1, 4), { ms: 2200, o, curve: easeInOut, delay: 500 });
 }
 
 // ---------- The mission ----------
 function newGame() {
   game = {
-    T: 0, running: false, over: false, called: false, fires: FIRES, menu: null,
+    T: 0, running: false, over: false, called: false, fires: FIRES, menu: null, latest: null,
     scanned: new Set(),
     scan: { sel: [], busy: 0, cool: 0 },
     contacts: Object.fromEntries(Object.entries(OP.contacts).map(([n, c]) => [n,
@@ -622,13 +637,16 @@ function newGame() {
       mode: "wait", timer: 0, on: null, held: null, need: null, patience: 0, pushed: new Set(), bark: -1, ops: [100, 100, 100, 100, 100] },
   };
   $("comms").innerHTML = "";
+  $("latest").className = "";
+  $("latest").querySelector(".who").textContent = "WAR ROOM";
+  $("latest").querySelector(".when").textContent = "";
+  $("latest").querySelector(".msg").textContent = "Standing by.";
+  toolKey = toolWas = "";
   $("route").removeAttribute("d");
-  $("menu").hidden = true;
   buildSquares();
   for (const n of OP.route) rectOf(n).classList.add("onroute");
   // ALPHA is standing in the LZ's square: it knows what's there.
   game.scanned.add(squareAt(toGrid(OP.lz)));
-  $("ask").hidden = true;
   $("marks").innerHTML = `
     <div class="mk lz" id="m-lz"><i></i><span class="tag">LZ</span></div>
     <div class="mk obj" id="m-obj"><i></i><span class="tag">OBJECTIVE · OUTPOST</span></div>
@@ -641,17 +659,29 @@ function newGame() {
   drawScan(); drawLegs(); drawTeam(); drawPhases();
 }
 
+// The radio: the newest transmission, big, with who sent it; the one it replaces moves down into EARLIER.
 function radio(text, cls = "") {
-  const li = document.createElement("li");
-  li.innerHTML = `<span class="when">${clock(game.T)}</span><span class="${cls}"></span>`;
-  li.lastChild.textContent = text;
-  $("comms").prepend(li);
-  while ($("comms").children.length > COMMS) $("comms").lastChild.remove();
-  if (text.startsWith("ALPHA: ")) {
+  const i = text.indexOf(": "), who = i > 0 ? text.slice(0, i) : "WAR ROOM", msg = i > 0 ? text.slice(i + 2) : text;
+  const was = game.latest;
+  if (was) {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="when">${clock(was.T)}</span><span class="${was.cls}"></span>`;
+    li.lastChild.textContent = `${was.who}: ${was.msg}`;
+    $("comms").prepend(li);
+    while ($("comms").children.length > EARLIER) $("comms").lastChild.remove();
+  }
+  game.latest = { who, msg, cls, T: game.T };
+  const el = $("latest");
+  el.className = cls;
+  el.querySelector(".who").textContent = who;
+  el.querySelector(".when").textContent = clock(game.T);
+  el.querySelector(".msg").textContent = msg;
+  void el.offsetWidth; el.classList.add("fresh");
+  if (who === "ALPHA") {
     const b = $("m-bark");
     b.hidden = false;
     b.classList.toggle("alert", cls === "alert");
-    b.firstChild.textContent = text.slice(7);
+    b.firstChild.textContent = msg;
     b.firstChild.style.animation = "none"; void b.offsetWidth; b.firstChild.style.animation = "";
     game.team.bark = game.T + BARK;
   }
@@ -660,12 +690,16 @@ function radio(text, cls = "") {
 function status(text, alert = false) {
   $("t-status").textContent = text;
   $("t-status").classList.toggle("alert", alert);
+  $("tab-alpha").classList.toggle("alert", alert);
 }
 
 const wounded = () => game.team.ops.filter(hp => hp < 50).length;
 
+// The team panel's operators and support.
 function drawTeam() {
-  $("pips").innerHTML = game.team.ops.map(hp => `<span class="pip${hp < 50 ? " wia" : ""}"></span>`).join("");
+  $("ops").innerHTML = game.team.ops.map((hp, i) => `<div class="op${hp < 50 ? " wia" : ""}" title="A${i + 1}: ${Math.round(hp)} hp">` +
+    `<span>A${i + 1}</span><span class="hb"><i style="width:${clamp(hp, 0, 100)}%"></i></span><span class="st">${hp < 50 ? "WOUNDED" : "FIT"}</span></div>`).join("");
+  $("t-fit").textContent = `${5 - wounded()}/5 FIT`;
   $("arty").textContent = "◆".repeat(game.fires) + "◇".repeat(FIRES - game.fires);
 }
 
@@ -673,7 +707,7 @@ const PHASES = [["APPROACH", "SCAN · DECIDE"], ["OUTPOST", "ORDNANCE"], ["OBJEC
 function drawPhases(result) {
   $("phases").innerHTML = PHASES.map(([name, job], i) => {
     const r = i === 0 ? result : null;
-    return `<li class="${r ? `done${r === "FAILED" ? " bad" : ""}` : i === 0 ? "now" : ""}"><span>${r ? (r === "FAILED" ? "✗" : "✓") : i === 0 ? "▸" : i + 1}</span><span>${name}</span><span class="r">${r || job}</span></li>`;
+    return `<li class="${r ? `done${r === "FAILED" ? " bad" : ""}` : i === 0 ? "now" : ""}" title="${job}">${r ? (r === "FAILED" ? "✗ " : "✓ ") : i === 0 ? "▸ " : ""}${name}</li>`;
   }).join("");
 }
 
@@ -712,7 +746,7 @@ function pick(n) {
   else if (known(n)) return radio(`ORION-3: ${n} is already ${known(n) === "clear" ? "clear" : "imaged"}.`);
   else if (s.sel.length >= PICK) return radio(`ORION-3: Three squares per scan.`, "alert");
   else s.sel.push(n);
-  drawScan();
+  drawSel(); drawScan();
 }
 
 function scan() {
@@ -733,7 +767,7 @@ function tickScan(dt) {
       for (const n of s.sel) { rectOf(n).classList.remove("scanning"); if (!reveal(n, "ORION-3")) clear.push(n); }
       if (clear.length) radio(`ORION-3: ${clear.join(", ")} clear.`, "alpha");
       s.sel = []; s.cool = RECHARGE;
-      drawLegs();
+      drawSel(); drawLegs();
     }
   } else if (s.cool) s.cool = Math.max(0, s.cool - dt);
   drawScan();
@@ -753,55 +787,98 @@ function reveal(n, by) {
   return c || null;
 }
 
-let scanKey = "";
-function drawScan() {
-  const s = game.scan;
-  const st = s.busy ? "SCANNING" : s.cool ? `RECHARGING ${Math.ceil(s.cool)} s` : "READY";
-  const key = st + s.sel.join() + game.running;
-  $("s-bar").style.width = `${s.busy ? (1 - s.busy / SCAN_TIME) * 100 : s.cool ? (1 - s.cool / RECHARGE) * 100 : 100}%`;
-  if (key === scanKey) return;
-  scanKey = key;
-  $("s-state").textContent = st;
-  $("s-state").classList.toggle("busy", !!(s.busy || s.cool));
-  $("s-chips").innerHTML = [0, 1, 2].map(i => `<span class="chip${s.sel[i] ? " on" : ""}">${s.sel[i] || ""}</span>`).join("");
-  $("scan").disabled = !game.running || !!s.busy || !!s.cool || !s.sel.length;
-  $("scan").textContent = s.busy ? "SCANNING…" : `SCAN ${s.sel.length ? s.sel.length + " " : ""}▸`;
-  for (const n of NAMES) rectOf(n).classList.toggle("sel", s.sel.includes(n));
+// ---------- The tools panel: the tool for whatever the task is right now ----------
+// A task in progress outranks an open contact, which outranks ALPHA asking for imagery; otherwise, the satellite.
+function currentTool() {
+  const t = game.team;
+  if (t.mode === "observe" || t.mode === "fire") return ["task", t.on.n];
+  if (game.menu) return ["contact", game.menu.n];
+  if (t.need) return ["ask", t.need];
+  return ["sat", ""];
+}
+
+let toolKey = "", toolWas = "";
+function drawScan() { drawTools(); }
+function drawTools() {
+  const [kind, n] = currentTool(), s = game.scan, t = game.team, ready = !s.busy && !s.cool;
+  const satRow = `<div class="tk"><span>ORION-3</span><span class="st" id="s-state"></span></div><div class="bar"><i id="s-bar"></i></div>`;
+  let html;
+  if (kind === "sat") html = `<div class="tk"><span>SATELLITE · ORION-3</span><span class="st" id="s-state"></span></div>
+    <div class="tdesc dim">Tap up to three squares on the map, then scan.</div>
+    <div class="chips">${[0, 1, 2].map(i => `<span class="chip${s.sel[i] ? " on" : ""}">${s.sel[i] || ""}</span>`).join("")}</div>
+    <button class="btn go" id="scan"${!game.running || !ready || !s.sel.length ? " disabled" : ""}>${s.busy ? "SCANNING…" : `SCAN ${s.sel.length ? s.sel.length + " " : ""}▸`}</button>
+    <div class="bar"><i id="s-bar"></i></div>`;
+  else if (kind === "ask") html = `<div class="tk"><span>IMAGERY REQUEST · ${n}</span><span id="a-time"></span></div>
+    <div class="tdesc">ALPHA is holding short of <b>${n}</b> and wants imagery before crossing.</div>
+    <div class="bar patience"><i id="a-bar"></i></div>
+    <div class="acts"><button class="btn go" id="a-scan"${s.busy ? " disabled" : ""}>${s.sel.includes(n) && !ready ? `${n} LINED UP` : `SCAN ${n} ▸`}</button><button class="btn" id="a-push">PUSH THROUGH</button></div>
+    ${satRow}`;
+  else if (kind === "contact") {
+    const c = game.contacts[n], near = meters(t.pos, center(n)) < OBSERVE_R;
+    const opts = c.status === "active" ? `
+      <button class="opt observe" data-do="observe"${c.observed || !near ? " disabled" : ""}><b>OBSERVE</b>
+        <span>${c.observed ? "Already watched." : near ? "Watch it. Detail, and a free look at a square next to it." : "ALPHA is too far away to see it."}</span></button>
+      <button class="opt attack" data-do="attack"${!game.fires ? " disabled" : ""}><b>ATTACK</b>
+        <span>${game.fires ? `Call artillery on ${n}. ${game.fires} fire mission${game.fires > 1 ? "s" : ""} left.` : "No fire missions left."}</span></button>
+      <button class="opt avoid" data-do="avoid"><b>AVOID</b>
+        <span>Sneak around ${n}. The detour may cross unscanned ground.</span></button>`
+      : `<div class="tdesc dim">${c.status === "destroyed" ? "Destroyed." : "ALPHA is going around it."}</div>`;
+    html = `<div class="tk"><span>CONTACT · ${n}</span><button id="t-close">✕ SATELLITE</button></div>
+      <div class="tdesc"><b>${c.tag}</b>${t.held === c ? " · ALPHA is holding short of it." : ""}</div>
+      ${c.observed ? `<div class="tdesc dim">${c.detail}</div>` : ""}${opts}`;
+  } else {
+    const c = game.contacts[n], obs = t.mode === "observe";
+    html = `<div class="tk"><span>${obs ? "OBSERVING" : "FIRE MISSION"} · ${n}</span><span id="k-left"></span></div>
+      <div class="tdesc">${obs ? `ALPHA is glassing the ${c.tag.toLowerCase()}.` : `Rounds in the air on the ${c.tag.toLowerCase()}.`}</div>
+      <div class="bar"><i id="k-bar"></i></div>`;
+  }
+  const key = kind + n + html;
+  if (key !== toolKey) {
+    toolKey = key;
+    const el = $("tools");
+    el.className = `panel ${kind}`;
+    // The tool slides in when it changes; redrawing the same tool doesn't replay it.
+    el.innerHTML = `<div class="tool ${kind}${kind + n !== toolWas ? " in" : ""}">${html}</div>`;
+    toolWas = kind + n;
+    $("scan")?.addEventListener("click", scan);
+    $("a-scan")?.addEventListener("click", askScan);
+    $("a-push")?.addEventListener("click", () => push());
+    $("t-close")?.addEventListener("click", closeMenu);
+    for (const b of el.querySelectorAll(".opt")) b.addEventListener("click", () => act(game.contacts[n], b.dataset.do));
+  }
+  // The live readouts: the satellite's state, the countdowns and the progress bars.
+  const st = $("s-state");
+  if (st) { st.textContent = s.busy ? "SCANNING" : s.cool ? `RECHARGING ${Math.ceil(s.cool)} s` : "READY"; st.classList.toggle("ready", ready); }
+  const sb = $("s-bar");
+  if (sb) sb.style.width = `${s.busy ? (1 - s.busy / SCAN_TIME) * 100 : s.cool ? (1 - s.cool / RECHARGE) * 100 : 100}%`;
+  if ($("a-time")) { $("a-time").textContent = `PUSHING IN ${Math.ceil(t.patience)} s`; $("a-bar").style.width = `${t.patience / PATIENCE * 100}%`; }
+  if ($("k-left")) {
+    const total = t.mode === "observe" ? OBSERVE_TIME : FIRE_TIME;
+    $("k-left").textContent = `${Math.ceil(t.timer)} s`;
+    $("k-bar").style.width = `${(1 - t.timer / total) * 100}%`;
+  }
+}
+
+// The squares picked for the next scan, outlined on the map.
+function drawSel() { for (const n of NAMES) rectOf(n).classList.toggle("sel", game.scan.sel.includes(n)); }
+
+// SCAN on an imagery request: add the square, and scan now if the satellite is ready.
+function askScan() {
+  const n = game.team.need;
+  if (!n) return;
+  if (!game.scan.sel.includes(n)) pick(n);
+  if (!game.scan.cool) scan();
+  else radio(`ORION-3: ${n} is lined up for the next scan, in ${Math.ceil(game.scan.cool)} s.`);
 }
 
 // ---------- Contacts: tap one for ALPHA's options ----------
 function openMenu(c) {
   if (!game.running || !c.found) return;
   game.menu = c;
-  const t = game.team, near = meters(t.pos, center(c.n)) < OBSERVE_R, active = c.status === "active";
-  const busy = t.mode === "observe" || t.mode === "fire";
-  const opts = active ? `
-    <button class="opt observe" data-do="observe"${c.observed || !near || busy ? " disabled" : ""}><b>OBSERVE</b>
-      <span>${c.observed ? "Already watched." : near ? "Watch it. Detail, and a free look at a square next to it." : "ALPHA is too far away to see it."}</span></button>
-    <button class="opt attack" data-do="attack"${!game.fires || busy ? " disabled" : ""}><b>ATTACK</b>
-      <span>${game.fires ? `Call artillery on ${c.n}. ${game.fires} fire mission${game.fires > 1 ? "s" : ""} left.` : "No fire missions left."}</span></button>
-    <button class="opt avoid" data-do="avoid"${busy ? " disabled" : ""}><b>AVOID</b>
-      <span>Sneak around ${c.n}. The detour may cross unscanned ground.</span></button>`
-    : `<div class="md">${c.status === "destroyed" ? "Destroyed." : "ALPHA is going around it."}</div>`;
-  $("menu").innerHTML = `<div class="mh"><span>${c.n} · ${c.tag}</span><button aria-label="Close">✕</button></div>
-    ${c.observed ? `<div class="md">${c.detail}</div>` : ""}${opts}`;
-  $("menu").querySelector(".mh button").addEventListener("click", closeMenu);
-  for (const b of $("menu").querySelectorAll(".opt")) b.addEventListener("click", () => act(c, b.dataset.do));
-  $("menu").hidden = false;
-  placeMenu();
+  drawTools();
 }
 
-function closeMenu() { game.menu = null; $("menu").hidden = true; }
-
-// The menu sits beside its contact, kept on screen and out from under the panels.
-function placeMenu() {
-  const c = game.menu;
-  if (!c) return;
-  const el = $("menu"), m = svg.getScreenCTM(), g = center(c.n), x = m.a * g[0] + m.e, y = m.d * g[1] + m.f;
-  const o = openRect(), w = el.offsetWidth, h = el.offsetHeight;
-  const left = x + 24 + w < o.x1 - 8 ? x + 24 : x - 24 - w;
-  el.style.transform = `translate(${clamp(left, o.x0 + 8, o.x1 - w - 8)}px, ${clamp(y - h / 2, o.y0 + 8, o.y1 - h - 8)}px)`;
-}
+function closeMenu() { game.menu = null; drawTools(); }
 
 function act(c, what) {
   const t = game.team;
@@ -901,15 +978,7 @@ function needImagery(n) {
   rectOf(n).classList.add("need");
   radio(`ALPHA: Holding short of ${n}. No imagery on it. Scan it, or tell us to push.`, "alert");
   status(`HOLDING · NEED IMAGERY ON ${n}`, true);
-  $("a-text").textContent = `ALPHA is holding short of ${n} and wants imagery before crossing.`;
-  $("a-scan").textContent = `SCAN ${n} ▸`;
-  $("ask").hidden = false;
-  drawAsk();
-}
-
-function drawAsk() {
-  const t = game.team;
-  $("a-time").textContent = `PUSHING IN ${Math.ceil(t.patience)} s`;
+  drawTools();
 }
 
 // The held square is imaged, or ALPHA has gone without it: the request is over.
@@ -917,7 +986,7 @@ function doneAsking() {
   const t = game.team;
   if (t.need) rectOf(t.need).classList.remove("need");
   t.need = null;
-  $("ask").hidden = true;
+  drawTools();
 }
 
 // Push through the held square blind: on your order, or because ALPHA got tired of waiting.
@@ -999,7 +1068,6 @@ function stepTeam(dt) {
     if (t.need) {
       if (known(t.need)) { doneAsking(); resume(); }
       else if ((t.patience -= dt) <= 0) push(true);
-      else drawAsk();
     }
     return;
   }
@@ -1088,7 +1156,6 @@ function placeMarks() {
   else bark.classList.toggle("flip", m.a * t.pos[0] + m.e + 260 > openRect().x1);
   for (const c of Object.values(game.contacts)) at($(`c-${c.n}`), center(c.n));
   for (const el of $("booms").children) at(el, JSON.parse(el.dataset.at));
-  placeMenu();
 }
 
 function frame(now) {
@@ -1105,6 +1172,7 @@ function frame(now) {
     }
     tickScan(dt);
     stepTeam(dt);
+    drawTools();
     if (game.team.mode === "wait" && game.called) status(`STEPPING OFF IN ${Math.max(0, Math.ceil(STEP_OFF - game.T))} s`);
     $("clock").textContent = clock(game.T);
   }
@@ -1129,9 +1197,9 @@ svg.addEventListener("pointerdown", e => {
   if (!state || (e.pointerType === "mouse" && e.button !== 0)) return;
   svg.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId, [e.clientX, e.clientY]);
-  fly = null;
+  // A tap doesn't stop the camera (so you can pick squares during the zoom-in); a drag or a pinch does.
   if (ptrs.size === 1) gesture = { kind: "tap", x: e.clientX, y: e.clientY, cx: cam.cx, cy: cam.cy };
-  else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; gesture = { kind: "pinch", d: dist(a, b) || 1, k: cam.k }; }
+  else if (ptrs.size === 2) { fly = null; const [a, b] = [...ptrs.values()]; gesture = { kind: "pinch", d: dist(a, b) || 1, k: cam.k }; }
 });
 let aimed = null;
 svg.addEventListener("pointermove", e => {
@@ -1145,7 +1213,9 @@ svg.addEventListener("pointermove", e => {
     const [a, b] = [...ptrs.values()];
     zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, gesture.k * dist(a, b) / gesture.d);
   } else if (gesture?.kind === "tap" || gesture?.kind === "pan") {
-    if (gesture.kind === "tap" && Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > 8) { gesture.kind = "pan"; svg.classList.add("panning"); }
+    if (gesture.kind === "tap" && Math.hypot(e.clientX - gesture.x, e.clientY - gesture.y) > 8) {
+      gesture.kind = "pan"; svg.classList.add("panning"); fly = null; gesture.cx = cam.cx; gesture.cy = cam.cy; gesture.x = e.clientX; gesture.y = e.clientY;
+    }
     if (gesture.kind === "pan") {
       const s = baseScale() * cam.k;
       cam.cx = gesture.cx - (e.clientX - gesture.x) / s;
@@ -1171,18 +1241,9 @@ svg.addEventListener("wheel", e => {
 }, { passive: false });
 addEventListener("keydown", e => {
   if (!game?.running) return;
-  if (e.key === "Enter") { e.preventDefault(); scan(); }
+  if (e.key === "Enter") { e.preventDefault(); game.team.need && currentTool()[0] === "ask" ? askScan() : scan(); }
   else if (e.key === "Escape") closeMenu();
 });
-$("scan").addEventListener("click", scan);
-$("a-scan").addEventListener("click", () => {
-  const n = game.team.need;
-  if (!n) return;
-  if (!game.scan.sel.includes(n)) pick(n);
-  if (!game.scan.cool) scan();
-  else radio(`ORION-3: ${n} is lined up for the next scan, in ${Math.ceil(game.scan.cool)} s.`);
-});
-$("a-push").addEventListener("click", () => push());
 
 $("begin").addEventListener("click", () => {
   if (!state) return;
