@@ -31,6 +31,8 @@ export class MapScene extends Phaser.Scene {
   private teamLabel!: Phaser.GameObjects.Text;
   private markerGfx!: Phaser.GameObjects.Graphics;
   private fightGfx!: Phaser.GameObjects.Graphics;
+  private modeGfx!: Phaser.GameObjects.Graphics;
+  private modeLabels: Phaser.GameObjects.Text[] = [];
   private labels: Phaser.GameObjects.Text[] = [];
   private pointer = 'none';
   private unsubscribe?: () => void;
@@ -50,6 +52,7 @@ export class MapScene extends Phaser.Scene {
     this.routeGfx = this.add.graphics();
     this.markerGfx = this.add.graphics();
     this.fightGfx = this.add.graphics();
+    this.modeGfx = this.add.graphics();
     this.teamGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
@@ -85,6 +88,41 @@ export class MapScene extends Phaser.Scene {
     this.drawTeam();
     this.drawMarkers(_time);
     this.drawFight(_time);
+    this.drawMiniGame(_time);
+  }
+
+  // Mini game mode: everything but the targets dims; targets are numbered in tap order,
+  // the next one pulses, scored ones fill in. Green on a win, red on a loss.
+  private drawMiniGame(time: number) {
+    const g = this.modeGfx.clear();
+    const m = game.get().minigame;
+    this.modeLabels.forEach((l) => l.setVisible(false));
+    if (!m) return;
+    const color = m.status === 'lost' ? 0xe5484d : TEAL;
+    for (let c = 0; c < COLS; c++)
+      for (let r = 0; r < ROWS; r++)
+        if (!m.targets.includes(squareId(c, r))) g.fillStyle(0x0b0f0d, 0.6).fillRect(c * CELL, r * CELL, CELL, CELL);
+    m.targets.forEach((id, i) => {
+      const sq = parseSquare(id)!;
+      const x = sq.col * CELL;
+      const y = sq.row * CELL;
+      const next = m.status === 'active' && i === m.hits;
+      // Just imaged: the prototype's scanning pulse for a moment, then a steady fill.
+      const since = i < m.hits ? game.get().elapsedMs - m.hitAt[i] : Infinity;
+      if (since < 700) g.fillStyle(color, 0.15 + 0.3 * Math.abs(Math.sin(time / 90))).fillRect(x, y, CELL, CELL);
+      else if (i < m.hits || m.status === 'won') g.fillStyle(color, 0.28).fillRect(x, y, CELL, CELL);
+      const pulse = next ? 0.7 + 0.3 * Math.sin(time / 120) : 1; // pulses, never vanishes
+      g.lineStyle(((next ? 3 : 2) * DPR) / this.zoom, color, pulse).strokeRect(x + 3 / this.zoom, y + 3 / this.zoom, CELL - 6 / this.zoom, CELL - 6 / this.zoom);
+      const label = (this.modeLabels[i] ??= this.add.text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${22 * DPR}px`, color: '#35d0a5' }).setOrigin(0.5));
+      label
+        .setText(String(i + 1))
+        .setColor(m.status === 'lost' ? '#e5484d' : '#35d0a5')
+        .setScale(1 / this.zoom)
+        .setPosition(x + CELL / 2, y + CELL / 2)
+        .setAlpha(i < m.hits ? 0.5 : 1)
+        .setVisible(true)
+        .setDepth(10);
+    });
   }
 
   // A firefight: red rings pulsing out from the team.
@@ -247,6 +285,17 @@ export class MapScene extends Phaser.Scene {
 
   private drawSelection() {
     const g = this.selectGfx.clear();
+    // Imaged squares stay faintly lit, with a corner tick, like the prototype's "clear".
+    for (const id of game.get().map.scanned) {
+      const sq = parseSquare(id);
+      if (!sq) continue;
+      const x = sq.col * CELL;
+      const y = sq.row * CELL;
+      const t = CELL * 0.12;
+      g.fillStyle(TEAL, 0.07).fillRect(x, y, CELL, CELL);
+      g.lineStyle((1.5 * DPR) / this.zoom, TEAL, 0.7).lineBetween(x + CELL - t, y + 4 / this.zoom, x + CELL - 4 / this.zoom, y + 4 / this.zoom);
+      g.lineBetween(x + CELL - 4 / this.zoom, y + 4 / this.zoom, x + CELL - 4 / this.zoom, y + t);
+    }
     const id = game.get().map.selected;
     const sq = id && parseSquare(id);
     if (!sq) return;
@@ -286,6 +335,12 @@ export class MapScene extends Phaser.Scene {
   private onDown(p: Phaser.Input.Pointer) {
     this.track(p);
     if (game.get().phase !== 'running') return;
+    // A running mini game owns the map's taps.
+    if (game.get().minigame?.status === 'active') {
+      const sq = squareAt(p.worldX, p.worldY);
+      if (sq) game.tapMiniGame(sq);
+      return;
+    }
     const event = this.eventAt(p.worldX, p.worldY);
     if (event) return game.openEvent(event.id);
     const id = squareAt(p.worldX, p.worldY);

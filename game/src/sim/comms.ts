@@ -1,6 +1,7 @@
 import type { GameState } from './state';
 import type { System } from './systems';
 import { blocked, TREE, type Response } from './responses';
+import { startMiniGame } from './minigame';
 
 // Radio traffic from the team (GDD: text only, clearly marked as incoming). Calls come from
 // a timed script, from map events, and from the team reaching its objective. A call that
@@ -153,7 +154,7 @@ export function respond(s: GameState, id: string, responseId: string): GameState
   else if (holdFor === null) holdFor = nextHold(messages);
   const holdUntilMs = r.hold ? s.elapsedMs + r.hold : s.team.holdUntilMs;
 
-  return {
+  const answered: GameState = {
     ...s,
     team: { ...s.team, holdFor, holdUntilMs, activity: holdFor ? 'Holding for HQ' : r.hold ? 'Holding' : s.team.activity },
     resources: {
@@ -166,4 +167,5 @@ export function respond(s: GameState, id: string, responseId: string): GameState
     openEvent: r.resolve && s.openEvent === m.eventId ? null : s.openEvent,
     comms: { ...s.comms, messages },
   };
+  return r.minigame && m.square ? startMiniGame(answered, r.minigame, m.square, id, m.eventId) : answered;
 }

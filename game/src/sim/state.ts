@@ -6,6 +6,7 @@ import { initialComms, type Comms } from './comms';
 import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
 import { initialIntel, type Buff, type Intel } from './intel';
+import type { MiniGame } from './minigame';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -43,6 +44,7 @@ export type GameState = {
   openEvent: string | null; // the event card on screen
   comms: Comms;
   intel: Intel;
+  minigame: MiniGame | null; // the mini game on the map, or its result until closed
   resources: { budget: number; scans: number };
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
@@ -82,6 +84,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     openEvent: null,
     comms: initialComms(),
     intel: initialIntel(),
+    minigame: null,
     resources: { budget: 0, scans: 3 },
     capabilities: ['imagery'],
     rng: 1234,

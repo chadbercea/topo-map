@@ -4,6 +4,7 @@ import { game } from '../sim/store';
 import { IntelPanel } from './IntelPanel';
 import { MapArea } from './MapArea';
 import { MapViews } from './MapViews';
+import { MiniGamePanel } from './MiniGamePanel';
 import { MissionTimer } from './MissionTimer';
 import { PauseMenu } from './PauseMenu';
 import { TeamPanel } from './TeamPanel';
@@ -29,6 +30,7 @@ export function Hud() {
         <MapViews />
         <EventAlerts />
         <EventCard />
+        <MiniGamePanel />
       </div>
       <div className="slot-team">
         <TeamPanel />
