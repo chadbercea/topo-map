@@ -1,21 +1,25 @@
-# topo-map
+# War Room: a game demo
 
-A topographic survey of Twin Falls, Idaho, drawn live from real elevation data, and the games built on it.
+This repo is a playable demo of **War Room**, a game I'm developing with Claude, Anthropic's AI, in Claude Code. You're mission control in an operations center, guiding a special operations team across real terrain: the Snake River canyon at Twin Falls, Idaho, drawn live from public elevation data.
 
-**Live:** https://chadbercea.github.io/topo-map/
+It's a work in progress. What's here is one team, one fixed mission and the core loop, built to find out whether the game is fun before it grows.
 
-## Pages
+**Play it:** https://chadbercea.github.io/topo-map/war-room.html
 
-| Page | What it is |
-|---|---|
-| [**Survey map**](https://chadbercea.github.io/topo-map/) (`index.html`) | The portfolio piece. Contour lines of the Snake River canyon traced from elevation tiles. Drag across the map for an elevation profile; the panel also has a height slice and an imagery blend. The earlier animated HUD version is kept at the git tag `v1-hud`. |
-| [**War Room**](https://chadbercea.github.io/topo-map/war-room.html) (`war-room.html`) | **The current game.** You're mission control for a team on the ground. See below. |
-| [**Ground Truth**](https://chadbercea.github.io/topo-map/ground-truth.html) (`ground-truth.html`) | The earlier game: you're the intel officer, sorting a live feed of true and false reports and sending ALPHA what's real. Finished and still playable. |
-| [**Headgate**](https://chadbercea.github.io/topo-map/headgate.html) (`headgate.html`) | A prototype of the dark map where the contour lines light up teal where you touch. The sweep light in both games comes from here. |
+## How we're making it
+
+I design and direct the game, and I play every build. Claude writes the code, tests it, and keeps the paper trail. A round goes like this:
+
+1. **I play the live build** and say what's working and what isn't, usually in a sentence or two. For example: *"the list is killing me"*, *"the team almost barrelled through space I had not scanned yet"*, or *"a health status like Resident Evil with a heart beat line"*.
+2. **Claude turns it into a Linear issue,** quoting what I said, adding concrete acceptance criteria, and making the judgment calls I've delegated.
+3. **Claude builds it on its own branch.** It plays the result with scripted bots in a headless browser, at desktop and phone sizes, and checks screenshots of the layout.
+4. **Claude opens a PR** saying what changed and how it was checked. I say merge, it deploys to GitHub Pages, and I play it again.
+
+The direction has changed a lot along the way, and the repo keeps the history. I started with a survey map. That became a farming game, then an intel-officer game (Ground Truth). Playing that one, I found I was staring at a list of cards and missing the story on the map. So I went back to the drawing board and asked Claude to help design a game about being mission control, which became War Room.
 
 ## War Room
 
-Operation Dry Creek: team ALPHA crosses the south rim of the canyon to an enemy outpost in C2, and you're the voice in their ear with the eyes in the sky. One team and one fixed mission for now. It's a fictional exercise.
+Operation Dry Creek: team ALPHA crosses the south rim of the canyon to an enemy outpost in C2, and you're the voice in their ear, with the eyes in the sky. It's a fictional exercise.
 
 - **The grid.** A 1 km grid (A1–H5) is fixed to the real ground, and everything outside it is dimmed. After BEGIN, the map zooms in until the grid fills the screen.
 - **ALPHA's route.** ALPHA calls its route, square by square: H3 → G3 → F3 → E3 → D2 → C2.
@@ -35,12 +39,21 @@ Operation Dry Creek: team ALPHA crosses the south rim of the canyon to an enemy 
 
 On a phone, the team panel goes on top and the tools and radio go at the bottom.
 
-**Next:** mini games in the tools panel, one for each call:
+**Where it goes next:** mini games in the tools panel, one for each call:
 - **Ordnance** for attack: hit the painted targets in order before they fade.
 - **Glassing** for observe: tag figures in a scope view.
 - **A sneak line** for avoid: draw a path through ground the enemy can't see, worked out from the real elevation.
 
 After that come the mission phases past the approach (outpost, objective, exfil with a medevac LZ), and more teams as tabs.
+
+## Everything in the repo
+
+| Page | What it is |
+|---|---|
+| [**War Room**](https://chadbercea.github.io/topo-map/war-room.html) (`war-room.html`) | **The demo.** The current game. |
+| [**Survey map**](https://chadbercea.github.io/topo-map/) (`index.html`) | Where it started, and a portfolio piece in its own right. Contour lines of the canyon traced from elevation tiles. Drag across the map for an elevation profile; the panel also has a height slice and an imagery blend. The earlier animated HUD version is kept at the git tag `v1-hud`. |
+| [**Ground Truth**](https://chadbercea.github.io/topo-map/ground-truth.html) (`ground-truth.html`) | The game before War Room. You're the intel officer, sorting a live feed of true and false reports and sending the team what's real. Finished and still playable. |
+| [**Headgate**](https://chadbercea.github.io/topo-map/headgate.html) (`headgate.html`) | What's left of the farming game: the dark map, with contour lines that light up teal where you touch. Both games' sweep light comes from here. |
 
 ## How it's built
 
@@ -56,12 +69,15 @@ python3 -m http.server 8000
 # then open http://localhost:8000/war-room.html
 ```
 
-**Testing.** Changes are checked by playing the pages in headless Chromium at desktop and phone sizes. For War Room, that means scripted runs (careful, idle and reckless) that must end CLEAN, FAILED and FAILED, and a check that no panel covers a square the mission uses.
+**Testing.** Every change is played in headless Chromium at desktop and phone sizes. For War Room, that means three scripted runs that must end the right way: careful CLEAN, idle FAILED and reckless FAILED. It also means a check that no panel covers a square the mission uses.
 
-## Deploys
-
-GitHub Actions publishes the repo to GitHub Pages on every push to `main` (`.github/workflows/`).
+**Deploys.** GitHub Actions publishes the repo to GitHub Pages on every push to `main` (`.github/workflows/deploy.yml`).
 
 ## Work tracking
 
-Every change starts from a Linear issue in the **Topo Map** project, gets a branch and PR named after the issue key, and merges to `main`. The games are tracked under the epic [ILI-1087](https://linear.app/iliketobuild/issue/ILI-1087). Ground Truth was ILI-1088 to ILI-1096, and War Room is ILI-1097 onward.
+Every change starts from a Linear issue in the **Topo Map** project, gets a branch and PR named after the issue key, and merges to `main`.
+
+| Epic | What it covers |
+|---|---|
+| [ILI-1162](https://linear.app/iliketobuild/issue/ILI-1162) | War Room, from ILI-1097 onward. |
+| [ILI-1087](https://linear.app/iliketobuild/issue/ILI-1087) | Ground Truth: ILI-1088 to ILI-1096. |
