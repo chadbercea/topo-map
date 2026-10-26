@@ -9,6 +9,8 @@ import { useGame } from '../sim/store';
 export function Hud() {
   const [status, setStatus] = useState<SceneStatus | null>(getSceneStatus);
   const selected = useGame((s) => s.map.selected);
+  const activity = useGame((s) => s.team.activity);
+  const pos = useGame((s) => s.team.position);
 
   useEffect(() => {
     bus.on(EV.sceneStatus, setStatus);
@@ -34,6 +36,11 @@ export function Hud() {
               pointer: {status.pointer}
               <br />
               square: <span data-testid="selected-square">{selected ?? '—'}</span>
+              <br />
+              team:{' '}
+              <span data-testid="team" data-x={pos.x.toFixed(1)} data-y={pos.y.toFixed(1)}>
+                {activity}
+              </span>
             </p>
           ) : (
             <p>starting…</p>

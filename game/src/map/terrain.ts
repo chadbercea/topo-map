@@ -82,3 +82,21 @@ export function traceContours(t: Terrain): ContourLine[] {
       rings: mp.coordinates.flat().map((ring) => ring.map(([x, y]) => [toWorld(x, WORLD_W), toWorld(y, WORLD_H)] as [number, number])),
     }));
 }
+
+// Height at a world point, bilinear between samples.
+export function heightAt(t: Terrain, x: number, y: number): number {
+  const fx = Math.min(Math.max(x / SAMPLE, 0), t.cols - 1);
+  const fy = Math.min(Math.max(y / SAMPLE, 0), t.rows - 1);
+  const i = Math.min(Math.floor(fx), t.cols - 2);
+  const j = Math.min(Math.floor(fy), t.rows - 2);
+  const u = fx - i;
+  const v = fy - j;
+  const h = (a: number, b: number) => t.heights[b * t.cols + a];
+  return (
+    h(i, j) * (1 - u) * (1 - v) + h(i + 1, j) * u * (1 - v) + h(i, j + 1) * (1 - u) * v + h(i + 1, j + 1) * u * v
+  );
+}
+
+// The one theater everyone shares: the scene draws it, the sim moves the team over it.
+let shared: Terrain | undefined;
+export const theater = () => (shared ??= generateTerrain());
