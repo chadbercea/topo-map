@@ -82,7 +82,11 @@ cd game
 npm install
 npm run dev      # http://localhost:5173/game/
 npm run build    # typecheck + production build into game/dist
+npm test         # unit tests (Vitest)
+npm run e2e      # smoke test in headless Chromium, desktop and phone (Playwright)
 ```
+
+**Checks.** `.github/workflows/game-ci.yml` runs the typecheck, unit tests and smoke test on every PR. `main` requires it and the Vercel check to pass, and PRs auto-merge once both are green.
 
 **Deploys.** The repo is connected to Vercel's GitHub app (project `topo-map`). Every PR gets a preview deploy, linked on the PR, and merging to `main` deploys to production. The root `vercel.json` builds `game/` and puts it together with the HTML prototypes in `site/`. The prototypes keep their paths (`/war-room.html` and so on) and the game is at `/game/`. GitHub Pages still serves the prototypes too.
 

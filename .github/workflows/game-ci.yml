@@ -1,0 +1,42 @@
+name: Game CI
+
+# Required on main: PRs auto-merge only when this and the Vercel check pass.
+# Runs on every PR (no path filter) so a required check never hangs waiting.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  game-ci:
+    runs-on: ubuntu-latest
+    # Browsers and their system libraries come preinstalled; installing them per run took ~9 minutes.
+    # Keep the tag in step with @playwright/test in game/package.json.
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    defaults:
+      run:
+        working-directory: game
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: game/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: game/test-results
+          retention-days: 7
