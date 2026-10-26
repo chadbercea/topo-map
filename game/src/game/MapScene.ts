@@ -30,6 +30,8 @@ export class MapScene extends Phaser.Scene {
   private routeGfx!: Phaser.GameObjects.Graphics;
   private teamGfx!: Phaser.GameObjects.Graphics;
   private teamLabel!: Phaser.GameObjects.Text;
+  private missionGfx!: Phaser.GameObjects.Graphics;
+  private missionLabels: Phaser.GameObjects.Text[] = [];
   private markerGfx!: Phaser.GameObjects.Graphics;
   private fightGfx!: Phaser.GameObjects.Graphics;
   private modeGfx!: Phaser.GameObjects.Graphics;
@@ -50,6 +52,7 @@ export class MapScene extends Phaser.Scene {
     this.relief = this.makeRelief();
     this.gridGfx = this.add.graphics();
     this.selectGfx = this.add.graphics();
+    this.missionGfx = this.add.graphics();
     this.routeGfx = this.add.graphics();
     this.markerGfx = this.add.graphics();
     this.fightGfx = this.add.graphics();
@@ -255,6 +258,7 @@ export class MapScene extends Phaser.Scene {
     this.drawTerrain();
     this.drawGrid();
     this.drawSelection();
+    this.drawMission();
     this.lastTeam = { x: NaN, y: NaN }; // zoom changed: redraw at the new scale
     this.drawTeam();
     this.labels.forEach((label, i) => {
@@ -365,6 +369,22 @@ export class MapScene extends Phaser.Scene {
     if (!sq) return;
     g.fillStyle(TEAL, 0.12).fillRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
     g.lineStyle((2 * DPR) / this.zoom, TEAL, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+  }
+
+  // The mission's three points: A infil, B crash site, C exfil.
+  private drawMission() {
+    const { a, b, c } = game.get().mission;
+    const g = this.missionGfx.clear();
+    const points: [string, string, string][] = [['A', a, 'INFIL'], ['B', b, 'CRASH SITE'], ['C', c, 'EXFIL']];
+    points.forEach(([letter, sq, name], i) => {
+      const p = squareCenter(sq)!;
+      const r = (14 * DPR) / this.zoom;
+      g.lineStyle((2 * DPR) / this.zoom, TEAM, 0.9).strokeCircle(p.x, p.y, r);
+      const label = (this.missionLabels[i] ??= this.add
+        .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color: '#f2c14e' })
+        .setOrigin(0.5, 0));
+      label.setText(`${letter} · ${name}`).setScale(1 / this.zoom).setPosition(p.x, p.y + r * 1.2);
+    });
   }
 
   // The route still ahead of the team: a thin amber line through the waypoint squares.

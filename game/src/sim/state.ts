@@ -9,6 +9,7 @@ import { initialIntel, type Buff, type Intel } from './intel';
 import type { MiniGame } from './minigame';
 import { DEMO_CONTACTS, type Contact, type Decision } from './contacts';
 import { initialOrdnance, type Ordnance } from './ordnance';
+import { initialMission, type Mission } from './mission';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -25,6 +26,7 @@ export type GameState = {
   elapsedMs: number; // mission time actually played, excludes pauses
   phase: Phase;
   timer: { remainingMs: number };
+  mission: Mission;
   team: {
     callsign: string;
     operators: Operator[];
@@ -58,7 +60,7 @@ export type GameState = {
   settings: Settings; // survives restart
 };
 
-// Placeholder route until the mission's A to B to C route lands (ILI-1138).
+// The mission route: A (infil, G5), B (the crash site, D3), C (exfil, B1). See mission.ts.
 export const ROUTE: SquareId[] = ['G5', 'F4', 'E3', 'D3', 'C2', 'B1'];
 
 export const MISSION_MS = 6 * 60 * 1000; // GDD: start with six minutes and tune by feel
@@ -70,6 +72,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     elapsedMs: 0,
     phase: 'running',
     timer: { remainingMs: MISSION_MS },
+    mission: initialMission(ROUTE),
     team: {
       callsign: 'ALPHA',
       operators,

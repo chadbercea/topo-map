@@ -7,6 +7,7 @@ const TITLES = { paused: 'PAUSED', ended: 'TIME UP', exited: 'MISSION ABORTED' }
 export function PauseMenu() {
   const phase = useGame((s) => s.phase);
   const sound = useGame((s) => s.settings.sound);
+  const complete = useGame((s) => s.mission.phase === 'complete');
   const first = useRef<HTMLButtonElement>(null);
 
   // Esc or P toggles pause; switching tabs pauses so the clock can't run out unseen.
@@ -33,7 +34,7 @@ export function PauseMenu() {
   return (
     <div className="overlay" data-testid="pause-menu" data-phase={phase}>
       <section className="panel menu" role="dialog" aria-label={TITLES[phase]}>
-        <h2>{TITLES[phase]}</h2>
+        <h2>{phase === 'ended' && complete ? 'MISSION COMPLETE' : TITLES[phase]}</h2>
         {phase === 'paused' && (
           <button ref={first} onClick={game.resume}>
             Resume

@@ -5,6 +5,7 @@ import type { GameState } from './state';
 import type { System } from './systems';
 import { treeCall } from './responses';
 import { pass, search } from './sites';
+import { isMissionPoint } from './mission';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -163,6 +164,7 @@ export function detour(s: GameState, square: SquareId): GameState {
   const { route, waypoint } = s.team;
   const i = route.indexOf(square, waypoint);
   if (i < 0) return s;
+  if (isMissionPoint(s, square)) return applyEffect(s, 'push', square); // the crash site and exfil can't be skipped
   const prev = i > 0 ? route[i - 1] : squareAt(s.team.position.x, s.team.position.y);
   const after = route[i + 1];
   const touches = (a: SquareId, b?: SquareId | null) => {

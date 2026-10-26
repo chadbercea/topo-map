@@ -66,7 +66,7 @@ describe('firefight', () => {
     expect(s.team.operators.filter((o) => o.health > 0).every((o) => o.health >= 90)).toBe(true);
     expect(s.team.treating).toBeNull();
     expect(s.comms.messages.some((m) => m.text === 'Patched up. Moving.')).toBe(true);
-    expect(run(s, 2_000).team.position).not.toEqual(s.team.position);
+    expect(s.team.position).not.toEqual(squareCenter('E3')); // it walked on (to the crash site in D3)
   });
 
   it('plays out the same way every time', () => {

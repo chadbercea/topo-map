@@ -379,6 +379,7 @@ html, body {
 .bar > span { display: block; height: 100%; background: var(--accent); }
 
 .team .activity { color: var(--ink); }
+.team .objective { color: #f2c14e; font-size: 11px; }
 .team-head .hint { color: var(--dim); }
 
 /* Mode B readout: a row per operator. */
