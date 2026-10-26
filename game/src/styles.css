@@ -1,0 +1,68 @@
+:root {
+  --bg: #0b0f0d;
+  --ink: #cfe8dc;
+  --dim: #6f8a7d;
+  --accent: #35d0a5;
+  --panel: rgba(11, 15, 13, 0.78);
+  --line: rgba(53, 208, 165, 0.35);
+  --gutter: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  /* The map owns every gesture: no pull-to-refresh, pinch zoom or double-tap zoom. */
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#game, #hud {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+}
+
+/* The HUD layer passes input through to Phaser; only panels catch it. */
+#hud { pointer-events: none; }
+
+.hud {
+  height: 100%;
+  padding: max(var(--gutter), env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right))
+    max(var(--gutter), env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--gutter);
+}
+
+.panel {
+  pointer-events: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  min-width: 0;
+}
+
+.panel h2 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+.panel p { margin: 0; color: var(--dim); }
+
+@media (max-width: 600px) {
+  .hud { flex-direction: column; }
+}
