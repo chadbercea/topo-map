@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { initialState, type GameState, type Settings } from './state';
+import type { MapEvent } from './events';
 import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
@@ -29,6 +30,16 @@ export function createStore(initial: GameState = initialState()) {
     // Tapping the selected square again clears it.
     selectSquare: (id: string | null) =>
       set({ ...state, map: { ...state.map, selected: id === state.map.selected ? null : id } }),
+    addEvent: (e: Omit<MapEvent, 'atMs' | 'status'>) =>
+      set({ ...state, events: [...state.events, { ...e, atMs: state.elapsedMs, status: 'new' }] }),
+    // Opening an event marks it seen and shows its card; one card at a time.
+    openEvent: (id: string) =>
+      set({
+        ...state,
+        openEvent: id,
+        events: state.events.map((e) => (e.id === id && e.status === 'new' ? { ...e, status: 'seen' } : e)),
+      }),
+    closeEvent: () => state.openEvent && set({ ...state, openEvent: null }),
     setSettings: (patch: Partial<Settings>) => set({ ...state, settings: { ...state.settings, ...patch } }),
   };
 }

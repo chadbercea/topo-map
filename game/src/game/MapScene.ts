@@ -8,6 +8,8 @@ import { DPR } from './dpr';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
+const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e } as const;
+const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 
 // The theater map: contour lines of the fictional terrain under the A1–H5 grid. The camera
@@ -20,6 +22,7 @@ export class MapScene extends Phaser.Scene {
   private routeGfx!: Phaser.GameObjects.Graphics;
   private teamGfx!: Phaser.GameObjects.Graphics;
   private teamLabel!: Phaser.GameObjects.Text;
+  private markerGfx!: Phaser.GameObjects.Graphics;
   private labels: Phaser.GameObjects.Text[] = [];
   private pointer = 'none';
   private unsubscribe?: () => void;
@@ -35,6 +38,7 @@ export class MapScene extends Phaser.Scene {
     this.gridGfx = this.add.graphics();
     this.selectGfx = this.add.graphics();
     this.routeGfx = this.add.graphics();
+    this.markerGfx = this.add.graphics();
     this.teamGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
@@ -65,6 +69,39 @@ export class MapScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     this.loop.advance(delta);
     this.drawTeam();
+    this.drawMarkers(_time);
+  }
+
+  // Markers sit in the top-right corner of their square, clear of the team's route line.
+  private markerPos(square: string) {
+    const c = squareCenter(square)!;
+    return { x: c.x + CELL * 0.25, y: c.y - CELL * 0.25 };
+  }
+
+  private drawMarkers(time: number) {
+    const g = this.markerGfx.clear();
+    const r = (MARKER_R * DPR) / this.zoom;
+    const { events, openEvent } = game.get();
+    for (const e of events) {
+      if (e.status === 'resolved') continue;
+      const { x, y } = this.markerPos(e.square);
+      const color = EVENT_COLOR[e.kind];
+      if (e.status === 'new') {
+        // Pulse until the player looks at it.
+        const t = (time % 1200) / 1200;
+        g.lineStyle((2 * DPR) / this.zoom, color, 1 - t).strokeCircle(x, y, r * (1 + t * 1.6));
+      }
+      g.fillStyle(0x0b0f0d, 0.9).fillCircle(x, y, r);
+      g.lineStyle((2 * DPR) / this.zoom, color, 1).strokeCircle(x, y, r);
+      g.fillStyle(color, e.id === openEvent ? 1 : 0.7).fillCircle(x, y, r * 0.45);
+    }
+  }
+
+  private eventAt(x: number, y: number) {
+    const hit = ((MARKER_R + 6) * DPR) / this.zoom; // a little bigger than drawn, for thumbs
+    return game
+      .get()
+      .events.find((e) => e.status !== 'resolved' && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit);
   }
 
   private get zoom() {
@@ -173,6 +210,8 @@ export class MapScene extends Phaser.Scene {
   private onDown(p: Phaser.Input.Pointer) {
     this.track(p);
     if (game.get().phase !== 'running') return;
+    const event = this.eventAt(p.worldX, p.worldY);
+    if (event) return game.openEvent(event.id);
     const id = squareAt(p.worldX, p.worldY);
     if (id) game.selectSquare(id);
   }

@@ -1,4 +1,6 @@
 import { DebugPanel } from './DebugPanel';
+import { EventAlerts, EventCard } from './EventAlerts';
+import { game } from '../sim/store';
 import { IntelPanel } from './IntelPanel';
 import { MapArea } from './MapArea';
 import { MissionTimer } from './MissionTimer';
@@ -6,6 +8,8 @@ import { PauseMenu } from './PauseMenu';
 import { TeamPanel } from './TeamPanel';
 
 const debug = new URLSearchParams(location.search).has('debug');
+// Tests and debugging drive the game directly through window.game when ?debug is on.
+if (debug) Object.assign(window, { game });
 
 // War room layout (GDD HUD anatomy): intel on the left, the mission timer on the right,
 // the team panel bottom left, and the theater map in the space between. On a phone in
@@ -19,7 +23,11 @@ export function Hud() {
       <div className="slot-timer">
         <MissionTimer />
       </div>
-      <MapArea />
+      <div className="slot-map">
+        <MapArea />
+        <EventAlerts />
+        <EventCard />
+      </div>
       <div className="slot-team">
         <TeamPanel />
       </div>
