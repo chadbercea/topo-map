@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { bus, EV, type SceneStatus } from './events';
+import { bus, EV, getMapRect, type SceneStatus } from './events';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
 import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
@@ -8,7 +8,7 @@ import { DPR } from './dpr';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
-const MARGIN = 24 * DPR; // 24 CSS px around the grid
+const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 
 // The theater map: contour lines of the fictional terrain under the A1–H5 grid. The camera
 // fits the grid to the screen; line widths and labels are redrawn per zoom so they stay crisp.
@@ -49,11 +49,13 @@ export class MapScene extends Phaser.Scene {
         );
 
     this.scale.on(Phaser.Scale.Events.RESIZE, this.layout, this);
+    bus.on(EV.mapRect, this.layout, this);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.track, this);
     this.unsubscribe = game.subscribe(() => this.drawSelection());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.layout, this);
+      bus.off(EV.mapRect, this.layout, this);
       this.unsubscribe?.();
     });
 
@@ -69,11 +71,21 @@ export class MapScene extends Phaser.Scene {
     return this.cameras.main.zoom;
   }
 
+  // Fit the grid into the space the HUD leaves for the map (whole screen until it reports).
   private layout() {
     const { width, height } = this.scale;
+    const r = getMapRect();
+    const area = r
+      ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR }
+      : { x: 0, y: 0, w: width, h: height };
     const cam = this.cameras.main;
-    cam.setZoom(Math.min((width - MARGIN * 2) / WORLD_W, (height - MARGIN * 2) / WORLD_H));
-    cam.centerOn(WORLD_W / 2, WORLD_H / 2);
+    const zoom = Math.max(0.01, Math.min((area.w - MARGIN * 2) / WORLD_W, (area.h - MARGIN * 2) / WORLD_H));
+    cam.setZoom(zoom);
+    // Put the world's centre on the area's centre rather than the screen's.
+    cam.centerOn(
+      WORLD_W / 2 - (area.x + area.w / 2 - width / 2) / zoom,
+      WORLD_H / 2 - (area.y + area.h / 2 - height / 2) / zoom,
+    );
     this.drawTerrain();
     this.drawGrid();
     this.drawSelection();

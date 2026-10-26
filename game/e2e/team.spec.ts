@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('the team moves along its route on its own and stops when paused', async ({ page }) => {
-  await page.goto('');
+  await page.goto('?debug');
   const team = page.getByTestId('team');
   await expect(team).toHaveText(/Moving to F4/);
   const where = async () => [Number(await team.getAttribute('data-x')), Number(await team.getAttribute('data-y'))];
