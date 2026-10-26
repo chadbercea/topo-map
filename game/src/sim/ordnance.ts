@@ -25,7 +25,7 @@ export const initialOrdnance = (): Ordnance => ({
 // Why a weapon can't fire right now, or null if it can.
 export function weaponBlocked(s: GameState, w: Weapon): string | null {
   const o = s.ordnance[w];
-  if (!o.unlocked) return 'Unlocks with upgrades';
+  if (!o.unlocked) return s.deniability === 'disowned' ? 'Client cut support' : 'Unlocks with upgrades';
   if (o.uses === 0) return 'Used';
   if (s.elapsedMs < o.readyAtMs) return `Ready in ${Math.ceil((o.readyAtMs - s.elapsedMs) / 1000)}s`;
   if (s.minigame?.status === 'active') return 'Busy';
