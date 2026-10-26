@@ -29,10 +29,20 @@ async function mapBox(page: Page) {
   return box;
 }
 
-export async function worldToScreen(page: Page, wx: number, wy: number) {
+// view: the world rect the camera fits (all of it, or a seek-and-destroy square with margin).
+export async function worldToScreen(page: Page, wx: number, wy: number, view = { x: 0, y: 0, w: WORLD_W, h: WORLD_H }) {
   const box = await mapBox(page);
-  const zoom = Math.min((box.width - MARGIN * 2) / WORLD_W, (box.height - MARGIN * 2) / WORLD_H);
-  return { x: box.x + box.width / 2 + (wx - WORLD_W / 2) * zoom, y: box.y + box.height / 2 + (wy - WORLD_H / 2) * zoom };
+  const zoom = Math.min((box.width - MARGIN * 2) / view.w, (box.height - MARGIN * 2) / view.h);
+  const cx = view.x + view.w / 2;
+  const cy = view.y + view.h / 2;
+  return { x: box.x + box.width / 2 + (wx - cx) * zoom, y: box.y + box.height / 2 + (wy - cy) * zoom };
+}
+
+// Cell i (0-15, row by row) of a seek-and-destroy board, with the camera closed in on it.
+export function boardCell(page: Page, col: number, row: number, i: number) {
+  const pad = CELL * 0.25;
+  const view = { x: col * CELL - pad, y: row * CELL - pad, w: CELL + pad * 2, h: CELL + pad * 2 };
+  return worldToScreen(page, col * CELL + ((i % 4) + 0.5) * (CELL / 4), row * CELL + (Math.floor(i / 4) + 0.5) * (CELL / 4), view);
 }
 
 export const squarePoint = (page: Page, col: number, row: number, dx = 0, dy = 0) =>

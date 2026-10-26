@@ -4,7 +4,9 @@ import type { MapEvent } from './events';
 import { confirm, dismiss, respond } from './comms';
 import { boostIntel, sendIntel, type IntelType } from './intel';
 import { manualScan } from './scans';
-import { abortMiniGame, closeMiniGame, startMiniGame, tapMiniGame, type MiniGameKind } from './minigame';
+import { abortMiniGame, closeMiniGame, startMiniGame, startSeek, tapMiniGame, type MiniGameKind } from './minigame';
+import { weaponBlocked, type Weapon } from './ordnance';
+import { applyEffect } from './contacts';
 import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
@@ -49,7 +51,16 @@ export function createStore(initial: GameState = initialState()) {
     sendIntel: (type: IntelType) => set(sendIntel(state, type)),
     boostIntel: (type: IntelType, amount?: number) => set(boostIntel(state, type, amount)),
     startMiniGame: (kind: MiniGameKind, square: string) => set(startMiniGame(state, kind, square)),
-    tapMiniGame: (square: string) => state.phase === 'running' && set(tapMiniGame(state, square)),
+    tapMiniGame: (square: string, cell?: number) => state.phase === 'running' && set(tapMiniGame(state, square, cell)),
+    fire: (contactId: string, weapon: Weapon) => !weaponBlocked(state, weapon) && set(startSeek(state, contactId, weapon)),
+    // Send ALPHA at a found contact: answers its call if it's waiting on one, else decides ahead.
+    sendTeam: (contactId: string) => {
+      const c = state.contacts.find((x) => x.id === contactId);
+      if (!c) return;
+      const call = state.comms.messages.find((m) => m.id === state.team.holdFor && m.square === c.square && m.status === 'new');
+      if (call?.responses?.some((r) => r.id === 'attack')) return set(respond(state, call.id, 'attack'));
+      set({ ...applyEffect(state, 'attack', c.square), openEvent: null });
+    },
     manualScan: (square: string) => set(manualScan(state, square)),
     abortMiniGame: () => set(abortMiniGame(state)),
     closeMiniGame: () => set(closeMiniGame(state)),

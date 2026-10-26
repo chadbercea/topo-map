@@ -12,7 +12,7 @@ const inContact = (status: Contact['status'] = 'revealed', attack = true): GameS
   return {
     ...s,
     elapsedMs: 20_000,
-    contacts: [{ id: 'c', square: 'E3', label: 'test', strength: 1, status, observed: false }],
+    contacts: [{ id: 'c', square: 'E3', label: 'test', strength: 1, status, observed: false, units: [0, 5], total: 2 }],
     team: { ...s.team, position: squareCenter('E3')!, waypoint: 3, decisions: attack ? { E3: 'attack' } : {} },
   };
 };
@@ -81,7 +81,7 @@ describe('firefight', () => {
   it('pushing through unimaged ground into a hidden contact is an ambush', () => {
     const store = playUntil(walking(), (s) => !!s.team.fight);
     expect(store.get().team.fight).toBeNull(); // walking(): no contacts, so no fight
-    const blind = { ...walking(), contacts: [{ id: 'c', square: 'F4', label: 'test', strength: 1, status: 'hidden' as const, observed: false }] };
+    const blind = { ...walking(), contacts: [{ id: 'c', square: 'F4', label: 'test', strength: 1, status: 'hidden' as const, observed: false, units: [0], total: 1 }] };
     const s = playUntil(blind, (x) => !!x.team.fight).get();
     expect(s.team.fight?.square).toBe('F4');
     expect(s.comms.messages.some((m) => m.text.startsWith('Ambush in F4'))).toBe(true);

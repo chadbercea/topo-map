@@ -8,6 +8,7 @@ import { generateCity, type City } from '../map/city';
 import { hillshade } from '../map/relief';
 import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
+import { BOARD } from '../sim/minigame';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
@@ -73,6 +74,13 @@ export class MapScene extends Phaser.Scene {
     this.unsubscribe = game.subscribe(() => {
       this.drawSelection();
       this.applyView();
+      // Close in on a seek-and-destroy board, and back out when it's over.
+      const m = game.get().minigame;
+      const focused = m?.kind === 'seekDestroy' && m.status === 'active' ? m.square : null;
+      if (focused !== this.focused) {
+        this.focused = focused;
+        this.layout();
+      }
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.layout, this);
@@ -98,6 +106,7 @@ export class MapScene extends Phaser.Scene {
     const m = game.get().minigame;
     this.modeLabels.forEach((l) => l.setVisible(false));
     if (!m) return;
+    if (m.kind === 'seekDestroy') return this.drawBoard(g, m);
     const color = m.status === 'lost' ? 0xe5484d : TEAL;
     for (let c = 0; c < COLS; c++)
       for (let r = 0; r < ROWS; r++)
@@ -125,6 +134,39 @@ export class MapScene extends Phaser.Scene {
     });
   }
 
+  // Seek and destroy: the target square as a 4x4 board. Misses ring, kills cross out in red,
+  // a fighter the team already spotted shows amber.
+  private drawBoard(g: Phaser.GameObjects.Graphics, m: NonNullable<ReturnType<typeof game.get>['minigame']>) {
+    const sq = parseSquare(m.square)!;
+    const x0 = sq.col * CELL;
+    const y0 = sq.row * CELL;
+    const cell = CELL / BOARD;
+    for (let c = 0; c < COLS; c++)
+      for (let r = 0; r < ROWS; r++) if (c !== sq.col || r !== sq.row) g.fillStyle(0x0b0f0d, 0.65).fillRect(c * CELL, r * CELL, CELL, CELL);
+    const px = DPR / this.zoom;
+    g.lineStyle(1 * px, 0xe5484d, 0.5);
+    for (let i = 1; i < BOARD; i++) {
+      g.lineBetween(x0 + i * cell, y0, x0 + i * cell, y0 + CELL);
+      g.lineBetween(x0, y0 + i * cell, x0 + CELL, y0 + i * cell);
+    }
+    g.lineStyle(2 * px, 0xe5484d, 0.95).strokeRect(x0, y0, CELL, CELL);
+    const centre = (i: number) => ({ x: x0 + (i % BOARD + 0.5) * cell, y: y0 + (Math.floor(i / BOARD) + 0.5) * cell });
+    for (const i of m.spotted ?? []) {
+      const p = centre(i);
+      g.lineStyle(2 * px, 0xf2c14e, 0.9).strokeCircle(p.x, p.y, cell * 0.3);
+    }
+    for (const shot of m.shots ?? []) {
+      const p = centre(shot.cell);
+      const k = cell * 0.28;
+      if (shot.hit) {
+        g.fillStyle(0xe5484d, 0.35).fillRect(p.x - cell / 2, p.y - cell / 2, cell, cell);
+        g.lineStyle(3 * px, 0xe5484d, 1).lineBetween(p.x - k, p.y - k, p.x + k, p.y + k).lineBetween(p.x - k, p.y + k, p.x + k, p.y - k);
+      } else {
+        g.lineStyle(1.5 * px, 0xcfe8dc, 0.6).strokeCircle(p.x, p.y, k * 0.6);
+      }
+    }
+  }
+
   // A firefight: red rings pulsing out from the team.
   private drawFight(time: number) {
     const g = this.fightGfx.clear();
@@ -146,9 +188,10 @@ export class MapScene extends Phaser.Scene {
   private drawMarkers(time: number) {
     const g = this.markerGfx.clear();
     const r = (MARKER_R * DPR) / this.zoom;
-    const { events, openEvent } = game.get();
+    const { events, openEvent, minigame } = game.get();
+    const board = minigame?.kind === 'seekDestroy' && minigame.status === 'active' ? minigame.square : null;
     for (const e of events) {
-      if (e.status === 'resolved') continue;
+      if (e.status === 'resolved' || e.square === board) continue; // its board is open
       const { x, y } = this.markerPos(e.square);
       const color = EVENT_COLOR[e.kind];
       if (e.status === 'new') {
@@ -169,24 +212,37 @@ export class MapScene extends Phaser.Scene {
       .events.find((e) => e.status !== 'resolved' && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit);
   }
 
+  // The part of the world in view: all of it, or a seek-and-destroy square with a margin.
+  private focused: string | null = null;
+  private focus() {
+    const m = game.get().minigame;
+    const sq = m?.kind === 'seekDestroy' && m.status === 'active' ? parseSquare(m.square) : null;
+    if (!sq) return { x: 0, y: 0, w: WORLD_W, h: WORLD_H };
+    const pad = CELL * 0.25;
+    return { x: sq.col * CELL - pad, y: sq.row * CELL - pad, w: CELL + pad * 2, h: CELL + pad * 2 };
+  }
+
   private get zoom() {
     return this.cameras.main.zoom;
   }
 
   // Fit the grid into the space the HUD leaves for the map (whole screen until it reports).
+  // During seek and destroy the camera closes in on the target square, so its board's
+  // cells are big enough to tap on a phone.
   private layout() {
     const { width, height } = this.scale;
     const r = getMapRect();
     const area = r
       ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR }
       : { x: 0, y: 0, w: width, h: height };
+    const view = this.focus();
     const cam = this.cameras.main;
-    const zoom = Math.max(0.01, Math.min((area.w - MARGIN * 2) / WORLD_W, (area.h - MARGIN * 2) / WORLD_H));
+    const zoom = Math.max(0.01, Math.min((area.w - MARGIN * 2) / view.w, (area.h - MARGIN * 2) / view.h));
     cam.setZoom(zoom);
-    // Put the world's centre on the area's centre rather than the screen's.
+    // Put the view's centre on the area's centre rather than the screen's.
     cam.centerOn(
-      WORLD_W / 2 - (area.x + area.w / 2 - width / 2) / zoom,
-      WORLD_H / 2 - (area.y + area.h / 2 - height / 2) / zoom,
+      view.x + view.w / 2 - (area.x + area.w / 2 - width / 2) / zoom,
+      view.y + view.h / 2 - (area.y + area.h / 2 - height / 2) / zoom,
     );
     this.drawTerrain();
     this.drawGrid();
@@ -338,7 +394,9 @@ export class MapScene extends Phaser.Scene {
     // A running mini game owns the map's taps.
     if (game.get().minigame?.status === 'active') {
       const sq = squareAt(p.worldX, p.worldY);
-      if (sq) game.tapMiniGame(sq);
+      // The cell on a seek-and-destroy board, 0-15 row by row.
+      const cell = Math.floor(((p.worldY % CELL) / CELL) * BOARD) * BOARD + Math.floor(((p.worldX % CELL) / CELL) * BOARD);
+      if (sq) game.tapMiniGame(sq, cell);
       return;
     }
     const event = this.eventAt(p.worldX, p.worldY);

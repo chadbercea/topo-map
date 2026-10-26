@@ -1,4 +1,5 @@
 import { MINIGAMES, timeLeft } from '../sim/minigame';
+import { WEAPON } from '../sim/ordnance';
 import { game, useGame } from '../sim/store';
 
 // Companion panel for the mini game on the map: what to do, the countdown, progress, and
@@ -9,11 +10,11 @@ export function MiniGamePanel() {
   if (!m) return null;
   const def = MINIGAMES[m.kind];
   const active = m.status === 'active';
+  const seek = m.kind === 'seekDestroy';
+  const title = seek ? `${WEAPON[m.weapon!].name.toUpperCase()} · ${m.square}` : `${def.title.toUpperCase()} · ${m.square}`;
   return (
     <section className="panel minigame" data-testid="minigame" data-status={m.status} role="dialog" aria-label={def.title}>
-      <h2>
-        {def.title.toUpperCase()} · {m.square}
-      </h2>
+      <h2>{title}</h2>
       {active ? (
         <>
           <p className="instructions">{def.instructions}</p>
@@ -23,18 +24,31 @@ export function MiniGamePanel() {
             </span>
             <span className="secs">{(left / 1000).toFixed(1)}s</span>
           </div>
-          <p>
-            <span data-testid="minigame-progress">
-              {m.hits}/{m.targets.length}
-            </span>{' '}
-            squares{m.misses ? ` · ${m.misses} miss${m.misses > 1 ? 'es' : ''} (−${m.misses}s)` : ''}
-          </p>
+          {seek ? (
+            <p>
+              <span data-testid="minigame-progress">{m.hits} down</span> · {m.roundsLeft} round{m.roundsLeft === 1 ? '' : 's'} left
+              {m.weapon === 'drone' ? ' · 2×2 blast' : ''}
+            </p>
+          ) : (
+            <p>
+              <span data-testid="minigame-progress">
+                {m.hits}/{m.targets.length}
+              </span>{' '}
+              squares{m.misses ? ` · ${m.misses} miss${m.misses > 1 ? 'es' : ''} (−${m.misses}s)` : ''}
+            </p>
+          )}
           <button onClick={game.abortMiniGame}>Abort</button>
         </>
       ) : (
         <>
           <p className="result" data-testid="minigame-result">
-            {m.status === 'won' ? 'Scan complete. Imagery sent to the team.' : 'Scan failed. The team moves without it.'}
+            {seek
+              ? m.status === 'won'
+                ? `Target destroyed. ${m.hits} down.`
+                : `${m.hits} down. The rest are still in ${m.square}.`
+              : m.status === 'won'
+                ? 'Scan complete. Imagery sent to the team.'
+                : 'Scan failed. The team moves without it.'}
           </p>
           <button onClick={game.closeMiniGame}>Close</button>
         </>

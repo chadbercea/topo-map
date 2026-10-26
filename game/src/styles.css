@@ -91,6 +91,24 @@ html, body {
 }
 
 .event-card .title { color: var(--ink); font-size: 14px; }
+.target-menu { display: grid; gap: 6px; }
+.target-menu .options { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.target-menu .options button {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  background: none;
+  border: 1px solid #e5484d;
+  min-height: 48px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.target-menu .options button small { color: var(--dim); font-size: 10px; }
+.target-menu .options button:disabled { opacity: 0.45; cursor: default; border-color: var(--line); }
 
 /* Mini game companion panel: takes the row under the map (the map refits above it), so
    it can never cover a square the player has to tap. */
@@ -468,6 +486,9 @@ html, body {
   .timer h2, .timer p:not(.resources) { display: none; }
   .timer .resources { font-size: 11px; }
   .debug { bottom: auto; top: 40%; }
+  /* A mini game is short; on a phone it gets the team bar's room so the board is tappable. */
+  .hud[data-playing='true'] .slot-team { display: none; }
+  .hud[data-playing='true'] .minigame .instructions { display: none; }
   /* On a phone the comms window replaces the readout rather than stacking under it. */
   .team[data-mode='C'] .readout { display: none; }
   .op { grid-template-columns: 1fr 72px 1.4fr; grid-template-areas: 'who vitals supplies'; }

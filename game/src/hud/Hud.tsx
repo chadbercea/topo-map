@@ -1,6 +1,6 @@
 import { DebugPanel } from './DebugPanel';
 import { EventAlerts, EventCard } from './EventAlerts';
-import { game } from '../sim/store';
+import { game, useGame } from '../sim/store';
 import { IntelPanel } from './IntelPanel';
 import { MapArea } from './MapArea';
 import { MapViews } from './MapViews';
@@ -18,8 +18,9 @@ if (debug) Object.assign(window, { game });
 // the team panel bottom left, and the theater map in the space between. On a phone in
 // portrait the panels become a top and a bottom bar and intel collapses.
 export function Hud() {
+  const playing = useGame((s) => s.minigame?.status === 'active');
   return (
-    <div className="hud">
+    <div className="hud" data-playing={playing}>
       <div className="slot-intel">
         <IntelPanel />
       </div>
