@@ -84,7 +84,7 @@ npm run dev      # http://localhost:5173
 npm run build    # typecheck + production build into game/dist
 ```
 
-**Deploys.** `.github/workflows/vercel.yml` builds `game/` on every PR and deploys a Vercel preview, whose URL is posted on the PR. A push to `main` goes to production. It needs three repo secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`. The HTML prototypes above stay on GitHub Pages.
+**Deploys.** The repo is connected to Vercel's GitHub app (project `topo-map`). Every PR gets a preview deploy, linked on the PR, and merging to `main` deploys to production. The root `vercel.json` tells Vercel to build `game/`. The HTML prototypes above stay on GitHub Pages.
 
 ## Work tracking
 
