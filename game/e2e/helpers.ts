@@ -1,4 +1,18 @@
 import type { Page } from '@playwright/test';
+import type { Store } from '../src/sim/store';
+
+// ?debug puts the game store on window for tests.
+declare global {
+  interface Window {
+    game: Store;
+  }
+}
+
+// Advance mission time directly, so tests don't depend on CI's frame rate.
+export const fastForward = (page: Page, ms: number) =>
+  page.evaluate((ms) => {
+    for (let t = 0; t < ms; t += 100) window.game.tick(100);
+  }, ms);
 
 // Mirror MapScene's camera fit: the grid is centred in the map area between the panels.
 const WORLD_W = 1600, WORLD_H = 1000, CELL = 200, MARGIN = 8;

@@ -23,6 +23,7 @@ export function EventCard() {
   const id = useGame((s) => s.openEvent);
   const events = useGame((s) => s.events);
   const e = events.find((x) => x.id === id);
+  const call = useGame((s) => s.comms.messages.find((m) => m.eventId === id));
   if (!e) return null;
   return (
     <section className="panel event-card" data-kind={e.kind} data-testid="event-card" role="dialog" aria-label={e.title}>
@@ -30,7 +31,13 @@ export function EventCard() {
         {LABEL[e.kind]} · {e.square}
       </h2>
       <p className="title">{e.title}</p>
-      <p>Decision point. Responses arrive with comms and mini games.</p>
+      {call ? (
+        <p>
+          {call.from}: “{call.text}” {call.status === 'new' && call.holds ? 'Answer in comms.' : ''}
+        </p>
+      ) : (
+        <p>Decision point. Responses arrive with comms and mini games.</p>
+      )}
       <button onClick={game.closeEvent}>Close</button>
     </section>
   );
