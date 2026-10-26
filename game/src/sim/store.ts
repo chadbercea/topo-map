@@ -26,6 +26,9 @@ export function createStore(initial: GameState = initialState()) {
     // No saves in the MVP: retry and restart both start the mission over.
     restart: () => set(initialState(state.settings)),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
+    // Tapping the selected square again clears it.
+    selectSquare: (id: string | null) =>
+      set({ ...state, map: { ...state.map, selected: id === state.map.selected ? null : id } }),
     setSettings: (patch: Partial<Settings>) => set({ ...state, settings: { ...state.settings, ...patch } }),
   };
 }

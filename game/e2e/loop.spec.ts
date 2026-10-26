@@ -6,8 +6,8 @@ test('mission clock runs in real time and freezes on pause', async ({ page, isMo
   await page.goto('');
   await expect(page.getByTestId('clock')).toHaveText('06:00');
 
-  // 10 ticks a second, measured from the first tick so slow page loads don't count.
-  await expect.poll(() => tick(page)).toBeGreaterThan(0);
+  // 10 ticks a second, measured after warm-up so page load and terrain baking don't count.
+  await expect.poll(() => tick(page)).toBeGreaterThan(10);
   const start = await tick(page);
   await page.waitForTimeout(1500);
   const ran = (await tick(page)) - start;

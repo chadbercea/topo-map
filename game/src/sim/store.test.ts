@@ -96,3 +96,15 @@ describe('pause menu actions', () => {
     expect(store.get().phase).toBe('running');
   });
 });
+
+describe('map selection', () => {
+  it('selects a square, and tapping it again clears it', () => {
+    const store = createStore();
+    store.selectSquare('C2');
+    expect(store.get().map.selected).toBe('C2');
+    store.selectSquare('D3');
+    expect(store.get().map.selected).toBe('D3');
+    store.selectSquare('D3');
+    expect(store.get().map.selected).toBeNull();
+  });
+});

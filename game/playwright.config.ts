@@ -4,6 +4,8 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: true,
+  // The browsers render on the CPU (no GPU in CI); more workers starve the frame clock.
+  workers: 2,
   reporter: [['list']],
   use: { baseURL: 'http://localhost:4173/game/', trace: 'retain-on-failure' },
   projects: [

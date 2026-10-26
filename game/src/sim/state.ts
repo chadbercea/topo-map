@@ -28,7 +28,7 @@ export type GameState = {
     position: { col: number; row: number };
     activity: string;
   };
-  map: { cols: number; rows: number; scanned: string[] };
+  map: { cols: number; rows: number; scanned: string[]; selected: string | null };
   resources: { budget: number; scans: number };
   settings: Settings; // survives restart
 };
@@ -65,7 +65,7 @@ export function initialState(settings: Settings = { sound: true }): GameState {
       position: { col: 0, row: 0 },
       activity: 'Infiltrating',
     },
-    map: { cols: 8, rows: 5, scanned: [] },
+    map: { cols: 8, rows: 5, scanned: [], selected: null },
     resources: { budget: 0, scans: 3 },
     settings,
   };
