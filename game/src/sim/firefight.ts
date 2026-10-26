@@ -3,6 +3,7 @@ import type { GameState } from './state';
 import type { System } from './systems';
 import type { Operator, Role } from './team';
 import type { Message } from './comms';
+import { hasBuff } from './intel';
 
 // Contact resolves on its own (GDD: the player doesn't control the team). Walking into a
 // square with an uncleared contact starts a firefight: everyone with ammo shoots, rounds
@@ -70,7 +71,8 @@ export const firefightSystem: System = (s, dt) => {
       fired += rounds;
       return { ...o, ammo: o.ammo - rounds };
     });
-    const enemy = Math.max(0, fight.enemy - fired * HIT_PER_ROUND);
+    const accuracy = hasBuff(s, 'target') ? 1.3 : 1;
+    const enemy = Math.max(0, fight.enemy - fired * HIT_PER_ROUND * accuracy);
 
     // The enemy hits back in proportion to what's left of it, on a random standing operator.
     const standing = operators.filter(alive);
@@ -78,7 +80,8 @@ export const firefightSystem: System = (s, dt) => {
       let r: number;
       [r, rng] = nextRandom(rng);
       const target = standing[Math.floor(r * standing.length)];
-      const dmg = ENEMY_DPS * (fight.enemy / ENEMY_STRENGTH) * secs;
+      const cover = hasBuff(s, 'signals') ? 0.7 : 1;
+      const dmg = ENEMY_DPS * (fight.enemy / ENEMY_STRENGTH) * cover * secs;
       operators = operators.map((o) => (o === target ? { ...o, health: Math.max(0, o.health - dmg) } : o));
     }
 

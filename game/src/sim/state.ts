@@ -5,6 +5,7 @@ import { DEMO_SCHEDULE, type MapEvent, type Scheduled } from './events';
 import { initialComms, type Comms } from './comms';
 import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
+import { initialIntel, type Buff, type Intel } from './intel';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -34,12 +35,14 @@ export type GameState = {
     vitals: string; // health/ammo/meds last tick, to notice them changing
     fight: Fight | null;
     treating: Treatment | null; // the medic at work
+    buffs: Buff[]; // intel HQ has sent the team
   };
   map: { cols: number; rows: number; scanned: string[]; selected: string | null };
   events: MapEvent[];
   schedule: Scheduled[]; // events still to come, by mission time
   openEvent: string | null; // the event card on screen
   comms: Comms;
+  intel: Intel;
   resources: { budget: number; scans: number };
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
@@ -71,12 +74,14 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
       vitals: vitalsFor(operators),
       fight: null,
       treating: null,
+      buffs: [],
     },
     map: { cols: 8, rows: 5, scanned: [], selected: null },
     events: [],
     schedule: DEMO_SCHEDULE,
     openEvent: null,
     comms: initialComms(),
+    intel: initialIntel(),
     resources: { budget: 0, scans: 3 },
     capabilities: ['imagery'],
     rng: 1234,

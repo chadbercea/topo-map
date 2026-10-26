@@ -2,6 +2,7 @@ import { squareCenter } from '../map/grid';
 import { heightAt, theater } from '../map/terrain';
 import type { System } from './systems';
 import { LOADOUT, type Operator } from './team';
+import { hasBuff } from './intel';
 
 // The team moves on its own (GDD: the player never controls it), waypoint to waypoint in
 // straight legs. Climbing slows it and builds fatigue; fatigue slows it further.
@@ -41,7 +42,8 @@ export const movementSystem: System = (s, dt) => {
 
   const h0 = heightAt(t, x, y);
   const grade = (heightAt(t, x + ux * PROBE, y + uy * PROBE) - h0) / (PROBE * METRES_PER_UNIT);
-  const step = Math.min(dist, (legSpeed(grade, teamFatigue(team.operators)) * dt) / 1000);
+  const boost = hasBuff(s, 'imagery') ? 1.2 : 1; // a known route is a faster route
+  const step = Math.min(dist, (legSpeed(grade, teamFatigue(team.operators)) * boost * dt) / 1000);
   const nx = x + ux * step;
   const ny = y + uy * step;
   const climbed = Math.max(0, heightAt(t, nx, ny) - h0);
