@@ -145,6 +145,6 @@ export function jam(s: GameState, eventId: string): GameState {
     flags: { ...s.flags, jammed: true },
     openEvent: null,
     events: s.events.map((x) => (x === e ? { ...x, status: 'resolved' as const } : x)),
-    comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, m] },
+    comms: { ...s.comms, messages: [...s.comms.messages, m] },
   };
 }

@@ -23,6 +23,7 @@ export function TargetMenu({ contactId }: { contactId: string }) {
               ? 'PAINTED by ALPHA: every fighter is marked for your strike.'
               : 'Pick ordnance, or send the team.'}
       </p>
+      {c.note && c.status === 'revealed' && <p className="note" data-testid="target-note">{c.note}</p>}
       {c.status === 'revealed' && (
         <div className="options">
           {WEAPONS.map((w) => (

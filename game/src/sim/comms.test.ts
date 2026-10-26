@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHATTER_MS, currentCall, HOLD_TIMEOUT_MS } from './comms';
+import { CHATTER_MS, currentCall, HOLD_TIMEOUT_MS, kindOf } from './comms';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
 import { run, walking } from './testkit';
@@ -7,10 +7,12 @@ import { run, walking } from './testkit';
 const ids = (s: GameState) => s.comms.messages.map((m) => m.id);
 
 describe('comms', () => {
-  it('the team calls in on the timed script, marked new, from its callsign', () => {
+  it('routine chatter from the script goes to the radio log, not the comms card', () => {
     const s = run(walking(), 3_000);
-    expect(s.comms.messages.find((m) => m.id === 'insert')).toMatchObject({ from: 'ALPHA', status: 'new', holds: false });
-    expect(currentCall(s.comms)?.id).toBe('insert');
+    const insert = s.comms.messages.find((m) => m.id === 'insert')!;
+    expect(insert).toMatchObject({ from: 'ALPHA', holds: false });
+    expect(kindOf(insert)).toBe('log');
+    expect(currentCall(s.comms)).toBeUndefined();
   });
 
   it('routine chatter marks itself read after a while', () => {
@@ -42,11 +44,16 @@ describe('comms', () => {
     expect(store.get().team.holdFor).toBe(id);
   });
 
-  it('a new call reopens a minimized comms window', () => {
+  it('a new call reopens a minimized comms card; a log line does not', () => {
     const store = createStore(run(walking(), 500));
     store.setCommsMinimized(true);
-    store.set(run(store.get(), 3_000)); // insert call at 3 s
-    expect(store.get().comms.minimized).toBe(false);
+    store.set(run(store.get(), 3_000)); // the insert line at 3 s is log only
+    expect(store.get().comms.minimized).toBe(true);
+    const fresh = createStore(run(initialState(), 100)); // holding short of F4: a call
+    fresh.setCommsMinimized(true);
+    fresh.set({ ...fresh.get(), comms: { ...fresh.get().comms, messages: [] }, team: { ...fresh.get().team, holdFor: null } });
+    fresh.set(run(fresh.get(), 200));
+    expect(fresh.get().comms.minimized).toBe(false);
   });
 
   it('calls in when the team reaches the end of its route', () => {

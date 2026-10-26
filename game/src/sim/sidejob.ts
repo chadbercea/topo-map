@@ -67,7 +67,7 @@ export function deliverImagery(s: GameState, squares: string[]): GameState {
     resources: { ...s.resources, budget: s.resources.budget + j.reward },
     stats: { ...s.stats, bonus: s.stats.bonus + j.reward },
     events: s.events.map((e) => (e.id === 'side-job' ? { ...e, status: 'resolved' as const } : e)),
-    comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, client(s, 'client-paid', `Imagery received. $${j.reward.toLocaleString('en-US')} bonus is on its way.`)] },
+    comms: { ...s.comms, messages: [...s.comms.messages, client(s, 'client-paid', `Imagery received. $${j.reward.toLocaleString('en-US')} bonus is on its way.`)] },
   };
 }
 
@@ -87,7 +87,7 @@ export const sideJobSystem: System = (s) => {
       ...s,
       sideJob: { ...j, status: 'failed' },
       events: s.events.map((e) => (e.id === 'side-job' ? { ...e, status: 'resolved' as const } : e)),
-      comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, client(s, 'client-lapsed', 'Deadline’s passed. Forget the bonus.')] },
+      comms: { ...s.comms, messages: [...s.comms.messages, client(s, 'client-lapsed', 'Deadline’s passed. Forget the bonus.')] },
     };
   }
   return s;

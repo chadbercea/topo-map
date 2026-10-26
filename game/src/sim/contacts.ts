@@ -28,6 +28,7 @@ export type Contact = {
   total: number;
   intent?: string; // what an intercept of its radio reveals it's doing
   painted?: boolean; // ALPHA has a laser on it: strikes see every fighter
+  note?: string; // what HQ knows about it, shown in its target menu
 };
 
 // What the team decided about a square on its route.
@@ -88,7 +89,6 @@ export function reveal(s: GameState, squares: SquareId[], by: string): GameState
     ],
     comms: {
       ...s.comms,
-      minimized: false,
       messages: [
         ...s.comms.messages,
         ...found.map((c) =>

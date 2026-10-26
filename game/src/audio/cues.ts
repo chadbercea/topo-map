@@ -1,12 +1,14 @@
 import type { GameState } from '../sim/state';
 import type { Sfx } from './sfx';
+import { kindOf } from '../sim/comms';
 
 // Which sounds a state change calls for. Pure, so it can be tested without audio.
 export function cues(prev: GameState, next: GameState): Sfx[] {
   const out: Sfx[] = [];
-  // New radio traffic: who's calling decides the tone.
+  // New radio traffic that matters (calls and alerts; log lines stay quiet): who's calling
+  // decides the tone.
   for (const m of next.comms.messages.slice(prev.comms.messages.length)) {
-    if (m.status !== 'new') continue;
+    if (m.status !== 'new' || kindOf(m) === 'log') continue;
     out.push(m.from === 'CLIENT' ? 'client' : m.from === 'HQ' ? 'hq' : 'radio');
   }
   const pm = prev.minigame;

@@ -1,15 +1,25 @@
 import { game, useGame } from '../sim/store';
+import { liveAlerts } from '../sim/comms';
 import { TargetMenu } from './TargetMenu';
 
 const LABEL = { contact: 'CONTACT', request: 'REQUEST', site: 'KILL SITE', signal: 'SIGNAL' } as const;
 
-// Alerts strip at the top of the map: one chip per event the player hasn't opened yet.
+// Alerts strip at the top of the map: a short banner for news the map doesn't show (ILI-1171),
+// then one chip per event the player hasn't opened yet.
 export function EventAlerts() {
   const events = useGame((s) => s.events);
+  const comms = useGame((s) => s.comms);
+  const now = useGame((s) => s.elapsedMs);
   const fresh = events.filter((e) => e.status === 'new');
-  if (!fresh.length) return null;
+  const banners = liveAlerts(comms, now);
+  if (!fresh.length && !banners.length) return null;
   return (
     <div className="alerts" data-testid="alerts">
+      {banners.map((m) => (
+        <div key={m.id} className="panel banner" role="status" data-testid="banner">
+          <b>{m.from}</b> {m.text}
+        </div>
+      ))}
       {fresh.map((e) => (
         <button key={e.id} className="panel alert" data-kind={e.kind} onClick={() => game.openEvent(e.id)}>
           <b>{LABEL[e.kind]}</b> {e.square} · {e.title}

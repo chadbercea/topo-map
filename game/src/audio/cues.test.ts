@@ -5,17 +5,18 @@ import { createStore } from '../sim/store';
 import { run, walking } from '../sim/testkit';
 import { makeContact } from '../sim/contacts';
 
-const msg = (s: GameState, from: string): GameState => ({
+const msg = (s: GameState, from: string, alert = true): GameState => ({
   ...s,
-  comms: { ...s.comms, messages: [...s.comms.messages, { id: `m${s.comms.messages.length}`, from, text: 'x', atMs: 0, status: 'new', holds: false }] },
+  comms: { ...s.comms, messages: [...s.comms.messages, { id: `m${s.comms.messages.length}`, from, text: 'x', atMs: 0, status: 'new', holds: false, alert }] },
 });
 
 describe('sound cues', () => {
-  it('incoming radio blips, with a different tone for the client and HQ', () => {
+  it('calls and alerts blip, with a different tone for the client and HQ; log lines stay quiet', () => {
     const s = initialState();
     expect(cues(s, msg(s, 'ALPHA'))).toEqual(['radio']);
     expect(cues(s, msg(s, 'CLIENT'))).toEqual(['client']);
     expect(cues(s, msg(s, 'HQ'))).toEqual(['hq']);
+    expect(cues(s, msg(s, 'ALPHA', false))).toEqual([]);
   });
 
   it('a scan pings as it starts and on every square imaged', () => {

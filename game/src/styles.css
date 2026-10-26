@@ -285,6 +285,19 @@ html, body {
 }
 
 .timer[data-phase='paused'] .clock { color: var(--dim); }
+.clock[data-warn='amber'] { color: #f2c14e; }
+.clock[data-warn='red'] { color: #e5484d; }
+.banner { font-size: 12px; color: var(--ink); border-color: #e5484d; max-width: 100%; animation: alert-in 160ms ease-out; }
+.banner b { color: #e5484d; letter-spacing: 0.08em; margin-right: 4px; }
+.log-toggle { font: inherit; font-size: 10px; letter-spacing: 0.08em; color: var(--dim); background: none; border: none; padding: 2px 0; cursor: pointer; text-align: left; }
+.radio-log { position: fixed; right: var(--gutter); top: calc(var(--gutter) + 150px); width: min(380px, calc(100vw - 32px)); max-height: 55dvh; overflow-y: auto; z-index: 6; background: var(--bg); display: grid; gap: 6px; }
+.radio-log h2 { display: flex; justify-content: space-between; align-items: center; }
+.radio-log h2 button { font: inherit; color: var(--dim); background: none; border: 1px solid var(--line); min-width: 32px; min-height: 28px; cursor: pointer; }
+.radio-log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 11px; }
+.radio-log li { color: var(--ink); line-height: 1.4; }
+.radio-log .t { color: var(--dim); font-variant-numeric: tabular-nums; }
+.radio-log b { color: var(--accent); }
+.target-menu .note { color: #f2c14e; font-size: 12px; }
 
 .pause {
   font: inherit;
@@ -538,6 +551,7 @@ html, body {
 
   .clock { font-size: 22px; }
   .timer h2, .timer p:not(.resources):not(.noise):not(.side-job):not(.deniability):not(.inbound) { display: none; }
+  .timer .log-toggle { font-size: 9px; }
   .timer .noise { font-size: 10px; }
   .timer .resources { font-size: 11px; }
   .debug { bottom: auto; top: 40%; }

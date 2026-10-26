@@ -67,3 +67,15 @@ test('the local fixer is on offer, greyed out until there is money for it', asyn
   await fixer.click();
   await expect(page.getByTestId('resources')).toContainText('$3,000');
 });
+
+test('news the map does not show is a banner, and the radio log keeps every message', async ({ page }) => {
+  await page.goto('?debug');
+  await page.waitForFunction(() => window.game);
+  await page.evaluate(() => {
+    window.game.set({ ...window.game.get(), noise: 70 });
+    window.game.tick(100);
+  });
+  await expect(page.getByTestId('banner')).toContainText('know a PMC is in the area');
+  await page.getByTestId('log-toggle').click();
+  await expect(page.getByTestId('radio-log')).toContainText('Enemy radio net just lit up');
+});

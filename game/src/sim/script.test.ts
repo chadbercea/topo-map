@@ -62,9 +62,10 @@ describe('the checkpoint', () => {
     expect(BLACK_BOX.route).toContain('E3');
   });
 
-  it('once found, HQ says to soften it with ordnance first', () => {
+  it('once found, its target menu says to soften it with ordnance first (no radio card)', () => {
     const s = step(reveal({ ...walking(), contacts: BLACK_BOX.contacts() }, ['E3'], 'ORION-3'), 100);
-    expect(s.comms.messages.find((m) => m.id === 'checkpoint-brief')?.text).toMatch(/fortified checkpoint in E3.*Soften it with ordnance first/);
+    expect(s.contacts.find((c) => c.id === 'checkpoint')?.note).toMatch(/Soften it with ordnance first/);
+    expect(s.comms.messages.some((m) => m.id === 'checkpoint-brief')).toBe(false);
   });
 
   it('softened by ordnance first, ALPHA takes it with far less damage than walking in', () => {
