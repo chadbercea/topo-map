@@ -28,7 +28,7 @@ export type GameState = {
   tick: number;
   elapsedMs: number; // mission time actually played, excludes pauses
   phase: Phase;
-  timer: { remainingMs: number };
+  timer: { remainingMs: number; totalMs: number }; // totalMs: this mission's length
   mission: Mission;
   team: {
     callsign: string;
@@ -71,13 +71,14 @@ export const MISSION: MissionDef = BLACK_BOX;
 export const ROUTE: SquareId[] = MISSION.route;
 export const MISSION_MS = MISSION.durationMs; // GDD: start with six minutes and tune by feel
 
-export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
+// missionMs: the mission's length, the script's six minutes unless tuned (?minutes=).
+export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS): GameState {
   const operators = roster();
   return {
     tick: 0,
     elapsedMs: 0,
     phase: 'running',
-    timer: { remainingMs: MISSION_MS },
+    timer: { remainingMs: missionMs, totalMs: missionMs },
     mission: initialMission(ROUTE),
     team: {
       callsign: 'ALPHA',

@@ -23,7 +23,7 @@ export const timerSystem: System = (s, dt) => {
   const remainingMs = Math.max(0, s.timer.remainingMs - dt);
   return {
     ...s,
-    timer: { remainingMs },
+    timer: { ...s.timer, remainingMs },
     phase: remainingMs === 0 ? 'ended' : s.phase,
   };
 };

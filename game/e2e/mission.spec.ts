@@ -32,7 +32,7 @@ test('running out of time fails the mission; the wrap-up offers a retry', async 
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
     const s = window.game.get();
-    window.game.set({ ...s, timer: { remainingMs: 500 } });
+    window.game.set({ ...s, timer: { remainingMs: 500, totalMs: 360_000 } });
     for (let i = 0; i < 10; i++) window.game.tick(100);
   });
   const wrap = page.getByTestId('wrapup');

@@ -32,7 +32,10 @@ export function createStore(initial: GameState = initialState()) {
     pause: () => state.phase === 'running' && set({ ...state, phase: 'paused' }),
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
     // No saves in the MVP: retry and restart both start the mission over.
-    restart: () => set(initialState(state.settings)),
+    restart: () => set(initialState(state.settings, state.timer.totalMs)),
+    // Tuning: start over with a different mission length (1 to 30 minutes).
+    setMissionLength: (minutes: number) =>
+      set(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000))),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
     // Tapping the selected square again clears it.
     selectSquare: (id: string | null) =>
