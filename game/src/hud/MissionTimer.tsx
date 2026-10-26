@@ -10,6 +10,8 @@ export function MissionTimer() {
   const remaining = useGame((s) => s.timer.remainingMs);
   const phase = useGame((s) => s.phase);
   const tick = useGame((s) => s.tick);
+  const scans = useGame((s) => s.resources.scans);
+  const budget = useGame((s) => s.resources.budget);
 
   return (
     <section className="panel timer" data-testid="mission-timer" data-phase={phase}>
@@ -31,6 +33,9 @@ export function MissionTimer() {
       <p>
         {phase === 'running' ? 'LIVE' : phase.toUpperCase()} · tick{' '}
         <span data-testid="tick">{tick}</span>
+      </p>
+      <p className="resources" data-testid="resources">
+        scans {scans} · ${budget.toLocaleString('en-US')}
       </p>
     </section>
   );

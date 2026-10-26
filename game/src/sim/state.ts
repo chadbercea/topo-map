@@ -3,6 +3,7 @@ import type { SquareId } from '../map/grid';
 import { squareCenter } from '../map/grid';
 import { DEMO_SCHEDULE, type MapEvent, type Scheduled } from './events';
 import { initialComms, type Comms } from './comms';
+import type { Capability } from './responses';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -27,6 +28,7 @@ export type GameState = {
     waypoint: number; // index into route of the square it's heading for
     activity: string;
     holdFor: string | null; // radio call the team is waiting on HQ to answer
+    holdUntilMs: number; // mission time a timed hold ends
   };
   map: { cols: number; rows: number; scanned: string[]; selected: string | null };
   events: MapEvent[];
@@ -34,6 +36,7 @@ export type GameState = {
   openEvent: string | null; // the event card on screen
   comms: Comms;
   resources: { budget: number; scans: number };
+  capabilities: Capability[]; // what the PMC can offer the team; gates responses
   settings: Settings; // survives restart
 };
 
@@ -56,6 +59,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
       waypoint: 1,
       activity: `Moving to ${ROUTE[1]}`,
       holdFor: null,
+      holdUntilMs: 0,
     },
     map: { cols: 8, rows: 5, scanned: [], selected: null },
     events: [],
@@ -63,6 +67,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS): GameState {
     openEvent: null,
     comms: initialComms(),
     resources: { budget: 0, scans: 3 },
+    capabilities: ['imagery'],
     settings,
   };
 }

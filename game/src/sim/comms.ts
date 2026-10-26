@@ -1,5 +1,6 @@
 import type { GameState } from './state';
 import type { System } from './systems';
+import { blocked, TREE, type Response } from './responses';
 
 // Radio traffic from the team (GDD: text only, clearly marked as incoming). Calls come from
 // a timed script, from map events, and from the team reaching its objective. A call that
@@ -15,6 +16,9 @@ export type Message = {
   status: MessageStatus;
   holds: boolean; // the team waits on this call
   eventId?: string;
+  square?: string;
+  responses?: Response[]; // from the response tree; none means a plain "Copy"
+  answer?: string; // id of the response HQ sent
 };
 
 export type Comms = {
@@ -31,10 +35,6 @@ const TIMED: { atMs: number; id: string; text: string }[] = [
   { atMs: 3_000, id: 'insert', text: 'Boots on the ground at G5. Moving to F4.' },
 ];
 
-const EVENT_CALLS: Record<string, (square: string) => string> = {
-  contact: (sq) => `Movement in ${sq}, can't ID it. Holding short. Your call.`,
-  request: (sq) => `Need eyes on ${sq} before we move in. Holding.`,
-};
 
 export const initialComms = (): Comms => ({ messages: [], minimized: false, lastWaypoint: 1 });
 
@@ -48,6 +48,12 @@ const call = (s: GameState, id: string, text: string, holds = false, eventId?: s
   eventId,
 });
 
+// A call from the response tree, about a square and maybe a map event.
+const treeCall = (s: GameState, id: string, node: string, square: string, eventId?: string): Message => {
+  const n = TREE[node];
+  return { ...call(s, id, n.text(square), n.holds, eventId), square, responses: n.responses };
+};
+
 export const commsSystem: System = (s) => {
   const { comms, team } = s;
   const have = new Set(comms.messages.map((m) => m.id));
@@ -55,8 +61,7 @@ export const commsSystem: System = (s) => {
 
   for (const t of TIMED) if (t.atMs <= s.elapsedMs && !have.has(t.id)) incoming.push(call(s, t.id, t.text));
   for (const e of s.events)
-    if (!have.has(`event-${e.id}`) && EVENT_CALLS[e.kind])
-      incoming.push(call(s, `event-${e.id}`, EVENT_CALLS[e.kind](e.square), true, e.id));
+    if (!have.has(`event-${e.id}`) && TREE[e.kind]) incoming.push(treeCall(s, `event-${e.id}`, e.kind, e.square, e.id));
   if (team.waypoint !== comms.lastWaypoint && team.waypoint >= team.route.length)
     incoming.push(call(s, 'in-position', `In position at ${team.route.at(-1)}. Holding.`));
 
@@ -127,3 +132,38 @@ export function dismiss(s: GameState, id: string): GameState {
 }
 
 const nextHold = (messages: Message[]) => messages.find((m) => m.holds && m.status === 'new')?.id ?? null;
+
+// HQ answers a call with one of its responses. Applies the effects, radios the team's
+// reply, and opens the follow-up call if the tree has one.
+export function respond(s: GameState, id: string, responseId: string): GameState {
+  const m = s.comms.messages.find((x) => x.id === id);
+  const r = m?.responses?.find((x) => x.id === responseId);
+  if (!m || !r || m.status !== 'new' || blocked(s, r)) return s;
+
+  const reply: Message = { ...call(s, `${id}-${r.id}`, r.reply), status: 'read' };
+  const follow = r.follow && m.square ? treeCall(s, `${id}-${r.follow}`, r.follow, m.square, m.eventId) : undefined;
+  const messages = [
+    ...s.comms.messages.map((x) => (x.id === id ? { ...x, status: 'read' as const, answer: r.id } : x)),
+    reply,
+    ...(follow ? [follow] : []),
+  ];
+
+  let holdFor = s.team.holdFor === id ? null : s.team.holdFor;
+  if (follow?.holds) holdFor = follow.id;
+  else if (holdFor === null) holdFor = nextHold(messages);
+  const holdUntilMs = r.hold ? s.elapsedMs + r.hold : s.team.holdUntilMs;
+
+  return {
+    ...s,
+    team: { ...s.team, holdFor, holdUntilMs, activity: holdFor ? 'Holding for HQ' : r.hold ? 'Holding' : s.team.activity },
+    resources: {
+      ...s.resources,
+      scans: s.resources.scans - (r.spend?.scans ?? 0),
+      budget: s.resources.budget - (r.spend?.budget ?? 0),
+    },
+    map: r.scan && m.square && !s.map.scanned.includes(m.square) ? { ...s.map, scanned: [...s.map.scanned, m.square] } : s.map,
+    events: r.resolve && m.eventId ? s.events.map((e) => (e.id === m.eventId ? { ...e, status: 'resolved' as const } : e)) : s.events,
+    openEvent: r.resolve && s.openEvent === m.eventId ? null : s.openEvent,
+    comms: { ...s.comms, messages },
+  };
+}
