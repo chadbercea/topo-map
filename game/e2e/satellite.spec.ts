@@ -16,7 +16,7 @@ test('select a square, task ORION-3 there, take a burst: the look lands on the m
   await page.getByTestId('look-here').click();
 
   const panel = page.getByTestId('satellite');
-  await expect(panel).toContainText('Moving into position');
+  await expect(panel).toContainText('Moving to E3');
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
   await untilOnStation(page);
   await expect(panel).toHaveAttribute('data-state', 'onStation');
@@ -31,10 +31,10 @@ test('select a square, task ORION-3 there, take a burst: the look lands on the m
   await expect(panel).toHaveAttribute('data-state', 'capturing');
   await expect(inset).toHaveAttribute('data-state', 'capturing');
   await fastForward(page, 6_100);
-  await expect(page.getByTestId('satellite-result')).toHaveText('Burst: 5 fighters, unaware. Downlinked to ALPHA.');
+  await expect(page.getByTestId('satellite-result')).toHaveText('E3 · Burst: 5 fighters, unaware. Downlinked to ALPHA.');
   await expect(page.getByTestId('blockers')).toContainText('E3'); // the checkpoint is found
   await panel.getByRole('button', { name: 'Close' }).click();
-  await expect(panel).toHaveCount(0);
+  await expect(page.getByTestId('satellite-result')).toHaveCount(0); // closed: the panel stays, the look is filed
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
   await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
 });
@@ -58,5 +58,5 @@ test('Cancel calls it off while it moves', async ({ page }) => {
   await freeze(page);
   await page.evaluate(() => window.game.lookAt('A1'));
   await page.getByTestId('satellite').getByRole('button', { name: 'Cancel' }).click();
-  await expect(page.getByTestId('satellite')).toHaveCount(0);
+  await expect(page.getByTestId('satellite')).toHaveAttribute('data-state', 'idle'); // its panel stays, idle
 });
