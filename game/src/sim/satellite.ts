@@ -4,8 +4,6 @@ import { reveal } from './contacts';
 import { awarenessOf, record, snapshot, type Awareness, type CaptureMode } from './imagery';
 
 export type { CaptureMode };
-import { boostIntel } from './intel';
-import { deliverImagery } from './sidejob';
 import type { GameState } from './state';
 import type { System } from './systems';
 
@@ -15,10 +13,10 @@ import type { System } from './systems';
 // to) or video (live, and the satellite is tied up while it runs). What it sees goes on
 // the map as a snapshot that ages, and down to ALPHA as known ground.
 
-export const CAPTURE: Record<CaptureMode, { ms: number; label: string; what: string; intel: number }> = {
-  photo: { ms: 0, label: 'Photo', what: 'Who is there and where, right now', intel: 0.15 },
-  burst: { ms: 6_000, label: 'Burst', what: 'Plus who is moving, and where to', intel: 0.25 },
-  video: { ms: 15_000, label: 'Video', what: 'Live: they move on your map while it runs', intel: 0.35 },
+export const CAPTURE: Record<CaptureMode, { ms: number; label: string; what: string }> = {
+  photo: { ms: 0, label: 'Photo', what: 'Who is there and where, right now' },
+  burst: { ms: 6_000, label: 'Burst', what: 'Plus who is moving, and where to' },
+  video: { ms: 15_000, label: 'Video', what: 'Live: they move on your map while it runs' },
 };
 
 export const SLEW_MS_PER_SQUARE = 2_000;
@@ -137,9 +135,7 @@ function finishLook(s: GameState): GameState {
   const square = sat.aim;
   const snap = snapshot(s, square, mode, false);
   let next = record(s, snap);
-  next = boostIntel(next, 'imagery', CAPTURE[mode].intel);
   next = reveal({ ...next, map: { ...next.map, scanned: [...new Set([...next.map.scanned, square])] } }, [square], 'ORION-3');
-  next = deliverImagery(next, [square]);
   const fighters = snap.seen.reduce((n, x) => n + x.units.length, 0);
   const moving = snap.seen.filter((x) => x.to).reduce((n, x) => n + x.units.length, 0);
   const contacts = snap.seen.map((x) => s.contacts.find((c) => c.id === x.contactId)!);

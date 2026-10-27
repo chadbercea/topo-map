@@ -37,9 +37,8 @@ describe('ORION-3 tasking', () => {
     expect(store.get().team.holdFor).toBe(REQUEST);
   });
 
-  it('a photo images the square, releases ALPHA and boosts imagery intel', () => {
+  it('a photo images the square and releases ALPHA', () => {
     const store = atRequest();
-    const before = store.get().intel.projects.imagery!.progress;
     store.respond(REQUEST, 'send');
     onStation(store);
     store.capture('photo');
@@ -48,7 +47,6 @@ describe('ORION-3 tasking', () => {
     expect(s.team.holdFor).toBeNull();
     expect(s.satellite).toMatchObject({ state: 'idle', aim: 'F4', result: { square: 'F4', mode: 'photo', fighters: 0 } });
     expect(s.imagery.F4).toMatchObject({ mode: 'photo', live: false, seen: [] });
-    expect(s.intel.projects.imagery!.progress).toBeGreaterThan(before);
     expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 imaged \(photo\): nothing there\. Downlinked to ALPHA\./.test(m.text))).toBe(true);
   });
 

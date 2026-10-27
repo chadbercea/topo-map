@@ -40,20 +40,19 @@ html, body {
     max(var(--gutter), env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
   display: grid;
   gap: 8px var(--gutter);
-  /* Landscape (ideal: tablet): the mission bar on top, the intel tab on the left edge, the
-     team column on the right, and the grid between. The band under the grid holds the
+  /* Landscape (ideal: tablet): the mission bar on top, the team column on the right, and
+     the grid beside it. The band under the grid holds the
      card that needs an answer and the map controls. */
-  grid-template-columns: auto minmax(0, 1fr) minmax(200px, 230px);
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 230px);
   grid-template-rows: auto minmax(36px, auto) minmax(0, 1fr) minmax(var(--band), auto);
   grid-template-areas:
-    'bar   bar    bar'
-    'intel alerts team'
-    'intel map    team'
-    'intel band   team';
+    'bar    bar'
+    'alerts team'
+    'map    team'
+    'band   team';
 }
 
 .slot-bar { grid-area: bar; min-width: 0; }
-.slot-intel { grid-area: intel; align-self: start; position: relative; z-index: 5; }
 .slot-team { grid-area: team; align-self: start; min-height: 0; max-height: 100%; overflow-y: auto; pointer-events: auto; }
 .map-area { grid-area: map; min-height: 0; }
 .slot-band { grid-area: band; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
@@ -244,10 +243,7 @@ html, body {
 }
 .square-actions button:disabled { opacity: 0.45; cursor: default; }
 .bar-top .recharge { color: var(--dim); }
-.bar-top .side-job { color: #f2c14e; font-size: 11px; }
 .bar-top .inbound { color: var(--accent); font-size: 11px; }
-.bar-top .deniability { font-size: 11px; color: #f2c14e; }
-.bar-top .deniability[data-state='disowned'] { color: #e5484d; }
 .bar-top .noise { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
 .bar-top .noise .bar { height: 5px; }
 .bar-top .noise .bar > span { background: #f2c14e; }
@@ -350,7 +346,7 @@ html, body {
   padding: var(--gutter);
   background: rgba(11, 15, 13, 0.6);
   pointer-events: auto;
-  z-index: 20; /* above every panel, including the phone's intel dropdown */
+  z-index: 20; /* above every panel */
 }
 
 .menu {
@@ -425,25 +421,6 @@ html, body {
 
 .panel ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; }
 
-.intel li { display: grid; grid-template-columns: 56px 1fr; grid-template-areas: 'type title' 'type bar'; align-items: center; gap: 2px 8px; color: var(--ink); }
-.intel li .type { grid-area: type; color: var(--dim); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
-.intel li .title { grid-area: title; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.intel li .bar, .intel li .send { grid-area: bar; }
-.intel li[data-ready='true'] .title { color: var(--accent); }
-.intel li.note { display: block; color: var(--dim); font-size: 10px; }
-.intel .send {
-  font: inherit;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #0b0f0d;
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  min-height: 32px;
-  cursor: pointer;
-}
-.ready-badge { margin-left: auto; margin-right: 8px; font-size: 10px; color: #0b0f0d; background: var(--accent); padding: 1px 6px; }
-.team .buffs { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--accent); font-size: 10px; }
 
 .bar { display: block; height: 6px; border: 1px solid var(--line); }
 .bar > span { display: block; height: 100%; background: var(--accent); }
@@ -461,7 +438,6 @@ html, body {
 .op .vitals { grid-area: vitals; display: grid; justify-items: end; }
 .op .status { font-size: 9px; letter-spacing: 0.1em; }
 .op .supplies { grid-area: supplies; display: grid; grid-template-columns: auto 1fr auto 1fr auto auto; align-items: center; gap: 4px; font-size: 9px; color: var(--dim); }
-.op .fatigue { color: var(--ink); min-width: 2ch; text-align: right; }
 
 .rank { width: 10px; height: 14px; fill: none; stroke: var(--accent); stroke-width: 1.4; flex: none; }
 
@@ -566,24 +542,6 @@ html, body {
 .op.compact .status { text-align: right; }
 .team .stats { margin-top: 6px; font-size: 10px; }
 
-/* Intel: a tab on the left edge; the drawer opens beside it, over the map. */
-.intel { padding: 10px 6px; }
-.intel > .panel-toggle { writing-mode: vertical-rl; gap: 8px; justify-content: flex-start; }
-.intel > .panel-toggle h2 { margin: 0; }
-.intel .ready-badge { margin: 0; }
-.intel .panel-body { display: none; }
-.intel[data-open='true'] .panel-body {
-  display: grid;
-  position: absolute;
-  left: calc(100% + 6px);
-  top: 0;
-  width: 260px;
-  margin: 0;
-  padding: 10px 12px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-}
-
 .debug {
   position: fixed;
   right: var(--gutter);
@@ -593,24 +551,23 @@ html, body {
   pointer-events: none; /* read-only; never steal a tap from the map */
 }
 
-/* Phone portrait: the bar, the grid at full width, a tools row (intel, map controls), the
+/* Phone portrait: the bar, the grid at full width, a tools row (map controls), the
    heartbeat strip, and the band for whatever needs an answer. */
 @media (max-aspect-ratio: 1/1) {
   .alert { font-size: 11px; min-height: 30px; padding: 4px 8px; }
   .hud {
     gap: 6px;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
     grid-template-areas:
-      'bar    bar'
-      'alerts alerts'
-      'map    map'
-      'intel  tools'
-      'team   team'
-      'band   band';
+      'bar'
+      'alerts'
+      'map'
+      'tools'
+      'team'
+      'band';
   }
   .alerts:empty { display: none; }
-  .slot-intel { align-self: center; }
   .slot-band { display: contents; }
   .band-cards { grid-area: band; }
   .band-cards:empty { display: none; }
@@ -630,15 +587,11 @@ html, body {
   .pips li:not([data-state='current']) .pip-label { display: none; }
   .log-toggle { font-size: 9px; }
 
-  .intel { padding: 6px 10px; }
-  .intel > .panel-toggle { writing-mode: horizontal-tb; }
-  .intel[data-open='true'] .panel-body { left: 0; top: auto; bottom: calc(100% + 4px); width: min(340px, calc(100vw - 32px)); }
-
   /* The heartbeat strip: five small traces; tap it for the full readout. */
   .team { padding: 6px 10px; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; }
   .team-head { width: auto; gap: 6px; }
   .team .activity { text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .team .rows, .team .readout, .team .stats, .team .buffs { grid-column: 1 / -1; }
+  .team .rows, .team .readout, .team .stats { grid-column: 1 / -1; }
   .team .rows { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 4px; }
   .op.compact { grid-template-columns: 1fr; justify-items: center; gap: 0; }
   .op.compact .ecg { width: 100%; height: 14px; }

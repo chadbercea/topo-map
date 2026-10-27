@@ -58,7 +58,7 @@ export function EventCard() {
           </div>
         )
       ) : e.kind === 'site' ? (
-        <p>{e.status === 'resolved' ? 'Searched or passed.' : 'ALPHA can search it for intel when it gets there.'}</p>
+        <p>{e.status === 'resolved' ? 'Searched or passed.' : 'ALPHA can search it for documents when it gets there.'}</p>
       ) : call ? (
         <p>
           {call.from}: “{call.text}” {call.status === 'new' && call.holds ? 'Answer in comms.' : ''}

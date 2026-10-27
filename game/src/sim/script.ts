@@ -1,6 +1,5 @@
 import type { Contact } from './contacts';
 import type { Scheduled } from './events';
-import type { Project, IntelType } from './intel';
 import type { GameState } from './state';
 import type { System } from './systems';
 import type { Message } from './comms';
@@ -8,7 +7,7 @@ import type { SquareId } from '../map/grid';
 
 // A mission is data plus triggers (GDD: scripted, multifaceted decision points with
 // different outcomes). A trigger fires once, the first tick its condition holds, and can
-// change anything: move a contact, offer a side job, start a call. Triggers keep functions,
+// change anything: move a contact, start a call, set a flag. Triggers keep functions,
 // so they stay in the mission definition; the game state only records which have fired.
 
 export type Trigger = {
@@ -24,7 +23,6 @@ export type MissionDef = {
   route: SquareId[]; // A first, B (the crash site) at index 3, C last
   contacts: () => Contact[];
   schedule: Scheduled[];
-  feed: { atMs: number; project: Omit<Project, 'progress'> & { type: IntelType } }[];
   triggers: Trigger[];
   // Known threats with an ETA, for the mission bar's Next line (ILI-1173).
   threats?: (s: GameState) => { text: string; atMs: number }[];

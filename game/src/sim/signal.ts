@@ -1,5 +1,4 @@
 import { nextRandom } from './firefight';
-import { boostIntel } from './intel';
 import { reveal } from './contacts';
 import type { Message } from './comms';
 import type { MiniGame } from './minigame';
@@ -104,7 +103,7 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
   const c = g.contactId ? next.contacts.find((x) => x.id === g.contactId) : undefined;
   if (where && c?.status === 'hidden') next = reveal(next, [c.square], 'SIGINT');
   if (plan) {
-    next = boostIntel({ ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } }, 'signals', 0.3);
+    next = { ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } };
     if (c) next = { ...next, contacts: next.contacts.map((x) => (x.id === c.id ? { ...x, planKnown: true } : x)) };
   }
   const report: Message = {

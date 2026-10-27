@@ -1,12 +1,11 @@
 import { squareAt } from '../map/grid';
-import { boostIntel } from './intel';
 import { treeCall } from './responses';
 import type { Contact } from './contacts';
 import type { GameState } from './state';
 import type { System } from './systems';
 
 // Confirmed kills earn cash (GDD), and a destroyed contact leaves a kill site. When ALPHA
-// reaches one it offers to search it: intel and documents, at a cost against the clock.
+// reaches one it offers to search it: documents worth cash, at a cost against the clock.
 
 export const CASH_PER_STRIKE_KILL = 1_500;
 export const CASH_PER_TEAM_KILL = 1_000;
@@ -38,12 +37,11 @@ export const siteSystem: System = (s) => {
   };
 };
 
-// Searching: the team digs through the site for a while; HQ gets intel and documents.
+// Searching: the team digs through the site for a while; the documents pay.
 export function search(s: GameState, square: string): GameState {
   const site = s.events.find((e) => e.kind === 'site' && e.square === square && e.status !== 'resolved');
   if (!site) return s;
-  let next = boostIntel(boostIntel(s, 'target', 0.4), 'signals', 0.2);
-  next = earn(next, SEARCH_CASH);
+  const next = earn(s, SEARCH_CASH);
   return {
     ...next,
     team: { ...next.team, holdUntilMs: s.elapsedMs + SEARCH_MS, activity: `Searching ${square}` },

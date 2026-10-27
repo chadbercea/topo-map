@@ -1,7 +1,7 @@
 import { game, useGame } from '../sim/store';
 import { satelliteStatus } from '../sim/satellite';
 import { currentCall, waitingCalls } from '../sim/comms';
-import { callDeadline, nextUp, phasePips } from '../sim/progress';
+import { nextUp, phasePips } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import { RadioLog } from './RadioLog';
 
@@ -16,14 +16,12 @@ export const clock = (ms: number) => {
 // waits here as a chip.
 export function MissionBar() {
   const s = useGame((x) => x);
-  const { timer, phase, tick, resources, alerted, deniability, inbound, elapsedMs: now } = s;
+  const { timer, phase, tick, resources, alerted, inbound, elapsedMs: now } = s;
   const noise = Math.round(s.noise);
   const next = nextUp(s);
-  const job = s.sideJob;
   const calls = waitingCalls(s.comms);
   const call = currentCall(s.comms);
   const playing = s.minigame?.status === 'active';
-  const deadline = call ? callDeadline(s, call) : null;
   const remaining = timer.remainingMs;
 
   return (
@@ -62,19 +60,9 @@ export function MissionBar() {
           noise <span className="bar" role="meter" aria-label="Noise" aria-valuenow={noise}><span style={{ width: `${noise}%` }} /></span>
           {alerted && <b> ALERTED</b>}
         </p>
-        {deniability !== 'clean' && (
-          <p className="deniability" data-testid="deniability" data-state={deniability}>
-            client: {deniability === 'warned' ? 'warning, keep it quiet' : 'DISOWNED, no contract, no support'}
-          </p>
-        )}
-        {job?.status === 'active' && job.deadlineMs !== null && (
-          <p className="side-job" data-testid="side-job">
-            side job: {job.square} imagery · {Math.ceil((job.deadlineMs - now) / 1000)}s · +${job.reward.toLocaleString('en-US')}
-          </p>
-        )}
         {inbound.map((i) => (
           <p key={i.kind} className="inbound" data-testid={`inbound-${i.kind}`}>
-            {i.kind === 'resupply' ? 'resupply bird' : 'reinforcements'} inbound · {Math.max(0, Math.ceil((i.arrivesMs - now) / 1000))}s
+            resupply bird inbound · {Math.max(0, Math.ceil((i.arrivesMs - now) / 1000))}s
           </p>
         ))}
       </div>
@@ -82,7 +70,6 @@ export function MissionBar() {
         <button className="comms-badge" onClick={() => game.setCommsMinimized(false)} disabled={playing} data-testid="comms-badge">
           ◂ {call.from} needs a decision
           {calls.length > 1 && ` (+${calls.length - 1})`}
-          {deadline !== null && ` · ${clock(deadline - now)}`}
         </button>
       )}
       <RadioLog />

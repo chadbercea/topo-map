@@ -19,8 +19,8 @@ test('running low, ALPHA asks for a resupply; the bird flies in and refills them
     });
   });
   await fastForward(page, 300);
-  await expect(page.getByTestId('comms-text')).toHaveText('Running low on ammo. Can you get us a resupply?');
-  await page.getByTestId('responses').getByRole('button', { name: /Send a resupply bird/ }).click();
+  await expect(page.getByTestId('comms-text')).toHaveText('Running low on ammo. We need a resupply bird.');
+  await page.getByTestId('responses').getByRole('button', { name: /Send resupply/ }).click();
   await expect(page.getByTestId('inbound-resupply')).toContainText('resupply bird inbound');
   await expect(page.getByTestId('resources')).toContainText('$2,000');
   await fastForward(page, 20_500);
@@ -29,7 +29,7 @@ test('running low, ALPHA asks for a resupply; the bird flies in and refills them
   expect(ammo).toBe(true);
 });
 
-test('combat ineffective: ALPHA asks for reinforcements, and replacements arrive', async ({ page }) => {
+test('combat ineffective: ALPHA asks for a resupply bird, and replacements arrive', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
@@ -46,9 +46,9 @@ test('combat ineffective: ALPHA asks for reinforcements, and replacements arrive
     });
   });
   await fastForward(page, 300);
-  await expect(page.getByTestId('comms-text')).toHaveText("We're combat ineffective, 2 down. We need reinforcements.");
-  await page.getByTestId('responses').getByRole('button', { name: /Send reinforcements/ }).click();
-  await expect(page.getByTestId('inbound-reinforcements')).toContainText('reinforcements inbound');
-  await fastForward(page, 30_500);
+  await expect(page.getByTestId('comms-text')).toHaveText('Combat ineffective, 2 down. We need a resupply bird.');
+  await page.getByTestId('responses').getByRole('button', { name: /Send resupply/ }).click();
+  await expect(page.getByTestId('inbound-resupply')).toContainText('resupply bird inbound');
+  await fastForward(page, 20_500);
   await expect(page.getByTestId('team-panel')).toContainText('5/5 fit');
 });

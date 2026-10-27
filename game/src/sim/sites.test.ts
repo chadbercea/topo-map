@@ -38,7 +38,7 @@ describe('kill sites', () => {
     expect(store.get().events.find((e) => e.kind === 'site')).toMatchObject({ square: 'E3', status: 'new' });
   });
 
-  it('reaching it, ALPHA offers to search; searching costs time and pays intel and documents', () => {
+  it('reaching it, ALPHA offers to search; searching costs time and the documents pay', () => {
     const store = createStore(withContact());
     store.fire('t', 'drone');
     store.tapMiniGame('E3', 5);
@@ -47,12 +47,10 @@ describe('kill sites', () => {
     for (let i = 0; i < 3000 && !s.team.holdFor?.startsWith('site-call'); i++) s = run(s, 100);
     expect(s.comms.messages.find((m) => m.id === s.team.holdFor)?.text).toMatch(/^At the kill site in E3/);
     const budget = s.resources.budget;
-    const target = s.intel.projects.target?.progress ?? 0;
     const st = createStore(s);
     st.respond(s.team.holdFor!, 'search');
     s = st.get();
     expect(s.resources.budget).toBe(budget + SEARCH_CASH);
-    if (s.intel.projects.target) expect(s.intel.projects.target.progress).toBeGreaterThan(target);
     expect(s.events.find((e) => e.kind === 'site')?.status).toBe('resolved');
     const at = s.team.position;
     expect(run(s, SEARCH_MS - 500).team.position).toEqual(at);

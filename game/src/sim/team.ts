@@ -12,7 +12,6 @@ export type Operator = {
   health: number; // 0..100
   ammo: number; // rounds carried
   meds: number; // IFAKs and medical kits carried
-  fatigue: number; // 0..100; elite operators never tire out, but it shows and slows them
 };
 
 // GDD: everyone carries an IFAK and ammo; the medic has the least ammo and the most meds,
@@ -38,7 +37,6 @@ const operator = (id: string, name: string, role: Role, rank: Rank): Operator =>
   rank,
   health: 100,
   ...LOADOUT[role],
-  fatigue: 0,
 });
 
 export const roster = (): Operator[] => [

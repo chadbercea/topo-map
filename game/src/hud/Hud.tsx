@@ -2,7 +2,6 @@ import { Briefing } from './Briefing';
 import { DebugPanel } from './DebugPanel';
 import { EventAlerts, EventCard } from './EventAlerts';
 import { game, useGame } from '../sim/store';
-import { IntelPanel } from './IntelPanel';
 import { MapArea } from './MapArea';
 import { MapViews } from './MapViews';
 import { MiniGamePanel } from './MiniGamePanel';
@@ -19,7 +18,7 @@ const debug = new URLSearchParams(location.search).has('debug');
 if (debug) Object.assign(window, { game });
 
 // War room layout (ILI-1170). Two panels stay on screen: the mission bar along the top and
-// the team column on the right. Intel is a tab on the left edge that opens a drawer. The
+// the team column on the right. The
 // map's grid fits the space between them, over the full-screen terrain. The band under the
 // grid holds whatever needs an answer (target menu, call card, mini game) and the map
 // controls. On a phone in portrait it all stacks: bar, grid, tools, heartbeats, the band.
@@ -29,9 +28,6 @@ export function Hud() {
     <div className="hud" data-playing={playing}>
       <div className="slot-bar">
         <MissionBar />
-      </div>
-      <div className="slot-intel">
-        <IntelPanel />
       </div>
       <EventAlerts />
       <MapArea />

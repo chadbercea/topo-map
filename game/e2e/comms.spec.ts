@@ -60,21 +60,6 @@ test('Send imagery: a look at E3 finds the checkpoint and ALPHA asks to observe,
   await expect.poll(() => page.evaluate(() => window.game.get().team.route)).toContain('E4');
 });
 
-test('the local fixer is on offer, greyed out until there is money for it', async ({ page }) => {
-  await start(page, '?debug');
-  await page.waitForFunction(() => window.game?.get().team.holdFor);
-  const fixer = page.getByTestId('responses').getByRole('button', { name: /Pay a fixer/ });
-  await expect(fixer).toBeDisabled();
-  await expect(fixer).toContainText('Over budget');
-  await page.evaluate(() => {
-    const s = window.game.get();
-    window.game.set({ ...s, resources: { ...s.resources, budget: 5_000 } });
-  });
-  await expect(fixer).toBeEnabled();
-  await fixer.click();
-  await expect(page.getByTestId('resources')).toContainText('$3,000');
-});
-
 test('news the map does not show is a banner, and the radio log keeps every message', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);

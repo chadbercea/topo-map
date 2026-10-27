@@ -74,8 +74,6 @@ export function OperatorRow({ o, compact = false }: { o: Operator; compact?: boo
         <Bar value={ammoLeft(o)} label={`${o.name} ammo`} />
         <span>MEDS</span>
         <Bar value={medsLeft(o)} label={`${o.name} meds`} />
-        <span>FTG</span>
-        <span className="fatigue">{Math.round(o.fatigue)}</span>
       </div>
     </li>
   );
