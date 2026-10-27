@@ -9,6 +9,7 @@ export default defineConfig({
   // CI's software renderer is slow with the full war room on screen (stream, team panel
   // heartbeats, water): many tests ran 25-38 s against the old 30 s default.
   timeout: 60_000,
+  expect: { timeout: 10_000 }, // the game clock runs behind there too (a SITREP reply is game time)
   reporter: [['list']],
   use: { baseURL: 'http://localhost:4173/game/', trace: 'retain-on-failure' },
   projects: [
