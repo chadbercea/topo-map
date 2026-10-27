@@ -1,10 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
-import { boardCell, squarePoint, tapAt } from './helpers';
+import { boardCell, freeze, squarePoint, tapAt } from './helpers';
 
 // Win the opening scan so the checkpoint in E3 is found, then open its target menu.
 async function targetE3(page: Page) {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
+  await freeze(page);
   await page.evaluate(() => {
     const g = window.game;
     g.respond(g.get().team.holdFor!, 'send');
@@ -40,6 +41,7 @@ test('sniper: the square becomes a board; a shot on a fighter is a kill', async 
 });
 
 test('drone then sniper: the blast takes four of the checkpoint, the sniper finishes it', async ({ page, isMobile }) => {
+  test.setTimeout(60_000); // a dozen real taps, and CI taps slowly
   await targetE3(page);
   await page.getByTestId('fire-drone').click();
   await tapAt(page, isMobile, await e3Cell(page, 5)); // 2x2 over 5, 6, 9, 10

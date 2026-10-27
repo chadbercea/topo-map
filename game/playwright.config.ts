@@ -10,7 +10,8 @@ export default defineConfig({
   use: { baseURL: 'http://localhost:4173/game/', trace: 'retain-on-failure' },
   projects: [
     { name: 'desktop', use: { viewport: { width: 1440, height: 900 } } },
-    { name: 'phone', use: { ...devices['iPhone 13'], browserName: 'chromium' } },
+    // Phone size and touch at 1x pixels: at the iPhone's 3x the software compositor can't keep up.
+    { name: 'phone', use: { ...devices['iPhone 13'], deviceScaleFactor: 1, browserName: 'chromium' } },
   ],
   webServer: {
     command: 'npm run build && npx vite preview --port 4173 --strictPort',

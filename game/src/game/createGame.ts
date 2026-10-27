@@ -13,8 +13,9 @@ export function createGame(parent: HTMLElement) {
     scale: { mode: Phaser.Scale.NONE, ...size(), zoom: 1 / DPR },
     render: { antialias: true, roundPixels: false },
     // The map is mostly still: 30 frames a second looks the same and halves the drawing work
-    // (phone batteries, and CI's software renderer). Game time runs on its own fixed step.
-    fps: { limit: 30, target: 30 },
+    // for phone batteries. Under browser automation (CI's 2-core software renderer) 10 is
+    // plenty, and leaves the CPU for the page and the test. Game time runs on its own step.
+    fps: navigator.webdriver ? { limit: 10, target: 10 } : { limit: 30, target: 30 },
     banner: false,
     scene: [MapScene],
   });

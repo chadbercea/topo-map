@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { fastForward } from './helpers';
+import { fastForward, freeze } from './helpers';
 
 test('intercept: tune with the dial controls, lock on, shift the cipher until it reads, send', async ({ page }) => {
   test.setTimeout(60_000); // up to a dozen clicks, and CI clicks slowly
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
+  await freeze(page);
   await fastForward(page, 50_000);
   await page.getByTestId('alerts').getByRole('button', { name: /SIGNAL C2/ }).click();
   await page.getByRole('button', { name: 'Intercept' }).click();

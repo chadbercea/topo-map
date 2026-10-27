@@ -1,8 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { freeze } from './helpers';
 
 test('the objective leads ALPHA from the crash site to exfil, and the mission completes', async ({ page }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
+  await freeze(page);
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
 
   // Clear ground the whole way, so nothing stops the walk.
