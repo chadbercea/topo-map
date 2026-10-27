@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { freeze, squarePoint, start, tapAt, worldToScreen } from './helpers';
 
-test('tapping a grid square selects it, tapping again clears it', async ({ page, isMobile }) => {
+test('tapping a grid square selects it and opens its zoomed view; tapping again clears it', async ({ page, isMobile }) => {
   await start(page, '?debug');
   const selected = page.getByTestId('selected-square');
   await expect(selected).toHaveText('—');
@@ -10,6 +10,12 @@ test('tapping a grid square selects it, tapping again clears it', async ({ page,
   // past the screen's edges, and the panels cover the bottom.
   await tap(6, 1);
   await expect(selected).toHaveText('G2');
+  if (isMobile) {
+    // On a phone the square's zoomed view and card take most of the map: Close clears it.
+    await page.getByTestId('look-card').getByRole('button', { name: 'Close' }).click();
+    await expect(selected).toHaveText('—');
+    return;
+  }
   await tap(7, 1);
   await expect(selected).toHaveText('H2');
   await tap(7, 1);

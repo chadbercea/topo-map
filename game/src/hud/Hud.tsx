@@ -29,20 +29,14 @@ type Tab = 'intel' | 'satcom' | 'team' | 'orion';
 // stream, comms, team and ORION-3 share one docked panel with tabs.
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
-  const selected = useGame((s) => s.map.selected);
-  const sat = useGame((s) => s.satellite.state);
   const [tab, setTab] = useState<Tab>('team');
-  // On a phone the dock follows the action: a call brings satcom forward; a square picked on
-  // the map, or ORION-3 moving on to its next step (slewing, on station, capturing), brings
-  // ORION-3's panel.
+  // On a phone the dock follows the action. A square picked on the map opens its zoomed view
+  // on the map itself (ILI-1201), so the dock stays where it is.
   // New events run inline in the intel stream (ILI-1197): a new one brings it forward.
   const fresh = useGame((s) => s.events.filter((e) => e.status === 'new').length);
   useEffect(() => {
     if (fresh) setTab('intel');
   }, [fresh]);
-  useEffect(() => {
-    if (selected || sat !== 'idle') setTab('orion');
-  }, [selected, sat]);
 
   return (
     <div className="hud" data-playing={playing} data-tab={tab}>
