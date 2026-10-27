@@ -4,6 +4,7 @@ import { currentCall, waitingCalls } from '../sim/comms';
 import { nextUp, phasePips } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import { RadioLog } from './RadioLog';
+import { TeamPanel } from './TeamPanel';
 
 export const clock = (ms: number) => {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -49,13 +50,14 @@ export function MissionBar() {
           </span>
         </p>
       </div>
+      <TeamPanel />
       <span className="break" aria-hidden />
       <div className="stats">
         <p className="resources" data-testid="resources">
           <span data-testid="satellite-status">{satelliteStatus(s)}</span> · ${resources.budget.toLocaleString('en-US')}
         </p>
         <p className="noise" data-testid="noise" data-alerted={alerted}>
-          noise <span className="bar" role="meter" aria-label="Noise" aria-valuenow={noise}><span style={{ width: `${noise}%` }} /></span>
+          <span className="label">noise</span> <span className="bar" role="meter" aria-label="Noise" aria-valuenow={noise}><span style={{ width: `${noise}%` }} /></span>
           {alerted && <b> ALERTED</b>}
         </p>
         {inbound.map((i) => (
