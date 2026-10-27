@@ -1,12 +1,10 @@
 import { game, useGame } from '../sim/store';
 import { wrapUp } from '../sim/wrapup';
+import { gameClock } from '../sim/gameTime';
 
 const HEADLINE = { win: 'MISSION SUCCESS', casualties: 'MISSION COMPLETE · CASUALTIES', failed: 'MISSION FAILED' } as const;
 const money = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(n).toLocaleString('en-US')}`;
-const clock = (ms: number) => {
-  const s = Math.floor(ms / 1000);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-};
+const clock = (ms: number) => gameClock(ms, Math.floor);
 
 // End of mission: outcome, objectives, what HQ's intel did, new intel, payout and budget.
 export function WrapUp() {

@@ -19,7 +19,7 @@ The direction has changed a lot, and the repo keeps the history. I started with 
 
 ## Playing Operation Black Box
 
-A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5), recovers its black box at the crash site **B** (D3), and exfils at **C** (B1). You have six minutes.
+A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5), recovers its black box at the crash site **B** (D3), and exfils at **C** (B1). The AO is 4 × 2.5 km in 500 m squares, and you have four hours of game time (six real minutes; the clock runs at 40×).
 
 - **The map.** Topographic contours over an 8×5 grid (A1–H5), with a town you can switch on or off and a Topo or Relief view. ALPHA walks its route on its own. Climbs slow it down and tire the heavy gunner first.
 - **Imagery.** ALPHA stops short of any square nobody has imaged and asks: scan it, or push through blind? *Send imagery* starts the **grid scan**: tap the ORION-3 satellite's squares in order before the pass ends. Scans are a shared pool that recharges. You can also select any square and scan it yourself.
@@ -35,7 +35,7 @@ A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5
 - **The PMC side.** The client offers a bonus for a side job against the clock. Noise from strikes alerts the enemy, and too much makes the client disown you (no contract, no air support). A local fixer can guide ALPHA in or stage a distraction. Running low? Send a resupply bird. Combat ineffective? Send reinforcements.
 - **The wrap-up.** A win needs the black box at exfil with nobody down. It shows what your intel achieved, what new intel you found, and the payout.
 
-Pause with Esc, P or the ❚❚ button. `?minutes=8` changes the mission length for tuning.
+Pause with Esc, P or the ❚❚ button. `?minutes=8` changes the mission length in real minutes, for tuning.
 
 ## How it's built
 

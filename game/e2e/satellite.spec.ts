@@ -12,7 +12,7 @@ test('select a square, task ORION-3 there, take a burst: the look lands on the m
   const actions = page.getByTestId('square-actions');
   await expect(actions).toContainText('E3');
   await expect(actions).toContainText('no imagery');
-  await expect(page.getByTestId('look-here')).toHaveText(/Look · \ds/);
+  await expect(page.getByTestId('look-here')).toHaveText(/Look · \d+ min/);
   await page.getByTestId('look-here').click();
 
   const panel = page.getByTestId('satellite');

@@ -10,7 +10,7 @@ describe('mission progression', () => {
     expect(phasePips(s).map((p) => p.state)).toEqual(['current', 'todo', 'todo']);
     const at = { ...s, mission: { ...s.mission, phase: 'objective' as const, recoverUntilMs: s.elapsedMs + 12_000 } };
     expect(phasePips(at).map((p) => p.state)).toEqual(['done', 'current', 'todo']);
-    expect(phasePips(at)[1].detail).toBe('recovering 12s');
+    expect(phasePips(at)[1].detail).toBe('recovering · 8 min');
     expect(phasePips({ ...s, mission: { ...s.mission, phase: 'complete' } }).every((p) => p.state === 'done')).toBe(true);
   });
 

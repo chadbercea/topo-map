@@ -1,5 +1,6 @@
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, type CaptureMode } from '../sim/satellite';
+import { gameSpan } from '../sim/gameTime';
 
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
 
@@ -11,7 +12,7 @@ export function SatellitePanel() {
   const now = useGame((s) => s.elapsedMs);
   const playing = useGame((s) => s.minigame?.status === 'active');
   if (playing || (sat.state === 'idle' && !sat.result)) return null;
-  const secs = (ms: number) => `${Math.max(0, Math.ceil(ms / 1000))}s`;
+  const secs = gameSpan;
 
   return (
     <section className="panel satellite" data-testid="satellite" data-state={sat.state} role="dialog" aria-label="ORION-3 satellite">
@@ -35,7 +36,7 @@ export function SatellitePanel() {
               <button key={m} onClick={() => game.capture(m)} data-testid={`capture-${m}`}>
                 <b>
                   {CAPTURE[m].label}
-                  {CAPTURE[m].ms ? ` · ${CAPTURE[m].ms / 1000}s` : ''}
+                  {CAPTURE[m].ms ? ` · ${gameSpan(CAPTURE[m].ms)}` : ''}
                 </b>
                 <small>{CAPTURE[m].what}</small>
               </button>

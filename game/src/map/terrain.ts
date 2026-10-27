@@ -5,7 +5,7 @@ import { WORLD_H, WORLD_W } from './grid';
 // gives the same ridges and valleys, traced into contour lines like a survey map.
 
 export const SAMPLE = 10; // world units per height sample
-export const CONTOUR_STEP = 20; // metres between contour lines
+export const CONTOUR_STEP = 10; // metres between contour lines
 export const INDEX_EVERY = 5; // every 5th line is an index contour, drawn heavier
 
 function hash(x: number, y: number, seed: number) {
@@ -58,7 +58,7 @@ function groundAt(wx: number, wy: number, seed: number) {
     amp *= 0.5;
     freq *= 2;
   }
-  return 900 + h * 520; // ~900–1700 m of relief
+  return 450 + h * 260; // ~450–850 m: the same slopes as before at 500 m squares (ILI-1190)
 }
 
 export function generateTerrain(seed = 7, area: Area = FINE): Terrain {

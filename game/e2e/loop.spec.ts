@@ -5,7 +5,7 @@ const tick = async (page: Page) => Number(await page.getByTestId('tick').textCon
 
 test('mission clock runs in real time and freezes on pause', async ({ page, isMobile }) => {
   await start(page);
-  await expect(page.getByTestId('clock')).toHaveText('06:00');
+  await expect(page.getByTestId('clock')).toHaveText('4:00');
 
   // The clock advances and never outruns real time (10 ticks a second). CI renders on the
   // CPU at a frame or so a second, so exact real-time pacing is covered by the unit tests

@@ -7,7 +7,7 @@ export const PATROL_JAMMED_MS = 240_000; // jamming its net slows it down
 export const PATROL_WALK_MS = 30_000; // it's on the move this long before it gets there
 
 // Operation Black Box, the MVP mission (GDD): infil at A, recover the downed drone's black
-// box at B, exfil at C. Six minutes on the contract window.
+// box at B, exfil at C. Four hours of game time on the contract window (six real minutes).
 export const BLACK_BOX: MissionDef = registerMission({
   id: 'black-box',
   name: 'Operation Black Box',
@@ -106,13 +106,13 @@ export const BLACK_BOX: MissionDef = registerMission({
     {
       id: 'three-minutes',
       when: (s) => s.timer.remainingMs <= 180_000 && s.mission.phase !== 'complete',
-      then: (s) => say(s, 'HQ', 'warn-3min', 'Three minutes on the contract window.'),
+      then: (s) => say(s, 'HQ', 'warn-3min', 'Two hours on the contract window.'),
     },
     {
       id: 'one-minute',
       when: (s) => s.timer.remainingMs <= 60_000 && s.mission.phase !== 'complete',
       then: (s) =>
-        say(s, 'HQ', 'warn-1min', s.mission.blackBox ? 'One minute. Get them to exfil.' : 'One minute, and no black box. This is slipping.'),
+        say(s, 'HQ', 'warn-1min', s.mission.blackBox ? 'Forty minutes. Get them to exfil.' : 'Forty minutes, and no black box. This is slipping.'),
     },
   ],
 });

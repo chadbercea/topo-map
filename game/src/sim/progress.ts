@@ -1,5 +1,6 @@
 import { missionDef } from './script';
 import type { GameState } from './state';
+import { gameSpan } from './gameTime';
 
 // Mission progression at a glance (ILI-1173): where the mission is (phase pips), what ALPHA
 // is doing now, and the one thing that presses next. Pure reads of the state, for the HUD.
@@ -17,7 +18,7 @@ export function phasePips(s: GameState): Pip[] {
     { key: 'C', label: `C exfil ${mission.c}` },
   ].map((p, i) => ({ ...p, state: i < at ? 'done' : i === at ? 'current' : 'todo' }));
   if (mission.phase === 'objective' && mission.recoverUntilMs !== null)
-    pips[1].detail = `recovering ${Math.ceil((mission.recoverUntilMs - s.elapsedMs) / 1000)}s`;
+    pips[1].detail = `recovering · ${gameSpan(mission.recoverUntilMs - s.elapsedMs)}`;
   return pips;
 }
 

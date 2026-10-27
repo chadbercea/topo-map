@@ -36,7 +36,7 @@ describe('mission script', () => {
       const s = initialState();
       return step({ ...s, timer: { remainingMs: 60_000, totalMs: 360_000 }, mission: { ...s.mission, blackBox } }, 100);
     };
-    expect(late(true).comms.messages.find((m) => m.id === 'warn-1min')?.text).toBe('One minute. Get them to exfil.');
+    expect(late(true).comms.messages.find((m) => m.id === 'warn-1min')?.text).toBe('Forty minutes. Get them to exfil.');
     expect(late(false).comms.messages.find((m) => m.id === 'warn-1min')?.text).toMatch(/no black box/);
   });
 

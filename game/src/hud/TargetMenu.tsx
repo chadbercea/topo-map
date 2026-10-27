@@ -1,8 +1,9 @@
 import { WEAPON, WEAPONS, weaponBlocked } from '../sim/ordnance';
 import { game, useGame } from '../sim/store';
 import { eyesOn, type Eyes } from '../sim/imagery';
+import { gameSpan } from '../sim/gameTime';
 
-const age = (ms: number) => `${Math.floor(ms / 60_000)}:${String(Math.floor((ms % 60_000) / 1000)).padStart(2, '0')}`;
+const age = gameSpan;
 
 // What HQ can see of it, in words: strikes aim at this.
 export function eyesLine(e: Eyes | null, now: number) {

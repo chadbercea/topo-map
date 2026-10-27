@@ -14,13 +14,13 @@ test('the mission opens on the briefing with the clock stopped; Go starts it', a
   await expect(page.getByTestId('briefing')).toContainText('Recover the black box at D3');
   await page.waitForTimeout(500);
   expect(await tick(page)).toBe(0);
-  await expect(page.getByTestId('clock')).toHaveText('06:00');
+  await expect(page.getByTestId('clock')).toHaveText('4:00');
   await press(page, 'Go', isMobile);
   await expect(page.getByTestId('briefing')).toHaveCount(0);
   await expect.poll(() => tick(page)).toBeGreaterThan(0);
 });
 
-test('restart goes back to the briefing at 06:00', async ({ page, isMobile }) => {
+test('restart goes back to the briefing at 4:00', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 2_000); // well into the mission: 20+ ticks
@@ -29,7 +29,7 @@ test('restart goes back to the briefing at 06:00', async ({ page, isMobile }) =>
   await expect(menu(page)).toHaveCount(0);
   await expect(page.getByTestId('briefing')).toBeVisible();
   expect(await tick(page)).toBe(0);
-  await expect(page.getByTestId('clock')).toHaveText('06:00');
+  await expect(page.getByTestId('clock')).toHaveText('4:00');
 });
 
 test('exit leaves the mission and start mission begins a new one', async ({ page, isMobile }) => {

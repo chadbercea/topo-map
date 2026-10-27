@@ -4,6 +4,7 @@
 export const COLS = 8;
 export const ROWS = 5;
 export const CELL = 200; // world units per square
+export const METRES_PER_UNIT = 2.5; // a square is 500 m: a foot patrol's AO, not a theater (ILI-1190)
 export const WORLD_W = COLS * CELL;
 export const WORLD_H = ROWS * CELL;
 

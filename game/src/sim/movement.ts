@@ -1,12 +1,11 @@
-import { squareCenter } from '../map/grid';
+import { METRES_PER_UNIT, squareCenter } from '../map/grid';
 import { heightAt, theater } from '../map/terrain';
 import type { System } from './systems';
 
 // The team moves on its own (GDD: the player never controls it), waypoint to waypoint in
 // straight legs. Climbing slows it.
 
-export const BASE_SPEED = 12; // world units per second on flat ground (a square in ~17 s)
-const METRES_PER_UNIT = 5; // a 200-unit square is 1 km
+export const BASE_SPEED = 12; // world units per second on flat ground (a square in ~17 s, ~2.6 km/h in game time)
 const PROBE = 10; // world units ahead used to measure the slope
 const CLIMB_PENALTY = 4; // a 25% uphill grade halves speed
 
