@@ -23,3 +23,11 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText('ALPHA');
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
+
+test('the top bar covers at most half a grid square, so row 1 stays in view', async ({ page }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  const square = await page.evaluate(() => 200 * window.mapCamera().zoom / window.mapCamera().dpr); // CSS px
+  const bar = (await page.getByTestId('mission-timer').boundingBox())!;
+  expect(bar.y + bar.height).toBeLessThanOrEqual(square / 2);
+});

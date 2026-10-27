@@ -49,6 +49,7 @@ export function MissionBar() {
           </span>
         </p>
       </div>
+      <span className="break" aria-hidden />
       <div className="stats">
         <p className="resources" data-testid="resources">
           <span data-testid="satellite-status">{satelliteStatus(s)}</span> · ${resources.budget.toLocaleString('en-US')}
