@@ -61,7 +61,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await expect.poll(() => page.evaluate(() => window.game.get().team.route)).toContain('E4');
 });
 
-test('news the map does not show is a banner, and the radio log keeps every message', async ({ page }) => {
+test('news the map does not show is a banner, the stream keeps it, and the header flags it', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
@@ -69,6 +69,7 @@ test('news the map does not show is a banner, and the radio log keeps every mess
     window.game.tick(100);
   });
   await expect(page.getByTestId('banner')).toContainText('know a PMC is in the area');
-  await page.getByTestId('log-toggle').click();
-  await expect(page.getByTestId('radio-log')).toContainText('Enemy radio net just lit up');
+  await expect(page.getByTestId('blockers')).toContainText('Enemy alerted');
+  if (isMobile) await page.getByTestId('tab-intel').click();
+  await expect(page.getByTestId('intel-items')).toContainText('Enemy radio net just lit up');
 });

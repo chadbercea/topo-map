@@ -7,6 +7,7 @@ import { MiniGamePanel } from './MiniGamePanel';
 import { SatelliteInset } from './SatelliteInset';
 import { SatellitePanel } from './SatellitePanel';
 import { SquareActions } from './SquareActions';
+import { Assets } from './Assets';
 import { MissionBar } from './MissionBar';
 import { CommsPanel } from './CommsPanel';
 import { IntelStream } from './IntelStream';
@@ -54,6 +55,7 @@ export function Hud() {
           <SatellitePanel />
         </div>
         <div className="map-controls">
+          <Assets />
           <SquareActions />
         </div>
       </div>
