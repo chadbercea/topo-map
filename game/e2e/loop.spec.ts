@@ -1,18 +1,19 @@
 import { expect, test, type Page } from '@playwright/test';
+import { start } from './helpers';
 
 const tick = async (page: Page) => Number(await page.getByTestId('tick').textContent());
 
 test('mission clock runs in real time and freezes on pause', async ({ page, isMobile }) => {
-  await page.goto('');
+  await start(page);
   await expect(page.getByTestId('clock')).toHaveText('06:00');
 
   // The clock advances and never outruns real time (10 ticks a second). CI renders on the
   // CPU at a frame or so a second, so exact real-time pacing is covered by the unit tests
   // (same ticks at any frame rate), not here.
   await expect.poll(() => tick(page), { timeout: 15_000 }).toBeGreaterThan(0);
-  const start = await tick(page);
+  const t0 = await tick(page);
   await page.waitForTimeout(1500);
-  const ran = (await tick(page)) - start;
+  const ran = (await tick(page)) - t0;
   expect(ran).toBeGreaterThan(0);
   expect(ran).toBeLessThanOrEqual(20);
 

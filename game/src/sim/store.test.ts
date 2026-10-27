@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { initialState, MISSION_MS } from './state';
+import { briefing, initialState, MISSION_MS } from './state';
 import { createStore } from './store';
 import { step, type System } from './systems';
 
@@ -69,7 +69,7 @@ describe('store', () => {
     store.tick(100);
     store.pause();
     store.restart();
-    expect(store.get()).toEqual(initialState());
+    expect(store.get()).toEqual(briefing());
   });
 });
 
@@ -80,7 +80,7 @@ describe('pause menu actions', () => {
     store.tick(100);
     store.restart();
     expect(store.get().tick).toBe(0);
-    expect(store.get().phase).toBe('running');
+    expect(store.get().phase).toBe('briefing');
     expect(store.get().settings.city).toBe(false);
   });
 
@@ -93,7 +93,20 @@ describe('pause menu actions', () => {
     store.resume(); // resume only applies to a paused mission
     expect(store.get().phase).toBe('exited');
     store.restart();
-    expect(store.get().phase).toBe('running');
+    expect(store.get().phase).toBe('briefing');
+  });
+});
+
+describe('briefing', () => {
+  it('the clock stays stopped until Go', () => {
+    const store = createStore(briefing());
+    store.tick(100);
+    expect(store.get().tick).toBe(0);
+    store.pause(); // nothing to pause yet
+    expect(store.get().phase).toBe('briefing');
+    store.go();
+    store.tick(100);
+    expect(store.get()).toMatchObject({ phase: 'running', tick: 1 });
   });
 });
 

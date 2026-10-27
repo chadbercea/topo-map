@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { start } from './helpers';
 
 test('scene fills the screen and hears input, with no errors', async ({ page, isMobile }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 
-  await page.goto('?debug');
+  await start(page, '?debug');
   const canvas = page.locator('canvas');
   await expect(canvas).toHaveCount(1);
   const vp = page.viewportSize()!;

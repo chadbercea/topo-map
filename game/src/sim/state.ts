@@ -21,8 +21,9 @@ import { initialMission, type Mission } from './mission';
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
 
-// paused: pause menu open. ended: timer ran out. exited: player left the mission.
-export type Phase = 'running' | 'paused' | 'ended' | 'exited';
+// briefing: the plan on screen before the clock starts. paused: pause menu open. ended: timer
+// ran out. exited: player left the mission.
+export type Phase = 'briefing' | 'running' | 'paused' | 'ended' | 'exited';
 
 export type MapView = 'topo' | 'relief';
 export type Settings = { mapView: MapView; city: boolean };
@@ -80,7 +81,8 @@ export const MISSION: MissionDef = BLACK_BOX;
 export const ROUTE: SquareId[] = MISSION.route;
 export const MISSION_MS = MISSION.durationMs; // GDD: start with six minutes and tune by feel
 
-// missionMs: the mission's length, the script's six minutes unless tuned (?minutes=).
+// missionMs: the mission's length, the script's six minutes unless tuned (?minutes=). The
+// sim starts running; the game itself opens on the briefing (briefing()).
 export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS): GameState {
   const operators = roster();
   return {
@@ -130,3 +132,6 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     settings,
   };
 }
+
+// The mission as the player first sees it: the plan on screen, the clock stopped until Go.
+export const briefing = (settings?: Settings, missionMs?: number): GameState => ({ ...initialState(settings, missionMs), phase: 'briefing' });

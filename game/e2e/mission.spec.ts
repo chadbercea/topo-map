@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { freeze } from './helpers';
+import { freeze, start } from './helpers';
 
 test('the objective leads ALPHA from the crash site to exfil, and the mission completes', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
@@ -30,7 +30,7 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
 });
 
 test('running out of time fails the mission; the wrap-up offers a retry', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
     const s = window.game.get();

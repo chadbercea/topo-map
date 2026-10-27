@@ -15,7 +15,8 @@ function play(strategy: 'sharp' | 'silent') {
     if (s.satellite.result) store.closeLook();
     const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.status === 'new');
     if (!call?.responses) continue;
-    const pick = call.node === 'unimaged' ? 'send' : 'attack';
+    const ids = call.responses.map((r) => r.id);
+    const pick = call.node === 'unimaged' ? 'send' : ids.includes('attack') ? 'attack' : ids[0];
     store.respond(call.id, pick);
   }
   return store.get();
@@ -30,9 +31,10 @@ describe('playthrough', () => {
     expect(s.team.operators.every((o) => o.health > 0)).toBe(true);
   });
 
-  it('a silent HQ still gets ALPHA there, but through ambushes', () => {
+  it('a silent HQ gets nowhere: ALPHA holds at the insertion point for orders', () => {
     const s = play('silent');
-    expect(s.team.waypoint).toBe(s.team.route.length);
-    expect(s.comms.messages.filter((m) => m.text.startsWith('Ambush')).length).toBe(2);
+    expect(s.team.waypoint).toBe(1);
+    expect(s.team.position).toEqual(initialState().team.position);
+    expect(s.phase).toBe('ended');
   });
 });

@@ -376,6 +376,25 @@ html, body {
 .menu button:hover,
 .menu button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
 
+/* The briefing: over the frozen map, light enough that the route shows through. */
+.briefing-overlay { background: rgba(11, 15, 13, 0.35); }
+/* Wide screens: off to the right, over the team column, so the route stays in view. */
+@media (min-width: 900px) { .briefing-overlay { justify-items: end; align-items: start; } }
+.briefing { width: min(440px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; gap: 12px; background: var(--bg); color: var(--dim); font-size: 13px; line-height: 1.5; }
+.briefing p { margin: 0; }
+.briefing .eyebrow { color: var(--accent); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+.briefing .lead { color: var(--ink); font-size: 15px; }
+.briefing .plan { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; color: var(--ink); }
+.briefing .plan b { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 8px; border: 1px solid var(--accent); color: var(--accent); font-size: 11px; }
+.briefing .tag { color: var(--accent); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; margin-right: 6px; }
+.briefing .tools { margin: 0; display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; }
+.briefing .tools div { display: grid; grid-template-columns: 64px 1fr; gap: 8px; }
+.briefing dt { color: var(--ink); letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; padding-top: 2px; }
+.briefing dd { margin: 0; }
+.briefing .window b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.menu button.go { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
+.menu button.go:hover, .menu button.go:focus-visible { color: var(--bg); filter: brightness(1.1); }
+
 .wrapup { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--bg); }
 .wrapup .reason { color: var(--ink); font-size: 14px; }
 .wrapup .objectives { margin: 0; }

@@ -1,14 +1,14 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, untilOnStation } from './helpers';
+import { fastForward, freeze, start, untilOnStation } from './helpers';
 
 test('ALPHA holds short of unimaged ground and asks; Push through sends it on blind', async ({ page, isMobile }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 500);
 
   const panel = page.getByTestId('team-panel');
   await expect(page.getByTestId('comms')).toContainText('ALPHA · NEEDS A DECISION');
-  await expect(page.getByTestId('call-deadline')).toHaveText(/00:(19|20)/); // the hold times out in 20 s
+  await expect(page.getByTestId('call-deadline')).toHaveCount(0); // ALPHA waits: no countdown
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4\. No imagery/);
 
   const push = page.getByTestId('responses').getByRole('button', { name: 'Push through' });
@@ -19,7 +19,7 @@ test('ALPHA holds short of unimaged ground and asks; Push through sends it on bl
 });
 
 test('comms can be minimized to a badge and reopened', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 500);
   await page.getByRole('button', { name: 'Minimize comms' }).click();
@@ -30,7 +30,7 @@ test('comms can be minimized to a badge and reopened', async ({ page }) => {
 });
 
 test('Send imagery: a look at E3 finds the checkpoint and ALPHA asks to observe, attack or go around', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 500);
@@ -61,7 +61,7 @@ test('Send imagery: a look at E3 finds the checkpoint and ALPHA asks to observe,
 });
 
 test('the local fixer is on offer, greyed out until there is money for it', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   const fixer = page.getByTestId('responses').getByRole('button', { name: /Pay a fixer/ });
   await expect(fixer).toBeDisabled();
@@ -76,7 +76,7 @@ test('the local fixer is on offer, greyed out until there is money for it', asyn
 });
 
 test('news the map does not show is a banner, and the radio log keeps every message', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
     window.game.set({ ...window.game.get(), noise: 70 });

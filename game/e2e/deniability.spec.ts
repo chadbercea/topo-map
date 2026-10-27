@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { start } from './helpers';
 
 test('too much noise: the client warns, then disowns the operation', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   const spike = (noise: number) =>
     page.evaluate((noise) => {

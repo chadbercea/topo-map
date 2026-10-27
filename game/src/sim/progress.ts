@@ -1,4 +1,4 @@
-import { HOLD_TIMEOUT_MS, waitingCalls, type Message } from './comms';
+import { waitingCalls, type Message } from './comms';
 import { missionDef } from './script';
 import type { GameState } from './state';
 
@@ -30,10 +30,9 @@ export function phasePips(s: GameState): Pip[] {
   return pips;
 }
 
-// When a waiting call stops waiting: a hold times out (the team pushes on), the client's
-// offer lapses. Other calls wait as long as it takes.
+// When a waiting call stops waiting: only the client's offer lapses. ALPHA's calls wait as
+// long as it takes.
 export function callDeadline(s: GameState, m: Message): number | null {
-  if (m.holds && m.id === s.team.holdFor) return m.atMs + HOLD_TIMEOUT_MS;
   if (m.id === 'client-offer' && s.sideJob?.status === 'offered') return s.sideJob.offerUntilMs;
   return null;
 }

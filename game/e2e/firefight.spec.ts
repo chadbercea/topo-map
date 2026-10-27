@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { start } from './helpers';
 
 test('walking blind into the hidden checkpoint is an ambush; the team panel goes red and the medic patches them up', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
 
   // HQ waves ALPHA through every unimaged square until it runs into something.

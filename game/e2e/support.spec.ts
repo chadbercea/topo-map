@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { fastForward } from './helpers';
+import { fastForward, start } from './helpers';
 
 test('running low, ALPHA asks for a resupply; the bird flies in and refills them', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
     const s = window.game.get();
@@ -30,7 +30,7 @@ test('running low, ALPHA asks for a resupply; the bird flies in and refills them
 });
 
 test('combat ineffective: ALPHA asks for reinforcements, and replacements arrive', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
     const s = window.game.get();

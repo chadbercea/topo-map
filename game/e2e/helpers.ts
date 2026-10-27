@@ -9,6 +9,12 @@ declare global {
   }
 }
 
+// Open the game and close the briefing: the clock starts on Go.
+export async function start(page: Page, query = '') {
+  await page.goto(query);
+  await page.getByTestId('go').click();
+}
+
 // Advance mission time directly, so tests don't depend on CI's frame rate.
 export const fastForward = (page: Page, ms: number) =>
   page.evaluate((ms) => {

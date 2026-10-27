@@ -1,13 +1,13 @@
 import type { GameState } from './state';
 import type { System } from './systems';
-import { blocked, TREE, treeCall, type Response } from './responses';
+import { blocked, treeCall, type Response } from './responses';
 import { lookAt } from './satellite';
 import { applyEffect } from './contacts';
 
 // Radio traffic from the team (GDD: text only, clearly marked as incoming). Calls come from
 // the mission script (events.ts, script.ts), from the team stopping short of a square
-// (contacts.ts), and from the team reaching its objective. A call that "holds" stops the team until HQ answers, or until it
-// gives up waiting and does what its tree node says.
+// (contacts.ts), and from the team reaching its objective. A call that "holds" stops the team
+// until HQ answers. It waits as long as it takes: the mission clock is the only pressure.
 
 export type MessageStatus = 'new' | 'read' | 'dismissed';
 
@@ -40,7 +40,6 @@ export type Comms = {
   lastWaypoint: number; // to notice the team arriving somewhere
 };
 
-export const HOLD_TIMEOUT_MS = 20_000; // the team pushes on if HQ stays silent this long
 export const CHATTER_MS = 8_000; // routine calls mark themselves read after this
 
 
@@ -66,24 +65,14 @@ export const commsSystem: System = (s) => {
   if (team.waypoint !== comms.lastWaypoint && team.waypoint >= team.route.length)
     incoming.push(call(s, 'in-position', `In position at ${team.route.at(-1)}. Holding.`));
 
-  // Age out: chatter marks itself read; an unanswered hold times out and the team moves.
+  // Age out: chatter marks itself read. Holds wait for HQ.
   let holdFor = team.holdFor;
-  let messages = comms.messages.map((m) => {
+  const messages = comms.messages.map((m) => {
     if (m.status !== 'new') return m;
     const age = s.elapsedMs - m.atMs;
     if (!m.holds && age >= CHATTER_MS) return { ...m, status: 'read' as const };
     return m;
   });
-  // A call waiting on ORION-3 doesn't time out: the look settles it.
-  const timedOut = messages.find((m) => m.holds && m.id === holdFor && m.id !== s.satellite.callId && s.elapsedMs - m.atMs >= HOLD_TIMEOUT_MS);
-  let decided = s;
-  if (timedOut) {
-    holdFor = null;
-    messages = messages.map((m) => (m === timedOut ? { ...m, status: 'read' as const } : m));
-    incoming.push(call(s, `${timedOut.id}-timeout`, 'No word from HQ. Pushing on.'));
-    // Silence means the node's default: push on blind, or walk into the contact.
-    if (timedOut.node && timedOut.square) decided = applyEffect(s, TREE[timedOut.node].timeout, timedOut.square);
-  }
 
   const holder = incoming.find((m) => m.holds);
   if (holder && !holdFor) holdFor = holder.id;
@@ -92,9 +81,9 @@ export const commsSystem: System = (s) => {
     return s;
 
   return {
-    ...decided,
+    ...s,
     // Only a new hold changes what the team says it's doing.
-    team: { ...decided.team, holdFor, activity: holdFor && holdFor !== team.holdFor ? 'Holding for HQ' : decided.team.activity },
+    team: { ...team, holdFor, activity: holdFor && holdFor !== team.holdFor ? 'Holding for HQ' : team.activity },
     comms: {
       messages: [...messages, ...incoming],
       queued: comms.queued.filter((m) => !due.includes(m)),
@@ -134,7 +123,7 @@ export function confirm(s: GameState, id: string): GameState {
   };
 }
 
-// Dismiss hides a call without answering it; a holding team keeps waiting (and times out).
+// Dismiss hides a call without answering it; a holding team keeps waiting.
 export function dismiss(s: GameState, id: string): GameState {
   const m = s.comms.messages.find((x) => x.id === id);
   if (!m || m.status !== 'new') return s;
