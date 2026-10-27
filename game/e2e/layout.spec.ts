@@ -25,11 +25,12 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
 
-test('the war room: intel then comms down the left, the team then ORION-3 bottom right', async ({ page, isMobile }) => {
+test('the war room: intel then comms down the left, the team bottom right, ORION-3 a tag on the map', async ({ page, isMobile }) => {
   await start(page);
   if (isMobile) {
-    // One dock, four tabs.
-    for (const [tab, id] of [['intel', 'intel-stream'], ['satcom', 'satcom'], ['team', 'team-panel'], ['orion', 'satellite']] as const) {
+    // One dock, three tabs.
+    await expect(page.getByTestId('tab-orion')).toHaveCount(0);
+    for (const [tab, id] of [['intel', 'intel-stream'], ['satcom', 'satcom'], ['team', 'team-panel']] as const) {
       await page.getByTestId(`tab-${tab}`).click();
       await expect(page.getByTestId(id)).toBeVisible();
     }
@@ -39,12 +40,16 @@ test('the war room: intel then comms down the left, the team then ORION-3 bottom
   const stream = (await page.getByTestId('intel-stream').boundingBox())!;
   const comms = (await page.getByTestId('satcom').boundingBox())!;
   const team = (await page.getByTestId('team-panel').boundingBox())!;
-  const orion = (await page.getByTestId('satellite').boundingBox())!;
+  const tag = (await page.getByTestId('satellite').boundingBox())!;
+  const map = (await page.getByTestId('map-area').boundingBox())!;
   expect(stream.x).toBeLessThan(40);
   expect(comms.x).toBeLessThan(40);
   expect(comms.y).toBeGreaterThan(stream.y + stream.height - 1); // under the stream
   expect(team.x).toBeGreaterThan(view.width * 0.4);
-  expect(orion.x + orion.width).toBeGreaterThan(view.width - 40);
-  expect(orion.x).toBeGreaterThan(team.x + team.width - 1);
-  expect(orion.y + orion.height).toBeGreaterThan(view.height - 40);
+  expect(team.x + team.width).toBeGreaterThan(view.width - 40);
+  expect(team.y + team.height).toBeGreaterThan(view.height - 40);
+  // ORION-3 has no panel: its status is a tag in the map's top corner.
+  await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
+  expect(tag.y).toBeLessThan(map.y + 40);
+  expect(tag.x + tag.width).toBeGreaterThan(map.x + map.width - 40);
 });

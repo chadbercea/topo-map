@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { bus, EV, getInset, type InsetLayout } from '../game/events';
+import { bus, EV, getInset, getMapRect, type InsetLayout, type MapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, describe, lookSquare, satelliteBusy, slewMs, type CaptureMode } from '../sim/satellite';
+import { CAPTURE, describe, lookSquare, satelliteBusy, satelliteStatus, slewMs, type CaptureMode } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
 import { ground, weather } from '../sim/conditions';
 import { gameSpan, zulu } from '../sim/gameTime';
@@ -130,5 +130,33 @@ export function SatelliteInset() {
         )}
       </section>
     </>
+  );
+}
+
+// ORION-3's status (ILI-1202): it has no panel, just this tag in a top corner of the map, the
+// one the zoomed view isn't using. Where it's pointed and what it's doing; tied up while a
+// mini game runs.
+export function SatelliteTag() {
+  const status = useGame((s) => (s.minigame?.status === 'active' ? 'ORION-3 · tied up' : satelliteStatus(s)));
+  const state = useGame((s) => s.satellite.state);
+  const [rect, setRect] = useState<MapRect | null>(getMapRect);
+  const [layout, setLayout] = useState<InsetLayout | null>(getInset);
+  useEffect(() => {
+    setRect(getMapRect());
+    setLayout(getInset()); // the scene may have reported before this subscribed
+    bus.on(EV.mapRect, setRect);
+    bus.on(EV.inset, setLayout);
+    return () => {
+      bus.off(EV.mapRect, setRect);
+      bus.off(EV.inset, setLayout);
+    };
+  }, []);
+  if (!rect) return null;
+  const left = layout?.side === 'right';
+  const style = left ? { left: rect.x + 8, top: rect.y + 8 } : { right: innerWidth - (rect.x + rect.width - 8), top: rect.y + 8 };
+  return (
+    <div className="sat-tag" data-testid="satellite" data-state={state} style={style} aria-label="ORION-3 imaging satellite">
+      <span data-testid="satellite-status">{status}</span>
+    </div>
   );
 }

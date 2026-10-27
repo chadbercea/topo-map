@@ -4,8 +4,7 @@ import { EventCard } from './EventCard';
 import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
 import { MiniGamePanel } from './MiniGamePanel';
-import { SatelliteInset } from './SatelliteInset';
-import { Orion3Panel } from './Orion3Panel';
+import { SatelliteInset, SatelliteTag } from './SatelliteInset';
 import { Assets } from './Assets';
 import { MissionBar } from './MissionBar';
 import { CommsPanel } from './CommsPanel';
@@ -19,14 +18,15 @@ const debug = new URLSearchParams(location.search).has('debug');
 // Tests and debugging drive the game directly through window.game when ?debug is on.
 if (debug) Object.assign(window, { game });
 
-type Tab = 'intel' | 'satcom' | 'team' | 'orion';
+type Tab = 'intel' | 'satcom' | 'team';
 
 // The war room (ILI-1186): HQ sits down to a live, multi-panel view of the theater. The
 // mission bar runs along the top; down the left the intel stream, with the comms log under it
 // (ILI-1199); the map fills the rest. Along the bottom: the mini game and HQ's assets, then
-// the team panel and ORION-3, the imaging satellite (ILI-1195), in the bottom-right corner.
-// When ALPHA needs something its ask pops up beside its marker (AskWindow). On a phone the
-// stream, comms, team and ORION-3 share one docked panel with tabs.
+// the team panel in the bottom-right corner. ORION-3, the imaging satellite, has no panel
+// (ILI-1202): its status is a tag on the map, and everything else hangs off the zoomed view
+// of the square it's looking at. When ALPHA needs something its ask pops up beside its marker
+// (AskWindow). On a phone the stream, comms and team share one docked panel with tabs.
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
@@ -48,6 +48,7 @@ export function Hud() {
       </div>
       <MapArea />
       <SatelliteInset />
+      <SatelliteTag />
       <div className="slot-band">
         <div className="band-cards">
           <EventCard />
@@ -57,9 +58,6 @@ export function Hud() {
           <Assets />
         </div>
       </div>
-      <div className="slot-orion">
-        <Orion3Panel />
-      </div>
       <div className="slot-team">
         <TeamPanel />
       </div>
@@ -67,9 +65,9 @@ export function Hud() {
         <CommsPanel />
       </div>
       <nav className="dock-tabs" aria-label="Panels">
-        {(['intel', 'satcom', 'team', 'orion'] as const).map((t) => (
+        {(['intel', 'satcom', 'team'] as const).map((t) => (
           <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)} data-testid={`tab-${t}`}>
-            {t === 'orion' ? 'ORION-3' : t === 'satcom' ? 'COMMS' : t.toUpperCase()}
+            {t === 'satcom' ? 'COMMS' : t.toUpperCase()}
           </button>
         ))}
       </nav>
