@@ -33,18 +33,6 @@ test('exit leaves the mission and start mission begins a new one', async ({ page
   await expect.poll(() => tick(page)).toBeGreaterThan(0);
 });
 
-test('sound setting survives a reload', async ({ page, isMobile }) => {
-  await page.goto('');
-  await press(page, 'Pause', isMobile);
-  await expect(page.getByTestId('sound')).toBeChecked();
-  if (isMobile) await page.getByText('Sound', { exact: true }).tap();
-  else await page.getByTestId('sound').uncheck();
-  await expect(page.getByTestId('sound')).not.toBeChecked();
-  await page.reload();
-  await press(page, 'Pause', isMobile);
-  await expect(page.getByTestId('sound')).not.toBeChecked();
-});
-
 test('Esc toggles the menu and hiding the tab pauses', async ({ page }) => {
   await page.goto('');
   await page.keyboard.press('Escape');

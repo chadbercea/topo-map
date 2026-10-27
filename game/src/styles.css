@@ -376,26 +376,6 @@ html, body {
 .menu button:hover,
 .menu button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
 
-.menu fieldset {
-  border: 1px solid var(--line);
-  margin: 0;
-  padding: 8px 12px 12px;
-  color: var(--dim);
-}
-
-.menu legend { padding: 0 4px; font-size: 11px; letter-spacing: 0.12em; }
-
-.menu label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 32px;
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.menu input { accent-color: var(--accent); width: 18px; height: 18px; }
-
 .wrapup { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--bg); }
 .wrapup .reason { color: var(--ink); font-size: 14px; }
 .wrapup .objectives { margin: 0; }

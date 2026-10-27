@@ -7,7 +7,6 @@ const TITLES = { paused: 'PAUSED', exited: 'MISSION ABORTED' } as const;
 // gets the wrap-up instead (WrapUp.tsx).
 export function PauseMenu() {
   const phase = useGame((s) => s.phase);
-  const sound = useGame((s) => s.settings.sound);
   const first = useRef<HTMLButtonElement>(null);
 
   // Esc or P toggles pause; switching tabs pauses so the clock can't run out unseen.
@@ -47,18 +46,6 @@ export function PauseMenu() {
         ) : (
           <>
             {phase === 'paused' && <button onClick={game.restart}>Restart</button>}
-            <fieldset>
-              <legend>Settings</legend>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={sound}
-                  onChange={(e) => game.setSettings({ sound: e.target.checked })}
-                  data-testid="sound"
-                />
-                Sound
-              </label>
-            </fieldset>
             <button onClick={game.exit}>Exit</button>
           </>
         )}

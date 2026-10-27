@@ -76,12 +76,12 @@ describe('store', () => {
 describe('pause menu actions', () => {
   it('keeps settings across a restart', () => {
     const store = createStore();
-    store.setSettings({ sound: false });
+    store.setSettings({ city: false });
     store.tick(100);
     store.restart();
     expect(store.get().tick).toBe(0);
     expect(store.get().phase).toBe('running');
-    expect(store.get().settings.sound).toBe(false);
+    expect(store.get().settings.city).toBe(false);
   });
 
   it('exit stops the mission and restart brings it back', () => {
