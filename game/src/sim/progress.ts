@@ -27,6 +27,10 @@ export type Pressing = { tone: 'threat' | 'support' | 'objective'; text: string;
 // The single most pressing thing beyond the call card (which speaks for itself): a known
 // threat with an ETA, support inbound, else the objective itself.
 export function nextUp(s: GameState): Pressing {
+  // At the desk with no team linked yet (ILI-1186): the next thing is finding it.
+  if (s.link.state === 'none') return { tone: 'objective', text: 'Send a SITREP on satcom to find your team' };
+  if (s.link.state === 'pinging') return { tone: 'objective', text: `Waiting on ${s.team.callsign}'s reply` };
+  if (s.link.state === 'replied') return { tone: 'objective', text: `Filter the intel stream for ${s.link.codename}` };
   const threat = missionDef(s.script.mission)
     ?.threats?.(s)
     .filter((t) => t.atMs > s.elapsedMs)

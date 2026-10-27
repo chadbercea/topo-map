@@ -9,6 +9,7 @@ export function SatelliteInset() {
   const aim = useGame((s) => s.satellite.aim);
   const [rect, setRect] = useState<MapRect | null>(getMapRect);
   useEffect(() => {
+    setRect(getMapRect()); // the map may have reported before this subscribed
     bus.on(EV.mapRect, setRect);
     return () => void bus.off(EV.mapRect, setRect);
   }, []);

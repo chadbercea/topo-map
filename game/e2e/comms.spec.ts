@@ -18,15 +18,15 @@ test('ALPHA holds short of unimaged ground and asks; Move in blind sends it on',
   await expect(panel).toContainText('Moving to F4');
 });
 
-test('comms can be minimized to a badge and reopened', async ({ page }) => {
+test('a call waits pinned in satcom with its answers; answering moves it into the thread', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 500);
-  await page.getByRole('button', { name: 'Minimize comms' }).click();
-  await expect(page.getByTestId('comms')).toHaveCount(0);
-  await expect(page.getByTestId('comms-badge')).toContainText('ALPHA needs a decision');
-  await page.getByTestId('comms-badge').click();
-  await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
+  const satcom = page.getByTestId('satcom');
+  await expect(satcom.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
+  await satcom.getByTestId('responses').getByRole('button').last().click();
+  await expect(satcom.getByTestId('comms')).toHaveCount(0);
+  await expect(satcom.locator('.thread')).toContainText('Holding short of F4');
 });
 
 test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, attack or go around', async ({ page }) => {

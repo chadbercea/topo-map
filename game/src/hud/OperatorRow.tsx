@@ -1,5 +1,25 @@
 import { ammoLeft, condition, medsLeft, type Operator } from '../sim/team';
 
+// One beat of an ECG trace, repeated; the strip scrolls left under a fixed window. Faster as
+// the operator gets worse, flat when down (ILI-1123, back in ILI-1186).
+const BEAT = 'M0 10 H8 L10 7 L12 10 H15 L17 2 L19 17 L21 10 H26 L29 6 L32 10 H40';
+
+export function Heartbeat({ o }: { o: Operator }) {
+  const c = condition(o);
+  return (
+    <svg className="ecg" data-condition={c} viewBox="0 0 40 20" preserveAspectRatio="none" aria-hidden>
+      {c === 'down' ? (
+        <path d="M0 10 H40" />
+      ) : (
+        <g className="trace">
+          <path d={BEAT} />
+          <path d={BEAT} transform="translate(40 0)" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
 // Rank as chevrons (grade 5 = three) with a rocker per grade above that.
 function RankIcon({ grade, title }: { grade: number; title: string }) {
   const rockers = Math.max(0, grade - 5);
@@ -24,8 +44,7 @@ export const Bar = ({ value, label }: { value: number; label: string }) => (
 
 export const STATUS = { fine: 'FINE', caution: 'CAUTION', danger: 'DANGER', down: 'DOWN' } as const;
 
-// One operator in the full readout (the team panel opened): rank, name, role, status and
-// every supply.
+// One operator in the team panel: rank, name, role, heartbeat, status and every supply.
 export function OperatorRow({ o }: { o: Operator }) {
   const c = condition(o);
   return (
@@ -36,6 +55,7 @@ export function OperatorRow({ o }: { o: Operator }) {
         <span className="role">{o.role}</span>
       </div>
       <div className="vitals">
+        <Heartbeat o={o} />
         <span className="status">{STATUS[c]}</span>
       </div>
       <div className="supplies">

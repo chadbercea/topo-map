@@ -18,3 +18,11 @@ export function gameSpan(ms: number) {
   if (m < 60) return `${m} min`;
   return m % 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m / 60} h`;
 }
+
+// Time of day at the desk, for the intel stream's stamps: the theater's morning starts at
+// 0540Z, and the backlog from before the player sat down reads earlier.
+const DAWN_MIN = 5 * 60 + 40;
+export function zulu(theaterMs: number) {
+  const m = (((DAWN_MIN + Math.floor((theaterMs * TIME_SCALE) / 60_000)) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}${String(m % 60).padStart(2, '0')}Z`;
+}

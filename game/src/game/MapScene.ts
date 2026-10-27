@@ -142,6 +142,9 @@ export class MapScene extends Phaser.Scene {
     this.follow(delta);
     this.drawTeam();
     const st = game.get();
+    // Until HQ links the team (ILI-1186) the map doesn't know where it is or where it's going.
+    const linked = st.link.state === 'linked';
+    for (const o of [this.teamGfx, this.teamLabel, this.routeGfx, this.missionGfx, ...this.missionLabels]) o.setVisible(linked);
     const key = `${st.team.waypoint}|${st.team.route.join()}|${st.map.scanned.length}|${st.contacts.filter((c) => c.status === 'revealed').map((c) => c.square)}`;
     if (key !== this.routeKey) {
       this.routeKey = key;
@@ -405,13 +408,19 @@ export class MapScene extends Phaser.Scene {
     const r = getMapRect();
     const area = r ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR } : { x: 0, y: 0, w: width, h: height };
     const cam = this.cameras.main;
-    this.camTarget = followCenter(this.camTarget, game.get().team.position, area, { w: width, h: height }, cam.zoom);
+    this.camTarget = followCenter(this.camTarget, game.get().team.position, area, { w: width, h: height }, cam.zoom, this.cover(r, height));
     const dx = this.camTarget.x - this.camCenter.x;
     const dy = this.camTarget.y - this.camCenter.y;
     if (!dx && !dy) return;
     const k = reducedMotion() ? 1 : Math.min(1, delta / 150);
     this.camCenter = Math.hypot(dx, dy) * cam.zoom < 0.5 ? this.camTarget : { x: this.camCenter.x + dx * k, y: this.camCenter.y + dy * k };
     cam.centerOn(this.camCenter.x, this.camCenter.y);
+  }
+
+  // The open part of the screen the grid covers, in device px (ILI-1186): below the mission
+  // bar, right of a docked intel stream, above the bottom-right panels or the phone's dock.
+  private cover(r: ReturnType<typeof getMapRect>, height: number) {
+    return { left: (r?.coverLeft ?? 0) * DPR, top: (r?.coverTop ?? 0) * DPR, bottom: r?.coverBottom !== undefined ? r.coverBottom * DPR : height };
   }
 
   // Zoom first, then draw: the grid fills the viewport (fit.ts), and lines, labels and the
@@ -425,10 +434,11 @@ export class MapScene extends Phaser.Scene {
       : { x: 0, y: 0, w: width, h: height };
     const view = this.focus();
     const cam = this.cameras.main;
-    const { zoom, sx, sy } = fitCamera({ w: width, h: height }, area, view, MARGIN);
+    const cover = this.cover(r, height);
+    const { zoom, sx, sy } = fitCamera({ w: width, h: height }, area, view, MARGIN, cover);
     // The terrain bakes at the whole-map zoom; closing in on a board reuses it (re-baking the
     // whole theater on every zoom would stutter on a phone).
-    this.baseZoom = fitCamera({ w: width, h: height }, area, { x: 0, y: 0, w: WORLD_W, h: WORLD_H }, MARGIN).zoom;
+    this.baseZoom = fitCamera({ w: width, h: height }, area, { x: 0, y: 0, w: WORLD_W, h: WORLD_H }, MARGIN, cover).zoom;
     cam.setZoom(zoom);
     if (this.focused) {
       cam.centerOn(view.x + view.w / 2 - (sx - width / 2) / zoom, view.y + view.h / 2 - (sy - height / 2) / zoom);
@@ -436,8 +446,8 @@ export class MapScene extends Phaser.Scene {
       // The whole map: keep where the camera was (or start on ALPHA if it needs to), within
       // the grid at this zoom.
       const screen = { w: width, h: height };
-      const start = this.camCenter ?? clampCenter({ x: WORLD_W / 2, y: WORLD_H / 2 }, screen, zoom);
-      this.camCenter = clampCenter(this.camCenter ? start : followCenter(start, game.get().team.position, area, screen, zoom), screen, zoom);
+      const start = this.camCenter ?? clampCenter({ x: WORLD_W / 2, y: WORLD_H / 2 }, screen, zoom, cover);
+      this.camCenter = clampCenter(this.camCenter ? start : followCenter(start, game.get().team.position, area, screen, zoom, cover), screen, zoom, cover);
       this.camTarget = this.camCenter;
       cam.centerOn(this.camCenter.x, this.camCenter.y);
     }

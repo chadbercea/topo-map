@@ -1,56 +1,48 @@
-import { useState } from 'react';
 import { useGame } from '../sim/store';
 import { ammoLevel, medsLevel } from '../sim/support';
-import { condition } from '../sim/team';
-import { Bar, OperatorRow, STATUS } from './OperatorRow';
+import { Bar, OperatorRow } from './OperatorRow';
 
-// ALPHA in the mission bar (ILI-1183): what it's doing and the team's condition (fit count,
-// ammo, meds, who's hurt) on one line, red while it's engaged. Tap it for every operator's
-// readout, which drops down under the bar. It used to be its own panel beside the map.
+// The team panel (ILI-1123, bottom right since ILI-1186): every operator's heartbeat,
+// status, ammo and meds, always on screen, with what ALPHA is doing over it. Red while it's
+// engaged. Before HQ has linked the team there's no telemetry to show.
 export function TeamPanel() {
+  const linked = useGame((s) => s.link.state === 'linked');
   const callsign = useGame((s) => s.team.callsign);
   const activity = useGame((s) => s.team.activity);
   const fighting = useGame((s) => !!s.team.fight);
   const operators = useGame((s) => s.team.operators);
   const ammo = useGame(ammoLevel);
   const meds = useGame(medsLevel);
-  const [open, setOpen] = useState(false);
   const fit = operators.filter((o) => o.health > 0).length;
-  const hurt = operators.filter((o) => condition(o) !== 'fine');
+
+  if (!linked)
+    return (
+      <section className="panel team" data-testid="team-panel" data-linked={false} aria-label="Team">
+        <h2>TEAM · NO LINK</h2>
+        <p className="no-link">No team linked. Send a SITREP on satcom, then find the team’s code name in the intel stream.</p>
+      </section>
+    );
 
   return (
-    <div className="team" data-testid="team-panel" data-open={open} data-fight={fighting}>
-      <button className="team-head" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <b className="callsign">{callsign}</b>
+    <section className="panel team" data-testid="team-panel" data-linked={true} data-fight={fighting} aria-label={`${callsign} team`}>
+      <h2>
+        <span className="callsign">{callsign}</span>
         <span className="activity">{activity}</span>
-        <span className="condition" data-testid="team-condition">
-          <span className="fit">
-            {fit}/{operators.length} fit
-          </span>
-          <span className="supply">AMMO</span>
-          <Bar value={ammo} label="Team ammo" />
-          <span className="supply">MEDS</span>
-          <Bar value={meds} label="Team meds" />
+      </h2>
+      <p className="condition" data-testid="team-condition">
+        <span className="fit">
+          {fit}/{operators.length} fit
         </span>
-        <span className={hurt.length ? 'hurt' : 'hurt fine'} data-testid="team-hurt">
-          {hurt.length
-            ? hurt.map((o) => (
-                <span key={o.id} className="op" data-condition={condition(o)} data-testid={`op-${o.id}`}>
-                  {o.name} <span className="status">{STATUS[condition(o)]}</span>
-                </span>
-              ))
-            : 'All fine'}
-        </span>
-      </button>
-      {open && (
-        <section className="panel team-readout" aria-label={`${callsign} readout`}>
-          <ul className="readout" data-testid="readout">
-            {operators.map((o) => (
-              <OperatorRow key={o.id} o={o} />
-            ))}
-          </ul>
-        </section>
-      )}
-    </div>
+        <span>AMMO</span>
+        <Bar value={ammo} label="Team ammo" />
+        <span>MEDS</span>
+        <Bar value={meds} label="Team meds" />
+      </p>
+      <ul className="readout" data-testid="readout">
+        {operators.map((o) => (
+          <OperatorRow key={o.id} o={o} />
+        ))}
+      </ul>
+    </section>
   );
 }
