@@ -47,7 +47,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click(); // F4 is clear
-  await page.getByTestId('satellite').getByRole('button', { name: 'Close' }).click();
+  await page.getByTestId('look-card').getByRole('button', { name: 'Close' }).click();
 
   // ALPHA walks to F4 and asks about E3: look there too.
   await page.evaluate(() => {

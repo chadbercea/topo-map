@@ -72,6 +72,18 @@ export function slewMs(s: GameState, square: SquareId): number {
 
 export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing';
 
+// The square the zoomed segment shows (ILI-1201): the one ORION-3 is on station over, else
+// the one HQ picked, else where it's swinging to, else its last look until HQ closes it.
+// Nothing while a mini game runs.
+export function lookSquare(s: GameState): SquareId | null {
+  const sat = s.satellite;
+  if (s.minigame) return null;
+  if (sat.state === 'onStation' || sat.state === 'capturing') return sat.aim;
+  if (s.map.selected) return s.map.selected;
+  if (sat.state === 'slewing') return sat.aim;
+  return sat.result?.square ?? null;
+}
+
 const radio = (s: GameState, from: string, id: string, text: string, status: Message['status'] = 'read'): Message => ({
   id,
   from,

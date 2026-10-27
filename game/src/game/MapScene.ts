@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { bus, EV, getMapRect, insetRect, setProjector, type SceneStatus } from './events';
+import { bus, EV, getMapRect, insetLayout, setProjector, toScreen, type SceneStatus } from './events';
 import { clampCenter, fitCamera, followCenter } from './fit';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
@@ -12,7 +12,7 @@ import { hillshade } from '../map/relief';
 import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
-import { satellitePoint } from '../sim/satellite';
+import { lookSquare, satellitePoint } from '../sim/satellite';
 import { eyesOn, freshness, groupOrigin } from '../sim/imagery';
 
 const TEAL = 0x35d0a5;
@@ -385,24 +385,36 @@ export class MapScene extends Phaser.Scene {
     return m?.kind === 'seekDestroy' && m.status === 'active' ? m.square : null;
   }
 
-  // The square ORION-3 is looking at, shown in the inset; the main map doesn't move.
+  // The zoomed segment (ILI-1201): the square HQ picked or ORION-3 is working, shown in the
+  // inset; the main map doesn't move.
   private inset!: Phaser.Cameras.Scene2D.Camera;
   private insetOn: string | null = null;
   private insetSquare() {
-    const { minigame: m, satellite: sat } = game.get();
-    return !m && (sat.state === 'onStation' || sat.state === 'capturing') ? sat.aim : null;
+    return lookSquare(game.get());
   }
 
+  private insetSide: 'left' | 'right' = 'right';
   private placeInset() {
+    const was = this.insetOn;
     this.insetOn = this.insetSquare();
     const r = getMapRect();
     const sq = this.insetOn ? parseSquare(this.insetOn) : null;
-    if (!sq || !r) return void this.inset.setVisible(false);
-    const box = insetRect(r);
-    const size = box.size * DPR;
-    this.inset.setViewport(box.x * DPR, box.y * DPR, size, size).setVisible(true);
+    if (!sq || !r) {
+      this.inset.setVisible(false);
+      return void bus.emit(EV.inset, null);
+    }
+    // A new square: open in the top corner away from it and ALPHA, so neither is covered.
+    if (this.insetOn !== was) {
+      const team = game.get().team.position;
+      const xs = [toScreen((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL), toScreen(team.x, team.y)].filter((p) => !!p).map((p) => p!.x);
+      this.insetSide = xs.length && xs.reduce((a, b) => a + b, 0) / xs.length > r.x + r.width / 2 ? 'left' : 'right';
+    }
+    const l = insetLayout(r, this.insetSide);
+    const size = l.view.size * DPR;
+    this.inset.setViewport(l.view.x * DPR, l.view.y * DPR, size, size).setVisible(true);
     this.inset.setZoom(size / (CELL * 1.5));
     this.inset.centerOn((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL);
+    bus.emit(EV.inset, l);
   }
 
   private focus() {
