@@ -47,7 +47,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click(); // F4 is clear
-  await page.getByTestId('look-card').getByRole('button', { name: 'Close' }).click();
+  await page.getByTestId('square-card').getByRole('button', { name: 'Close' }).click();
 
   // ALPHA walks to F4 and asks about E3: look there too.
   await page.evaluate(() => {
@@ -83,4 +83,22 @@ test('news the map does not show lands in the stream as an alert, and the header
   await expect(page.getByTestId('blockers')).toContainText('Enemy alerted');
   if (isMobile) await page.getByTestId('tab-intel').click();
   await expect(page.getByTestId('intel-items')).toContainText('Enemy radio net just lit up');
+});
+
+test('when the square card covers ALPHA\u2019s flag, the intel stream raises the ask in orange', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the phone card docks across the top of the map, clear of ALPHA');
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  await freeze(page);
+  await expect(page.getByTestId('incoming-alert')).toHaveCount(0); // the flag is in plain sight
+  // H5 is ALPHA's right-hand neighbour on the map's edge: its card can only open to the left, over the flag.
+  await page.evaluate(() => window.game.selectSquare('H5'));
+  const alert = page.getByTestId('incoming-alert');
+  await expect(alert).toContainText('INCOMING · ALPHA');
+  await expect(alert).toContainText('Holding short of F4');
+  await page.getByTestId('answer-alpha').click();
+  // The ask opens over the card.
+  await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
+  await page.getByTestId('responses').getByRole('button', { name: 'Move in blind' }).click();
+  await expect(page.getByTestId('incoming-alert')).toHaveCount(0);
 });

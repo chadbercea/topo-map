@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { currentCall, waitingCalls } from '../sim/comms';
 import { blocked } from '../sim/responses';
-import { bus, EV, getMapRect, toScreen } from '../game/events';
+import { bus, EV, getAskHidden, getMapRect, toScreen } from '../game/events';
 
 const WIDTH = 260;
 
@@ -25,6 +25,24 @@ export function AskWindow() {
   // the team keeps walking (a resupply ask doesn't stop it).
   const anchors = useRef(new Map<string, { x: number; y: number }>());
   const [, redraw] = useState(0);
+  const flagRef = useRef<HTMLElement>(null);
+  // The flag may sit under the square card (or wait out a mini game); say so, and the intel
+  // stream raises ALPHA's ask where it can't be missed.
+  useLayoutEffect(() => {
+    const flag = flagRef.current?.getBoundingClientRect();
+    const card = document.querySelector('[data-testid="square-card"]')?.getBoundingClientRect();
+    const covered = !!flag && !!card && flag.left < card.right && flag.right > card.left && flag.top < card.bottom && flag.bottom > card.top;
+    const hidden = !!waitingCalls(comms).length && (!flag || (covered && openId !== currentCall(comms)?.id));
+    if (hidden !== getAskHidden()) bus.emit(EV.askHidden, hidden);
+  });
+  useEffect(() => {
+    const open = () => {
+      const call = currentCall(game.get().comms);
+      if (call) setOpenId(call.id);
+    };
+    bus.on(EV.openAsk, open);
+    return () => void bus.off(EV.openAsk, open);
+  }, []);
   useEffect(() => {
     const again = () => redraw((n) => n + 1);
     bus.on(EV.camera, again);
@@ -69,6 +87,7 @@ export function AskWindow() {
     <>
       {inView && !open && <span className="ping" style={{ left: p!.x, top: p!.y }} aria-hidden />}
       <section
+        ref={flagRef}
         className="ask comms"
         data-testid="comms"
         data-open={open}

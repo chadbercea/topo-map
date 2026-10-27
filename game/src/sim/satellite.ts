@@ -72,15 +72,14 @@ export function slewMs(s: GameState, square: SquareId): number {
 
 export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing';
 
-// The square the zoomed segment shows (ILI-1201): the one ORION-3 is on station over, else
-// the one HQ picked, else where it's swinging to, else its last look until HQ closes it.
-// Nothing while a mini game runs.
+// The square the card is on (ILI-1201, ILI-1203): the one HQ picked (or whose event it
+// opened), else the one ORION-3 is working, else its last look until HQ closes it. Nothing
+// while a mini game is up.
 export function lookSquare(s: GameState): SquareId | null {
   const sat = s.satellite;
   if (s.minigame) return null;
-  if (sat.state === 'onStation' || sat.state === 'capturing') return sat.aim;
   if (s.map.selected) return s.map.selected;
-  if (sat.state === 'slewing') return sat.aim;
+  if (sat.state !== 'idle') return sat.aim;
   return sat.result?.square ?? null;
 }
 

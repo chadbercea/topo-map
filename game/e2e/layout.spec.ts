@@ -25,7 +25,7 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
 
-test('the war room: intel then comms down the left, the team bottom right, ORION-3 a tag on the map', async ({ page, isMobile }) => {
+test('the war room: intel then comms down the left, the team bottom right, ORION-3 a line in the header', async ({ page, isMobile }) => {
   await start(page);
   if (isMobile) {
     // One dock, three tabs.
@@ -40,16 +40,12 @@ test('the war room: intel then comms down the left, the team bottom right, ORION
   const stream = (await page.getByTestId('intel-stream').boundingBox())!;
   const comms = (await page.getByTestId('satcom').boundingBox())!;
   const team = (await page.getByTestId('team-panel').boundingBox())!;
-  const tag = (await page.getByTestId('satellite').boundingBox())!;
-  const map = (await page.getByTestId('map-area').boundingBox())!;
   expect(stream.x).toBeLessThan(40);
   expect(comms.x).toBeLessThan(40);
   expect(comms.y).toBeGreaterThan(stream.y + stream.height - 1); // under the stream
   expect(team.x).toBeGreaterThan(view.width * 0.4);
   expect(team.x + team.width).toBeGreaterThan(view.width - 40);
   expect(team.y + team.height).toBeGreaterThan(view.height - 40);
-  // ORION-3 has no panel: its status is a tag in the map's top corner.
-  await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
-  expect(tag.y).toBeLessThan(map.y + 40);
-  expect(tag.x + tag.width).toBeGreaterThan(map.x + map.width - 40);
+  // ORION-3 has no panel: its status is a line in the header.
+  await expect(page.getByTestId('mission-timer').getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
 });

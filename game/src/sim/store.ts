@@ -12,6 +12,12 @@ import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
 // React panels subscribe through useGame().
+// Close the square card: no square picked, no event open, ORION-3's last look filed.
+const closeSquare = (s: GameState): GameState =>
+  s.map.selected || s.openEvent || s.satellite.result
+    ? { ...closeLook(s), map: { ...s.map, selected: null }, openEvent: null }
+    : s;
+
 export function createStore(initial: GameState = initialState()) {
   let state = initial;
   const listeners = new Set<() => void>();
@@ -37,19 +43,27 @@ export function createStore(initial: GameState = initialState()) {
     setMissionLength: (minutes: number) =>
       set(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000))),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
-    // Tapping the selected square again clears it.
-    selectSquare: (id: string | null) =>
-      set({ ...state, map: { ...state.map, selected: id === state.map.selected ? null : id } }),
+    // Tapping a square opens its card (ILI-1203); tapping it again clears it.
+    selectSquare: (id: string | null) => {
+      const next = id === state.map.selected ? null : id;
+      if (!next) return set(closeSquare(state));
+      const open = state.events.find((e) => e.id === state.openEvent);
+      set({ ...state, map: { ...state.map, selected: next }, openEvent: open?.square === next ? state.openEvent : null });
+    },
+    closeSquare: () => set(closeSquare(state)),
     addEvent: (e: Omit<MapEvent, 'atMs' | 'status'>) =>
       set({ ...state, events: [...state.events, { ...e, atMs: state.elapsedMs, status: 'new' }] }),
-    // Opening an event marks it seen and shows its card; one card at a time.
-    openEvent: (id: string) =>
+    // Opening an event marks it seen and opens its square's card; one card at a time.
+    openEvent: (id: string) => {
+      const e = state.events.find((x) => x.id === id);
       set({
         ...state,
         openEvent: id,
-        events: state.events.map((e) => (e.id === id && e.status === 'new' ? { ...e, status: 'seen' } : e)),
-      }),
-    closeEvent: () => state.openEvent && set({ ...state, openEvent: null }),
+        map: e ? { ...state.map, selected: e.square } : state.map,
+        events: state.events.map((x) => (x.id === id && x.status === 'new' ? { ...x, status: 'seen' } : x)),
+      });
+    },
+    closeEvent: () => set(closeSquare(state)),
     confirmCall: (id: string) => set(confirm(state, id)),
     respond: (id: string, responseId: string) => set(respond(state, id, responseId)),
     tapMiniGame: (square: string, cell?: number) => state.phase === 'running' && set(tapMiniGame(state, square, cell)),

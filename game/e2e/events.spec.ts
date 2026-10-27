@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { squarePoint, start, tapAt } from './helpers';
 
-test('a new event lands inline in the intel stream and on its square; tapping the marker opens its card beside it', async ({ page, isMobile }) => {
+test('a new event lands inline in the intel stream and on its square; tapping the marker opens its square card beside it', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'G2', title: 'Test contact' }));
@@ -14,14 +14,13 @@ test('a new event lands inline in the intel stream and on its square; tapping th
 
   // Marker sits in the square's top-right quarter (G2 = col 6, row 1).
   await tapAt(page, isMobile, await squarePoint(page, 6, 1, 0.25, -0.25));
-  const card = page.getByTestId('event-card');
-  await expect(card).toContainText('Test contact');
+  const card = page.getByTestId('square-card');
+  await expect(card.getByTestId('event-card')).toContainText('Test contact');
   await expect(flag).toHaveCount(0); // seen, so no longer flagged
-  await expect(page.getByTestId('selected-square')).toHaveText('—'); // the marker took the tap
+  await expect(page.getByTestId('selected-square')).toHaveText('G2'); // the event opens its square's card
 
   if (!isMobile) {
     // Beside its square: the card's near edge is within a square's width of G2.
-    await expect(card).toHaveAttribute('data-anchored', 'true');
     const box = (await card.boundingBox())!;
     const g2 = await squarePoint(page, 6, 1);
     const side = await card.getAttribute('data-side');
@@ -39,5 +38,5 @@ test('opening it from the intel stream opens the same card', async ({ page }) =>
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 'r', kind: 'request', square: 'F2', title: 'Need imagery' }));
   await page.getByTestId('new-event').click();
-  await expect(page.getByTestId('event-card')).toContainText('REQUEST · F2');
+  await expect(page.getByTestId('square-card').getByTestId('event-card')).toContainText('REQUEST · F2');
 });

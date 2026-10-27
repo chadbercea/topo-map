@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { initialState, MISSION_MS } from './state';
 import { createStore } from './store';
 import { step, type System } from './systems';
+import { lookSquare } from './satellite';
 
 describe('step', () => {
   it('advances tick, mission time and the timer', () => {
@@ -106,5 +107,31 @@ describe('map selection', () => {
     expect(store.get().map.selected).toBe('D3');
     store.selectSquare('D3');
     expect(store.get().map.selected).toBeNull();
+  });
+
+  it('opening an event opens its square\'s card; another square closes the event; × clears it all (ILI-1203)', () => {
+    const store = createStore();
+    store.addEvent({ id: 'x', kind: 'contact', square: 'C2', title: 'Test' });
+    store.openEvent('x');
+    expect(store.get().map.selected).toBe('C2');
+    expect(lookSquare(store.get())).toBe('C2');
+    store.selectSquare('D3');
+    expect(store.get().openEvent).toBeNull();
+    store.openEvent('x');
+    store.closeSquare();
+    expect(store.get().map.selected).toBeNull();
+    expect(store.get().openEvent).toBeNull();
+  });
+
+  it('the card follows ORION-3 to the square it was sent to, and stays on the look until closed', () => {
+    const store = createStore();
+    store.selectSquare('C2');
+    store.lookAt('C2');
+    expect(lookSquare(store.get())).toBe('C2');
+    for (let i = 0; i < 300 && store.get().satellite.state === 'slewing'; i++) store.tick(100);
+    store.capture('photo');
+    expect(lookSquare(store.get())).toBe('C2');
+    store.closeSquare();
+    expect(lookSquare(store.get())).toBeNull();
   });
 });
