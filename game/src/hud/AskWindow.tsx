@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { currentCall, waitingCalls } from '../sim/comms';
 import { blocked } from '../sim/responses';
@@ -7,7 +7,7 @@ import { bus, EV, getMapRect, toScreen } from '../game/events';
 const WIDTH = 260;
 
 // ALPHA's ask (ILI-1199): when the team needs something, a small window pins to the top right
-// of its marker on the map (top left when there's no room on the right) with the ask and tiny
+// of its marker on the map, where ALPHA was when it asked (top left when there's no room on the right) with the ask and tiny
 // text replies. It follows the marker as the
 // team and the camera move; if the marker is out of view it waits at the foot of the open
 // map. Several waiting asks page "1 of N". It never covers a mini game: it waits while one
@@ -19,6 +19,9 @@ export function AskWindow() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const state = useGame((s) => s);
   const [focus, setFocus] = useState<string | null>(null);
+  // Pinned where ALPHA was when it asked, so the window holds still while you answer even if
+  // the team keeps walking (a resupply ask doesn't stop it).
+  const anchors = useRef(new Map<string, { x: number; y: number }>());
   const [, redraw] = useState(0);
   useEffect(() => {
     const again = () => redraw((n) => n + 1);
@@ -34,11 +37,14 @@ export function AskWindow() {
   const call = calls.find((m) => m.id === focus) ?? currentCall(comms);
   if (!call || playing) return null;
   const at = calls.indexOf(call);
+  if (!anchors.current.has(call.id)) anchors.current.set(call.id, { x: Math.round(pos.x), y: Math.round(pos.y) });
+  const anchor = anchors.current.get(call.id)!;
   const page = (d: number) => setFocus(calls[(at + d + calls.length) % calls.length].id);
 
   // Top right of the marker, inside the open map; else the open map's foot.
   const area = getMapRect();
-  const p = toScreen(pos.x, pos.y);
+  const raw = toScreen(anchor.x, anchor.y);
+  const p = raw && { x: Math.round(raw.x), y: Math.round(raw.y) };
   const inView = !!p && !!area && p.x >= area.x && p.x <= area.x + area.width - 40 && p.y >= area.y + 40 && p.y <= area.y + area.height;
   const w = Math.min(WIDTH, innerWidth - 32);
   const right = inView && p!.x + 14 + w <= area!.x + area!.width; // room on the marker's right?
