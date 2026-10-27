@@ -1,10 +1,9 @@
 import { WORLD_H, WORLD_W } from './grid';
 
-// A fictional town for the city overlay: two highways through the theater, a street grid
-// around the town centre and building footprints on its blocks. Seeded, like the terrain.
+// A fictional town for the city overlay: two highways through the theater and a street grid
+// around the town centre. Seeded, like the terrain. No building footprints (ILI-1185).
 
-export type Block = { x: number; y: number; w: number; h: number };
-export type City = { roads: [number, number][][]; streets: [number, number][][]; blocks: Block[] };
+export type City = { roads: [number, number][][]; streets: [number, number][][] };
 
 export const TOWN = { x: 900, y: 330, radius: 230 }; // centred in E2, spilling into D2 and the top of E3
 
@@ -38,23 +37,13 @@ export function generateCity(seed = 11): City {
 
   const STREET = 46;
   const streets: [number, number][][] = [];
-  const blocks: Block[] = [];
   const inTown = (x: number, y: number) => Math.hypot(x - TOWN.x, y - TOWN.y) < TOWN.radius;
   for (let gx = TOWN.x - TOWN.radius; gx <= TOWN.x + TOWN.radius; gx += STREET) {
     for (let gy = TOWN.y - TOWN.radius; gy <= TOWN.y + TOWN.radius; gy += STREET) {
       if (!inTown(gx + STREET / 2, gy + STREET / 2)) continue;
       if (inTown(gx + STREET, gy)) streets.push([[gx, gy], [gx + STREET, gy]]);
       if (inTown(gx, gy + STREET)) streets.push([[gx, gy], [gx, gy + STREET]]);
-      // Denser in the centre, patchy at the edge.
-      const density = 1 - Math.hypot(gx - TOWN.x, gy - TOWN.y) / TOWN.radius;
-      const count = Math.round(1 + density * 3);
-      for (let k = 0; k < count; k++) {
-        if (r() > 0.35 + density) continue;
-        const w = 8 + r() * 14;
-        const h = 8 + r() * 14;
-        blocks.push({ x: gx + 5 + r() * (STREET - 10 - w), y: gy + 5 + r() * (STREET - 10 - h), w, h });
-      }
     }
   }
-  return { roads, streets, blocks };
+  return { roads, streets };
 }

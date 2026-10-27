@@ -516,7 +516,7 @@ export class MapScene extends Phaser.Scene {
     return this.add.image(t.x0 - t.sample / 2, t.y0 - t.sample / 2, key).setOrigin(0).setScale(t.sample).setDepth(depth);
   }
 
-  // City overlay, baked like the contours: highways, streets, building footprints.
+  // City overlay, baked like the contours: highways and streets.
   private drawCity(s: number) {
     const g = this.make.graphics({}, false);
     const line = (pts: [number, number][]) => {
@@ -529,8 +529,6 @@ export class MapScene extends Phaser.Scene {
     this.city.roads.forEach(line);
     g.lineStyle(1 * DPR, 0xb8c4bf, 0.3);
     this.city.streets.forEach(line);
-    g.fillStyle(0xb8c4bf, 0.5);
-    for (const b of this.city.blocks) g.fillRect(b.x * s, b.y * s, b.w * s, b.h * s);
     if (this.textures.exists('city')) this.textures.remove('city');
     g.generateTexture('city', Math.ceil(WORLD_W * s), Math.ceil(WORLD_H * s));
     g.destroy();

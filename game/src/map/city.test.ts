@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { generateCity, TOWN } from './city';
+import { generateCity } from './city';
 import { WORLD_H, WORLD_W } from './grid';
 import { hillshade } from './relief';
 import { generateTerrain } from './terrain';
@@ -9,12 +9,11 @@ describe('city overlay', () => {
     expect(generateCity(11)).toEqual(generateCity(11));
   });
 
-  it('has highways, streets and buildings, with buildings in town', () => {
+  it('has highways and streets, and no buildings', () => {
     const c = generateCity();
     expect(c.roads.length).toBe(2);
     expect(c.streets.length).toBeGreaterThan(20);
-    expect(c.blocks.length).toBeGreaterThan(30);
-    for (const b of c.blocks) expect(Math.hypot(b.x - TOWN.x, b.y - TOWN.y)).toBeLessThan(TOWN.radius + 50);
+    expect(c).not.toHaveProperty('blocks');
     for (const road of c.roads)
       for (const [x, y] of road) {
         expect(x).toBeGreaterThanOrEqual(-40);
