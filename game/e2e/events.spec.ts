@@ -4,13 +4,13 @@ import { squarePoint, start, tapAt } from './helpers';
 test('a new event flags an alert and a marker; tapping the marker opens its card', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
-  await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'B4', title: 'Test contact' }));
+  await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'E2', title: 'Test contact' }));
 
   const alerts = page.getByTestId('alerts');
-  await expect(alerts).toContainText('CONTACT B4 · Test contact');
+  await expect(alerts).toContainText('CONTACT E2 · Test contact');
 
-  // Marker sits in the square's top-right quarter (B4 = col 1, row 3).
-  await tapAt(page, isMobile, await squarePoint(page, 1, 3, 0.25, -0.25));
+  // Marker sits in the square's top-right quarter (E2 = col 4, row 1), on screen on a phone too.
+  await tapAt(page, isMobile, await squarePoint(page, 4, 1, 0.25, -0.25));
   const card = page.getByTestId('event-card');
   await expect(card).toContainText('Test contact');
   await expect(alerts).toHaveCount(0); // seen, so no longer flagged

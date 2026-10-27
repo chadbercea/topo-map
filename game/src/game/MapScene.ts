@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { bus, EV, getMapRect, insetRect, type SceneStatus } from './events';
+import { fitCamera } from './fit';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
 import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
@@ -384,9 +385,9 @@ export class MapScene extends Phaser.Scene {
     return this.cameras.main.zoom;
   }
 
-  // Fit the grid into the space the HUD leaves for the map (whole screen until it reports).
-  // During seek and destroy the camera closes in on the target square, so its board's
-  // cells are big enough to tap on a phone.
+  // Zoom first, then draw: the grid fills the viewport (fit.ts), and lines, labels and the
+  // terrain bake are drawn for that zoom. During a strike the camera closes in on the
+  // target square, so its board's cells are big enough to tap on a phone.
   private layout() {
     const { width, height } = this.scale;
     const r = getMapRect();
@@ -395,16 +396,12 @@ export class MapScene extends Phaser.Scene {
       : { x: 0, y: 0, w: width, h: height };
     const view = this.focus();
     const cam = this.cameras.main;
-    const zoom = Math.max(0.01, Math.min((area.w - MARGIN * 2) / view.w, (area.h - MARGIN * 2) / view.h));
+    const { zoom, sx, sy } = fitCamera({ w: width, h: height }, area, view, MARGIN);
     // The terrain bakes at the whole-map zoom; closing in on a board reuses it (re-baking the
     // whole theater on every zoom would stutter on a phone).
-    this.baseZoom = Math.max(0.01, Math.min((area.w - MARGIN * 2) / WORLD_W, (area.h - MARGIN * 2) / WORLD_H));
+    this.baseZoom = fitCamera({ w: width, h: height }, area, { x: 0, y: 0, w: WORLD_W, h: WORLD_H }, MARGIN).zoom;
     cam.setZoom(zoom);
-    // Put the view's centre on the area's centre rather than the screen's.
-    cam.centerOn(
-      view.x + view.w / 2 - (area.x + area.w / 2 - width / 2) / zoom,
-      view.y + view.h / 2 - (area.y + area.h / 2 - height / 2) / zoom,
-    );
+    cam.centerOn(view.x + view.w / 2 - (sx - width / 2) / zoom, view.y + view.h / 2 - (sy - height / 2) / zoom);
     this.drawTerrain();
     this.drawOutside();
     this.drawGrid();
