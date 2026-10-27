@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, squarePoint, start, tapAt, untilOnStation } from './helpers';
+import { fastForward, freeze, start, untilOnStation } from './helpers';
 
-test('select a square, task ORION-3 there, take a burst: the look lands on the map', async ({ page, isMobile }) => {
+test('select a square, task ORION-3 there, take a burst: the look lands on the map', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
-  await tapAt(page, isMobile, await squarePoint(page, 4, 2)); // E3
+  // E3 is off screen on a phone (the camera stays on ALPHA); map.spec covers tapping squares.
+  await page.evaluate(() => window.game.selectSquare('E3'));
   const actions = page.getByTestId('square-actions');
   await expect(actions).toContainText('E3');
   await expect(actions).toContainText('no imagery');

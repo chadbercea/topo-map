@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { bus, EV, getMapRect, insetRect, type SceneStatus } from './events';
-import { fitCamera } from './fit';
+import { clampCenter, fitCamera, followCenter } from './fit';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
 import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
@@ -25,6 +25,7 @@ const MAX_FRAME_MS = 100; // the most sim time one rendered frame may advance
 // Browser tests set window.frozen to stop the clock while they tap through a timed mini
 // game, so a slow renderer can't run the timer out; time then moves only via game.tick.
 const frozen = () => (window as { frozen?: boolean }).frozen === true;
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // The theater map: contour lines of the fictional terrain under the A1–H5 grid. The camera
 // fits the grid to the screen; line widths and labels are redrawn per zoom so they stay crisp.
@@ -97,6 +98,14 @@ export class MapScene extends Phaser.Scene {
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
     this.inset.ignore([...this.labels, this.teamLabel]); // the caption names the square
+    // ?debug: tests read the live camera to turn world points into screen taps.
+    if (new URLSearchParams(location.search).has('debug'))
+      Object.assign(window, {
+        mapCamera: () => {
+          const c = this.cameras.main;
+          return { scrollX: c.scrollX, scrollY: c.scrollY, zoom: c.zoom, width: c.width, height: c.height, dpr: DPR };
+        },
+      });
 
     this.scale.on(Phaser.Scale.Events.RESIZE, this.layout, this);
     bus.on(EV.mapRect, this.layout, this);
@@ -130,6 +139,7 @@ export class MapScene extends Phaser.Scene {
     const now = performance.now();
     if (!frozen()) this.loop.advance(this.lastFrame === null ? 0 : Math.min(now - this.lastFrame, delta, MAX_FRAME_MS));
     this.lastFrame = now;
+    this.follow(delta);
     this.drawTeam();
     const st = game.get();
     const key = `${st.team.waypoint}|${st.team.route.join()}|${st.map.scanned.length}|${st.contacts.filter((c) => c.status === 'revealed').map((c) => c.square)}`;
@@ -385,6 +395,25 @@ export class MapScene extends Phaser.Scene {
     return this.cameras.main.zoom;
   }
 
+  // Follow ALPHA when it needs to (fit.ts): pick a new centre when it nears the edge of the
+  // open map, and ease there over about half a second. A strike's close-up doesn't follow.
+  private camCenter: { x: number; y: number } | null = null;
+  private camTarget: { x: number; y: number } | null = null;
+  private follow(delta: number) {
+    if (this.focused || !this.camCenter || !this.camTarget) return;
+    const { width, height } = this.scale;
+    const r = getMapRect();
+    const area = r ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR } : { x: 0, y: 0, w: width, h: height };
+    const cam = this.cameras.main;
+    this.camTarget = followCenter(this.camTarget, game.get().team.position, area, { w: width, h: height }, cam.zoom);
+    const dx = this.camTarget.x - this.camCenter.x;
+    const dy = this.camTarget.y - this.camCenter.y;
+    if (!dx && !dy) return;
+    const k = reducedMotion() ? 1 : Math.min(1, delta / 150);
+    this.camCenter = Math.hypot(dx, dy) * cam.zoom < 0.5 ? this.camTarget : { x: this.camCenter.x + dx * k, y: this.camCenter.y + dy * k };
+    cam.centerOn(this.camCenter.x, this.camCenter.y);
+  }
+
   // Zoom first, then draw: the grid fills the viewport (fit.ts), and lines, labels and the
   // terrain bake are drawn for that zoom. During a strike the camera closes in on the
   // target square, so its board's cells are big enough to tap on a phone.
@@ -401,7 +430,17 @@ export class MapScene extends Phaser.Scene {
     // whole theater on every zoom would stutter on a phone).
     this.baseZoom = fitCamera({ w: width, h: height }, area, { x: 0, y: 0, w: WORLD_W, h: WORLD_H }, MARGIN).zoom;
     cam.setZoom(zoom);
-    cam.centerOn(view.x + view.w / 2 - (sx - width / 2) / zoom, view.y + view.h / 2 - (sy - height / 2) / zoom);
+    if (this.focused) {
+      cam.centerOn(view.x + view.w / 2 - (sx - width / 2) / zoom, view.y + view.h / 2 - (sy - height / 2) / zoom);
+    } else {
+      // The whole map: keep where the camera was (or start on ALPHA if it needs to), within
+      // the grid at this zoom.
+      const screen = { w: width, h: height };
+      const start = this.camCenter ?? clampCenter({ x: WORLD_W / 2, y: WORLD_H / 2 }, screen, zoom);
+      this.camCenter = clampCenter(this.camCenter ? start : followCenter(start, game.get().team.position, area, screen, zoom), screen, zoom);
+      this.camTarget = this.camCenter;
+      cam.centerOn(this.camCenter.x, this.camCenter.y);
+    }
     this.drawTerrain();
     this.drawOutside();
     this.drawGrid();

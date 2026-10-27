@@ -1,12 +1,12 @@
 import type { Page } from '@playwright/test';
 import type { Store } from '../src/sim/store';
-import { fitCamera } from '../src/game/fit';
 
 // ?debug puts the game store on window for tests.
 declare global {
   interface Window {
     game: Store;
     frozen?: boolean;
+    mapCamera: () => { scrollX: number; scrollY: number; zoom: number; width: number; height: number; dpr: number };
   }
 }
 
@@ -45,35 +45,32 @@ export const freeze = (page: Page) =>
     window.frozen = true;
   });
 
-// MapScene's camera fit (src/game/fit.ts), in CSS px.
-const WORLD_W = 1600, WORLD_H = 1000, CELL = 200, MARGIN = 8;
+const CELL = 200;
 
-// The map area resizes when panels grow (a radio call, the readout); wait for it to settle.
-async function mapBox(page: Page) {
-  let box = (await page.getByTestId('map-area').boundingBox())!;
-  for (let i = 0; i < 20; i++) {
+// The live camera, once it has stopped moving (it eases after ALPHA, and the map refits
+// when panels grow).
+async function settledCamera(page: Page) {
+  let cam = await page.evaluate(() => window.mapCamera());
+  for (let i = 0; i < 30; i++) {
     await page.waitForTimeout(100);
-    const next = (await page.getByTestId('map-area').boundingBox())!;
-    if (next.x === box.x && next.y === box.y && next.width === box.width && next.height === box.height) break;
-    box = next;
+    const next = await page.evaluate(() => window.mapCamera());
+    if (JSON.stringify(next) === JSON.stringify(cam)) break;
+    cam = next;
   }
-  return box;
+  return cam;
 }
 
-// view: the world rect the camera fits (all of it, or a seek-and-destroy square with margin).
-export async function worldToScreen(page: Page, wx: number, wy: number, view = { x: 0, y: 0, w: WORLD_W, h: WORLD_H }) {
-  const box = await mapBox(page);
-  const screen = page.viewportSize()!;
-  const area = { x: box.x, y: box.y, w: box.width, h: box.height };
-  const { zoom, sx, sy } = fitCamera({ w: screen.width, h: screen.height }, area, view, MARGIN);
-  return { x: sx + (wx - (view.x + view.w / 2)) * zoom, y: sy + (wy - (view.y + view.h / 2)) * zoom };
+// A world point to CSS px on screen, through the camera as it is now.
+export async function worldToScreen(page: Page, wx: number, wy: number) {
+  const c = await settledCamera(page);
+  const sx = c.width / 2 + (wx - c.scrollX - c.width / 2) * c.zoom;
+  const sy = c.height / 2 + (wy - c.scrollY - c.height / 2) * c.zoom;
+  return { x: sx / c.dpr, y: sy / c.dpr };
 }
 
 // Cell i (0-15, row by row) of a seek-and-destroy board, with the camera closed in on it.
 export function boardCell(page: Page, col: number, row: number, i: number) {
-  const pad = CELL * 0.25;
-  const view = { x: col * CELL - pad, y: row * CELL - pad, w: CELL + pad * 2, h: CELL + pad * 2 };
-  return worldToScreen(page, col * CELL + ((i % 4) + 0.5) * (CELL / 4), row * CELL + (Math.floor(i / 4) + 0.5) * (CELL / 4), view);
+  return worldToScreen(page, col * CELL + ((i % 4) + 0.5) * (CELL / 4), row * CELL + (Math.floor(i / 4) + 0.5) * (CELL / 4));
 }
 
 export const squarePoint = (page: Page, col: number, row: number, dx = 0, dy = 0) =>
