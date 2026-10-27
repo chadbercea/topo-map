@@ -101,7 +101,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     ...s,
     satellite: sat,
     map: { ...s.map, selected: null },
-    team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on imagery' } : s.team,
+    team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
   return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Moving to ${square}. On station in ${Math.ceil(ms / 1000)}s.` : `On station over ${square}.`));
 }

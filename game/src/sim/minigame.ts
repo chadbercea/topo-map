@@ -37,7 +37,7 @@ export type MiniGame = {
   eyes?: Freshness | null; // how good that look was; live follows them as they move
   confirmed?: number; // kills HQ saw: the ones that pay
   scattered?: boolean; // the first shot sent them to cover
-  // Signal intercept only:
+  // Listen (signal intercept) only:
   signal?: Signal;
 };
 
@@ -53,7 +53,7 @@ export const MINIGAMES: Record<MiniGameKind, Def> = {
     instructions: 'Fire at the fighters you can see.',
   },
   signal: {
-    title: 'Signal intercept',
+    title: 'Listen',
     instructions: 'Drag to lay your line over theirs and keep it there. They hop every few seconds: follow them.',
   },
 };

@@ -16,7 +16,7 @@ async function targetE3(page: Page) {
 // Cell i of square E3's board.
 const e3Cell = (page: Page, i: number) => boardCell(page, 4, 2, i);
 
-test('the target menu lists every weapon with its state, and Send ALPHA in', async ({ page }) => {
+test('the target menu lists every weapon with its state, and ALPHA attacks', async ({ page }) => {
   await targetE3(page);
   await expect(page.getByTestId('fire-drone')).toContainText('1 use');
   await expect(page.getByTestId('fire-sniper')).toContainText('Ready');

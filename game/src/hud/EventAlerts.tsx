@@ -50,7 +50,7 @@ export function EventCard() {
         ) : (
           <div className="signal-options">
             <button className="intercept" onClick={() => game.intercept(e.id)}>
-              Intercept
+              Listen
             </button>
             <button className="jam" onClick={() => game.jam(e.id)} title="Slows the enemy, but you won't learn what they're planning">
               Jam

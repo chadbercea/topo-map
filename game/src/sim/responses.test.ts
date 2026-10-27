@@ -29,7 +29,7 @@ describe('response tree', () => {
   it('a found contact on the route makes the team hold short and ask', () => {
     const s = atContact().get();
     expect(s.team.holdFor).toBe(CALL);
-    expect(msg(s, CALL)?.text).toBe('Contact in E3, two technicals, on our route. Observe, hit it, or go around?');
+    expect(msg(s, CALL)?.text).toBe('Contact in E3, two technicals, on our route. Hold and watch, attack, or go around?');
     expect(s.team.activity).toBe('Holding short of E3');
   });
 

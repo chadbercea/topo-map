@@ -10,7 +10,7 @@ test('select a square, task ORION-3 there, take a burst: the look lands on the m
   const actions = page.getByTestId('square-actions');
   await expect(actions).toContainText('E3');
   await expect(actions).toContainText('no imagery');
-  await expect(page.getByTestId('look-here')).toHaveText(/Look here · \ds/);
+  await expect(page.getByTestId('look-here')).toHaveText(/Look · \ds/);
   await page.getByTestId('look-here').click();
 
   const panel = page.getByTestId('satellite');
@@ -29,12 +29,12 @@ test('select a square, task ORION-3 there, take a burst: the look lands on the m
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
 });
 
-test('ALPHA asks for imagery: Send imagery, then a photo on station lets it move', async ({ page }) => {
+test('ALPHA asks for imagery: Look at it, then a photo on station lets it move', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
-  await page.getByTestId('responses').getByRole('button', { name: 'Send imagery' }).click();
-  await expect(page.getByTestId('team-panel')).toContainText('Waiting on imagery');
+  await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
+  await expect(page.getByTestId('team-panel')).toContainText('Waiting on the look');
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click();
   await expect(page.getByTestId('satellite-result')).toContainText('Photo: nothing there');

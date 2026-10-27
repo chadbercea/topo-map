@@ -45,11 +45,11 @@ export function Briefing() {
           </div>
           <div>
             <dt>Listen</dt>
-            <dd>Intercept enemy radio when HQ picks it up.</dd>
+            <dd>Listen in on enemy radio when HQ picks it up.</dd>
           </div>
           <div>
-            <dt>ALPHA</dt>
-            <dd>Walks the route and holds when it needs your call. It waits for orders.</dd>
+            <dt>Move</dt>
+            <dd>Moves along the route and holds when it needs your call. It waits for orders.</dd>
           </div>
         </dl>
         <p className="window">

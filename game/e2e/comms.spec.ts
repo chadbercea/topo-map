@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start, untilOnStation } from './helpers';
 
-test('ALPHA holds short of unimaged ground and asks; Push through sends it on blind', async ({ page, isMobile }) => {
+test('ALPHA holds short of unimaged ground and asks; Move in blind sends it on', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 500);
@@ -11,7 +11,7 @@ test('ALPHA holds short of unimaged ground and asks; Push through sends it on bl
   await expect(page.getByTestId('call-deadline')).toHaveCount(0); // ALPHA waits: no countdown
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4\. No imagery/);
 
-  const push = page.getByTestId('responses').getByRole('button', { name: 'Push through' });
+  const push = page.getByTestId('responses').getByRole('button', { name: 'Move in blind' });
   if (isMobile) await push.tap();
   else await push.click();
   await fastForward(page, 1_000);
@@ -29,12 +29,12 @@ test('comms can be minimized to a badge and reopened', async ({ page }) => {
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
 });
 
-test('Send imagery: a look at E3 finds the checkpoint and ALPHA asks to observe, attack or go around', async ({ page }) => {
+test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, attack or go around', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 500);
-  await page.getByTestId('responses').getByRole('button', { name: 'Send imagery' }).click();
+  await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click(); // F4 is clear
   await page.getByTestId('satellite').getByRole('button', { name: 'Close' }).click();
@@ -44,7 +44,7 @@ test('Send imagery: a look at E3 finds the checkpoint and ALPHA asks to observe,
     for (let i = 0; i < 600 && !window.game.get().team.holdFor; i++) window.game.tick(100);
   });
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of E3/);
-  await page.getByTestId('responses').getByRole('button', { name: 'Send imagery' }).click();
+  await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click();
   await expect(page.getByTestId('alerts')).toContainText('CONTACT E3');
@@ -55,7 +55,7 @@ test('Send imagery: a look at E3 finds the checkpoint and ALPHA asks to observe,
   });
   await expect(page.getByTestId('comms-text')).toHaveText(/Contact in E3, a fortified checkpoint, on our route/);
   const responses = page.getByTestId('responses');
-  for (const name of ['Observe', 'Attack', 'Go around']) await expect(responses.getByRole('button', { name })).toBeVisible();
+  for (const name of ['Hold and watch', 'Attack', 'Go around']) await expect(responses.getByRole('button', { name })).toBeVisible();
   await responses.getByRole('button', { name: 'Go around' }).click();
   await expect.poll(() => page.evaluate(() => window.game.get().team.route)).toContain('E4');
 });
