@@ -436,8 +436,7 @@ html, body {
 .team .condition { display: grid; grid-template-columns: auto auto 1fr auto 1fr; align-items: center; gap: 6px; font-size: 9px; }
 .team .condition .fit { color: var(--ink); font-size: 11px; }
 .team .condition .bar { height: 5px; }
-.team .no-link { color: var(--dim); font-size: 12px; }
-.team[data-linked='false'] { border-style: dashed; }
+
 
 /* Mode B readout: a row per operator. */
 .readout { margin-top: 8px; gap: 8px; }
@@ -467,7 +466,6 @@ html, body {
 /* Satcom (ILI-1186), bottom right: short texts with the team, and any call waiting on HQ
    pinned under them with its answers. */
 .satcom { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 6px; }
-.satcom[data-link='none'], .satcom[data-link='replied'] { border-color: #f2c14e; }
 .satcom .thread { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 4px; overflow-y: auto; min-height: 0; font-size: 12px; }
 .satcom .thread li { color: var(--ink); line-height: 1.4; }
 .satcom .thread li.out { color: var(--dim); }
@@ -531,14 +529,9 @@ html, body {
 .satcom > .actions .tag { font-size: 12px; min-height: 36px; padding: 0 12px; }
 
 /* The intel stream (ILI-1186), down the left: the whole theater's feed, newest first. */
-.stream { display: grid; grid-template-rows: auto auto auto minmax(0, 1fr); gap: 6px; min-height: 0; background: rgba(11, 15, 13, 0.92); }
+.stream { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; min-height: 0; background: rgba(11, 15, 13, 0.92); }
 .stream h2 { display: flex; justify-content: space-between; }
 .stream .count { color: var(--dim); font-weight: 400; }
-.stream .filter { display: flex; gap: 4px; }
-.stream .filter input { flex: 1; min-width: 0; font: inherit; font-size: 12px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); padding: 6px 8px; min-height: 32px; }
-.stream .filter input:focus { outline: none; border-color: var(--accent); }
-.stream .filter button { font: inherit; color: var(--dim); background: none; border: 1px solid var(--line); min-width: 32px; cursor: pointer; }
-.stream .scope { color: #f2c14e; font-size: 11px; }
 .stream .items { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; display: grid; align-content: start; gap: 8px; }
 .stream .items li { display: grid; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid rgba(53, 208, 165, 0.12); }
 .stream .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 0.08em; }
@@ -555,7 +548,6 @@ html, body {
 .bar-top { display: flex; align-items: stretch; gap: 18px; padding: 8px 14px; }
 .bar-top > div { display: grid; align-content: center; gap: 3px; min-width: 0; }
 .bar-top h2 { margin: 0; }
-.bar-top[data-linked='false'] h2 { color: #f2c14e; }
 .hdr-mission { flex: none; }
 .hdr-mission .pending { font-size: 10px; }
 .pips { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px; font-size: 10px; color: var(--dim); }

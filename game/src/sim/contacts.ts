@@ -7,6 +7,7 @@ import { pass, search } from './sites';
 import { isMissionPoint } from './mission';
 import { sendResupply } from './support';
 import { nextRandom } from './firefight';
+import { missionDef } from './script';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -141,7 +142,7 @@ function holdOn(s: GameState, c: { node: string; id: string; square: SquareId; l
 }
 
 // The effects HQ's answers have on a contact or an unimaged square.
-export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'resupply';
+export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'resupply' | 'divert';
 
 export function applyEffect(s: GameState, effect: Effect, square: SquareId): GameState {
   const decide = (d: Decision) => ({ ...s.team, decisions: { ...s.team.decisions, [square]: d } });
@@ -171,7 +172,23 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
       return pass(s, square);
     case 'resupply':
       return sendResupply(s);
+    case 'divert':
+      return divertExfil(s, square);
   }
+}
+
+// Move exfil away from a cut one (ILI-1192): the mission's alternate exfil, by its own
+// route, and the cut square comes off ALPHA's route.
+export function divertExfil(s: GameState, cut: SquareId): GameState {
+  const alt = missionDef(s.script.mission)?.altExfil;
+  const { route, waypoint } = s.team;
+  const i = route.indexOf(cut, waypoint);
+  if (!alt || i < 0) return s;
+  return {
+    ...s,
+    mission: { ...s.mission, c: alt.at(-1)! },
+    team: { ...s.team, route: [...route.slice(0, i), ...alt] },
+  };
 }
 
 // Go around a square: swap it in the route for a neighbour that touches the squares before

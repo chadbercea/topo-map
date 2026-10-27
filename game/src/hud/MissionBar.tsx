@@ -16,7 +16,6 @@ export const clock = (ms: number) => gameClock(ms);
 export function MissionBar() {
   const s = useGame((x) => x);
   const { timer, phase, tick, elapsedMs: now } = s;
-  const linked = s.link.state === 'linked';
   const next = nextUp(s);
   const blocks = blockers(s);
   // New on the map (ILI-1189): each event nobody has opened yet, at the front of the
@@ -30,10 +29,10 @@ export function MissionBar() {
   const warn = remaining <= 60_000 ? 'red' : remaining <= 180_000 ? 'amber' : undefined;
 
   return (
-    <section className="panel bar-top" data-testid="mission-timer" data-phase={phase} data-linked={linked}>
+    <section className="panel bar-top" data-testid="mission-timer" data-phase={phase}>
       <div className="hdr-mission">
-        <h2>{linked ? s.link.codename : 'NO TEAM LINKED'}</h2>
-        {linked ? (
+        <h2>{s.mission.name.replace('Operation ', '').toUpperCase()}</h2>
+        {(
           <>
             <ol className="pips" data-testid="phase-pips">
               {phasePips(s).map((p) => (
@@ -52,14 +51,12 @@ export function MissionBar() {
               ))}
             </ul>
           </>
-        ) : (
-          <p className="pending">Mission unknown until a team is linked</p>
         )}
       </div>
 
       <div className="hdr-task">
         <p className="objective" data-testid="objective">
-          ◆ {linked ? objectiveText(s.mission) : 'Find a team in the field to support'}
+          ◆ {objectiveText(s.mission)}
         </p>
         <p className="next" data-testid="next" data-tone={next.tone}>
           Next: {next.text}
@@ -111,11 +108,11 @@ export function MissionBar() {
       </div>
 
       <div className="hdr-deadline">
-        <span className="label">{linked ? 'CONTRACT WINDOW' : 'WINDOW OPENS ON LINK'}</span>
+        <span className="label">CONTRACT WINDOW</span>
         <span className="clock" data-testid="clock" data-warn={warn}>
           {clock(remaining)}
         </span>
-        <span className="when">{linked ? `closes ${zulu(s.link.atMs + timer.totalMs)} · now ${zulu(s.theaterMs)}` : `now ${zulu(s.theaterMs)}`}</span>
+        <span className="when">{`closes ${zulu(timer.totalMs)} · now ${zulu(s.elapsedMs)}`}</span>
       </div>
       <button className="pause" onClick={game.pause} disabled={phase !== 'running'} aria-label="Pause" data-testid="pause-toggle">
         ❚❚

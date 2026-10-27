@@ -31,11 +31,10 @@ type Tab = 'intel' | 'team' | 'satcom';
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const calls = useGame((s) => waitingCalls(s.comms).length);
-  const link = useGame((s) => s.link.state);
   const [tab, setTab] = useState<Tab>('satcom');
   useEffect(() => {
-    if (calls || link === 'replied') setTab('satcom');
-  }, [calls, link]);
+    if (calls) setTab('satcom');
+  }, [calls]);
 
   return (
     <div className="hud" data-playing={playing} data-tab={tab}>

@@ -46,6 +46,15 @@ export const TREE: Record<string, CallNode> = {
       { id: 'avoid', label: 'Go around', effect: 'avoid', reply: 'Going around.' },
     ],
   },
+  // The exfil is cut (ILI-1192): an enemy salvage convoy sits on it, hauling loot off the
+  // wreck. Hit it for the haul, or take the long way out to the alternate exfil.
+  'exfil-cut': {
+    text: ({ square, label }) => `Got eyes on a salvage convoy parked on our exfil at ${square}, loaded with loot off the wreck. Hit them for the haul, or we pull out to ${label}?`,
+    responses: [
+      { id: 'engage', label: 'Hit the convoy', effect: 'attack', reply: 'Copy. Going in for the haul.' },
+      { id: 'divert', label: 'Move exfil', effect: 'divert', reply: 'Copy, swinging wide to the alternate exfil.' },
+    ],
+  },
   site: {
     text: ({ square }) => `At the kill site in ${square}. Want us to search it? It'll cost us time.`,
     responses: [

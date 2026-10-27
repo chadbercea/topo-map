@@ -8,10 +8,11 @@ export const run = (s: GameState, ms: number) => {
   return s;
 };
 
-// The team just walks: every square imaged and no contacts, so nothing stops it.
+// The team just walks: every square imaged and no contacts, so nothing stops it (not even
+// the salvage convoy that cuts the exfil, ILI-1192; convoy.test.ts plays that).
 export const walking = (): GameState => {
   const s = initialState();
-  return { ...s, contacts: [], map: { ...s.map, scanned: [...ROUTE] } };
+  return { ...s, contacts: [], map: { ...s.map, scanned: [...ROUTE] }, script: { ...s.script, fired: [...s.script.fired, 'convoy-on-exfil'] } };
 };
 
 // Answer every call the moment it comes in with the given response (or the first one that

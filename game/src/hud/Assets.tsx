@@ -7,7 +7,6 @@ import { gameSpan } from '../sim/gameTime';
 export function Assets() {
   const s = useGame((x) => x);
   const noise = Math.round(s.noise);
-  if (s.link.state !== 'linked') return null;
   return (
     <div className="panel assets">
       <p className="resources" data-testid="resources">

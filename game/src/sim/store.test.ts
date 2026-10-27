@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { standby, initialState, MISSION_MS } from './state';
-import { REPLY_MS } from './link';
+import { initialState, MISSION_MS } from './state';
 import { createStore } from './store';
 import { step, type System } from './systems';
 
@@ -70,7 +69,7 @@ describe('store', () => {
     store.tick(100);
     store.pause();
     store.restart();
-    expect(store.get()).toEqual(standby());
+    expect(store.get()).toEqual(initialState());
   });
 });
 
@@ -81,7 +80,7 @@ describe('pause menu actions', () => {
     store.tick(100);
     store.restart();
     expect(store.get().tick).toBe(0);
-    expect(store.get().phase).toBe('standby');
+    expect(store.get().phase).toBe('running');
     expect(store.get().settings.city).toBe(false);
   });
 
@@ -94,35 +93,7 @@ describe('pause menu actions', () => {
     store.resume(); // resume only applies to a paused mission
     expect(store.get().phase).toBe('exited');
     store.restart();
-    expect(store.get().phase).toBe('standby');
-  });
-});
-
-describe('standby: finding the team (ILI-1186)', () => {
-  it('the intel stream runs while the mission clock waits for the link', () => {
-    const store = createStore(standby());
-    const before = store.get().stream.items.length;
-    store.tick(10_000);
-    expect(store.get().stream.items.length).toBeGreaterThan(before);
-    expect(store.get()).toMatchObject({ phase: 'standby', elapsedMs: 0, timer: { remainingMs: MISSION_MS } });
-    store.pause(); // nothing to pause yet
-    expect(store.get().phase).toBe('standby');
-  });
-
-  it('SITREP, the code name back, then filtering for it links the team and starts the clock', () => {
-    const store = createStore(standby());
-    store.setFilter('BLACK BOX'); // no reply yet: just a filter
-    expect(store.get().phase).toBe('standby');
-    store.sitrep();
-    expect(store.get().link.state).toBe('pinging');
-    store.tick(REPLY_MS);
-    expect(store.get().link.state).toBe('replied');
-    store.setFilter('black'); // not the code name
-    expect(store.get().phase).toBe('standby');
-    store.setFilter(' black  box ');
-    expect(store.get()).toMatchObject({ phase: 'running', link: { state: 'linked' } });
-    store.tick(100);
-    expect(store.get().elapsedMs).toBe(100);
+    expect(store.get().phase).toBe('running');
   });
 });
 

@@ -151,13 +151,16 @@ export class MapScene extends Phaser.Scene {
     this.follow(delta);
     this.drawTeam();
     const st = game.get();
-    // Until HQ links the team (ILI-1186) the map doesn't know where it is or where it's going.
-    const linked = st.link.state === 'linked';
-    for (const o of [this.teamGfx, this.teamLabel, this.routeGfx, this.missionGfx, ...this.missionLabels]) o.setVisible(linked);
     const key = `${st.team.waypoint}|${st.team.route.join()}|${st.map.scanned.length}|${st.contacts.filter((c) => c.status === 'revealed').map((c) => c.square)}`;
     if (key !== this.routeKey) {
       this.routeKey = key;
       this.drawRoute();
+    }
+    // Exfil can move (ILI-1192): the A/B/C markers follow it.
+    const points = `${st.mission.a}|${st.mission.b}|${st.mission.c}`;
+    if (points !== this.missionKey) {
+      this.missionKey = points;
+      this.drawMission();
     }
     this.drawMarkers(_time);
     this.drawFight(_time);
@@ -707,6 +710,7 @@ export class MapScene extends Phaser.Scene {
 
   // The route redraws when the team moves, and when a scan or a reveal changes a leg's state.
   private routeKey = '';
+  private missionKey = '';
 
   private lastTeam = { x: NaN, y: NaN };
 

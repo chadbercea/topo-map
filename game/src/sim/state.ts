@@ -15,15 +15,13 @@ import type { Inbound } from './support';
 import { initialOrdnance, type Ordnance } from './ordnance';
 import { initialMission, type Mission } from './mission';
 import { initialStream, type Stream } from './stream';
-import type { Link } from './link';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
 
-// standby: HQ is at the desk, the theater's intel is flowing, and no team is linked yet; the
-// mission clock starts when the player finds the team (ILI-1186). paused: pause menu open.
-// ended: timer ran out. exited: player left the mission.
-export type Phase = 'standby' | 'running' | 'paused' | 'ended' | 'exited';
+// The game opens running, in the war room with ALPHA already on the ground (ILI-1194).
+// paused: pause menu open. ended: timer ran out. exited: player left the mission.
+export type Phase = 'running' | 'paused' | 'ended' | 'exited';
 
 export type MapView = 'topo' | 'relief';
 export type Settings = { mapView: MapView; city: boolean };
@@ -32,9 +30,7 @@ export const DEFAULT_SETTINGS: Settings = { mapView: 'topo', city: true };
 export type GameState = {
   tick: number;
   elapsedMs: number; // mission time actually played, excludes pauses
-  theaterMs: number; // time at the desk, standby included: the intel stream runs on it
-  link: Link; // HQ's satcom link to the team: SITREP, the code name, then linked
-  stream: Stream; // the theater-wide intel stream on the left
+  stream: Stream; // the mission's intel stream on the left
   phase: Phase;
   timer: { remainingMs: number; totalMs: number }; // totalMs: this mission's length
   mission: Mission;
@@ -82,15 +78,13 @@ export const MISSION: MissionDef = BLACK_BOX;
 export const ROUTE: SquareId[] = MISSION.route;
 export const MISSION_MS = MISSION.durationMs; // GDD: start with six minutes and tune by feel
 
-// missionMs: the mission's length, the script's six minutes unless tuned (?minutes=). The
-// sim starts running and linked; the game itself opens on standby (standby()).
+// missionMs: the mission's length, the script's six minutes unless tuned (?minutes=). This is
+// how the game opens: live, ALPHA on the ground, the clock running.
 export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS): GameState {
   const operators = roster();
   return {
     tick: 0,
     elapsedMs: 0,
-    theaterMs: 0,
-    link: { state: 'linked', codename: MISSION.codename, atMs: 0 },
     stream: initialStream(),
     phase: 'running',
     timer: { remainingMs: missionMs, totalMs: missionMs },
@@ -134,11 +128,3 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     settings,
   };
 }
-
-// The game as the player sits down to it (ILI-1186): no briefing. The theater's intel is
-// already flowing, ALPHA is out there with no link yet, and the clock waits for the link.
-export const standby = (settings?: Settings, missionMs?: number): GameState => ({
-  ...initialState(settings, missionMs),
-  phase: 'standby',
-  link: { state: 'none', codename: MISSION.codename, atMs: 0 },
-});

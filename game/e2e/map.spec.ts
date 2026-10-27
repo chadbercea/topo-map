@@ -24,7 +24,7 @@ test('the camera follows ALPHA where the grid runs off screen, and stays put whe
   // Clear ground the whole way, so nothing stops the walk.
   await page.evaluate(() => {
     const s = window.game.get();
-    window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, holdFor: null } });
+    window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, holdFor: null }, script: { ...s.script, fired: [...s.script.fired, 'convoy-on-exfil'] } }); // no convoy on the exfil (ILI-1192)
   });
   // Where ALPHA is on screen, and the open map's box (the space between the panels).
   const where = async () => {
