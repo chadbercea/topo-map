@@ -2,12 +2,11 @@ import { useSyncExternalStore } from 'react';
 import { briefing, initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { confirm, dismiss, respond } from './comms';
-import { boostIntel, sendIntel, type IntelType } from './intel';
 import { cancelLook, capture, closeLook, lookAt, type CaptureMode } from './satellite';
 import { abortMiniGame, closeMiniGame, startSeek, tapMiniGame } from './minigame';
 import { weaponBlocked, type Weapon } from './ordnance';
 import { applyEffect } from './contacts';
-import { sendReinforcements, sendResupply } from './support';
+import { sendResupply } from './support';
 import { jam, startIntercept, tune } from './signal';
 import { step } from './systems';
 
@@ -55,8 +54,6 @@ export function createStore(initial: GameState = initialState()) {
     closeEvent: () => state.openEvent && set({ ...state, openEvent: null }),
     confirmCall: (id: string) => set(confirm(state, id)),
     respond: (id: string, responseId: string) => set(respond(state, id, responseId)),
-    sendIntel: (type: IntelType) => set(sendIntel(state, type)),
-    boostIntel: (type: IntelType, amount?: number) => set(boostIntel(state, type, amount)),
     tapMiniGame: (square: string, cell?: number) => state.phase === 'running' && set(tapMiniGame(state, square, cell)),
     fire: (contactId: string, weapon: Weapon) => {
       const c = state.contacts.find((x) => x.id === contactId);
@@ -75,7 +72,6 @@ export function createStore(initial: GameState = initialState()) {
     cancelLook: () => set(cancelLook(state)),
     closeLook: () => set(closeLook(state)),
     sendResupply: () => set(sendResupply(state)),
-    sendReinforcements: () => set(sendReinforcements(state)),
     intercept: (eventId: string) => set(startIntercept(state, eventId)),
     jam: (eventId: string) => set(jam(state, eventId)),
     tune: (mhz: number) => set(tune(state, mhz)),

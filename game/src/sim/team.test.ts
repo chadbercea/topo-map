@@ -11,10 +11,9 @@ describe('roster', () => {
     expect(team[0].rank.grade).toBe(Math.max(...team.map((o) => o.rank.grade))); // lead outranks
   });
 
-  it('starts everyone healthy, rested and fully loaded', () => {
+  it('starts everyone healthy and fully loaded', () => {
     for (const o of team) {
       expect(o.health).toBe(100);
-      expect(o.fatigue).toBe(0);
       expect(ammoLeft(o)).toBe(1);
       expect(medsLeft(o)).toBe(1);
     }

@@ -1,13 +1,11 @@
 import { COLS, parseSquare, ROWS, squareAt, squareId, type SquareId } from '../map/grid';
-import { boostIntel } from './intel';
 import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
 import { treeCall } from './responses';
 import { pass, search } from './sites';
 import { isMissionPoint } from './mission';
-import { acceptJob, declineJob } from './sidejob';
-import { sendReinforcements, sendResupply } from './support';
+import { sendResupply } from './support';
 import { nextRandom } from './firefight';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
@@ -143,7 +141,7 @@ function holdOn(s: GameState, c: { node: string; id: string; square: SquareId; l
 }
 
 // The effects HQ's answers have on a contact or an unimaged square.
-export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'accept-job' | 'decline-job' | 'guide' | 'distract' | 'resupply' | 'reinforce';
+export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'resupply';
 
 export function applyEffect(s: GameState, effect: Effect, square: SquareId): GameState {
   const decide = (d: Decision) => ({ ...s.team, decisions: { ...s.team.decisions, [square]: d } });
@@ -155,15 +153,14 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
     case 'attack':
       return { ...s, team: decide(effect) };
     case 'observe': {
-      // The team watches for a while and paints the target for the war room: target intel,
-      // a look at the squares next door, and a laser on every fighter.
+      // The team watches for a while and paints the target for the war room: a look at the
+      // squares next door, and a laser on every fighter.
       if (!contact) return s;
-      let next: GameState = {
+      const next: GameState = {
         ...s,
         contacts: s.contacts.map((c) => (c === contact ? { ...c, observed: true, painted: true } : c)),
         team: { ...s.team, holdUntilMs: s.elapsedMs + OBSERVE_MS },
       };
-      next = boostIntel(next, 'target', 0.3);
       return reveal(next, neighbours(square), s.team.callsign);
     }
     case 'avoid':
@@ -172,26 +169,8 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
       return search(s, square);
     case 'pass':
       return pass(s, square);
-    case 'guide': {
-      // The fixer walks them in: the square is known ground now, and he says what's there.
-      const known = { ...s, map: { ...s.map, scanned: s.map.scanned.includes(square) ? s.map.scanned : [...s.map.scanned, square] } };
-      return reveal(known, [square], 'FIXER');
-    }
-    case 'distract':
-      // Half of them chase the fixer's distraction while ALPHA goes in.
-      return {
-        ...s,
-        contacts: s.contacts.map((c) => (c === contact ? { ...c, strength: c.strength * 0.5 } : c)),
-        team: decide('attack'),
-      };
     case 'resupply':
       return sendResupply(s);
-    case 'reinforce':
-      return sendReinforcements(s);
-    case 'accept-job':
-      return acceptJob(s);
-    case 'decline-job':
-      return declineJob(s);
   }
 }
 

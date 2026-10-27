@@ -43,13 +43,11 @@ describe('response tree', () => {
     expect(s.team.fight).toMatchObject({ square: 'E3', full: 50 });
   });
 
-  it('observe: the team watches, earns target intel and a look next door, then asks again', () => {
+  it('observe: the team watches, gets a look next door, then asks again', () => {
     const store = atContact();
-    const before = store.get().intel.projects.target?.progress ?? 0;
     store.respond(CALL, 'observe');
     let s = store.get();
     expect(s.contacts[0].observed).toBe(true);
-    if (s.intel.projects.target) expect(s.intel.projects.target.progress).toBeGreaterThan(before);
     const held = s.team.position;
     s = run(s, OBSERVE_MS - 500);
     expect(s.team.position).toEqual(held);

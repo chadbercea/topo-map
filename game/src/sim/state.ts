@@ -7,13 +7,10 @@ import type { MapEvent, Scheduled } from './events';
 import { initialComms, type Comms } from './comms';
 import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
-import { initialIntel, type Buff, type Intel } from './intel';
 import type { MiniGame } from './minigame';
 import type { Contact, Decision } from './contacts';
 import { BLACK_BOX } from './missions/blackBox';
 import type { MissionDef } from './script';
-import type { SideJob } from './sidejob';
-import type { Deniability } from './noise';
 import type { Inbound } from './support';
 import { initialOrdnance, type Ordnance } from './ordnance';
 import { initialMission, type Mission } from './mission';
@@ -48,7 +45,6 @@ export type GameState = {
     vitals: string; // health/ammo/meds last tick, to notice them changing
     fight: Fight | null;
     treating: Treatment | null; // the medic at work
-    buffs: Buff[]; // intel HQ has sent the team
     decisions: Record<string, Decision>; // what HQ decided about squares on the route
   };
   map: { cols: number; rows: number; scanned: string[]; selected: string | null };
@@ -57,7 +53,6 @@ export type GameState = {
   schedule: Scheduled[]; // events still to come, by mission time
   openEvent: string | null; // the event card on screen
   comms: Comms;
-  intel: Intel;
   minigame: MiniGame | null; // the mini game on the map, or its result until closed
   resources: { budget: number };
   satellite: Satellite; // ORION-3: where it's looking and what it's doing
@@ -67,11 +62,9 @@ export type GameState = {
   noise: number; // 0-100, how loud the PMC has been
   script: { mission: string; fired: string[] }; // the mission script and which triggers have run
   flags: Record<string, boolean>; // choices the mission script reacts to (jammed, ...)
-  stats: { searched: number; decoded: number; bonus: number; lost: string[] }; // for the wrap-up; lost: ids of operators who went down
-  sideJob: SideJob | null; // the client's side offer
+  stats: { searched: number; decoded: number; lost: string[] }; // for the wrap-up; lost: ids of operators who went down
   inbound: Inbound[]; // support on its way
   alerted: boolean; // the enemy knows a PMC is in the area
-  deniability: Deniability; // how the client feels about the noise
   rng: number; // seed for chance in fights, kept in state so a mission replays exactly
   settings: Settings; // survives restart
 };
@@ -104,7 +97,6 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
       vitals: vitalsFor(operators),
       fight: null,
       treating: null,
-      buffs: [],
       decisions: {},
     },
     map: { cols: 8, rows: 5, scanned: [ROUTE[0]], selected: null }, // the insertion point is known ground
@@ -113,7 +105,6 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     schedule: MISSION.schedule,
     openEvent: null,
     comms: initialComms(),
-    intel: initialIntel(MISSION.feed),
     minigame: null,
     resources: { budget: 0 },
     satellite: initialSatellite(ROUTE[0]),
@@ -123,11 +114,9 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     noise: 0,
     script: { mission: MISSION.id, fired: [] },
     flags: {},
-    stats: { searched: 0, decoded: 0, bonus: 0, lost: [] },
-    sideJob: null,
+    stats: { searched: 0, decoded: 0, lost: [] },
     inbound: [],
     alerted: false,
-    deniability: 'clean',
     rng: 1234,
     settings,
   };

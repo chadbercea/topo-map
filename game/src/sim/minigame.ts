@@ -1,5 +1,4 @@
 import type { SquareId } from '../map/grid';
-import { boostIntel } from './intel';
 import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
@@ -185,7 +184,6 @@ function finishSeek(s: GameState, status: 'won' | 'lost'): GameState {
   const left = c.units.length;
   let next: GameState = { ...s, minigame: { ...m, status } };
   if (status === 'won') {
-    next = boostIntel(next, 'target');
     next = {
       ...next,
       contacts: next.contacts.map((x) => (x.id === c.id ? { ...x, status: 'cleared' as const } : x)),

@@ -60,14 +60,12 @@ describe('signal intercept', () => {
     return store;
   };
 
-  it('following them all the way decodes their plan: patrol marked, route known, signals intel', () => {
-    const signals = atTraffic().get().intel.projects.signals?.progress ?? 0;
+  it('following them all the way decodes their plan: patrol marked, route known', () => {
     const s: GameState = follow(TRANSMISSION_MS).get();
     expect(s.minigame!.status).toBe('won');
     const patrol = s.contacts.find((c) => c.id === 'patrol')!;
     expect(patrol).toMatchObject({ status: 'revealed', planKnown: true, planTo: 'D3' });
     expect(s.events.find((e) => e.id === 'traffic-c2')?.status).toBe('resolved');
-    if (s.intel.projects.signals) expect(s.intel.projects.signals.progress).toBeGreaterThan(signals);
     expect(s.comms.messages.some((m) => m.from === 'SIGINT' && m.text === 'Decoded: "PATROL AT C2 MOVING TO D3 FOR THE DRONE".')).toBe(true);
   });
 

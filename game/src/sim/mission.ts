@@ -1,5 +1,4 @@
 import { squareAt, type SquareId } from '../map/grid';
-import { boostIntel } from './intel';
 import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
@@ -58,13 +57,12 @@ export const missionSystem: System = (s, dt) => {
     return { ...s, mission: { ...mission, recoverUntilMs: mission.recoverUntilMs + dt } };
   }
   if (mission.phase === 'objective' && mission.recoverUntilMs !== null && s.elapsedMs >= mission.recoverUntilMs) {
-    const next = boostIntel(s, 'target', 0.3); // documents from the wreck
     return {
-      ...next,
+      ...s,
       mission: { ...mission, phase: 'exfil', blackBox: true, recoverUntilMs: null },
       comms: {
-        ...next.comms,
-        messages: [...next.comms.messages, radio(s, 'got-black-box', `Got the black box, and some paperwork. Heading for exfil at ${mission.c}.`)],
+        ...s.comms,
+        messages: [...s.comms.messages, radio(s, 'got-black-box', `Got the black box, and some paperwork. Heading for exfil at ${mission.c}.`)],
       },
     };
   }

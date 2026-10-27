@@ -2,7 +2,7 @@ import type { GameState } from './state';
 import type { Message } from './comms';
 import type { Effect } from './contacts';
 import { satelliteBusy } from './satellite';
-import { FIXER_DISTRACTION, FIXER_GUIDE, REINFORCE_COST, RESUPPLY_COST } from './prices';
+import { RESUPPLY_COST } from './prices';
 
 // The response tree for radio calls (GDD: answer through a menu tree; options depend on
 // capabilities and budget). Each call offers one to three responses; a response can move
@@ -29,8 +29,6 @@ export type CallNode = {
   responses: Response[];
 };
 
-export { FIXER_DISTRACTION, FIXER_GUIDE } from './prices';
-
 // The tree's wording.
 export const TREE: Record<string, CallNode> = {
   unimaged: {
@@ -38,8 +36,6 @@ export const TREE: Record<string, CallNode> = {
     responses: [
       { id: 'send', label: 'Send imagery', requires: { capability: 'imagery' }, look: true, reply: 'Standing by for imagery.' },
       { id: 'blind', label: 'Push through', effect: 'blind', reply: 'Copy, moving in blind.' },
-      // The local fixer (GDD PMC mechanics): a paid guide instead of a scan.
-      { id: 'fixer', label: `Pay a fixer ($${FIXER_GUIDE.toLocaleString('en-US')})`, requires: { budget: FIXER_GUIDE }, spend: { budget: FIXER_GUIDE }, effect: 'guide', reply: 'Local says he knows the ground. Following him in.' },
     ],
   },
   contact: {
@@ -57,19 +53,11 @@ export const TREE: Record<string, CallNode> = {
       { id: 'pass', label: 'Keep moving', effect: 'pass', reply: 'Moving on.' },
     ],
   },
-  // The team running low (GDD team resources): HQ can send a resupply bird.
-  'low-supplies': {
-    text: ({ label }) => `Running low on ${label}. Can you get us a resupply?`,
+  // The team running low or combat ineffective (support.ts): one resupply bird covers both.
+  resupply: {
+    text: ({ label }) => `${label}. We need a resupply bird.`,
     responses: [
-      { id: 'resupply', label: `Send a resupply bird ($${RESUPPLY_COST.toLocaleString('en-US')})`, requires: { budget: RESUPPLY_COST }, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
-      { id: 'no', label: 'Make it last', effect: 'pass', reply: 'Understood. Conserving.' },
-    ],
-  },
-  // Combat ineffective (GDD support options): HQ can send reinforcements.
-  ineffective: {
-    text: ({ label }) => `We're combat ineffective, ${label}. We need reinforcements.`,
-    responses: [
-      { id: 'reinforce', label: `Send reinforcements ($${REINFORCE_COST.toLocaleString('en-US')})`, requires: { budget: REINFORCE_COST }, effect: 'reinforce', reply: 'Copy. Holding for the bird.', hold: 30_000 },
+      { id: 'resupply', label: `Send resupply ($${RESUPPLY_COST.toLocaleString('en-US')})`, requires: { budget: RESUPPLY_COST }, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
       { id: 'push', label: 'Push on', effect: 'pass', reply: 'Understood. Moving with what we have.' },
     ],
   },
@@ -78,8 +66,6 @@ export const TREE: Record<string, CallNode> = {
     responses: [
       { id: 'attack', label: 'Attack', effect: 'attack', reply: 'Moving in hard.' },
       { id: 'avoid', label: 'Go around', effect: 'avoid', reply: 'Going around.' },
-      // The local fixer: a distraction pulls half of them away while ALPHA goes in.
-      { id: 'distract', label: `Fixer distraction ($${FIXER_DISTRACTION.toLocaleString('en-US')})`, requires: { budget: FIXER_DISTRACTION }, spend: { budget: FIXER_DISTRACTION }, effect: 'distract', reply: 'Fixer is pulling them away. Going in now.' },
     ],
   },
 };

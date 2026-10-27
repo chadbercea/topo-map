@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useGame } from '../sim/store';
-import { teamFatigue } from '../sim/movement';
 import { OperatorRow } from './OperatorRow';
-import { BUFF_EFFECT } from '../sim/intel';
 
 // Team panel (ILI-1172). It keeps one size: a compact row per operator (heartbeat, name,
 // key supply, status) that reacts to the fight instead of the panel opening up, and a red
@@ -14,11 +12,7 @@ export function TeamPanel() {
   const fighting = useGame((s) => !!s.team.fight);
   const fit = useGame((s) => s.team.operators.filter((o) => o.health > 0).length);
   const size = useGame((s) => s.team.operators.length);
-  const fatigue = useGame((s) => Math.round(teamFatigue(s.team.operators)));
-  const buffs = useGame((s) => s.team.buffs);
-  const now = useGame((s) => s.elapsedMs);
   const operators = useGame((s) => s.team.operators);
-  const active = buffs.filter((b) => b.untilMs > now);
   const [open, setOpen] = useState(false);
 
   return (
@@ -34,17 +28,8 @@ export function TeamPanel() {
         ))}
       </ul>
       <p className="stats">
-        {fit}/{size} fit · fatigue {fatigue}%
+        {fit}/{size} fit
       </p>
-      {active.length > 0 && (
-        <p className="buffs" data-testid="buffs">
-          {active.map((b) => (
-            <span key={b.kind} title={BUFF_EFFECT[b.kind]}>
-              ▲ {b.title} {Math.ceil((b.untilMs - now) / 1000)}s
-            </span>
-          ))}
-        </p>
-      )}
     </section>
   );
 }

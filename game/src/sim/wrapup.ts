@@ -1,8 +1,7 @@
 import type { GameState } from './state';
 
 // The wrap-up (GDD): win needs mission success with no casualties; failure restarts the
-// mission. It measures how much the team got done with HQ's intel and how much new intel
-// was found, and shows the payout and the budget it makes for the next mission.
+// mission. It measures how much the team got done and what HQ learned, and shows the payout and the budget it makes for the next mission.
 
 export type Outcome = 'win' | 'casualties' | 'failed';
 
@@ -33,10 +32,7 @@ export function wrapUp(s: GameState): WrapUp {
   const outcome = outcomeOf(s);
   const down = casualties(s);
   const wiped = s.team.operators.every((o) => o.health <= 0);
-  const disowned = s.deniability === 'disowned';
-  const reason = disowned && outcome !== 'failed'
-    ? 'Black box recovered, but the client disowned the operation.'
-    : outcome === 'win'
+  const reason = outcome === 'win'
       ? 'Black box recovered. Everyone came home.'
       : outcome === 'casualties'
         ? `Black box recovered, but ${down} operator${down > 1 ? 's' : ''} down.`
@@ -49,14 +45,11 @@ export function wrapUp(s: GameState): WrapUp {
   const avoided = s.contacts.filter((c) => c.status === 'avoided').length;
   const ambushes = s.comms.messages.filter((m) => m.text.startsWith('Ambush')).length;
 
-  const contract = outcome === 'failed' || disowned ? 0 : CONTRACT;
+  const contract = outcome === 'failed' ? 0 : CONTRACT;
   const penalty = outcome === 'failed' ? 0 : down * CASUALTY_PENALTY;
-  const bonus = s.stats.bonus;
-  const earned = s.resources.budget - bonus; // kill cash and documents during the mission
   const payout = [
-    { label: disowned ? 'Contract (void: disowned)' : 'Contract', amount: contract },
-    { label: 'Earned in the field', amount: earned },
-    ...(bonus ? [{ label: 'Client bonus', amount: bonus }] : []),
+    { label: 'Contract', amount: contract },
+    { label: 'Earned in the field', amount: s.resources.budget }, // kill cash and documents
     ...(penalty ? [{ label: `Casualties (${down})`, amount: -penalty }] : []),
   ];
 
@@ -69,7 +62,6 @@ export function wrapUp(s: GameState): WrapUp {
       { label: 'No casualties', done: down === 0 && s.mission.phase === 'complete' },
     ],
     teamWork: [
-      { label: 'Intel sent to the team', value: String(s.intel.sent.length) },
       { label: 'Contacts found before contact', value: `${found - ambushes} of ${s.contacts.length}` },
       { label: 'Contacts cleared', value: String(cleared) },
       { label: 'Contacts avoided', value: String(avoided) },

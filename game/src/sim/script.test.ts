@@ -7,7 +7,7 @@ import { reveal } from './contacts';
 import { run, walking } from './testkit';
 
 describe('mission script', () => {
-  it('the game plays the Black Box script: route, clock, contacts, schedule and intel feed', () => {
+  it('the game plays the Black Box script: route, clock, contacts and schedule', () => {
     const s = initialState();
     expect(MISSION).toBe(BLACK_BOX);
     expect(missionDef('black-box')).toBe(BLACK_BOX);
@@ -15,7 +15,6 @@ describe('mission script', () => {
     expect(s.timer.remainingMs).toBe(BLACK_BOX.durationMs);
     expect(s.contacts.map((c) => c.id)).toEqual(['checkpoint', 'patrol', 'post']);
     expect(s.schedule).toBe(BLACK_BOX.schedule);
-    expect(s.intel.queue).toBe(BLACK_BOX.feed);
     expect(s.script).toEqual({ mission: 'black-box', fired: [] });
   });
 

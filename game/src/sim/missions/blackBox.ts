@@ -1,7 +1,6 @@
 import { contactIn, makeContact, moveContact, startMove } from '../contacts';
 import { squareAt } from '../../map/grid';
 import { registerMission, say, type MissionDef } from '../script';
-import { offerJob } from '../sidejob';
 
 export const PATROL_MOVES_MS = 150_000;
 export const PATROL_JAMMED_MS = 240_000; // jamming its net slows it down
@@ -36,14 +35,6 @@ export const BLACK_BOX: MissionDef = registerMission({
     },
   ],
 
-  feed: [
-    { atMs: 0, project: { id: 'route-overwatch', type: 'imagery', title: 'Route overwatch', durationMs: 40_000 } },
-    { atMs: 20_000, project: { id: 'radio-chatter', type: 'signals', title: 'Radio chatter', durationMs: 50_000 } },
-    { atMs: 40_000, project: { id: 'checkpoint-photos', type: 'target', title: 'Checkpoint photos', durationMs: 45_000 } },
-    { atMs: 90_000, project: { id: 'town-rooftops', type: 'imagery', title: 'Town rooftops', durationMs: 40_000 } },
-    { atMs: 120_000, project: { id: 'patrol-net', type: 'signals', title: 'Patrol net', durationMs: 50_000 } },
-    { atMs: 150_000, project: { id: 'vehicle-ids', type: 'target', title: 'Vehicle IDs', durationMs: 45_000 } },
-  ],
 
   // The patrol's move on the crash site, once someone has found it.
   threats: (s) => {
@@ -110,13 +101,6 @@ export const BLACK_BOX: MissionDef = registerMission({
         return here === s.mission.b && !!contactIn(s, s.mission.b) && s.mission.phase === 'objective';
       },
       then: (s) => say(s, s.team.callsign, 'crash-site-hit', 'They\u2019re here for the drone too! Taking fire at the crash site.', true),
-    },
-    // The client's side job (GDD event 3): extra pay for fresh imagery of a radar site,
-    // against the clock and the scan pool ALPHA needs.
-    {
-      id: 'client-offer',
-      when: (s) => s.elapsedMs >= 90_000 && s.mission.phase !== 'complete',
-      then: (s) => offerJob(s, { square: 'G2', reward: 10_000, windowMs: 120_000, answerMs: 30_000 }),
     },
     // The contract window, called out as it closes.
     {

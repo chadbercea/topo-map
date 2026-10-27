@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
-import { legSpeed, BASE_SPEED, teamFatigue } from './movement';
+import { legSpeed, BASE_SPEED } from './movement';
 import { initialState, MISSION_MS, ROUTE, type GameState } from './state';
 import { step } from './systems';
 import { walking } from './testkit';
@@ -11,11 +11,10 @@ const run = (s: GameState, seconds: number) => {
 };
 
 describe('legSpeed', () => {
-  it('is full speed on flat or downhill, slower uphill and when tired', () => {
-    expect(legSpeed(0, 0)).toBe(BASE_SPEED);
-    expect(legSpeed(-0.2, 0)).toBe(BASE_SPEED);
-    expect(legSpeed(0.25, 0)).toBeCloseTo(BASE_SPEED / 2);
-    expect(legSpeed(0, 100)).toBeLessThan(legSpeed(0, 0));
+  it('is full speed on flat or downhill, slower uphill', () => {
+    expect(legSpeed(0)).toBe(BASE_SPEED);
+    expect(legSpeed(-0.2)).toBe(BASE_SPEED);
+    expect(legSpeed(0.25)).toBeCloseTo(BASE_SPEED / 2);
   });
 });
 
@@ -52,12 +51,6 @@ describe('team movement', () => {
     expect(held.team.position).toEqual(s.team.position);
   });
 
-  it('builds fatigue climbing, more for heavier loads', () => {
-    const s = run(walking(), 60);
-    const by = Object.fromEntries(s.team.operators.map((o) => [o.role, o.fatigue]));
-    expect(teamFatigue(s.team.operators)).toBeGreaterThan(0);
-    expect(by['Heavy gunner']).toBeGreaterThan(by.Medic);
-  });
 
   it('does not move while paused', () => {
     const s = { ...run(walking(), 3), phase: 'paused' as const };

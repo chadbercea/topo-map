@@ -3,7 +3,6 @@ import type { GameState } from './state';
 import type { System } from './systems';
 import type { Operator, Role } from './team';
 import type { Message } from './comms';
-import { hasBuff } from './intel';
 import { contactIn, effectiveStrength } from './contacts';
 import { CASH_PER_TEAM_KILL, earn, markSite } from './sites';
 import { ALERT_AMBUSH, makeNoise, NOISE } from './noise';
@@ -99,8 +98,7 @@ export const firefightSystem: System = (s, dt) => {
       fired += rounds;
       return { ...o, ammo: o.ammo - rounds };
     });
-    const accuracy = hasBuff(s, 'target') ? 1.3 : 1;
-    const enemy = Math.max(0, fight.enemy - fired * HIT_PER_ROUND * accuracy);
+    const enemy = Math.max(0, fight.enemy - fired * HIT_PER_ROUND);
 
     // The enemy hits back in proportion to what's left of it, on a random standing operator.
     const standing = operators.filter(alive);
@@ -108,8 +106,7 @@ export const firefightSystem: System = (s, dt) => {
       let r: number;
       [r, rng] = nextRandom(rng);
       const target = standing[Math.floor(r * standing.length)];
-      const cover = hasBuff(s, 'signals') ? 0.7 : 1;
-      const dmg = ENEMY_DPS * (fight.enemy / ENEMY_STRENGTH) * cover * secs; // weaker as it wears down
+      const dmg = ENEMY_DPS * (fight.enemy / ENEMY_STRENGTH) * secs; // weaker as it wears down
       operators = operators.map((o) => (o === target ? { ...o, health: Math.max(0, o.health - dmg) } : o));
     }
 
