@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { reveal } from './contacts';
-import { PATROL_MOVES_MS } from './missions/blackBox';
+import { PATROL_MOVES_MS, PATROL_WALK_MS } from './missions/blackBox';
 import { RECOVER_MS } from './mission';
 import { initialState, type GameState } from './state';
 import { step } from './systems';
 import { run } from './testkit';
 
 const patrol = (s: GameState) => s.contacts.find((c) => c.id === 'patrol')!;
-const at = (ms: number, s: GameState = initialState()): GameState => step({ ...s, elapsedMs: ms - 100 }, 100);
+// Jump to when it sets off (half a minute before), then to ms.
+const at = (ms: number, s: GameState = initialState()): GameState =>
+  step({ ...step({ ...s, elapsedMs: ms - PATROL_WALK_MS - 100 }, 100), elapsedMs: ms - 100 }, 100);
 
 describe('the patrol hunting the drone', () => {
   it('moves onto the crash site at 2:30 if nobody stopped it, silently if nobody found it', () => {
@@ -41,7 +43,10 @@ describe('the patrol hunting the drone', () => {
     const s0 = initialState();
     let s: GameState = {
       ...s0,
-      contacts: s0.contacts.filter((c) => c.id === 'patrol'),
+      // Already on its way, due at 2:30.
+      contacts: s0.contacts
+        .filter((c) => c.id === 'patrol')
+        .map((c) => ({ ...c, move: { from: 'C2', to: 'D3', fromMs: PATROL_MOVES_MS - PATROL_WALK_MS, arriveMs: PATROL_MOVES_MS } })),
       map: { ...s0.map, scanned: [...s0.team.route] },
       team: { ...s0.team, position: squareCenter('D3')!, waypoint: 4 },
     };

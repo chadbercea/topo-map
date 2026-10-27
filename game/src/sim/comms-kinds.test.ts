@@ -27,13 +27,12 @@ describe('message kinds (ILI-1171)', () => {
     for (let t = 0; t < MISSION_MS && store.get().phase !== 'ended'; t += 100) {
       store.tick(100);
       const s = store.get();
-      if (s.minigame?.status === 'active') {
-        if (s.minigame.kind === 'gridScan') store.tapMiniGame(s.minigame.targets[s.minigame.hits]);
-        continue;
-      }
+      if (s.minigame?.status === 'active') continue;
       if (s.minigame) store.closeMiniGame();
+      if (s.satellite.state === 'onStation') store.capture('photo');
+      if (s.satellite.result) store.closeLook();
       const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.status === 'new');
-      if (call?.responses) store.respond(call.id, call.node === 'unimaged' ? (s.resources.scans ? 'send' : 'blind') : call.node === 'site' ? 'search' : 'attack');
+      if (call?.responses) store.respond(call.id, call.node === 'unimaged' ? 'send' : call.node === 'site' ? 'search' : 'attack');
     }
     const all = store.get().comms.messages;
     const cards = all.filter((m) => kindOf(m) === 'call');

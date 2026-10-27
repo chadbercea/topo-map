@@ -29,6 +29,7 @@ export type Contact = {
   intent?: string; // what an intercept of its radio reveals it's doing
   painted?: boolean; // ALPHA has a laser on it: strikes see every fighter
   note?: string; // what HQ knows about it, shown in its target menu
+  move?: { from: SquareId; to: SquareId; fromMs: number; arriveMs: number }; // on its way to another square
 };
 
 // What the team decided about a square on its route.
@@ -47,13 +48,15 @@ export const makeContact = (id: string, square: SquareId, label: string, strengt
   intent,
 });
 
-// A contact on the move: it and its map marker go to a new square.
+// A contact sets off for another square, arriving at arriveMs (moveContact puts it there).
+export function startMove(s: GameState, id: string, to: SquareId, arriveMs: number): GameState {
+  return { ...s, contacts: s.contacts.map((c) => (c.id === id ? { ...c, move: { from: c.square, to, fromMs: s.elapsedMs, arriveMs } } : c)) };
+}
+
+// A contact arrives in a new square. Its map marker stays where it was last seen: the map
+// only moves it when someone looks (imagery.record).
 export function moveContact(s: GameState, id: string, square: SquareId): GameState {
-  return {
-    ...s,
-    contacts: s.contacts.map((c) => (c.id === id ? { ...c, square } : c)),
-    events: s.events.map((e) => (e.id === `contact-${id}` ? { ...e, square } : e)),
-  };
+  return { ...s, contacts: s.contacts.map((c) => (c.id === id ? { ...c, square, move: undefined } : c)) };
 }
 
 // How hard it fights: its strength, scaled by the fighters it has left.

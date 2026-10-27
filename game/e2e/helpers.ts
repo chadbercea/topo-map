@@ -15,6 +15,22 @@ export const fastForward = (page: Page, ms: number) =>
     for (let t = 0; t < ms; t += 100) window.game.tick(100);
   }, ms);
 
+// Wait (in mission time) for ORION-3 to get on station.
+export const untilOnStation = (page: Page) =>
+  page.evaluate(() => {
+    for (let i = 0; i < 300 && window.game.get().satellite.state === 'slewing'; i++) window.game.tick(100);
+  });
+
+// Task ORION-3 to a square and take a photo there, straight through the store.
+export const photo = (page: Page, square: string) =>
+  page.evaluate((sq) => {
+    const g = window.game;
+    g.lookAt(sq);
+    for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
+    g.capture('photo');
+    g.closeLook();
+  }, square);
+
 // Stop the real-time clock (MapScene reads window.frozen) before tapping through a timed
 // mini game: real taps take seconds on CI's software renderer. Time then moves only via tick.
 export const freeze = (page: Page) =>

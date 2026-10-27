@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PATROL_JAMMED_MS, PATROL_MOVES_MS } from './missions/blackBox';
+import { PATROL_JAMMED_MS, PATROL_MOVES_MS, PATROL_WALK_MS } from './missions/blackBox';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
 import { step } from './systems';
@@ -7,7 +7,8 @@ import { run } from './testkit';
 
 const atTraffic = () => createStore(run(initialState(), 50_000));
 const patrolSquare = (s: GameState) => s.contacts.find((c) => c.id === 'patrol')!.square;
-const at = (s: GameState, ms: number) => step({ ...s, elapsedMs: ms - 100 }, 100);
+// Jump to half a minute before ms (when it would set off), then to ms.
+const at = (s: GameState, ms: number) => step({ ...step({ ...s, elapsedMs: ms - PATROL_WALK_MS - 100 }, 100), elapsedMs: ms - 100 }, 100);
 
 describe('jamming', () => {
   it('blocks their net: the traffic is gone and HQ says what it costs', () => {

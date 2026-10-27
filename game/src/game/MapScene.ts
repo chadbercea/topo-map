@@ -9,6 +9,8 @@ import { hillshade } from '../map/relief';
 import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
+import { satellitePoint } from '../sim/satellite';
+import { freshness, groupOrigin } from '../sim/imagery';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
@@ -47,6 +49,8 @@ export class MapScene extends Phaser.Scene {
   private markerGfx!: Phaser.GameObjects.Graphics;
   private fightGfx!: Phaser.GameObjects.Graphics;
   private modeGfx!: Phaser.GameObjects.Graphics;
+  private intelGfx!: Phaser.GameObjects.Graphics; // what ORION-3 and ALPHA have seen
+  private satGfx!: Phaser.GameObjects.Graphics; // ORION-3's reticle
   private modeLabels: Phaser.GameObjects.Text[] = [];
   private labels: Phaser.GameObjects.Text[] = [];
   private pointer = 'none';
@@ -70,6 +74,8 @@ export class MapScene extends Phaser.Scene {
     this.selectGfx = this.add.graphics();
     this.missionGfx = this.add.graphics();
     this.routeGfx = this.add.graphics();
+    this.intelGfx = this.add.graphics();
+    this.satGfx = this.add.graphics();
     this.markerGfx = this.add.graphics();
     this.fightGfx = this.add.graphics();
     this.modeGfx = this.add.graphics();
@@ -94,8 +100,7 @@ export class MapScene extends Phaser.Scene {
       this.drawSelection();
       this.applyView();
       // Close in on a seek-and-destroy board, and back out when it's over.
-      const m = game.get().minigame;
-      const focused = m?.kind === 'seekDestroy' && m.status === 'active' ? m.square : null;
+      const focused = this.focusSquare();
       if (focused !== this.focused) {
         this.focused = focused;
         this.layout();
@@ -127,11 +132,12 @@ export class MapScene extends Phaser.Scene {
     }
     this.drawMarkers(_time);
     this.drawFight(_time);
+    this.drawIntel();
+    this.drawSatellite(_time);
     this.drawMiniGame(_time);
   }
 
-  // Mini game mode: everything but the targets dims; targets are numbered in tap order,
-  // the next one pulses, scored ones fill in. Green on a win, red on a loss.
+  // Mini game mode: seek and destroy draws its board; the signal pulses where it comes from.
   private drawMiniGame(time: number) {
     const g = this.modeGfx.clear();
     const m = game.get().minigame;
@@ -146,31 +152,6 @@ export class MapScene extends Phaser.Scene {
       g.lineStyle((1.5 * DPR) / this.zoom, 0x8fb8ff, 0.7).strokeRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
       return;
     }
-    const color = m.status === 'lost' ? 0xe5484d : TEAL;
-    for (let c = 0; c < COLS; c++)
-      for (let r = 0; r < ROWS; r++)
-        if (!m.targets.includes(squareId(c, r))) g.fillStyle(0x0b0f0d, 0.6).fillRect(c * CELL, r * CELL, CELL, CELL);
-    m.targets.forEach((id, i) => {
-      const sq = parseSquare(id)!;
-      const x = sq.col * CELL;
-      const y = sq.row * CELL;
-      const next = m.status === 'active' && i === m.hits;
-      // Just imaged: the prototype's scanning pulse for a moment, then a steady fill.
-      const since = i < m.hits ? game.get().elapsedMs - m.hitAt[i] : Infinity;
-      if (since < 700) g.fillStyle(color, 0.15 + 0.3 * Math.abs(Math.sin(time / 90))).fillRect(x, y, CELL, CELL);
-      else if (i < m.hits || m.status === 'won') g.fillStyle(color, 0.28).fillRect(x, y, CELL, CELL);
-      const pulse = next ? 0.7 + 0.3 * Math.sin(time / 120) : 1; // pulses, never vanishes
-      g.lineStyle(((next ? 3 : 2) * DPR) / this.zoom, color, pulse).strokeRect(x + 3 / this.zoom, y + 3 / this.zoom, CELL - 6 / this.zoom, CELL - 6 / this.zoom);
-      const label = (this.modeLabels[i] ??= this.add.text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${22 * DPR}px`, color: '#35d0a5' }).setOrigin(0.5));
-      label
-        .setText(String(i + 1))
-        .setColor(m.status === 'lost' ? '#e5484d' : '#35d0a5')
-        .setScale(1 / this.zoom)
-        .setPosition(x + CELL / 2, y + CELL / 2)
-        .setAlpha(i < m.hits ? 0.5 : 1)
-        .setVisible(true)
-        .setDepth(10);
-    });
   }
 
   // Seek and destroy: the target square as a 4x4 board. Misses ring, kills cross out in red,
@@ -203,6 +184,82 @@ export class MapScene extends Phaser.Scene {
       } else {
         g.lineStyle(1.5 * px, 0xcfe8dc, 0.6).strokeCircle(p.x, p.y, k * 0.6);
       }
+    }
+  }
+
+  // What HQ has seen (ILI-1167): each look's fighters at the positions they were seen in.
+  // Live (video, ALPHA's eyes) and fresh looks are crisp; older ones turn to ghosts with a
+  // ring for how far they may have gone, then to faint last-known marks. Heading arrows
+  // show who was moving, and where to.
+  private drawIntel() {
+    const g = this.intelGfx.clear();
+    const { imagery, contacts, elapsedMs: now } = game.get();
+    const px = DPR / this.zoom;
+    const cell = CELL / BOARD;
+    for (const snap of Object.values(imagery)) {
+      const age = freshness(snap, now);
+      const alpha = age === 'live' || age === 'fresh' ? 1 : age === 'ghost' ? 0.45 : 0.18;
+      for (const seen of snap.seen) {
+        const c = contacts.find((x) => x.id === seen.contactId);
+        if (!c || !c.units.length) continue;
+        // Live looks follow them; anything else shows where they were.
+        const o = snap.live ? groupOrigin(c, now) : seen;
+        const units = snap.live ? c.units : seen.units.filter((u) => c.units.includes(u));
+        let cx = 0;
+        let cy = 0;
+        for (const u of units) {
+          const x = o.x + (u % BOARD + 0.5) * cell;
+          const y = o.y + (Math.floor(u / BOARD) + 0.5) * cell;
+          cx += x / units.length;
+          cy += y / units.length;
+          g.fillStyle(0x0b0f0d, alpha * 0.8).fillCircle(x, y, 7 * px);
+          g.fillStyle(0xe5484d, alpha).fillCircle(x, y, 5 * px);
+          if (age === 'ghost') g.lineStyle(1 * px, 0xe5484d, 0.35).strokeCircle(x, y, cell * 0.45);
+        }
+        const to = seen.to && squareCenter(seen.to);
+        if (to && units.length && age !== 'stale') {
+          const d = Math.hypot(to.x - cx, to.y - cy) || 1;
+          const len = Math.min(d, CELL * 0.45);
+          const ex = cx + ((to.x - cx) / d) * len;
+          const ey = cy + ((to.y - cy) / d) * len;
+          const ux = (ex - cx) / len;
+          const uy = (ey - cy) / len;
+          const h = 7 * px;
+          g.lineStyle(1.5 * px, 0xe5484d, alpha).lineBetween(cx, cy, ex, ey);
+          g.lineBetween(ex, ey, ex - ux * h - uy * h * 0.6, ey - uy * h + ux * h * 0.6);
+          g.lineBetween(ex, ey, ex - ux * h + uy * h * 0.6, ey - uy * h - ux * h * 0.6);
+        }
+      }
+    }
+  }
+
+  // ORION-3's reticle: corner brackets where it looks, a dashed track while it swings over,
+  // and a pulse while it captures.
+  private drawSatellite(time: number) {
+    const g = this.satGfx.clear();
+    const { satellite: sat, elapsedMs } = game.get();
+    const px = DPR / this.zoom;
+    const p = satellitePoint(sat, elapsedMs);
+    const x = p.col * CELL;
+    const y = p.row * CELL;
+    const working = sat.state !== 'idle';
+    if (sat.state === 'slewing') {
+      const to = parseSquare(sat.aim)!;
+      const d = Math.hypot((to.col - p.col) * CELL, (to.row - p.row) * CELL) || 1;
+      const ax = x + CELL / 2;
+      const ay = y + CELL / 2;
+      const ux = ((to.col - p.col) * CELL) / d;
+      const uy = ((to.row - p.row) * CELL) / d;
+      g.lineStyle(2 * px, TEAL, 0.85);
+      for (let t = 0; t < d; t += 12 * px) g.lineBetween(ax + ux * t, ay + uy * t, ax + ux * Math.min(d, t + 6 * px), ay + uy * Math.min(d, t + 6 * px));
+      g.lineStyle(2 * px, TEAL, 0.7).strokeRect(to.col * CELL, to.row * CELL, CELL, CELL);
+    }
+    if (sat.state === 'capturing') g.fillStyle(TEAL, 0.06 + 0.06 * Math.abs(Math.sin(time / 250))).fillRect(x, y, CELL, CELL);
+    const k = CELL * 0.18;
+    g.lineStyle((working ? 2 : 1.2) * px, TEAL, working ? 0.95 : 0.4);
+    for (const [cx, cy, dx, dy] of [[x, y, 1, 1], [x + CELL, y, -1, 1], [x + CELL, y + CELL, -1, -1], [x, y + CELL, 1, -1]]) {
+      g.lineBetween(cx, cy, cx + dx * k, cy);
+      g.lineBetween(cx, cy, cx, cy + dy * k);
     }
   }
 
@@ -253,9 +310,17 @@ export class MapScene extends Phaser.Scene {
 
   // The part of the world in view: all of it, or a seek-and-destroy square with a margin.
   private focused: string | null = null;
+  // Close in on a seek-and-destroy board, or on the square ORION-3 is looking at.
+  private focusSquare() {
+    const { minigame: m, satellite: sat } = game.get();
+    if (m?.kind === 'seekDestroy' && m.status === 'active') return m.square;
+    if (!m && (sat.state === 'onStation' || sat.state === 'capturing')) return sat.aim;
+    return null;
+  }
+
   private focus() {
-    const m = game.get().minigame;
-    const sq = m?.kind === 'seekDestroy' && m.status === 'active' ? parseSquare(m.square) : null;
+    const id = this.focusSquare();
+    const sq = id ? parseSquare(id) : null;
     if (!sq) return { x: 0, y: 0, w: WORLD_W, h: WORLD_H };
     const pad = CELL * 0.25;
     return { x: sq.col * CELL - pad, y: sq.row * CELL - pad, w: CELL + pad * 2, h: CELL + pad * 2 };

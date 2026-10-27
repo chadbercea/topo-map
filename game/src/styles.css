@@ -166,6 +166,31 @@ html, body {
   cursor: pointer;
 }
 
+/* ORION-3's panel: same place and frame as a mini game. Capture modes are three stacked
+   choices, each saying what it shows. */
+.satellite { display: grid; gap: 6px; border-color: var(--accent); background: var(--bg); animation: alert-in 160ms ease-out; }
+.satellite .instructions, .satellite .result { color: var(--ink); font-size: 13px; }
+.satellite .bar { height: 8px; }
+.satellite .secs { font-variant-numeric: tabular-nums; color: var(--ink); }
+.satellite .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.satellite .modes button { display: grid; gap: 2px; text-align: left; align-content: start; padding: 8px 10px; }
+.satellite .modes b { color: var(--accent); font-weight: 600; }
+.satellite .modes small { color: var(--dim); font-size: 10px; text-transform: none; letter-spacing: 0; line-height: 1.3; }
+.satellite .actions { display: flex; gap: 6px; }
+.satellite button {
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--line);
+  min-height: 40px;
+  padding: 0 16px;
+  cursor: pointer;
+}
+.satellite button.quiet { color: var(--dim); border-color: transparent; }
+
 .event-card button {
   justify-self: start;
   font: inherit;
@@ -620,6 +645,8 @@ html, body {
   /* A mini game is short; on a phone it gets the team strip's room so the board is tappable. */
   .hud[data-playing='true'] .slot-team { display: none; }
   .hud[data-playing='true'] .minigame .instructions { display: none; }
+  .satellite .modes small { display: none; }
+  .satellite .modes button { font-size: 10px; letter-spacing: 0.04em; padding: 6px 8px; min-height: 36px; }
   /* On a phone a call has to fit under the map: tighter text and buttons. */
   .comms { gap: 4px; }
   .comms .text { font-size: 12px; }

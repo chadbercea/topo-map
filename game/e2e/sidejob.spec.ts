@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { fastForward } from './helpers';
+import { fastForward, photo } from './helpers';
 
-test('the client calls with a side job behind ALPHA’s call; take it, scan G2, get paid', async ({ page }) => {
+test('the client calls with a side job behind ALPHA’s call; take it, image G2, get paid', async ({ page }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 90_000);
@@ -13,10 +13,7 @@ test('the client calls with a side job behind ALPHA’s call; take it, scan G2, 
   await page.getByTestId('responses').getByRole('button', { name: 'Take the job' }).click();
   await expect(page.getByTestId('side-job')).toContainText('side job: G2 imagery');
 
-  await page.evaluate(() => {
-    window.game.manualScan('G2');
-    for (const sq of window.game.get().minigame!.targets) window.game.tapMiniGame(sq);
-  });
+  await photo(page, 'G2');
   await expect(page.getByTestId('side-job')).toHaveCount(0);
   await expect(page.getByTestId('resources')).toContainText('$10,000');
 });

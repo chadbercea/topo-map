@@ -1,5 +1,5 @@
 import { game, useGame } from '../sim/store';
-import { MAX_SCANS } from '../sim/scans';
+import { satelliteStatus } from '../sim/satellite';
 import { currentCall, waitingCalls } from '../sim/comms';
 import { callDeadline, nextUp, phasePips } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
@@ -18,7 +18,6 @@ export function MissionBar() {
   const s = useGame((x) => x);
   const { timer, phase, tick, resources, alerted, deniability, inbound, elapsedMs: now } = s;
   const noise = Math.round(s.noise);
-  const recharge = resources.rechargeAtMs === null ? null : Math.ceil((resources.rechargeAtMs - now) / 1000);
   const next = nextUp(s);
   const job = s.sideJob;
   const calls = waitingCalls(s.comms);
@@ -57,8 +56,7 @@ export function MissionBar() {
       </div>
       <div className="stats">
         <p className="resources" data-testid="resources">
-          scans {resources.scans}/{MAX_SCANS}
-          {recharge !== null && <span className="recharge"> +1 in {recharge}s</span>} · ${resources.budget.toLocaleString('en-US')}
+          <span data-testid="satellite-status">{satelliteStatus(s)}</span> · ${resources.budget.toLocaleString('en-US')}
         </p>
         <p className="noise" data-testid="noise" data-alerted={alerted}>
           noise <span className="bar" role="meter" aria-label="Noise" aria-valuenow={noise}><span style={{ width: `${noise}%` }} /></span>

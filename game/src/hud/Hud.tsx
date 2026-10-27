@@ -5,6 +5,7 @@ import { IntelPanel } from './IntelPanel';
 import { MapArea } from './MapArea';
 import { MapViews } from './MapViews';
 import { MiniGamePanel } from './MiniGamePanel';
+import { SatellitePanel } from './SatellitePanel';
 import { SquareActions } from './SquareActions';
 import { MissionBar } from './MissionBar';
 import { CallCard } from './CallCard';
@@ -41,6 +42,7 @@ export function Hud() {
           <EventCard />
           <CallCard />
           <MiniGamePanel />
+          <SatellitePanel />
         </div>
         <div className="map-controls">
           <SquareActions />

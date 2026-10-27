@@ -13,9 +13,12 @@ export function cues(prev: GameState, next: GameState): Sfx[] {
   }
   const pm = prev.minigame;
   const nm = next.minigame;
-  if (nm && nm.status === 'active' && (!pm || pm.startedMs !== nm.startedMs)) out.push(nm.kind === 'gridScan' ? 'ping' : 'tick');
+  if (nm && nm.status === 'active' && (!pm || pm.startedMs !== nm.startedMs)) out.push('tick');
+  // ORION-3: a ping when it's on station, and when a look comes down.
+  const ps = prev.satellite.state;
+  const ns = next.satellite.state;
+  if ((ns === 'onStation' && ps !== 'onStation') || (next.satellite.result && !prev.satellite.result)) out.push('ping');
   if (nm && pm && pm.startedMs === nm.startedMs) {
-    if (nm.kind === 'gridScan' && nm.hits > pm.hits) out.push('ping');
     if (nm.kind === 'seekDestroy' && (nm.shots?.length ?? 0) > (pm.shots?.length ?? 0)) {
       out.push(nm.weapon === 'drone' ? 'boom' : nm.hits > pm.hits ? 'hit' : 'shot');
     }

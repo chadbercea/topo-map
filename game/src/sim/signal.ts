@@ -62,7 +62,6 @@ export function startIntercept(s: GameState, eventId: string): GameState {
     durationMs: INTERCEPT_MS,
     targets: [e.square],
     hits: 0,
-    hitAt: [],
     misses: 0,
     status: 'active',
     signal,

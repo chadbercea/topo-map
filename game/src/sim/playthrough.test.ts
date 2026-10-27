@@ -9,14 +9,13 @@ function play(strategy: 'sharp' | 'silent') {
     store.tick(100);
     if (strategy === 'silent') continue;
     const s = store.get();
-    if (s.minigame?.status === 'active') {
-      store.tapMiniGame(s.minigame.targets[s.minigame.hits]); // a perfect scan
-      continue;
-    }
+    if (s.minigame?.status === 'active') continue;
     if (s.minigame) store.closeMiniGame();
+    if (s.satellite.state === 'onStation') store.capture('photo'); // a quick look
+    if (s.satellite.result) store.closeLook();
     const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.status === 'new');
     if (!call?.responses) continue;
-    const pick = call.node === 'unimaged' ? (s.resources.scans ? 'send' : 'blind') : 'attack';
+    const pick = call.node === 'unimaged' ? 'send' : 'attack';
     store.respond(call.id, pick);
   }
   return store.get();
