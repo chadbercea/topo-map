@@ -11,7 +11,7 @@ const withContacts = (): GameState => {
   return {
     ...s,
     contacts: [
-      { id: 't', square: 'E3', label: 'two technicals', strength: 1, status: 'revealed', observed: false, units: [5, 6, 9, 10], total: 4 },
+      { id: 't', square: 'E3', label: 'two technicals', strength: 1, status: 'revealed', observed: false, painted: true, units: [5, 6, 9, 10], total: 4 },
       { id: 'p', square: 'C2', label: 'a patrol', strength: 0.7, status: 'hidden', observed: false, units: [1, 7, 12], total: 3 },
     ],
   };

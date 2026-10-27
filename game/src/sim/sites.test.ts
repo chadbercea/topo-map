@@ -9,7 +9,7 @@ const withContact = (status: 'revealed' | 'hidden' = 'revealed'): GameState => {
   const s = walking();
   return {
     ...s,
-    contacts: [{ id: 't', square: 'E3', label: 'two technicals', strength: 1, status, observed: false, units: [5, 6, 9, 10], total: 4 }],
+    contacts: [{ id: 't', square: 'E3', label: 'two technicals', strength: 1, status, observed: false, painted: true, units: [5, 6, 9, 10], total: 4 }],
     events: [{ id: 'contact-t', kind: 'contact', square: 'E3', title: 'Two technicals', atMs: 0, status: 'seen' }],
   };
 };

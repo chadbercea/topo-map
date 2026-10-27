@@ -1,8 +1,11 @@
 import type { GameState } from './state';
+import type { Contact } from './contacts';
+import { eyesOn } from './imagery';
 
-// Ordnance for seek and destroy (GDD): the drone strike is one use, a 2x2 blast; the
-// sniper keeps working but slowly, one round at a time; the helicopter gun run unlocks
-// through upgrades, so it shows as locked for now. Each goes on cooldown after a run.
+// Ordnance for strikes (GDD, reworked in ILI-1168): the drone strike is one use, a 2x2
+// blast, and can fire blind; the sniper keeps working but slowly, one round at a time, at
+// fighters HQ can see; the helicopter gun run strafes a row, also needing eyes, and
+// unlocks through upgrades. Each goes on cooldown after a run.
 
 export type Weapon = 'drone' | 'sniper' | 'heli';
 export const WEAPONS: Weapon[] = ['drone', 'sniper', 'heli'];
@@ -22,13 +25,20 @@ export const initialOrdnance = (): Ordnance => ({
   heli: { unlocked: false, uses: null, readyAtMs: 0 },
 });
 
-// Why a weapon can't fire right now, or null if it can.
-export function weaponBlocked(s: GameState, w: Weapon): string | null {
+// Weapons that only fire at fighters HQ can see; the drone can guess.
+export const NEEDS_EYES: Record<Weapon, boolean> = { drone: false, sniper: true, heli: true };
+
+// Why a weapon can't fire right now (at this contact, if given), or null if it can.
+export function weaponBlocked(s: GameState, w: Weapon, c?: Contact): string | null {
   const o = s.ordnance[w];
   if (!o.unlocked) return s.deniability === 'disowned' ? 'Client cut support' : 'Unlocks with upgrades';
   if (o.uses === 0) return 'Used';
   if (s.elapsedMs < o.readyAtMs) return `Ready in ${Math.ceil((o.readyAtMs - s.elapsedMs) / 1000)}s`;
   if (s.minigame?.status === 'active') return 'Busy';
+  if (c && NEEDS_EYES[w]) {
+    const eyes = eyesOn(s, c);
+    if (!eyes || eyes.level === 'stale') return 'No eyes on target';
+  }
   return null;
 }
 

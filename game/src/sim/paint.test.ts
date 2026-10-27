@@ -23,12 +23,14 @@ describe('target painting', () => {
     const store = createStore(run(facing(), 30_000));
     store.respond('contact-call-cp', 'observe');
     store.fire('cp', 'sniper');
-    expect(store.get().minigame!.spotted).toEqual([1, 5, 6, 9, 10]);
+    expect(store.get().minigame).toMatchObject({ eyes: 'live', spotted: store.get().contacts[0].units });
   });
 
-  it('unpainted, the board gives nothing away', () => {
+  it('unpainted and unseen, the sniper can’t aim; a drone strike shows nothing', () => {
     const store = createStore(facing());
     store.fire('cp', 'sniper');
-    expect(store.get().minigame!.spotted).toEqual([]);
+    expect(store.get().minigame).toBeNull();
+    store.fire('cp', 'drone');
+    expect(store.get().minigame).toMatchObject({ eyes: null, spotted: [] });
   });
 });

@@ -91,3 +91,30 @@ export const eyesSystem: System = (s) => {
   if (prev?.mode === 'eyes' && prev.live && JSON.stringify(prev.seen) === JSON.stringify(look.seen)) return next;
   return record(next, look);
 };
+
+// What HQ can see of a contact right now (ILI-1168): live (ALPHA's laser or eyes, or
+// video over its square) shows where every fighter is; otherwise the newest look that
+// caught it, as old as it is. Strikes aim at this, not at the truth.
+export type Eyes = { level: Freshness; units: number[]; atMs: number };
+
+export function eyesOn(s: GameState, c: Contact): Eyes | null {
+  const here = squareAt(s.team.position.x, s.team.position.y);
+  const video = s.satellite.state === 'capturing' && s.satellite.mode === 'video' && s.satellite.aim === c.square;
+  if (c.painted || here === c.square || video) return { level: 'live', units: c.units, atMs: s.elapsedMs };
+  let best: { snap: Snapshot; seen: Seen } | null = null;
+  for (const snap of Object.values(s.imagery)) {
+    const seen = snap.seen.find((x) => x.contactId === c.id);
+    if (seen && (!best || snap.atMs > best.snap.atMs)) best = { snap, seen };
+  }
+  return best ? { level: freshness(best.snap, s.elapsedMs), units: best.seen.units, atMs: best.snap.atMs } : null;
+}
+
+// A kill HQ saw happen: those fighters come off every look of the contact.
+export function confirmKills(s: GameState, contactId: string, cells: number[]): GameState {
+  const imagery: Record<string, Snapshot> = {};
+  for (const [sq, snap] of Object.entries(s.imagery))
+    imagery[sq] = snap.seen.some((x) => x.contactId === contactId)
+      ? { ...snap, seen: snap.seen.map((x) => (x.contactId === contactId ? { ...x, units: x.units.filter((u) => !cells.includes(u)) } : x)) }
+      : snap;
+  return { ...s, imagery };
+}

@@ -8,6 +8,7 @@ import { pass, search } from './sites';
 import { isMissionPoint } from './mission';
 import { acceptJob, declineJob } from './sidejob';
 import { sendReinforcements, sendResupply } from './support';
+import { nextRandom } from './firefight';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -225,4 +226,47 @@ export function neighbours(sq: SquareId): SquareId[] {
   for (const [dc, dr] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [1, -1], [-1, 1]])
     if (col + dc >= 0 && col + dc < COLS && row + dr >= 0 && row + dr < ROWS) out.push(squareId(col + dc, row + dr));
   return out;
+}
+
+// Fighters don't stand still (ILI-1168): every DRIFT_MS one fighter in each group moves to
+// a cell next to it, so an old look slowly stops matching. Chance comes from the tick, not
+// the mission's dice, so fights replay the same.
+export const DRIFT_MS = 20_000;
+const CELLS = 4;
+const roll = (seed: number) => nextRandom(seed >>> 0)[0];
+
+const nextTo = (cell: number) => {
+  const r = Math.floor(cell / CELLS);
+  const c = cell % CELLS;
+  const out: number[] = [];
+  for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+    if (r + dr >= 0 && r + dr < CELLS && c + dc >= 0 && c + dc < CELLS) out.push((r + dr) * CELLS + c + dc);
+  }
+  return out;
+};
+
+export const driftSystem: System = (s) => {
+  if (s.tick % (DRIFT_MS / 100) !== 0) return s;
+  let moved = false;
+  const contacts = s.contacts.map((c, i) => {
+    if (!live(c) || !c.units.length || c.move || s.team.fight?.square === c.square) return c;
+    const from = c.units[Math.floor(roll(s.tick * 7919 + i) * c.units.length)];
+    const options = nextTo(from).filter((x) => !c.units.includes(x));
+    if (!options.length) return c;
+    moved = true;
+    const to = options[Math.floor(roll(s.tick * 104729 + i) * options.length)];
+    return { ...c, units: c.units.map((u) => (u === from ? to : u)) };
+  });
+  return moved ? { ...s, contacts } : s;
+};
+
+// Under fire, a group scatters to cover: every survivor ends up in a different cell.
+export function scatter(c: Contact, seed: number): Contact {
+  const free = Array.from({ length: CELLS * CELLS }, (_, i) => i);
+  const units: number[] = [];
+  for (let k = 0; k < c.units.length; k++) {
+    const pick = Math.floor(roll(seed * 31 + k) * free.length);
+    units.push(free.splice(pick, 1)[0]);
+  }
+  return { ...c, units };
 }
