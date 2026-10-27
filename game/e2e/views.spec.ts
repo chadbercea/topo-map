@@ -1,10 +1,12 @@
 import { expect, test } from '@playwright/test';
 import { start } from './helpers';
 
-test('switching map views changes the layers and is remembered', async ({ page }) => {
+test('map views live in the pause menu; switching changes the layers and is remembered', async ({ page }) => {
   await start(page, '?debug');
   const layers = page.getByTestId('layers');
   const views = page.getByTestId('map-views');
+  await expect(views).toHaveCount(0); // not on the map
+  await page.getByTestId('pause-toggle').click();
   await expect(layers).toHaveText('topo+city');
 
   await views.getByRole('button', { name: 'Relief' }).click();

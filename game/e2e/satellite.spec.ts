@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start, untilOnStation } from './helpers';
 
 test('select a square, task ORION-3 there, take a burst: the look lands on the map', async ({ page }) => {
+  test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);

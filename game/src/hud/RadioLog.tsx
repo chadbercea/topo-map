@@ -14,7 +14,7 @@ export function RadioLog() {
   return (
     <>
       <button className="log-toggle" onClick={() => setOpen(!open)} aria-expanded={open} data-testid="log-toggle">
-        radio log ({messages.length})
+        <span className="label">radio </span>log ({messages.length})
       </button>
       {open && (
         <section className="panel radio-log" data-testid="radio-log" aria-label="Radio log">

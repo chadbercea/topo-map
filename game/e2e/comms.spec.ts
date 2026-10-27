@@ -30,6 +30,7 @@ test('comms can be minimized to a badge and reopened', async ({ page }) => {
 });
 
 test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, attack or go around', async ({ page }) => {
+  test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);

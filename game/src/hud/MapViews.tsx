@@ -6,14 +6,12 @@ const VIEWS: { id: MapView; label: string }[] = [
   { id: 'relief', label: 'Relief' },
 ];
 
-// Map view switcher in the corner of the map: base view plus the city overlay.
+// Map view switcher, in the pause menu (ILI-1183): base view plus the city overlay.
 export function MapViews() {
   const view = useGame((s) => s.settings.mapView);
   const city = useGame((s) => s.settings.city);
-  const playing = useGame((s) => !!s.minigame);
-  if (playing) return null; // the mini game panel takes this row
   return (
-    <div className="panel views" role="group" aria-label="Map view" data-testid="map-views">
+    <div className="views" role="group" aria-label="Map view" data-testid="map-views">
       {VIEWS.map((v) => (
         <button key={v.id} aria-pressed={view === v.id} onClick={() => game.setSettings({ mapView: v.id })}>
           {v.label}

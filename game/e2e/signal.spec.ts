@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start } from './helpers';
 
 test('intercept: follow their wave with the slider until the message is through', async ({ page }) => {
+  test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
