@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { bus, EV, getMapRect, insetLayout, setProjector, toScreen, type SceneStatus } from './events';
+import { bus, EV, getMapRect, setProjector, type InsetRect, type SceneStatus } from './events';
 import { clampCenter, fitCamera, followCenter } from './fit';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
@@ -115,6 +115,7 @@ export class MapScene extends Phaser.Scene {
     });
     this.scale.on(Phaser.Scale.Events.RESIZE, this.layout, this);
     bus.on(EV.mapRect, this.layout, this);
+    bus.on(EV.inset, this.placeInset, this);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.track, this);
     this.unsubscribe = game.subscribe(() => {
@@ -126,11 +127,12 @@ export class MapScene extends Phaser.Scene {
         this.focused = focused;
         this.layout();
       }
-      if (this.insetSquare() !== this.insetOn) this.placeInset();
+      this.placeInset();
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.layout, this);
       bus.off(EV.mapRect, this.layout, this);
+      bus.off(EV.inset, this.placeInset, this);
       this.unsubscribe?.();
     });
 
@@ -385,36 +387,19 @@ export class MapScene extends Phaser.Scene {
     return m?.kind === 'seekDestroy' && m.status === 'active' ? m.square : null;
   }
 
-  // The zoomed segment (ILI-1201): the square HQ picked or ORION-3 is working, shown in the
-  // inset; the main map doesn't move.
+  // The larger square (ILI-1203): ORION-3's picture of the square HQ is working, drawn into
+  // the square card's picture frame; the main map doesn't move.
   private inset!: Phaser.Cameras.Scene2D.Camera;
-  private insetOn: string | null = null;
-  private insetSquare() {
-    return lookSquare(game.get());
-  }
-
-  private insetSide: 'left' | 'right' = 'right';
-  private placeInset() {
-    const was = this.insetOn;
-    this.insetOn = this.insetSquare();
-    const r = getMapRect();
-    const sq = this.insetOn ? parseSquare(this.insetOn) : null;
-    if (!sq || !r) {
-      this.inset.setVisible(false);
-      return void bus.emit(EV.inset, null);
-    }
-    // A new square: open in the top corner away from it and ALPHA, so neither is covered.
-    if (this.insetOn !== was) {
-      const team = game.get().team.position;
-      const xs = [toScreen((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL), toScreen(team.x, team.y)].filter((p) => !!p).map((p) => p!.x);
-      this.insetSide = xs.length && xs.reduce((a, b) => a + b, 0) / xs.length > r.x + r.width / 2 ? 'left' : 'right';
-    }
-    const l = insetLayout(r, this.insetSide);
-    const size = l.view.size * DPR;
-    this.inset.setViewport(l.view.x * DPR, l.view.y * DPR, size, size).setVisible(true);
-    this.inset.setZoom(size / (CELL * 1.5));
+  private insetFrame: InsetRect = null;
+  private placeInset(frame: InsetRect = this.insetFrame) {
+    this.insetFrame = frame;
+    const id = lookSquare(game.get());
+    const sq = id ? parseSquare(id) : null;
+    if (!sq || !frame) return void this.inset.setVisible(false);
+    const h = Math.round(frame.height * DPR);
+    this.inset.setViewport(Math.round(frame.x * DPR), Math.round(frame.y * DPR), Math.round(frame.width * DPR), h).setVisible(true);
+    this.inset.setZoom(h / (CELL * 1.25)); // the square fills most of the height, its neighbours either side
     this.inset.centerOn((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL);
-    bus.emit(EV.inset, l);
   }
 
   private focus() {

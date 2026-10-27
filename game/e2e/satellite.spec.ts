@@ -1,47 +1,51 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start, untilOnStation, openAsk } from './helpers';
 
-test('select a square, task ORION-3 there, take a burst: the look lands on the map', async ({ page }) => {
-  test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
+test('pick a square, scan it, look on station: the larger square, the find, and the strikes on one card', async ({ page }) => {
+  test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
-  await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
+  await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5'); // the header's SAT line
   // E3 is off screen on a phone (the camera stays on ALPHA); map.spec covers tapping squares.
   await page.evaluate(() => window.game.selectSquare('E3'));
-  // Picking a square opens its zoomed view in the map's corner, with what HQ knows of it and
-  // ORION-3's options on the card under it.
-  const inset = page.getByTestId('satellite-inset');
-  const card = page.getByTestId('look-card');
-  await expect(inset).toContainText('E3 · SELECTED');
+  // Picking a square pins its card: what HQ knows of it, and Scan. No picture yet.
+  const card = page.getByTestId('square-card');
+  await expect(card).toHaveAttribute('data-square', 'E3');
+  await expect(page.getByTestId('square-status')).toHaveText('no imagery');
   await expect(page.getByTestId('square-facts')).toContainText(/Ground\s*\d+–\d+ m/);
-  await expect(page.getByTestId('square-facts')).toContainText('no imagery');
-  await expect(card.getByTestId('square-actions')).toBeVisible();
-  await expect(page.getByTestId('look-here')).toHaveText(/Look · \d+ min/);
+  await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
+  await expect(page.getByTestId('look-here')).toHaveText(/Scan · \d+ min/);
   await page.getByTestId('look-here').click();
 
-  const panel = page.getByTestId('satellite'); // ORION-3's status tag on the map
-  await expect(card).toContainText(/on station in/);
+  // ORION-3 swings over: the countdown is in the card's header.
+  await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+ min away/);
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
   await untilOnStation(page);
-  await expect(panel).toHaveAttribute('data-state', 'onStation');
-  // The zoomed view stays in the map's corner; the map itself stays put.
-  await expect(inset).toContainText('E3 · ON STATION');
+  // On station the card opens up to the larger square, with how to look under it.
+  const sat = page.getByTestId('satellite');
+  await expect(sat).toHaveAttribute('data-state', 'onStation');
+  const picture = page.getByTestId('satellite-inset');
+  await expect(picture).toBeVisible();
   const map = (await page.getByTestId('map-area').boundingBox())!;
-  const box = (await inset.boundingBox())!;
+  const box = (await card.boundingBox())!;
   expect(box.x + box.width).toBeLessThanOrEqual(map.x + map.width);
   await expect(card.getByTestId('capture-modes').getByRole('button')).toHaveCount(3);
   await page.getByTestId('capture-burst').click();
-  await expect(panel).toHaveAttribute('data-state', 'capturing');
-  await expect(inset).toHaveAttribute('data-state', 'capturing');
+  await expect(sat).toHaveAttribute('data-state', 'capturing');
+  await expect(picture).toHaveAttribute('data-state', 'capturing');
   await fastForward(page, 6_100);
-  await expect(page.getByTestId('satellite-result')).toHaveText('E3 · Burst: 5 fighters, unaware. Downlinked to ALPHA.');
-  await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/); // the checkpoint is found, inline in the stream
+
+  // The find, and what HQ can call in on it, right there.
+  await expect(page.getByTestId('satellite-result')).toContainText('Burst: 5 fighters, unaware');
   await expect(page.getByTestId('square-facts')).toContainText(/Found\s*.*checkpoint/i);
+  await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/); // inline in the stream too
+  await expect(card.getByTestId('event-card')).toContainText('CONTACT · E3');
+  await expect(card.getByTestId('fire-sniper')).toBeVisible();
+  await expect(card.getByTestId('send-team')).toBeVisible();
   await card.getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByTestId('satellite-result')).toHaveCount(0); // closed: the look is filed
+  await expect(card).toHaveCount(0); // closed: the look is filed
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
-  await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
 });
 
 test('ALPHA asks for imagery: Look at it, then a photo on station lets it move', async ({ page }) => {
@@ -63,6 +67,6 @@ test('Cancel calls it off while it moves', async ({ page }) => {
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await page.evaluate(() => window.game.lookAt('A1'));
-  await page.getByTestId('look-card').getByRole('button', { name: 'Cancel' }).click();
-  await expect(page.getByTestId('satellite')).toHaveAttribute('data-state', 'idle'); // its tag stays, idle
+  await page.getByTestId('square-card').getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByTestId('satellite')).toHaveAttribute('data-state', 'idle'); // it goes back to idle
 });

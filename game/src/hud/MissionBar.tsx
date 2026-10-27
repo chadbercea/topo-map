@@ -2,6 +2,7 @@ import { game, useGame } from '../sim/store';
 import { blockers, nextUp, phasePips, winChecks } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import { groundInView, weather } from '../sim/conditions';
+import { satelliteStatus } from '../sim/satellite';
 import { gameClock, gameSpan, zulu } from '../sim/gameTime';
 
 export const clock = (ms: number) => gameClock(ms);
@@ -72,6 +73,9 @@ export function MissionBar() {
       <div className="hdr-area" data-testid="conditions">
         <p className="wx" data-testid="weather">
           <b>WX</b> {wx.sky} · vis {wx.visibilityKm} km · wind {wx.wind.from} {wx.wind.kmh} km/h · {wx.tempC}°C · {wx.light}
+        </p>
+        <p className="sat" data-testid="satellite" data-state={s.satellite.state} aria-label="ORION-3 imaging satellite">
+          <b>SAT</b> <span data-testid="satellite-status">{s.minigame?.status === 'active' ? 'ORION-3 · tied up' : satelliteStatus(s)}</span>
         </p>
         <p className="ground" data-testid="ground">
           {area ? (
