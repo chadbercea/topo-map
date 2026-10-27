@@ -161,8 +161,6 @@ export function tapMiniGame(s: GameState, square: SquareId, cell?: number): Game
 export const abortMiniGame = (s: GameState) => (s.minigame?.status === 'active' ? finish(s, 'lost') : s);
 
 // Close the result panel once the player has seen it.
-export const closeMiniGame = (s: GameState) => (s.minigame && s.minigame.status !== 'active' ? { ...s, minigame: null } : s);
-
 export const minigameSystem: System = (s) => (s.minigame?.status === 'active' && timeLeft(s) === 0 ? finish(s, 'lost') : s);
 
 const radio = (s: GameState, from: string, id: string, text: string, status: Message['status']): Message => ({
@@ -195,5 +193,7 @@ function finishSeek(s: GameState, status: 'won' | 'lost'): GameState {
   const pay = confirmed ? ` +$${(confirmed * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` : m.hits ? ' Unconfirmed: no eyes on it.' : '';
   const text = status === 'won' ? `${m.square}: target destroyed. ${m.hits} down.${pay}` : `${m.square}: ${m.hits} down, ${left} still in there.${pay}`;
   const report = radio(s, CALLSIGN[m.weapon!], `seek-${m.startedMs}`, text, 'new');
-  return { ...next, comms: { ...next.comms, messages: [...next.comms.messages, report] } };
+  // Over: no after-action panel (ILI-1204). The report goes to the stream and comms, the board
+  // clears, and play picks straight back up.
+  return { ...next, minigame: null, comms: { ...next.comms, messages: [...next.comms.messages, report] } };
 }

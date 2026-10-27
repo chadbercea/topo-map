@@ -43,10 +43,10 @@ test('drone, a fresh look, then the sniper finishes it', async ({ page, isMobile
   await targetE3(page);
   await page.getByTestId('fire-drone').click();
   await tapAt(page, isMobile, await e3Cell(page, 5)); // 2x2 over 5, 6, 9, 10
-  await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'lost');
-  await expect(page.getByTestId('minigame-result')).toContainText('4 down. The rest are still in E3.');
+  // Over at once: no after-action panel. REAPER-1's report is in the stream.
+  await expect(page.getByTestId('minigame')).toHaveCount(0);
+  await expect(page.getByTestId('intel-items')).toContainText('E3: 4 down, 1 still in there.');
   await expect(page.getByTestId('resources')).toContainText('$6,000'); // confirmed kills pay
-  await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
 
   // The survivor ran for cover: look again to see where, then open it from its marker.
   await photo(page, 'E3');
@@ -54,9 +54,8 @@ test('drone, a fresh look, then the sniper finishes it', async ({ page, isMobile
   await tapAt(page, isMobile, await squarePoint(page, 4, 2, 0.25, -0.25));
   await page.getByTestId('fire-sniper').click();
   await tapAt(page, isMobile, await e3Cell(page, cell)); // the last fighter, where the look shows it
-  await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'won');
-  await expect(page.getByTestId('minigame-result')).toContainText('Target destroyed.');
-  await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByTestId('minigame')).toHaveCount(0);
+  await expect(page.getByTestId('intel-items')).toContainText('E3: target destroyed.');
   await expect(page.getByTestId('intel-items')).toContainText(/KILL SITE\s*E3/); // ALPHA can search it
 });
 

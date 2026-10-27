@@ -28,7 +28,6 @@ describe('message kinds (ILI-1171)', () => {
       store.tick(100);
       const s = store.get();
       if (s.minigame?.status === 'active') continue;
-      if (s.minigame) store.closeMiniGame();
       if (s.satellite.state === 'onStation') store.capture('photo');
       if (s.satellite.result) store.closeLook();
       const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.status === 'new');

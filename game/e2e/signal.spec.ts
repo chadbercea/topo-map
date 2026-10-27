@@ -30,9 +30,13 @@ test('intercept: follow their wave with the slider until the message is through'
       g.tick(100);
     }
   });
-  await expect(panel).toHaveAttribute('data-status', 'won');
-  await expect(page.getByTestId('minigame-result')).toContainText('PATROL AT C2 MOVING TO D3');
-  await page.getByTestId('look-at-signal').click();
+  // Over: no after-action panel. The decode is a SIGINT report in the stream, and C2's card is
+  // back, where Scan sends ORION-3 to see them.
+  await expect(panel).toHaveCount(0);
+  if (isMobile) await page.getByTestId('tab-intel').click();
+  await expect(page.getByTestId('intel-items')).toContainText('PATROL AT C2 MOVING TO D3');
+  await expect(page.getByTestId('square-card')).toHaveAttribute('data-square', 'C2');
+  await page.getByTestId('look-here').click();
   await expect(page.getByTestId('satellite')).toContainText('ORION-3 to C2');
   await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*C2/);
 });

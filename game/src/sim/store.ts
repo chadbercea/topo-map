@@ -3,7 +3,7 @@ import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { confirm, dismiss, respond } from './comms';
 import { cancelLook, capture, closeLook, lookAt, type CaptureMode } from './satellite';
-import { abortMiniGame, closeMiniGame, startSeek, tapMiniGame } from './minigame';
+import { abortMiniGame, startSeek, tapMiniGame } from './minigame';
 import { weaponBlocked, type Weapon } from './ordnance';
 import { applyEffect } from './contacts';
 import { sendResupply } from './support';
@@ -93,7 +93,6 @@ export function createStore(initial: GameState = initialState()) {
     jam: (eventId: string) => set(jam(state, eventId)),
     tune: (mhz: number) => set(tune(state, mhz)),
     abortMiniGame: () => set(abortMiniGame(state)),
-    closeMiniGame: () => set(closeMiniGame(state)),
     dismissCall: (id: string) => set(dismiss(state, id)),
     setCommsMinimized: (minimized: boolean) => set({ ...state, comms: { ...state.comms, minimized } }),
     setSettings: (patch: Partial<Settings>) => set({ ...state, settings: { ...state.settings, ...patch } }),
