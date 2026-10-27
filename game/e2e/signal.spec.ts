@@ -1,13 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start } from './helpers';
 
-test('intercept: follow their wave with the slider until the message is through', async ({ page }) => {
+test('intercept: follow their wave with the slider until the message is through', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 50_000);
-  await page.getByTestId('new-event').filter({ hasText: /SIGNAL C2/ }).click();
+  if (isMobile) await page.getByTestId('tab-intel').click(); // ALPHA's first call has satcom forward
+  await page.getByTestId('new-event').filter({ hasText: /SIGNAL\s*C2/ }).click();
   await page.getByRole('button', { name: 'Listen' }).click();
 
   const panel = page.getByTestId('minigame');
@@ -33,14 +34,15 @@ test('intercept: follow their wave with the slider until the message is through'
   await expect(page.getByTestId('minigame-result')).toContainText('PATROL AT C2 MOVING TO D3');
   await page.getByTestId('look-at-signal').click();
   await expect(page.getByTestId('satellite')).toContainText('ORION-3 to C2');
-  await expect(page.getByTestId('blockers')).toContainText('CONTACT C2');
+  await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*C2/);
 });
 
-test('jam instead: the traffic is gone, and HQ says what it costs', async ({ page }) => {
+test('jam instead: the traffic is gone, and HQ says what it costs', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 50_000);
-  await page.getByTestId('new-event').filter({ hasText: /SIGNAL C2/ }).click();
+  if (isMobile) await page.getByTestId('tab-intel').click(); // ALPHA's first call has satcom forward
+  await page.getByTestId('new-event').filter({ hasText: /SIGNAL\s*C2/ }).click();
   await page.getByRole('button', { name: 'Jam', exact: true }).click();
   await expect(page.getByTestId('event-card')).toHaveCount(0);
   const log = await page.evaluate(() => window.game.get().comms.messages.map((m) => m.text));

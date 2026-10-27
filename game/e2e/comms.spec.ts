@@ -48,7 +48,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click();
-  await expect(page.getByTestId('blockers')).toContainText('CONTACT E3');
+  await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/);
 
   // Now it holds short of the contact.
   await page.evaluate(() => {
@@ -61,14 +61,14 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await expect.poll(() => page.evaluate(() => window.game.get().team.route)).toContain('E4');
 });
 
-test('news the map does not show is a banner, the stream keeps it, and the header flags it', async ({ page, isMobile }) => {
+test('news the map does not show lands in the stream as an alert, and the header flags the blocker', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
     window.game.set({ ...window.game.get(), noise: 70 });
     window.game.tick(100);
   });
-  await expect(page.getByTestId('banner')).toContainText('know a PMC is in the area');
+  await expect(page.getByTestId('intel-items')).toContainText('know a PMC is in the area');
   await expect(page.getByTestId('blockers')).toContainText('Enemy alerted');
   if (isMobile) await page.getByTestId('tab-intel').click();
   await expect(page.getByTestId('intel-items')).toContainText('Enemy radio net just lit up');

@@ -308,15 +308,7 @@ html, body {
 .bar-top[data-phase='paused'] .clock { color: var(--dim); }
 .clock[data-warn='amber'] { color: #f2c14e; }
 .clock[data-warn='red'] { color: #e5484d; }
-/* New on the map, in the header's blockers (ILI-1189): tap to open its card by its square. */
-.bar-top .blockers li.event { padding: 0; border-color: var(--kind, #e5484d); animation: alert-in 160ms ease-out; }
-.bar-top .blockers li.event[data-kind='contact'] { --kind: #e5484d; }
-.bar-top .blockers li.event[data-kind='request'] { --kind: #f2c14e; }
-.bar-top .blockers li.event[data-kind='signal'] { --kind: #8fb8ff; }
-.bar-top .blockers li.event[data-kind='site'] { --kind: #b8c4bf; }
-.bar-top .blockers li.event button { font: inherit; color: var(--kind); background: none; border: none; padding: 0 6px; min-height: 18px; cursor: pointer; letter-spacing: 0.04em; }
-.bar-top .blockers li.event button::before { content: '● '; }
-.bar-top .blockers li.news { animation: alert-in 160ms ease-out; }
+
 .target-menu .note { color: #f2c14e; font-size: 12px; }
 
 .pause {
@@ -550,6 +542,29 @@ html, body {
 .stream .text { all: unset; color: var(--ink); font-size: 12px; line-height: 1.4; }
 .stream button.text { cursor: pointer; text-decoration: underline dotted var(--dim); text-underline-offset: 3px; }
 .stream .empty { color: var(--dim); border: none; }
+/* By kind (ILI-1197): each source reads differently; routine items sit quiet, and the
+   whole feed is quiet until the first event. Events are cards to open. */
+.stream .items li { transition: opacity 400ms ease-out; }
+.stream .items li[data-quiet='true'] { opacity: 0.45; }
+.stream .items li[data-kind='note'] .text { font-style: italic; color: var(--dim); }
+.stream .items li[data-kind='imagery'] .src { color: #8fd1ff; }
+.stream .items li[data-kind='sigint'] .src { color: #8fb8ff; }
+.stream .items li[data-kind='strike'] .src { color: #f2a14e; }
+.stream .items li[data-kind='hq'] .src { color: var(--accent); }
+.stream .items li[data-kind='alert'] { border-left: 2px solid #e5484d; padding-left: 8px; }
+.stream .items li[data-kind='alert'] .src, .stream .items li[data-kind='alert'] .text { color: #e5484d; }
+.stream .items li[data-kind='event'] { --kind: var(--accent); border: 1px solid var(--kind); padding: 6px 8px; background: rgba(11, 15, 13, 0.6); animation: alert-in 160ms ease-out; }
+.stream .items li[data-event='contact'] { --kind: #e5484d; }
+.stream .items li[data-event='signal'] { --kind: #8fb8ff; }
+.stream .items li[data-event='request'] { --kind: #f2c14e; }
+.stream .items li[data-event='site'] { --kind: #b8c4bf; }
+.stream .items li[data-kind='event'] .src { color: var(--kind); font-weight: 600; }
+.stream .items li[data-kind='event'][data-open='true'] { background: rgba(53, 208, 165, 0.08); }
+.stream .meta .sq { color: var(--ink); }
+.stream .meta .state { margin-left: auto; font-size: 9px; letter-spacing: 0.12em; color: var(--kind, var(--dim)); }
+.stream .items li[data-kind='event'] button.text { text-decoration: none; font-size: 13px; }
+.stream .items li[data-kind='event'] .go { color: var(--kind); font-size: 11px; letter-spacing: 0.08em; }
+.stream button.text:disabled { cursor: default; }
 
 @keyframes blink { 50% { opacity: 0.2; } }
 

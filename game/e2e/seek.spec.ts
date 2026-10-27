@@ -57,7 +57,7 @@ test('drone, a fresh look, then the sniper finishes it', async ({ page, isMobile
   await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'won');
   await expect(page.getByTestId('minigame-result')).toContainText('Target destroyed.');
   await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByTestId('blockers')).toContainText('KILL SITE E3'); // ALPHA can search it
+  await expect(page.getByTestId('intel-items')).toContainText(/KILL SITE\s*E3/); // ALPHA can search it
 });
 
 test('a drone strike is loud: the noise meter jumps', async ({ page, isMobile }) => {

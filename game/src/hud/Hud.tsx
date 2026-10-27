@@ -36,6 +36,11 @@ export function Hud() {
   // On a phone the dock follows the action: a call brings satcom forward; a square picked on
   // the map, or ORION-3 moving on to its next step (slewing, on station, capturing), brings
   // ORION-3's panel.
+  // New events run inline in the intel stream (ILI-1197): a new one brings it forward.
+  const fresh = useGame((s) => s.events.filter((e) => e.status === 'new').length);
+  useEffect(() => {
+    if (fresh) setTab('intel');
+  }, [fresh]);
   useEffect(() => {
     if (calls) setTab('satcom');
   }, [calls]);

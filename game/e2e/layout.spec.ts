@@ -5,7 +5,7 @@ test('panels leave a clear space between them (where a strike closes in)', async
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 'x', kind: 'contact', square: 'A1', title: 'Test' }));
-  await expect(page.getByTestId('new-event')).toBeVisible();
+  await expect(page.getByTestId('new-event')).toHaveCount(1); // inline in the stream (a phone's dock may be on another tab)
   await page.waitForTimeout(300); // let the map area refit
   const map = (await page.getByTestId('map-area').boundingBox())!;
   expect(map.width).toBeGreaterThan(200);
