@@ -3,7 +3,7 @@ import { eyesOn } from './imagery';
 import { WEAPON, weaponBlocked } from './ordnance';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { run, walking } from './testkit';
+import { run, walking, untilHold } from './testkit';
 
 // The technicals in E3, found: four fighters in cells 5, 6, 9 and 10 of the 4x4 over the
 // square. `look` is how old ORION-3's photo of them is (null: nobody has looked).
@@ -128,7 +128,7 @@ describe('strike', () => {
 
   it('send ALPHA in answers the contact call with an attack', () => {
     const store = createStore({ ...found(), elapsedMs: 0 });
-    store.set(run(store.get(), 30_000)); // ALPHA reaches F4 and holds short of E3
+    store.set(untilHold(store.get())); // ALPHA reaches F4 and holds short of E3
     expect(store.get().team.holdFor).toBe('contact-call-t');
     store.sendTeam('t');
     expect(store.get().team.holdFor).toBeNull();

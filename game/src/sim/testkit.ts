@@ -26,3 +26,11 @@ export function playUntil(start: GameState, done: (s: GameState) => boolean, pic
   }
   return store;
 }
+
+// Run until ALPHA stops and asks HQ something (it holds short of a square, say), however long
+// the walk there takes over the ground.
+export function untilHold(s: GameState, maxMs = 120_000) {
+  let next = s;
+  for (let t = 0; t < maxMs && !next.team.holdFor; t += 100) next = run(next, 100);
+  return next;
+}

@@ -44,6 +44,8 @@ export type GameState = {
     position: { x: number; y: number }; // world units
     route: SquareId[]; // squares the team walks through, in order
     waypoint: number; // index into route of the square it's heading for
+    path: { x: number; y: number }[]; // the way across the ground to that square (ILI-1191)
+    pathTo: SquareId | null; // the square the path leads to
     activity: string;
     holdFor: string | null; // radio call the team is waiting on HQ to answer
     holdUntilMs: number; // mission time a timed hold ends
@@ -99,6 +101,8 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
       position: squareCenter(ROUTE[0])!,
       route: ROUTE,
       waypoint: 1,
+      path: [],
+      pathTo: null,
       activity: `Moving to ${ROUTE[1]}`,
       holdFor: null,
       holdUntilMs: 0,
