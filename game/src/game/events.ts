@@ -11,6 +11,8 @@ export const EV = {
   mapRect: 'map-rect',
   camera: 'camera', // the map camera moved or zoomed
   inset: 'inset', // the square card's picture frame opened, moved or closed (InsetRect)
+  askHidden: 'ask-hidden', // ALPHA's waiting ask can't be seen on the map (boolean)
+  openAsk: 'open-ask', // open ALPHA's waiting ask (from the intel stream's alert)
 } as const;
 
 // World to screen (CSS px) for the map's camera, set by the scene, so a panel can sit next
@@ -32,6 +34,12 @@ export const getMapRect = () => lastRect;
 // when it shows ORION-3's view of the square, or null; the scene draws into it with a second
 // camera.
 export type InsetRect = { x: number; y: number; width: number; height: number } | null;
+
+// Whether ALPHA's waiting ask is out of sight (ILI-1203): its flag may sit under the square
+// card or wait out a mini game, and then the intel stream raises it instead.
+let askHidden = false;
+bus.on(EV.askHidden, (h: boolean) => (askHidden = h));
+export const getAskHidden = () => askHidden;
 
 // The scene can emit before React mounts, so keep the latest status for late subscribers.
 let lastStatus: SceneStatus | null = null;

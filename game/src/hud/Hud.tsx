@@ -8,7 +8,7 @@ import { Assets } from './Assets';
 import { MissionBar } from './MissionBar';
 import { CommsPanel } from './CommsPanel';
 import { AskWindow } from './AskWindow';
-import { IntelStream } from './IntelStream';
+import { IntelStream, useAskHidden } from './IntelStream';
 import { TeamPanel } from './TeamPanel';
 import { PauseMenu } from './PauseMenu';
 import { WrapUp } from './WrapUp';
@@ -30,6 +30,7 @@ type Tab = 'intel' | 'satcom' | 'team';
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
+  const askHidden = useAskHidden(); // ALPHA's ask is raised in the stream: light its tab
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
   // on the map itself (ILI-1201), so the dock stays where it is.
   // New events run inline in the intel stream (ILI-1197): a new one brings it forward.
@@ -64,7 +65,7 @@ export function Hud() {
       </div>
       <nav className="dock-tabs" aria-label="Panels">
         {(['intel', 'satcom', 'team'] as const).map((t) => (
-          <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)} data-testid={`tab-${t}`}>
+          <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)} data-testid={`tab-${t}`} data-alert={t === 'intel' && askHidden && tab !== 'intel'}>
             {t === 'satcom' ? 'COMMS' : t.toUpperCase()}
           </button>
         ))}

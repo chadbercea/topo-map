@@ -481,8 +481,16 @@ html, body {
 
 /* The call: unmistakably a call that needs an answer: who's calling, the question, the answers. */
 /* ALPHA's ask (ILI-1199): a small window at the top right of its marker, tiny text replies. */
-.ask { --comms: #ff8a2a; position: fixed; z-index: 8; /* over the square card: ALPHA's ask is never hidden */ transform: translateY(-100%); pointer-events: auto; animation: ask-in 160ms ease-out; }
+.ask { --comms: #ff8a2a; position: fixed; z-index: 6; transform: translateY(-100%); pointer-events: auto; animation: ask-in 160ms ease-out; }
 @keyframes ask-in { from { opacity: 0; } }
+.ask[data-open='true'] { z-index: 8; } /* opened, it sits over the square card */
+/* ALPHA's ask, raised in the intel stream when its flag is out of sight (ILI-1203). */
+.incoming-alert { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid #ff8a2a; border-left-width: 3px; background: rgba(255, 138, 42, 0.12); animation: alert-in 160ms ease-out; }
+.incoming-alert .who { color: #ff8a2a; font-size: 10px; letter-spacing: 0.12em; }
+.incoming-alert p { margin: 0; color: var(--ink); font-size: 12px; line-height: 1.35; }
+.incoming-alert small { color: var(--dim); font-size: 10px; }
+.incoming-alert button { justify-self: start; font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #0b0f0d; background: #ff8a2a; border: none; min-height: 30px; padding: 0 12px; cursor: pointer; }
+.dock-tabs button[data-alert='true'] { color: #0b0f0d; background: #ff8a2a; border-color: #ff8a2a; }
 .ask.comms { border-color: var(--comms); }
 .ask[data-pinned='true']::after { content: ''; position: absolute; left: -6px; bottom: -6px; width: 8px; height: 8px; border-left: 1px solid var(--comms); border-bottom: 1px solid var(--comms); }
 .ask[data-pinned='true'][data-side='left']::after { left: auto; right: -6px; border-left: none; border-right: 1px solid var(--comms); }
