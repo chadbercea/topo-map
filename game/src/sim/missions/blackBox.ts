@@ -21,7 +21,7 @@ export const BLACK_BOX: MissionDef = registerMission({
     makeContact('checkpoint', 'E3', 'a fortified checkpoint', 1.6, [1, 5, 6, 9, 10]),
     // The enemy patrol hunting the drone too (GDD event 2): it moves on the crash site at
     // 2:30 unless it's dealt with first. Intercepting its radio gives the plan away.
-    makeContact('patrol', 'C2', 'a foot patrol', 0.7, [1, 7, 12], 'MOVING TO D3 FOR THE DRONE'),
+    makeContact('patrol', 'C2', 'a foot patrol', 0.7, [1, 7, 12], 'MOVING TO D3 FOR THE DRONE', 'D3'),
     makeContact('post', 'C3', 'an observation post', 0.5, [10, 11]),
   ],
 

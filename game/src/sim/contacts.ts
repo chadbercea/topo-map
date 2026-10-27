@@ -31,13 +31,15 @@ export type Contact = {
   painted?: boolean; // ALPHA has a laser on it: strikes see every fighter
   note?: string; // what HQ knows about it, shown in its target menu
   move?: { from: SquareId; to: SquareId; fromMs: number; arriveMs: number }; // on its way to another square
+  planTo?: SquareId; // where its plan takes it (what an intercept reveals)
+  planKnown?: boolean; // HQ decoded its plan: its route shows on the map
 };
 
 // What the team decided about a square on its route.
 export type Decision = 'blind' | 'attack' | 'push';
 
 // Contacts for a mission script: hidden until imagery (or an intercept) finds them.
-export const makeContact = (id: string, square: SquareId, label: string, strength: number, units: number[], intent?: string): Contact => ({
+export const makeContact = (id: string, square: SquareId, label: string, strength: number, units: number[], intent?: string, planTo?: SquareId): Contact => ({
   id,
   square,
   label,
@@ -47,6 +49,7 @@ export const makeContact = (id: string, square: SquareId, label: string, strengt
   units,
   total: units.length,
   intent,
+  planTo,
 });
 
 // A contact sets off for another square, arriving at arriveMs (moveContact puts it there).

@@ -55,7 +55,7 @@ export const MINIGAMES: Record<MiniGameKind, Def> = {
   },
   signal: {
     title: 'Signal intercept',
-    instructions: 'Tune until the signal peaks and hold it there, then shift the cipher until it reads.',
+    instructions: 'Drag to lay your line over theirs and keep it there. They hop every few seconds: follow them.',
   },
 };
 

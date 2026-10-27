@@ -1,5 +1,6 @@
 import { MINIGAMES, timeLeft } from '../sim/minigame';
 import type { Weapon } from '../sim/ordnance';
+import { WHERE_AT } from '../sim/signal';
 
 const AIM: Record<Weapon, string> = {
   sniper: 'Tap a fighter you can see. One round, one fighter.',
@@ -58,12 +59,27 @@ export function MiniGamePanel() {
             {m.kind === 'signal'
               ? m.status === 'won'
                 ? `Decoded: “${m.signal!.plain}”`
-                : 'Lost it. The traffic went quiet.'
+                : m.signal!.progress >= WHERE_AT
+                  ? `Got part of it: they're at ${m.square}, but not what they plan.`
+                  : 'Lost it. The traffic went quiet.'
               : m.status === 'won'
                 ? `Target destroyed. ${m.hits} down.`
                 : `${m.hits} down. The rest are still in ${m.square}.`}
           </p>
-          <button onClick={game.closeMiniGame}>Close</button>
+          <div className="actions">
+            {m.kind === 'signal' && m.signal!.progress >= WHERE_AT && (
+              <button
+                onClick={() => {
+                  game.closeMiniGame();
+                  game.lookAt(m.square);
+                }}
+                data-testid="look-at-signal"
+              >
+                Look at {m.square}
+              </button>
+            )}
+            <button onClick={game.closeMiniGame}>Close</button>
+          </div>
         </>
       )}
     </section>

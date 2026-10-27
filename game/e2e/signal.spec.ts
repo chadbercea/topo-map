@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze } from './helpers';
 
-test('intercept: tune with the dial controls, lock on, shift the cipher until it reads, send', async ({ page }) => {
-  test.setTimeout(60_000); // up to a dozen clicks, and CI clicks slowly
+test('intercept: follow their wave with the slider until the message is through', async ({ page }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
@@ -12,25 +11,27 @@ test('intercept: tune with the dial controls, lock on, shift the cipher until it
 
   const panel = page.getByTestId('minigame');
   await expect(panel).toContainText('SIGNAL INTERCEPT · C2');
-  await expect(page.getByTestId('signal-tune')).toBeVisible();
+  await expect(panel).toContainText('lay your line over theirs');
 
-  // Coarse with the slider, then the fine button: the dial follows.
+  // Lay the line on theirs with the slider, then let some words through.
   const target = await page.evaluate(() => window.game.get().minigame!.signal!.target);
-  await page.getByTestId('dial').fill(String(Math.round((target - 0.1) * 10) / 10));
-  await page.getByRole('button', { name: 'Up 0.1 MHz' }).click();
-  await expect(page.getByTestId('freq')).toHaveText(`${target.toFixed(1)} MHz`);
-  await expect(page.getByTestId('signal-tune')).toContainText('LOCKING');
-  await fastForward(page, 1_600);
+  await page.getByTestId('dial').fill(String(target));
+  await expect(page.getByTestId('match')).toHaveText('RECEIVING 100%');
+  await fastForward(page, 1_500);
+  await expect(page.getByTestId('transcript')).toContainText('PAT');
 
-  await expect(page.getByTestId('signal-decode')).toBeVisible();
-  // The short way round the alphabet: forward, or back if that's fewer clicks.
-  const shift = await page.evaluate(() => window.game.get().minigame!.signal!.shift);
-  const [button, clicks] = shift <= 13 ? ['Shift forward', shift] : ['Shift back', 26 - shift];
-  for (let i = 0; i < clicks; i++) await page.getByRole('button', { name: button }).click();
-  await expect(page.getByTestId('cipher')).toHaveText('PATROL AT C2 MOVING TO D3 FOR THE DRONE');
-  await panel.getByRole('button', { name: 'Send', exact: true }).click();
+  // Follow the hops to the end (straight through the store: a slider per hop is slow on CI).
+  await page.evaluate(() => {
+    const g = window.game;
+    for (let i = 0; i < 300 && g.get().minigame?.status === 'active'; i++) {
+      g.tune(g.get().minigame!.signal!.target);
+      g.tick(100);
+    }
+  });
   await expect(panel).toHaveAttribute('data-status', 'won');
-  await panel.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByTestId('minigame-result')).toContainText('PATROL AT C2 MOVING TO D3');
+  await page.getByTestId('look-at-signal').click();
+  await expect(page.getByTestId('satellite')).toContainText('ORION-3 · C2');
   await expect(page.getByTestId('alerts')).toContainText('CONTACT C2');
 });
 

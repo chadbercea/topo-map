@@ -1,57 +1,58 @@
-import { BAND, cipherText, LOCK_HOLD_MS, LOCK_WITHIN, strength } from '../sim/signal';
+import { BAND, match, PLAN_AT, RECEIVING, transcript, type Signal } from '../sim/signal';
 import { game, useGame } from '../sim/store';
 
-// The intercept's controls in the companion panel: a dial with fine tuning, a signal meter
-// and lock progress; then the cipher and its shift.
+const W = 300;
+const H = 56;
+
+// A frequency drawn as a wave: higher frequencies pack more cycles into the strip.
+function wave(mhz: number, phase: number) {
+  const cycles = 2 + ((mhz - BAND.min) / (BAND.max - BAND.min)) * 7;
+  const pts: string[] = [];
+  for (let x = 0; x <= W; x += 3) pts.push(`${x},${(H / 2 + Math.sin((x / W) * cycles * Math.PI * 2 + phase) * (H / 2 - 6)).toFixed(1)}`);
+  return pts.join(' ');
+}
+
+// The intercept (ILI-1169): their wave and HQ's, one slider to lay one over the other, how
+// well they match, and the transcript filling in while they do.
 export function SignalControls() {
-  const g = useGame((s) => s.minigame?.signal);
+  const g = useGame((s) => s.minigame?.signal) as Signal | undefined;
+  const now = useGame((s) => s.elapsedMs);
   if (!g) return null;
-  if (g.phase === 'tune') {
-    const inBand = Math.abs(g.dial - g.target) <= LOCK_WITHIN + 1e-9;
-    const nudge = (d: number) => () => game.tune(g.dial + d);
-    return (
-      <div className="signal" data-testid="signal-tune">
-        <div className="dial-row">
-          <span className="freq" data-testid="freq">
-            {g.dial.toFixed(1)} MHz
-          </span>
-          <span className="meter" role="meter" aria-label="Signal" aria-valuenow={Math.round(strength(g) * 100)}>
-            {Array.from({ length: 10 }, (_, i) => (
-              <i key={i} data-on={strength(g) * 10 > i} />
-            ))}
-          </span>
-        </div>
-        <input
-          type="range"
-          min={BAND.min}
-          max={BAND.max}
-          step={0.1}
-          value={g.dial}
-          onChange={(e) => game.tune(Number(e.target.value))}
-          aria-label="Frequency"
-          data-testid="dial"
-        />
-        <div className="fine">
-          <button onClick={nudge(-1)} aria-label="Down 1 MHz">◀◀</button>
-          <button onClick={nudge(-0.1)} aria-label="Down 0.1 MHz">◀</button>
-          <span className="lock">{inBand ? `LOCKING ${Math.round((g.lockMs / LOCK_HOLD_MS) * 100)}%` : 'SEARCHING'}</span>
-          <button onClick={nudge(0.1)} aria-label="Up 0.1 MHz">▶</button>
-          <button onClick={nudge(1)} aria-label="Up 1 MHz">▶▶</button>
-        </div>
-      </div>
-    );
-  }
+  const m = match(g);
+  const receiving = m >= RECEIVING;
+  const phase = now / 400;
   return (
-    <div className="signal" data-testid="signal-decode">
-      <p className="cipher" data-testid="cipher">
-        {cipherText(g)}
-      </p>
-      <div className="fine">
-        <button onClick={() => game.shiftCipher(-1)} aria-label="Shift back">◀ shift</button>
-        <span className="lock">shift {g.guess}</span>
-        <button onClick={() => game.shiftCipher(1)} aria-label="Shift forward">shift ▶</button>
-        <button className="send" onClick={game.submitDecode}>Send</button>
+    <div className="signal" data-testid="signal-tune" data-receiving={receiving}>
+      <svg className="waves" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
+        <polyline className="theirs" points={wave(g.target, phase)} />
+        <polyline className="yours" points={wave(g.dial, phase)} />
+      </svg>
+      <div className="dial-row">
+        <span className="legend">
+          <i className="theirs" /> theirs <i className="yours" /> yours
+        </span>
+        <span className="match" data-testid="match" role="meter" aria-label="Match" aria-valuenow={Math.round(m * 100)}>
+          {receiving ? 'RECEIVING' : 'MATCH'} {Math.round(m * 100)}%
+        </span>
       </div>
+      <input
+        type="range"
+        min={BAND.min}
+        max={BAND.max}
+        step={0.1}
+        value={g.dial}
+        onChange={(e) => game.tune(Number(e.target.value))}
+        aria-label="Frequency"
+        data-testid="dial"
+      />
+      <p className="transcript" data-testid="transcript">
+        “{transcript(g)}
+        <span className="caret">▌</span>
+      </p>
+      <span className="bar progress" role="progressbar" aria-label="Message received" aria-valuenow={Math.round(g.progress * 100)}>
+        <span style={{ width: `${g.progress * 100}%` }} />
+        <i className="mark" style={{ left: `${PLAN_AT * 100}%` }} title="Enough to learn their plan" />
+      </span>
     </div>
   );
 }
