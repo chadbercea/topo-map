@@ -246,13 +246,15 @@ html, body {
   cursor: pointer;
 }
 .square-actions button:disabled { opacity: 0.45; cursor: default; }
-.bar-top .recharge { color: var(--dim); }
-.bar-top .inbound { color: var(--accent); font-size: 11px; }
-.bar-top .noise { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
-.bar-top .noise .bar { height: 5px; }
-.bar-top .noise .bar > span { background: #f2c14e; }
-.bar-top .noise[data-alerted='true'] { color: #e5484d; }
-.bar-top .noise[data-alerted='true'] .bar > span { background: #e5484d; }
+/* HQ's assets by the map's tools (ILI-1187): ORION-3, budget, noise, support inbound. */
+.assets { display: grid; gap: 2px; font-size: 11px; min-width: 200px; padding: 6px 10px; }
+.assets .resources { color: var(--ink); }
+.assets .inbound { color: var(--accent); }
+.assets .noise { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; }
+.assets .noise .bar { height: 5px; }
+.assets .noise .bar > span { background: #f2c14e; }
+.assets .noise[data-alerted='true'] { color: #e5484d; }
+.assets .noise[data-alerted='true'] .bar > span { background: #e5484d; }
 
 .views button {
   font: inherit;
@@ -301,12 +303,6 @@ html, body {
 
 .panel p { margin: 0; color: var(--dim); }
 
-.timer-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .clock {
   font-size: 28px;
   font-weight: 600;
@@ -319,14 +315,6 @@ html, body {
 .clock[data-warn='red'] { color: #e5484d; }
 .banner { font-size: 12px; color: var(--ink); border-color: #e5484d; max-width: 100%; animation: alert-in 160ms ease-out; }
 .banner b { color: #e5484d; letter-spacing: 0.08em; margin-right: 4px; }
-.log-toggle { pointer-events: auto; font: inherit; font-size: 10px; letter-spacing: 0.08em; color: var(--dim); background: none; border: none; padding: 2px 0; cursor: pointer; text-align: left; }
-.radio-log { position: fixed; right: var(--gutter); top: calc(var(--gutter) + 72px); width: min(380px, calc(100vw - 32px)); max-height: 55dvh; overflow-y: auto; z-index: 6; background: var(--bg); display: grid; gap: 6px; }
-.radio-log h2 { display: flex; justify-content: space-between; align-items: center; }
-.radio-log h2 button { font: inherit; color: var(--dim); background: none; border: 1px solid var(--line); min-width: 32px; min-height: 28px; cursor: pointer; }
-.radio-log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 11px; }
-.radio-log li { color: var(--ink); line-height: 1.4; }
-.radio-log .t { color: var(--dim); font-variant-numeric: tabular-nums; }
-.radio-log b { color: var(--accent); }
 .target-menu .note { color: #f2c14e; font-size: 12px; }
 
 .pause {
@@ -570,10 +558,14 @@ html, body {
 
 @keyframes blink { 50% { opacity: 0.2; } }
 
-/* Mission bar (ILI-1173): phases, now and next, resources, the clock. */
-.bar-top { display: flex; align-items: center; gap: 18px; padding: 8px 14px; }
-.bar-top h2 { margin: 0 0 2px; }
-.bar-top .mission { flex: none; }
+/* The mission header (ILI-1187): the mission and its progress, what to do and what's in the
+   way, the ground and weather in view, and the deadline. */
+.bar-top { display: flex; align-items: stretch; gap: 18px; padding: 8px 14px; }
+.bar-top > div { display: grid; align-content: center; gap: 3px; min-width: 0; }
+.bar-top h2 { margin: 0; }
+.bar-top[data-linked='false'] h2 { color: #f2c14e; }
+.hdr-mission { flex: none; }
+.hdr-mission .pending { font-size: 10px; }
 .pips { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px; font-size: 10px; color: var(--dim); }
 .pips li { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
 .pip { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid var(--line); font-size: 9px; font-weight: 600; }
@@ -581,17 +573,33 @@ html, body {
 .pips li[data-state='current'] { color: var(--ink); }
 .pips li[data-state='current'] .pip { border-color: #f2c14e; color: #f2c14e; }
 .pip-detail { color: #f2c14e; }
-.now-next { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.bar-top .objective { color: #f2c14e; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.now-next .lines { display: flex; gap: 16px; min-width: 0; }
-.now-next .lines span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-top .win { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px; font-size: 10px; color: var(--dim); }
+.bar-top .win li[data-done='true'] { color: var(--accent); }
+.hdr-task { flex: 1 1 0; }
+.bar-top .objective { color: #f2c14e; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-top .next { color: var(--ink); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .next[data-tone='threat'] { color: #e5484d; }
 .next[data-tone='support'] { color: var(--accent); }
-.bar-top .stats { flex: none; display: grid; gap: 1px; font-size: 11px; min-width: 150px; }
-.bar-top .clock { font-size: 26px; }
-.bar-top .break { display: none; }
+.bar-top .blockers { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; font-size: 10px; }
+.blockers li { white-space: nowrap; padding: 0 6px; border: 1px solid var(--line); color: var(--ink); }
+.blockers li[data-tone='decision'] { border-color: #f2c14e; color: #f2c14e; }
+.blockers li[data-tone='threat'] { border-color: #e5484d; color: #e5484d; }
+.blockers li.clear { border-color: transparent; color: var(--dim); padding: 0; }
+.blockers li.more { color: var(--dim); }
+.bar-top .hdr-area { flex: 0 1 420px; font-size: 11px; }
+.hdr-area p { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdr-area b { color: var(--accent); font-weight: 600; margin-right: 4px; }
+.hdr-area .contacts { color: #e5484d; }
+.hdr-deadline { flex: none; justify-items: end; text-align: right; }
+.hdr-deadline .label { font-size: 9px; letter-spacing: 0.12em; color: var(--dim); }
+.hdr-deadline .when { font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.bar-top .clock { font-size: 26px; line-height: 1; }
+.bar-top .pause { align-self: center; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-@media (max-width: 1280px) { .pips li:not([data-state='current']) .pip-label { display: none; } }
+@media (max-width: 1280px) {
+  .pips li:not([data-state='current']) .pip-label { display: none; }
+  .bar-top .hdr-area { flex-basis: 280px; }
+}
 
 /* Team column (ILI-1172): one size, rows that react; red edge in a fight. */
 
@@ -611,9 +619,10 @@ html, body {
   .hud {
     gap: 6px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto auto;
     grid-template-areas:
       'bar'
+      'assets'
       'alerts'
       'map'
       'tools'
@@ -636,25 +645,27 @@ html, body {
   .band-cards > * { width: 100%; }
   .map-controls { grid-area: tools; flex-direction: row; justify-content: flex-end; flex-wrap: wrap; }
 
-  /* The bar stays within half a grid square of the top edge (ILI-1182), so row 1's centres
-     stay in view: two lines. Pips, ORION-3 and budget, clock and pause; then Next, noise and
-     the log. */
+  /* The header on a phone: two lines. The mission and pips with the clock and pause, then
+     Next and the most pressing blocker. The ground, weather and win conditions wait for a
+     wider screen. */
   .hud { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
-  .bar-top { flex-wrap: wrap; align-items: center; gap: 1px 8px; padding: 3px 8px; }
-  .bar-top h2, .bar-top .objective { display: none; }
-  .bar-top .stats { display: contents; font-size: 10px; }
-  .bar-top .resources { order: 1; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
-  .bar-top .timer-row { order: 2; gap: 6px; }
-  .bar-top .break { display: block; order: 3; flex-basis: 100%; height: 0; }
-  .now-next { display: none; }
-  .bar-top .noise { order: 5; font-size: 10px; grid-template-columns: 40px auto; }
-  .bar-top .noise .label, .log-toggle .label { display: none; }
-  .log-toggle { order: 6; font-size: 9px; padding: 0; }
-  .bar-top .inbound { order: 7; flex-basis: 100%; font-size: 10px; }
+  .bar-top { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'mission deadline pause' 'task task task'; gap: 2px 8px; padding: 4px 8px; }
+  .bar-top .hdr-mission { grid-area: mission; display: flex; align-items: center; gap: 8px; }
+  .bar-top .win, .bar-top .pending, .bar-top .hdr-area, .bar-top .objective { display: none; }
+  .bar-top .hdr-task { grid-area: task; display: flex; gap: 8px; align-items: center; }
+  .bar-top .next { font-size: 10px; flex: 1; min-width: 0; }
+  .blockers li:not(:first-child) { display: none; }
+  .bar-top .hdr-deadline { grid-area: deadline; display: flex; align-items: baseline; gap: 6px; }
+  .hdr-deadline .label, .hdr-deadline .when { display: none; }
+  .bar-top .pause { grid-area: pause; min-width: 32px; min-height: 28px; }
   .bar-top .clock { font-size: 18px; }
-  .bar-top .pause { min-width: 32px; min-height: 28px; }
   .pips { gap: 4px; }
   .pips .pip-label { display: none; }
+  /* HQ's assets get their own slim row under the header, clear of the map. */
+  .map-controls { display: contents; }
+  .square-actions { grid-area: tools; justify-self: end; }
+  .assets { grid-area: assets; min-width: 0; font-size: 10px; padding: 3px 8px; display: flex; flex-wrap: wrap; gap: 2px 12px; align-items: center; }
+  .assets .noise { grid-template-columns: auto 60px auto; }
 
   .readout .op { grid-template-columns: 1fr 72px 1.4fr; grid-template-areas: 'who vitals supplies'; }
 

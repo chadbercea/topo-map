@@ -18,7 +18,9 @@ export function MapArea() {
       const { x, y, width, height } = el.getBoundingClientRect();
       const coverLeft = stream && !portrait.matches ? stream.getBoundingClientRect().right : 0;
       const bottom = (portrait.matches ? tabs : team)?.getBoundingClientRect().top;
-      const coverTop = bar?.getBoundingClientRect().bottom ?? 0;
+      // On a phone HQ's assets sit in their own row under the header (once linked).
+      const assets = portrait.matches ? document.querySelector('.assets') : null;
+      const coverTop = Math.max(bar?.getBoundingClientRect().bottom ?? 0, assets?.getBoundingClientRect().bottom ?? 0);
       bus.emit(EV.mapRect, { x, y, width, height, coverLeft, coverTop, coverBottom: bottom || undefined });
     };
     const ro = new ResizeObserver(report);
