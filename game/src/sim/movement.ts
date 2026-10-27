@@ -1,9 +1,11 @@
 import { METRES_PER_UNIT, squareCenter } from '../map/grid';
 import { heightAt, theater } from '../map/terrain';
+import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
 
-// The team moves on its own (GDD: the player never controls it), waypoint to waypoint in
-// straight legs. Climbing slows it.
+// The team moves on its own (GDD: the player never controls it), waypoint to waypoint. Each
+// leg follows the ground (paths.ts, ILI-1191): roads, stream banks, the easy way up. Climbing
+// slows it.
 
 export const BASE_SPEED = 12; // world units per second on flat ground (a square in ~17 s, ~2.6 km/h in game time)
 const PROBE = 10; // world units ahead used to measure the slope
@@ -20,10 +22,13 @@ export const movementSystem: System = (s, dt) => {
   const goal = target && squareCenter(target);
   if (!goal || team.holdFor || team.fight || team.treating || s.elapsedMs < team.holdUntilMs) return s; // holding, fighting or treating
 
+  // A new leg: work out the way there from where ALPHA stands.
+  const path = team.pathTo === target && team.path.length ? team.path : findPath(team.position, target, legSquares(team.position));
   const t = theater();
   const { x, y } = team.position;
-  const dx = goal.x - x;
-  const dy = goal.y - y;
+  const point = path[0];
+  const dx = point.x - x;
+  const dy = point.y - y;
   const dist = Math.hypot(dx, dy);
   const ux = dist ? dx / dist : 0;
   const uy = dist ? dy / dist : 0;
@@ -34,7 +39,9 @@ export const movementSystem: System = (s, dt) => {
   const nx = x + ux * step;
   const ny = y + uy * step;
 
-  const arrived = step >= dist;
+  const reached = step >= dist; // this point of the path
+  const rest = reached ? path.slice(1) : path;
+  const arrived = reached && !rest.length; // the square itself
   const waypoint = arrived ? team.waypoint + 1 : team.waypoint;
   const next = team.route[waypoint];
 
@@ -42,7 +49,9 @@ export const movementSystem: System = (s, dt) => {
     ...s,
     team: {
       ...team,
-      position: arrived ? goal : { x: nx, y: ny },
+      position: arrived ? goal : reached ? point : { x: nx, y: ny },
+      path: arrived ? [] : rest,
+      pathTo: arrived ? null : target,
       waypoint,
       activity: next ? `Moving to ${next}` : `Holding at ${target}`,
     },

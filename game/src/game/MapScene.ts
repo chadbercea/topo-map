@@ -6,6 +6,8 @@ import { game } from '../sim/store';
 import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
 import { COARSE, FINE, outerTheater, theater, traceContours, type Area, type ContourLine, type Terrain } from '../map/terrain';
 import { generateCity, type City } from '../map/city';
+import { legPath, theaterWater } from '../map/paths';
+import { RIVER } from '../map/water';
 import { hillshade } from '../map/relief';
 import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
@@ -16,6 +18,7 @@ import { eyesOn, freshness, groupOrigin } from '../sim/imagery';
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
 const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff } as const;
+const WATER = 0x5fa8d3;
 const FLASH_MS = 2_500; // a new event's square flashes this long, in mission time
 const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
@@ -39,6 +42,7 @@ export class MapScene extends Phaser.Scene {
   private relief!: Phaser.GameObjects.Image;
   private farRelief!: Phaser.GameObjects.Image;
   private cityImg?: Phaser.GameObjects.Image;
+  private waterImg?: Phaser.GameObjects.Image;
   private city!: City;
   private shown?: Settings;
   private gridGfx!: Phaser.GameObjects.Graphics;
@@ -507,6 +511,7 @@ export class MapScene extends Phaser.Scene {
     const far = FAR_SCALE * DPR;
     // Baked already dimmed, so no full-screen overlay has to dim it every frame.
     this.farTerrain ??= this.bakeContours('terrain-far', this.farContours, COARSE, far, (0.8 * far) / this.baseZoom, OUTSIDE_DIM).setDepth(-5);
+    this.drawWater(s);
     this.drawCity(s);
     this.shown = undefined;
     this.applyView();
@@ -541,6 +546,32 @@ export class MapScene extends Phaser.Scene {
     canvas.getContext('2d')!.putImageData(new ImageData(hillshade(t) as ImageDataArray, t.cols, t.rows), 0, 0);
     this.textures.addCanvas(key, canvas);
     return this.add.image(t.x0 - t.sample / 2, t.y0 - t.sample / 2, key).setOrigin(0).setScale(t.sample).setDepth(depth);
+  }
+
+  // Rivers and streams (ILI-1191), baked like the contours, under the town's roads; smoothed
+  // so they read as water, not as a staircase of samples.
+  private drawWater(s: number) {
+    const g = this.make.graphics({}, false);
+    const smooth = (pts: [number, number][]) => {
+      let p = pts;
+      for (let n = 0; n < 2; n++)
+        p = p.length < 3 ? p : [p[0], ...p.slice(0, -1).flatMap((a, i) => [[a[0] * 0.75 + p[i + 1][0] * 0.25, a[1] * 0.75 + p[i + 1][1] * 0.25], [a[0] * 0.25 + p[i + 1][0] * 0.75, a[1] * 0.25 + p[i + 1][1] * 0.75]] as [number, number][]).slice(1), p[p.length - 1]];
+      return p;
+    };
+    for (const l of theaterWater().lines) {
+      const river = l.flow >= RIVER;
+      g.lineStyle((river ? 2.6 : 1.2) * DPR, WATER, river ? 0.8 : 0.55);
+      const pts = smooth(l.pts);
+      g.beginPath();
+      g.moveTo((pts[0][0] - FINE.x) * s, (pts[0][1] - FINE.y) * s);
+      for (let i = 1; i < pts.length; i++) g.lineTo((pts[i][0] - FINE.x) * s, (pts[i][1] - FINE.y) * s);
+      g.strokePath();
+    }
+    if (this.textures.exists('water')) this.textures.remove('water');
+    g.generateTexture('water', Math.ceil(FINE.w * s), Math.ceil(FINE.h * s));
+    g.destroy();
+    this.waterImg?.destroy();
+    this.waterImg = this.add.image(FINE.x, FINE.y, 'water').setOrigin(0).setScale(1 / s).setDepth(-1.5);
   }
 
   // City overlay, baked like the contours: highways and streets.
@@ -642,23 +673,30 @@ export class MapScene extends Phaser.Scene {
     const { route, waypoint, position } = s.team;
     const w = (1.5 * DPR) / this.zoom;
     const g = this.routeGfx.clear();
-    const walked = [...route.slice(0, waypoint).map((id) => squareCenter(id)!), position];
+    // The way it goes over the ground (ILI-1191): legs walked, the rest of this leg from
+    // where ALPHA stands, then the legs ahead.
+    const trail = (pts: { x: number; y: number }[], dash: boolean) => {
+      for (let i = 1; i < pts.length; i++)
+        if (dash) this.dashed(g, pts[i - 1], pts[i], (6 * DPR) / this.zoom, i);
+        else g.lineBetween(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y);
+    };
     g.lineStyle(w, TEAM, 0.2);
-    for (let i = 1; i < walked.length; i++) g.lineBetween(walked[i - 1].x, walked[i - 1].y, walked[i].x, walked[i].y);
-    let from = position;
-    for (const id of route.slice(waypoint)) {
+    for (let i = 1; i < waypoint; i++) trail(legPath(route[i - 1], route[i]), false);
+    const current = s.team.pathTo === route[waypoint] ? s.team.path : null;
+    route.slice(waypoint).forEach((id, n) => {
       const to = squareCenter(id)!;
       const contact = s.contacts.some((c) => c.square === id && c.status === 'revealed');
+      const pts = n === 0 && current ? [position, ...current] : n === 0 ? [position, to] : legPath(route[waypoint + n - 1], id);
       g.lineStyle(w, contact ? EVENT_COLOR.contact : TEAM, contact ? 0.8 : 0.55);
-      if (contact || s.map.scanned.includes(id)) g.lineBetween(from.x, from.y, to.x, to.y);
-      else this.dashed(g, from, to, (6 * DPR) / this.zoom);
+      trail(pts, !contact && !s.map.scanned.includes(id));
       g.fillStyle(contact ? EVENT_COLOR.contact : TEAM, 0.8).fillCircle(to.x, to.y, (3 * DPR) / this.zoom);
-      from = to;
-    }
+    });
   }
 
-  private dashed(g: Phaser.GameObjects.Graphics, a: { x: number; y: number }, b: { x: number; y: number }, dash: number) {
+  private dashed(g: Phaser.GameObjects.Graphics, a: { x: number; y: number }, b: { x: number; y: number }, dash: number, n = 0) {
+    if (n % 2) return; // along a path's short steps, every other step makes the dash
     const len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (!len) return;
     const ux = (b.x - a.x) / len;
     const uy = (b.y - a.y) / len;
     for (let d = 0; d < len; d += dash * 2) {

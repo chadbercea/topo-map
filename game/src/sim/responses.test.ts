@@ -3,7 +3,7 @@ import { OBSERVE_MS } from './contacts';
 import { blocked, TREE } from './responses';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { run, walking } from './testkit';
+import { run, walking, untilHold } from './testkit';
 
 // ALPHA at F4 with the technicals in E3 found: it holds short and asks what to do.
 const atContact = () => {
@@ -12,7 +12,7 @@ const atContact = () => {
     ...s,
     contacts: [{ id: 'technicals', square: 'E3', label: 'two technicals', strength: 1, status: 'revealed', observed: false, units: [5, 6, 9, 10], total: 4 }],
   });
-  store.set(run(store.get(), 30_000));
+  store.set(untilHold(store.get()));
   return store;
 };
 const CALL = 'contact-call-technicals';
