@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { freeze, start } from './helpers';
+import { freeze, start, openAsk } from './helpers';
 
 test('the objective leads ALPHA from the crash site to exfil, and the mission completes', async ({ page }) => {
   await start(page, '?debug');
@@ -55,6 +55,7 @@ test('a salvage convoy cuts the exfil; moving exfil sends ALPHA wide to A2', asy
     for (let i = 0; i < 6000 && window.game.get().team.holdFor !== 'exfil-cut'; i++) window.game.tick(100);
   });
   const ask = page.getByTestId('comms');
+  await openAsk(page);
   await expect(ask.getByTestId('comms-text')).toContainText('salvage convoy parked on our exfil at B1');
   await expect(page.getByTestId('blockers')).toContainText('ALPHA waiting on your call');
   await ask.getByRole('button', { name: 'Move exfil' }).click();

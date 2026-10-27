@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, untilOnStation } from './helpers';
+import { fastForward, freeze, start, untilOnStation, openAsk } from './helpers';
 
 test('ALPHA holds short of unimaged ground and asks; Move in blind sends it on', async ({ page, isMobile }) => {
   await start(page, '?debug');
@@ -9,6 +9,7 @@ test('ALPHA holds short of unimaged ground and asks; Move in blind sends it on',
   const panel = page.getByTestId('team-panel');
   await expect(page.getByTestId('comms')).toHaveAttribute('aria-label', 'ALPHA needs a decision'); // the ask beside ALPHA's marker
   await expect(page.getByTestId('call-deadline')).toHaveCount(0); // ALPHA waits: no countdown
+  await openAsk(page);
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4\. No imagery/);
 
   const push = page.getByTestId('responses').getByRole('button', { name: 'Move in blind' });
@@ -18,11 +19,15 @@ test('ALPHA holds short of unimaged ground and asks; Move in blind sends it on',
   await expect(panel).toContainText('Moving to F4');
 });
 
-test('ALPHA\u2019s ask pops up beside its marker; answering closes it, and the comms log keeps both sides', async ({ page }) => {
+test('ALPHA\u2019s ask flags at its marker and opens on a click; answering closes it, and the comms log keeps both sides', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 500);
   const ask = page.getByTestId('comms');
+  // It arrives as a flag; the ask itself waits for HQ to open it.
+  await expect(ask.getByTestId('incoming')).toHaveAccessibleName('Incoming from ALPHA');
+  await expect(ask.getByTestId('comms-text')).toHaveCount(0);
+  await openAsk(page);
   await expect(ask.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
   await expect(page.getByTestId('satcom').locator('.thread')).toContainText('waiting on HQ');
   await ask.getByTestId('responses').getByRole('button').last().click();
@@ -38,6 +43,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 500);
+  await openAsk(page);
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click(); // F4 is clear
@@ -47,6 +53,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await page.evaluate(() => {
     for (let i = 0; i < 600 && !window.game.get().team.holdFor; i++) window.game.tick(100);
   });
+  await openAsk(page);
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of E3/);
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await untilOnStation(page);
@@ -57,6 +64,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await page.evaluate(() => {
     for (let i = 0; i < 600 && !window.game.get().comms.messages.some((m) => m.status === 'new' && m.node === 'contact'); i++) window.game.tick(100);
   });
+  await openAsk(page);
   await expect(page.getByTestId('comms-text')).toHaveText(/Contact in E3, a fortified checkpoint, on our route/);
   const responses = page.getByTestId('responses');
   for (const name of ['Hold and watch', 'Attack', 'Go around']) await expect(responses.getByRole('button', { name })).toBeVisible();

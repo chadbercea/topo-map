@@ -483,16 +483,29 @@ html, body {
 
 /* The call: unmistakably a call that needs an answer: who's calling, the question, the answers. */
 /* ALPHA's ask (ILI-1199): a small window at the top right of its marker, tiny text replies. */
-.ask { position: fixed; z-index: 6; transform: translateY(-100%); pointer-events: auto; animation: ask-in 160ms ease-out; }
+.ask { --comms: #ff8a2a; position: fixed; z-index: 6; transform: translateY(-100%); pointer-events: auto; animation: ask-in 160ms ease-out; }
 @keyframes ask-in { from { opacity: 0; } }
-.ask[data-pinned='true']::after { content: ''; position: absolute; left: -6px; bottom: -6px; width: 8px; height: 8px; border-left: 1px solid #f2c14e; border-bottom: 1px solid #f2c14e; }
-.ask[data-pinned='true'][data-side='left']::after { left: auto; right: -6px; border-left: none; border-right: 1px solid #f2c14e; }
+.ask.comms { border-color: var(--comms); }
+.ask[data-pinned='true']::after { content: ''; position: absolute; left: -6px; bottom: -6px; width: 8px; height: 8px; border-left: 1px solid var(--comms); border-bottom: 1px solid var(--comms); }
+.ask[data-pinned='true'][data-side='left']::after { left: auto; right: -6px; border-left: none; border-right: 1px solid var(--comms); }
+/* Collapsed: just the orange flag. */
+.ask.comms[data-open='false'] { padding: 0; border: none; background: none; }
+.ask .flag { display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; font: inherit; font-size: 11px; letter-spacing: 0.12em; color: #0b0f0d; background: var(--comms); border: none; cursor: pointer; }
+.ask .flag:hover, .ask .flag:focus-visible { background: #ffa257; }
+.ask .flag .n { font-size: 10px; padding: 0 4px; border: 1px solid #0b0f0d; letter-spacing: 0; }
+.ask .incoming { color: var(--comms); }
+.ask .incoming .hide { margin-left: auto; font: inherit; color: var(--dim); background: none; border: 1px solid var(--line); min-width: 28px; min-height: 24px; cursor: pointer; }
+.ask .pager + .hide { margin-left: 4px; }
 .ask.comms .text { font-size: 12px; }
-.ask.comms .actions { gap: 2px 12px; }
-.ask.comms .actions button { all: unset; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #f2c14e; cursor: pointer; padding: 2px 0; text-decoration: underline; text-underline-offset: 3px; }
-.ask.comms .actions button:hover, .ask .actions button:focus-visible { color: var(--ink); }
-.ask.comms .actions button:disabled { color: var(--dim); text-decoration: none; cursor: default; }
+.ask.comms .actions button { border-color: var(--comms); color: var(--comms); min-height: 32px; font-size: 11px; }
+.ask.comms .actions button:hover:not(:disabled), .ask.comms .actions button:focus-visible { color: #0b0f0d; background: var(--comms); }
 .ask.comms .actions small { font-size: 10px; text-transform: none; letter-spacing: 0; }
+/* The ping: rings pulse out from ALPHA's marker while its ask waits. */
+.ping { position: fixed; z-index: 5; width: 0; height: 0; pointer-events: none; }
+.ping::before, .ping::after { content: ''; position: absolute; left: -6px; top: -6px; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #ff8a2a; animation: ping 2s ease-out infinite; }
+.ping::after { animation-delay: 1s; }
+@keyframes ping { from { transform: scale(1); opacity: 0.9; } to { transform: scale(4.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .ping::before, .ping::after { animation: none; opacity: 0.8; } }
 .satcom .thread li[data-waiting='true'] { color: #f2c14e; }
 .satcom .thread .awaiting { color: #f2c14e; font-size: 10px; }
 .comms {

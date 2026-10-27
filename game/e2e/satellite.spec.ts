@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, untilOnStation } from './helpers';
+import { fastForward, freeze, start, untilOnStation, openAsk } from './helpers';
 
 test('select a square, task ORION-3 there, take a burst: the look lands on the map', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
@@ -44,6 +44,7 @@ test('ALPHA asks for imagery: Look at it, then a photo on station lets it move',
   await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
+  await openAsk(page);
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await expect(page.getByTestId('team-panel')).toContainText('Waiting on the look');
   await untilOnStation(page);
