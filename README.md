@@ -35,6 +35,7 @@ A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5
 - **Signal intercept.** Enemy radio traffic comes up mid-mission. **Intercept** it: tune the dial until the signal peaks, hold to lock on, then shift the cipher until it reads. The decode tells you the patrol is heading for the crash site. Or **Jam** it: the patrol slows down, but you never learn its plan.
 - **The team.** The team panel shows every operator all the time: heartbeats in green, yellow and red, ammo and meds. Calls that need a decision pin in satcom beside it. Fights resolve on their own, and the medic patches people up afterwards. Send intel from the analysts' panel as buffs (faster, more accurate, harder to hit).
 - **The PMC side.** The client offers a bonus for a side job against the clock. Noise from strikes alerts the enemy, and too much makes the client disown you (no contract, no air support). A local fixer can guide ALPHA in or stage a distraction. Running low? Send a resupply bird. Combat ineffective? Send reinforcements.
+- **The exfil.** Once the black box is out, an enemy salvage convoy pulls onto the exfil at B1 with loot off the wreck, and ALPHA asks: **hit the convoy** for the haul ($8,000 if ALPHA takes it), or **move exfil** west to A2, the long way round (about 3.5 km all told).
 - **The wrap-up.** A win needs the black box at exfil with nobody down. It shows what your intel achieved, what new intel you found, and the payout.
 
 Pause with Esc, P or the ❚❚ button. `?minutes=8` changes the mission length in real minutes, for tuning.

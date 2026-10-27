@@ -22,6 +22,7 @@ export type MissionDef = {
   codename: string; // what the team answers a SITREP with; the analysts tag its intel with it
   durationMs: number;
   route: SquareId[]; // A first, B (the crash site) at index 3, C last
+  altExfil?: SquareId[]; // the way to the alternate exfil if C is cut, ending on it (ILI-1192)
   contacts: () => Contact[];
   schedule: Scheduled[];
   triggers: Trigger[];

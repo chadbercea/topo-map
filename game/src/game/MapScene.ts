@@ -159,6 +159,12 @@ export class MapScene extends Phaser.Scene {
       this.routeKey = key;
       this.drawRoute();
     }
+    // Exfil can move (ILI-1192): the A/B/C markers follow it.
+    const points = `${st.mission.a}|${st.mission.b}|${st.mission.c}`;
+    if (points !== this.missionKey) {
+      this.missionKey = points;
+      this.drawMission();
+    }
     this.drawMarkers(_time);
     this.drawFight(_time);
     this.drawIntel();
@@ -707,6 +713,7 @@ export class MapScene extends Phaser.Scene {
 
   // The route redraws when the team moves, and when a scan or a reveal changes a leg's state.
   private routeKey = '';
+  private missionKey = '';
 
   private lastTeam = { x: NaN, y: NaN };
 

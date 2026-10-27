@@ -1,10 +1,15 @@
 import { contactIn, makeContact, moveContact, startMove } from '../contacts';
+import { treeCall } from '../responses';
 import { squareAt } from '../../map/grid';
 import { registerMission, say, type MissionDef } from '../script';
+import type { GameState } from '../state';
 
 export const PATROL_MOVES_MS = 150_000;
 export const PATROL_JAMMED_MS = 240_000; // jamming its net slows it down
 export const PATROL_WALK_MS = 30_000; // it's on the move this long before it gets there
+export const LOOT = 8_000; // the convoy's haul, if ALPHA takes it
+const LOOT_TEXT = `$${LOOT.toLocaleString('en-US')}`;
+const ALT_TEXT = 'the alternate exfil at A2'; // the call's wording for altExfil's end
 
 // Operation Black Box, the MVP mission (GDD): infil at A, recover the downed drone's black
 // box at B, exfil at C. Four hours of game time on the contract window (six real minutes).
@@ -14,6 +19,8 @@ export const BLACK_BOX: MissionDef = registerMission({
   codename: 'BLACK BOX',
   durationMs: 6 * 60 * 1000,
   route: ['G5', 'F4', 'E3', 'D3', 'C2', 'B1'],
+  // If the salvage convoy sits on B1, the long way out: west past it to A2 (~3.5 km all told).
+  altExfil: ['B2', 'A2'],
 
   contacts: () => [
     // The static enemy checkpoint on the route (GDD event 1): dug in, too strong to walk
@@ -102,6 +109,31 @@ export const BLACK_BOX: MissionDef = registerMission({
         return here === s.mission.b && !!contactIn(s, s.mission.b) && s.mission.phase === 'objective';
       },
       then: (s) => say(s, s.team.callsign, 'crash-site-hit', 'They\u2019re here for the drone too! Taking fire at the crash site.', true),
+    },
+    // The black box is out, and an enemy salvage convoy pulls onto the exfil with the loot
+    // off the wreck (ILI-1192). ALPHA holds and asks: hit it for the haul, or move exfil.
+    {
+      id: 'convoy-on-exfil',
+      when: (s) => s.mission.blackBox && s.mission.phase === 'exfil' && !s.team.fight,
+      then: (s) => {
+        const c = s.mission.c;
+        const convoy = { ...makeContact('convoy', c, 'a salvage convoy hauling loot', 0.8, [2, 3, 6]), status: 'revealed' as const, note: `Hauling salvage off the wreck: worth ${LOOT_TEXT} to the client if ALPHA takes it.` };
+        const call = treeCall(s, 'exfil-cut', 'exfil-cut', c, 'contact-convoy', ALT_TEXT);
+        const next: GameState = {
+          ...s,
+          contacts: [...s.contacts, convoy],
+          events: [...s.events, { id: 'contact-convoy', kind: 'contact', square: c, title: 'Salvage convoy on the exfil', atMs: s.elapsedMs, status: 'new' }],
+          team: { ...s.team, holdFor: call.id, activity: `Holding: exfil at ${c} is cut` },
+          comms: { ...s.comms, messages: [...s.comms.messages, call] },
+        };
+        return say(next, 'HQ', 'convoy-intel', `Enemy salvage convoy pulled onto the exfil at ${c} with loot off the wreck. ALPHA can't get out through it without a fight.`, true);
+      },
+    },
+    // ALPHA took the convoy and stands on its haul: the loot is the PMC's.
+    {
+      id: 'convoy-looted',
+      when: (s) => s.contacts.some((c) => c.id === 'convoy' && c.status === 'cleared') && squareAt(s.team.position.x, s.team.position.y) === 'B1' && !s.team.fight,
+      then: (s) => say({ ...s, resources: { ...s.resources, budget: s.resources.budget + LOOT } }, s.team.callsign, 'convoy-loot', `Convoy's ours. Loading the haul: ${LOOT_TEXT} in salvage.`),
     },
     // The contract window, called out as it closes.
     {
