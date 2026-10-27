@@ -54,10 +54,10 @@ test('a salvage convoy cuts the exfil; moving exfil sends ALPHA wide to A2', asy
     window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route, 'B2', 'A2'] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, holdFor: null } });
     for (let i = 0; i < 6000 && window.game.get().team.holdFor !== 'exfil-cut'; i++) window.game.tick(100);
   });
-  const satcom = page.getByTestId('satcom');
-  await expect(satcom.getByTestId('comms-text')).toContainText('salvage convoy parked on our exfil at B1');
+  const ask = page.getByTestId('comms');
+  await expect(ask.getByTestId('comms-text')).toContainText('salvage convoy parked on our exfil at B1');
   await expect(page.getByTestId('blockers')).toContainText('ALPHA waiting on your call');
-  await satcom.getByRole('button', { name: 'Move exfil' }).click();
+  await ask.getByRole('button', { name: 'Move exfil' }).click();
   await expect(page.getByTestId('objective')).toContainText('Exfil at A2');
   await page.evaluate(() => {
     for (let i = 0; i < 6000 && window.game.get().phase !== 'ended'; i++) window.game.tick(100);

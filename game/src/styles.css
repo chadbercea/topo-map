@@ -47,11 +47,12 @@ html, body {
   grid-template-areas:
     'bar bar bar bar'
     'stream map map map'
-    'orion band team satcom';
+    'satcom band team orion';
 }
 
-/* The two satellites (ILI-1195): ORION-3, imaging, at the foot of the intel column; RELAY-7,
-   comms, is satcom. Each names itself on the left of its header, its status on the right. */
+/* The two satellites (ILI-1195, ILI-1199): RELAY-7, comms, logs under the intel stream;
+   ORION-3, imaging, sits bottom right by the team. Each names itself on the left of its
+   header, its status on the right. */
 .slot-orion { grid-area: orion; align-self: end; min-width: 0; }
 .satellite, .satcom { height: 230px; }
 .satellite h2, .satcom h2 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
@@ -481,6 +482,19 @@ html, body {
 .satcom > .actions .primary { font: inherit; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #0b0f0d; background: #f2c14e; border: 1px solid #f2c14e; min-height: 36px; padding: 0 14px; cursor: pointer; }
 
 /* The call: unmistakably a call that needs an answer: who's calling, the question, the answers. */
+/* ALPHA's ask (ILI-1199): a small window at the top right of its marker, tiny text replies. */
+.ask { position: fixed; z-index: 6; transform: translateY(-100%); pointer-events: auto; animation: ask-in 160ms ease-out; }
+@keyframes ask-in { from { opacity: 0; } }
+.ask[data-pinned='true']::after { content: ''; position: absolute; left: -6px; bottom: -6px; width: 8px; height: 8px; border-left: 1px solid #f2c14e; border-bottom: 1px solid #f2c14e; }
+.ask[data-pinned='true'][data-side='left']::after { left: auto; right: -6px; border-left: none; border-right: 1px solid #f2c14e; }
+.ask.comms .text { font-size: 12px; }
+.ask.comms .actions { gap: 2px 12px; }
+.ask.comms .actions button { all: unset; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: #f2c14e; cursor: pointer; padding: 2px 0; text-decoration: underline; text-underline-offset: 3px; }
+.ask.comms .actions button:hover, .ask .actions button:focus-visible { color: var(--ink); }
+.ask.comms .actions button:disabled { color: var(--dim); text-decoration: none; cursor: default; }
+.ask.comms .actions small { font-size: 10px; text-transform: none; letter-spacing: 0; }
+.satcom .thread li[data-waiting='true'] { color: #f2c14e; }
+.satcom .thread .awaiting { color: #f2c14e; font-size: 10px; }
 .comms {
   display: grid;
   gap: 6px;

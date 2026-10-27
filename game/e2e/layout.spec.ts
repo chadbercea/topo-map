@@ -25,11 +25,11 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
 
-test('the war room: intel down the left, the team bottom right, satcom right of it', async ({ page, isMobile }) => {
+test('the war room: intel then comms down the left, the team then ORION-3 bottom right', async ({ page, isMobile }) => {
   await start(page);
   if (isMobile) {
-    // One dock, three tabs.
-    for (const [tab, id] of [['intel', 'intel-stream'], ['team', 'team-panel'], ['satcom', 'satcom']] as const) {
+    // One dock, four tabs.
+    for (const [tab, id] of [['intel', 'intel-stream'], ['satcom', 'satcom'], ['team', 'team-panel'], ['orion', 'satellite']] as const) {
       await page.getByTestId(`tab-${tab}`).click();
       await expect(page.getByTestId(id)).toBeVisible();
     }
@@ -37,13 +37,14 @@ test('the war room: intel down the left, the team bottom right, satcom right of 
   }
   const view = page.viewportSize()!;
   const stream = (await page.getByTestId('intel-stream').boundingBox())!;
+  const comms = (await page.getByTestId('satcom').boundingBox())!;
   const team = (await page.getByTestId('team-panel').boundingBox())!;
-  const satcom = (await page.getByTestId('satcom').boundingBox())!;
+  const orion = (await page.getByTestId('satellite').boundingBox())!;
   expect(stream.x).toBeLessThan(40);
-  expect(stream.height).toBeGreaterThan(view.height * 0.6);
+  expect(comms.x).toBeLessThan(40);
+  expect(comms.y).toBeGreaterThan(stream.y + stream.height - 1); // under the stream
   expect(team.x).toBeGreaterThan(view.width * 0.4);
-  expect(satcom.x + satcom.width).toBeGreaterThan(view.width - 40);
-  expect(satcom.x).toBeGreaterThan(team.x + team.width - 1);
-  expect(satcom.y + satcom.height).toBeGreaterThan(view.height - 40);
-  expect(team.y + team.height).toBeGreaterThan(view.height - 40);
+  expect(orion.x + orion.width).toBeGreaterThan(view.width - 40);
+  expect(orion.x).toBeGreaterThan(team.x + team.width - 1);
+  expect(orion.y + orion.height).toBeGreaterThan(view.height - 40);
 });
