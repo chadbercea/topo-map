@@ -23,7 +23,6 @@ const FLASH_MS = 2_500; // a new event's square flashes this long, in mission ti
 const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 const MAX_TEXTURE = 4096;
-const OUTSIDE_DIM = 0.45; // how much of the ground outside the grid shows through
 const FAR_SCALE = 0.2; // texture px per world unit for the coarse layer, before DPR
 const MAX_FRAME_MS = 100; // the most sim time one rendered frame may advance
 // Browser tests set window.frozen to stop the clock while they tap through a timed mini
@@ -46,7 +45,6 @@ export class MapScene extends Phaser.Scene {
   private city!: City;
   private shown?: Settings;
   private gridGfx!: Phaser.GameObjects.Graphics;
-  private outsideGfx!: Phaser.GameObjects.Graphics;
   private selectGfx!: Phaser.GameObjects.Graphics;
   private routeGfx!: Phaser.GameObjects.Graphics;
   private teamGfx!: Phaser.GameObjects.Graphics;
@@ -73,10 +71,9 @@ export class MapScene extends Phaser.Scene {
     this.contours = traceContours(theater());
     this.farContours = traceContours(outerTheater());
     this.city = generateCity();
-    this.farRelief = this.makeRelief(outerTheater(), 'relief-far', -6).setAlpha(OUTSIDE_DIM);
+    this.farRelief = this.makeRelief(outerTheater(), 'relief-far', -6);
     this.nearBg = this.add.graphics().fillStyle(0x0b0f0d, 1).fillRect(FINE.x, FINE.y, FINE.w, FINE.h).setDepth(-3);
     this.relief = this.makeRelief(theater(), 'relief', -4);
-    this.outsideGfx = this.add.graphics();
     this.gridGfx = this.add.graphics();
     this.selectGfx = this.add.graphics();
     this.missionGfx = this.add.graphics();
@@ -473,7 +470,6 @@ export class MapScene extends Phaser.Scene {
     }
     bus.emit(EV.camera);
     this.drawTerrain();
-    this.drawOutside();
     this.drawGrid();
     this.drawSelection();
     this.drawMission();
@@ -506,11 +502,11 @@ export class MapScene extends Phaser.Scene {
     this.bakedScale = s;
     this.terrain?.destroy();
     this.terrain = this.bakeContours('terrain', this.contours, FINE, s, 1).setDepth(-2);
-    // The coarse layer is dimmed and faint: bake it once, at a fixed modest scale.
-    // Line weight scales with bake-to-screen ratio so the lines look as fine as the near ones.
+    // The coarse layer: bake it once, at a fixed modest scale. Line weight scales with
+    // bake-to-screen ratio so the lines look as fine as the near ones. Not dimmed any more
+    // (ILI-1193): the map runs on past the play area with no visible edge.
     const far = FAR_SCALE * DPR;
-    // Baked already dimmed, so no full-screen overlay has to dim it every frame.
-    this.farTerrain ??= this.bakeContours('terrain-far', this.farContours, COARSE, far, (0.8 * far) / this.baseZoom, OUTSIDE_DIM).setDepth(-5);
+    this.farTerrain ??= this.bakeContours('terrain-far', this.farContours, COARSE, far, (0.8 * far) / this.baseZoom).setDepth(-5);
     this.drawWater(s);
     this.drawCity(s);
     this.shown = undefined;
@@ -614,19 +610,16 @@ export class MapScene extends Phaser.Scene {
   // Ground outside the grid stays on screen but dimmed, so the eye lands on the theater. The
   // coarse layer is baked dimmed; this only dims the fine layer's margin around the grid,
   // which keeps full-screen layers (expensive on phones without much GPU) to a minimum.
-  private drawOutside() {
-    const g = this.outsideGfx.clear().fillStyle(0x0b0f0d, 1 - OUTSIDE_DIM);
-    const { x, y, w, h } = FINE;
-    g.fillRect(x, y, w, -y); // above
-    g.fillRect(x, WORLD_H, w, y + h - WORLD_H); // below
-    g.fillRect(x, 0, -x, WORLD_H); // left
-    g.fillRect(WORLD_W, 0, x + w - WORLD_W, WORLD_H); // right
-  }
-
+  // The grid runs on past the play area across all the ground there is (ILI-1193), so the
+  // screen never shows its edge. Only A1-H5 are labelled and in play.
   private drawGrid() {
     const g = this.gridGfx.clear().lineStyle(DPR / this.zoom, TEAL, 0.45);
-    for (let c = 0; c <= COLS; c++) g.lineBetween(c * CELL, 0, c * CELL, WORLD_H);
-    for (let r = 0; r <= ROWS; r++) g.lineBetween(0, r * CELL, WORLD_W, r * CELL);
+    const c0 = Math.floor(COARSE.x / CELL);
+    const c1 = Math.ceil((COARSE.x + COARSE.w) / CELL);
+    const r0 = Math.floor(COARSE.y / CELL);
+    const r1 = Math.ceil((COARSE.y + COARSE.h) / CELL);
+    for (let c = c0; c <= c1; c++) g.lineBetween(c * CELL, r0 * CELL, c * CELL, r1 * CELL);
+    for (let r = r0; r <= r1; r++) g.lineBetween(c0 * CELL, r * CELL, c1 * CELL, r * CELL);
   }
 
   private drawSelection() {
