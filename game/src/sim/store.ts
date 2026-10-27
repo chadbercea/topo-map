@@ -3,8 +3,8 @@ import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { confirm, dismiss, respond } from './comms';
 import { boostIntel, sendIntel, type IntelType } from './intel';
-import { manualScan } from './scans';
-import { abortMiniGame, closeMiniGame, startMiniGame, startSeek, tapMiniGame, type MiniGameKind } from './minigame';
+import { cancelLook, capture, closeLook, lookAt, type CaptureMode } from './satellite';
+import { abortMiniGame, closeMiniGame, startSeek, tapMiniGame } from './minigame';
 import { weaponBlocked, type Weapon } from './ordnance';
 import { applyEffect } from './contacts';
 import { sendReinforcements, sendResupply } from './support';
@@ -55,7 +55,6 @@ export function createStore(initial: GameState = initialState()) {
     respond: (id: string, responseId: string) => set(respond(state, id, responseId)),
     sendIntel: (type: IntelType) => set(sendIntel(state, type)),
     boostIntel: (type: IntelType, amount?: number) => set(boostIntel(state, type, amount)),
-    startMiniGame: (kind: MiniGameKind, square: string) => set(startMiniGame(state, kind, square)),
     tapMiniGame: (square: string, cell?: number) => state.phase === 'running' && set(tapMiniGame(state, square, cell)),
     fire: (contactId: string, weapon: Weapon) => !weaponBlocked(state, weapon) && set(startSeek(state, contactId, weapon)),
     // Send ALPHA at a found contact: answers its call if it's waiting on one, else decides ahead.
@@ -66,7 +65,10 @@ export function createStore(initial: GameState = initialState()) {
       if (call?.responses?.some((r) => r.id === 'attack')) return set(respond(state, call.id, 'attack'));
       set({ ...applyEffect(state, 'attack', c.square), openEvent: null });
     },
-    manualScan: (square: string) => set(manualScan(state, square)),
+    lookAt: (square: string) => set(lookAt(state, square)),
+    capture: (mode: CaptureMode) => set(capture(state, mode)),
+    cancelLook: () => set(cancelLook(state)),
+    closeLook: () => set(closeLook(state)),
     sendResupply: () => set(sendResupply(state)),
     sendReinforcements: () => set(sendReinforcements(state)),
     intercept: (eventId: string) => set(startIntercept(state, eventId)),

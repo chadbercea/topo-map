@@ -1,7 +1,7 @@
 import type { GameState } from './state';
-import type { MiniGameKind } from './minigame';
 import type { Message } from './comms';
 import type { Effect } from './contacts';
+import { satelliteBusy } from './satellite';
 import { FIXER_DISTRACTION, FIXER_GUIDE, REINFORCE_COST, RESUPPLY_COST } from './prices';
 
 // The response tree for radio calls (GDD: answer through a menu tree; options depend on
@@ -14,13 +14,13 @@ export type Capability = 'imagery' | 'strike';
 export type Response = {
   id: string;
   label: string;
-  requires?: { scans?: number; budget?: number; capability?: Capability };
+  requires?: { budget?: number; capability?: Capability };
   hold?: number; // ms the team waits after this answer, then moves on its own
-  spend?: { scans?: number; budget?: number };
+  spend?: { budget?: number };
   effect?: Effect; // what it means for the square the call is about
   reply: string; // what the team radios back
   follow?: string; // next call in the tree
-  minigame?: MiniGameKind; // HQ plays a mini game on the map; its result settles the call
+  look?: boolean; // HQ tasks ORION-3 to the square; the look settles the call
 };
 
 export type CallContext = { square: string; label?: string };
@@ -38,7 +38,7 @@ export const TREE: Record<string, CallNode> = {
     text: ({ square }) => `Holding short of ${square}. No imagery on it. Scan it, or tell us to push?`,
     timeout: 'blind',
     responses: [
-      { id: 'send', label: 'Send imagery', requires: { scans: 1, capability: 'imagery' }, spend: { scans: 1 }, minigame: 'gridScan', reply: 'Standing by for imagery.' },
+      { id: 'send', label: 'Send imagery', requires: { capability: 'imagery' }, look: true, reply: 'Standing by for imagery.' },
       { id: 'blind', label: 'Push through', effect: 'blind', reply: 'Copy, moving in blind.' },
       // The local fixer (GDD PMC mechanics): a paid guide instead of a scan.
       { id: 'fixer', label: `Pay a fixer ($${FIXER_GUIDE.toLocaleString('en-US')})`, requires: { budget: FIXER_GUIDE }, spend: { budget: FIXER_GUIDE }, effect: 'guide', reply: 'Local says he knows the ground. Following him in.' },
@@ -114,7 +114,7 @@ export function blocked(s: GameState, r: Response): string | null {
   const need = r.requires;
   if (!need) return null;
   if (need.capability && !s.capabilities.includes(need.capability)) return need.capability === 'strike' ? 'Not unlocked' : 'Unavailable';
-  if (need.scans && s.resources.scans < need.scans) return 'No scans left';
+  if (need.capability === 'imagery' && satelliteBusy(s)) return 'ORION-3 busy';
   if (need.budget && s.resources.budget < need.budget) return 'Over budget';
   return null;
 }

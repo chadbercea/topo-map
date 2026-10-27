@@ -27,17 +27,10 @@ export function MiniGamePanel() {
           </div>
           {m.kind === 'signal' ? (
             <SignalControls />
-          ) : seek ? (
+          ) : (
             <p>
               <span data-testid="minigame-progress">{m.hits} down</span> · {m.roundsLeft} round{m.roundsLeft === 1 ? '' : 's'} left
               {m.weapon === 'drone' ? ' · 2×2 blast' : ''}
-            </p>
-          ) : (
-            <p>
-              <span data-testid="minigame-progress">
-                {m.hits}/{m.targets.length}
-              </span>{' '}
-              squares{m.misses ? ` · ${m.misses} miss${m.misses > 1 ? 'es' : ''} (−${m.misses}s)` : ''}
             </p>
           )}
           <button onClick={game.abortMiniGame}>Abort</button>
@@ -49,13 +42,9 @@ export function MiniGamePanel() {
               ? m.status === 'won'
                 ? `Decoded: “${m.signal!.plain}”`
                 : 'Lost it. The traffic went quiet.'
-              : seek
-              ? m.status === 'won'
-                ? `Target destroyed. ${m.hits} down.`
-                : `${m.hits} down. The rest are still in ${m.square}.`
               : m.status === 'won'
-                ? 'Scan complete. Imagery sent to the team.'
-                : 'Scan failed. The team moves without it.'}
+                ? `Target destroyed. ${m.hits} down.`
+                : `${m.hits} down. The rest are still in ${m.square}.`}
           </p>
           <button onClick={game.closeMiniGame}>Close</button>
         </>

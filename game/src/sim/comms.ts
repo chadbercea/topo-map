@@ -1,7 +1,7 @@
 import type { GameState } from './state';
 import type { System } from './systems';
 import { blocked, TREE, treeCall, type Response } from './responses';
-import { startMiniGame } from './minigame';
+import { lookAt } from './satellite';
 import { applyEffect } from './contacts';
 
 // Radio traffic from the team (GDD: text only, clearly marked as incoming). Calls come from
@@ -74,7 +74,8 @@ export const commsSystem: System = (s) => {
     if (!m.holds && age >= CHATTER_MS) return { ...m, status: 'read' as const };
     return m;
   });
-  const timedOut = messages.find((m) => m.holds && m.id === holdFor && s.elapsedMs - m.atMs >= HOLD_TIMEOUT_MS);
+  // A call waiting on ORION-3 doesn't time out: the look settles it.
+  const timedOut = messages.find((m) => m.holds && m.id === holdFor && m.id !== s.satellite.callId && s.elapsedMs - m.atMs >= HOLD_TIMEOUT_MS);
   let decided = s;
   if (timedOut) {
     holdFor = null;
@@ -172,7 +173,6 @@ export function respond(s: GameState, id: string, responseId: string): GameState
     team: { ...s.team, holdFor, holdUntilMs, activity: holdFor ? 'Holding for HQ' : r.hold ? 'Holding' : s.team.activity },
     resources: {
       ...s.resources,
-      scans: s.resources.scans - (r.spend?.scans ?? 0),
       budget: s.resources.budget - (r.spend?.budget ?? 0),
     },
     comms: { ...s.comms, messages },
@@ -183,5 +183,5 @@ export function respond(s: GameState, id: string, responseId: string): GameState
     const atMs = Math.max(answered.team.holdUntilMs, s.elapsedMs);
     answered = { ...answered, comms: { ...answered.comms, messages: answered.comms.messages.filter((x) => x.id !== follow.id), queued: [...answered.comms.queued, { ...follow, atMs }] } };
   }
-  return r.minigame && m.square ? startMiniGame(answered, r.minigame, m.square, id, m.eventId) : answered;
+  return r.look && m.square ? lookAt(answered, m.square, id) : answered;
 }

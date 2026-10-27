@@ -19,13 +19,14 @@ describe('sound cues', () => {
     expect(cues(s, msg(s, 'ALPHA', false))).toEqual([]);
   });
 
-  it('a scan pings as it starts and on every square imaged', () => {
+  it('ORION-3 pings when it gets on station and when a look comes down', () => {
     const store = createStore(walking());
-    const a = store.get();
-    store.startMiniGame('gridScan', 'D3');
+    store.lookAt('D3');
+    let a = store.get();
+    for (let i = 0; i < 200 && store.get().satellite.state === 'slewing'; i++) (a = store.get()), store.tick(100);
+    expect(cues(a, store.get())).toContain('ping');
     const b = store.get();
-    expect(cues(a, b)).toContain('ping');
-    store.tapMiniGame(b.minigame!.targets[0]);
+    store.capture('photo');
     expect(cues(b, store.get())).toContain('ping');
   });
 

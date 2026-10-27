@@ -1,10 +1,11 @@
-import { contactIn, makeContact, moveContact } from '../contacts';
+import { contactIn, makeContact, moveContact, startMove } from '../contacts';
 import { squareAt } from '../../map/grid';
 import { registerMission, say, type MissionDef } from '../script';
 import { offerJob } from '../sidejob';
 
 export const PATROL_MOVES_MS = 150_000;
 export const PATROL_JAMMED_MS = 240_000; // jamming its net slows it down
+export const PATROL_WALK_MS = 30_000; // it's on the move this long before it gets there
 
 // Operation Black Box, the MVP mission (GDD): infil at A, recover the downed drone's black
 // box at B, exfil at C. Six minutes on the contract window.
@@ -48,7 +49,7 @@ export const BLACK_BOX: MissionDef = registerMission({
   threats: (s) => {
     const p = s.contacts.find((c) => c.id === 'patrol');
     if (p?.status !== 'revealed' || s.script.fired.includes('patrol-moves') || s.mission.blackBox) return [];
-    return [{ text: `Patrol moves on ${s.mission.b}`, atMs: s.flags.jammed ? PATROL_JAMMED_MS : PATROL_MOVES_MS }];
+    return [{ text: `Patrol moves on ${s.mission.b}`, atMs: p.move?.arriveMs ?? (s.flags.jammed ? PATROL_JAMMED_MS : PATROL_MOVES_MS) }];
   },
   triggers: [
     // The first contact found by imagery or an intercept (a marker on the map, not an
@@ -72,15 +73,29 @@ export const BLACK_BOX: MissionDef = registerMission({
     },
     // The patrol reaches the crash site, unless it's already dead or ALPHA has the drive.
     // Jamming its net (signal card) slows it down.
+    // It sets off from C2 half a minute before it gets there: a burst or video of it then
+    // shows it moving, and where to.
+    {
+      id: 'patrol-sets-off',
+      when: (s) => {
+        const p = s.contacts.find((c) => c.id === 'patrol');
+        const due = (s.flags.jammed ? PATROL_JAMMED_MS : PATROL_MOVES_MS) - PATROL_WALK_MS;
+        return s.elapsedMs >= due && !!p && !p.move && (p.status === 'hidden' || p.status === 'revealed') && !s.mission.blackBox;
+      },
+      then: (s) => startMove(s, 'patrol', s.mission.b, s.elapsedMs + PATROL_WALK_MS),
+    },
     {
       id: 'patrol-moves',
       when: (s) => {
         const p = s.contacts.find((c) => c.id === 'patrol');
-        return s.elapsedMs >= (s.flags.jammed ? PATROL_JAMMED_MS : PATROL_MOVES_MS) && !!p && (p.status === 'hidden' || p.status === 'revealed') && !s.mission.blackBox;
+        const due = p?.move?.arriveMs ?? (s.flags.jammed ? PATROL_JAMMED_MS : PATROL_MOVES_MS);
+        return s.elapsedMs >= due && !!p && (p.status === 'hidden' || p.status === 'revealed') && !s.mission.blackBox;
       },
       then: (s) => {
         const known = s.contacts.find((c) => c.id === 'patrol')!.status === 'revealed';
-        const next = moveContact(s, 'patrol', s.mission.b);
+        const moved = moveContact(s, 'patrol', s.mission.b);
+        // HQ announces it when it knows the patrol: the marker goes with it.
+        const next = known ? { ...moved, events: moved.events.map((e) => (e.id === 'contact-patrol' ? { ...e, square: s.mission.b } : e)) } : moved;
         // HQ only knows if someone found it; otherwise it's a surprise at the crash site.
         return known
           ? say(next, 'HQ', 'patrol-at-crash-site', `Patrol moving onto the crash site in ${s.mission.b}: nobody stopped it. Hit it before ALPHA gets there.`, true)

@@ -1,17 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
-import { boardCell, freeze, squarePoint, tapAt } from './helpers';
+import { boardCell, freeze, photo, squarePoint, tapAt } from './helpers';
 
-// Win the opening scan so the checkpoint in E3 is found, then open its target menu.
+// Image E3 so the checkpoint is found, then open its target menu.
 async function targetE3(page: Page) {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
-  await page.evaluate(() => {
-    const g = window.game;
-    g.respond(g.get().team.holdFor!, 'send');
-    for (const t of g.get().minigame!.targets) g.tapMiniGame(t);
-    g.closeMiniGame();
-  });
+  await page.evaluate(() => window.game.respond(window.game.get().team.holdFor!, 'blind'));
+  await photo(page, 'E3');
   await page.getByTestId('alerts').getByRole('button', { name: /E3/ }).click();
   await expect(page.getByTestId('event-card')).toContainText('A fortified checkpoint');
   await expect(page.getByTestId('target-menu')).toBeVisible();

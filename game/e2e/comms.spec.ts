@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, squarePoint, tapAt } from './helpers';
+import { fastForward, freeze, untilOnStation } from './helpers';
 
 test('ALPHA holds short of unimaged ground and asks; Push through sends it on blind', async ({ page, isMobile }) => {
   await page.goto('?debug');
@@ -29,25 +29,29 @@ test('comms can be minimized to a badge and reopened', async ({ page }) => {
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
 });
 
-test('Send imagery: a won scan finds the checkpoint in E3 and ALPHA asks to observe, attack or go around', async ({ page, isMobile }) => {
-  test.setTimeout(60_000); // a dozen real taps, and CI taps slowly
+test('Send imagery: a look at E3 finds the checkpoint and ALPHA asks to observe, attack or go around', async ({ page }) => {
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 500);
   await page.getByTestId('responses').getByRole('button', { name: 'Send imagery' }).click();
-  await expect(page.getByTestId('minigame')).toContainText('SATELLITE GRID SCAN · F4');
+  await untilOnStation(page);
+  await page.getByTestId('capture-photo').click(); // F4 is clear
+  await page.getByTestId('satellite').getByRole('button', { name: 'Close' }).click();
 
-  for (const id of await page.evaluate(() => window.game.get().minigame!.targets)) {
-    await tapAt(page, isMobile, await squarePoint(page, id.charCodeAt(0) - 65, Number(id.slice(1)) - 1));
-  }
-  await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'won');
-  await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByTestId('alerts')).toContainText('CONTACT E3');
-
-  // ALPHA walks to F4, then holds short of the contact.
+  // ALPHA walks to F4 and asks about E3: look there too.
   await page.evaluate(() => {
     for (let i = 0; i < 600 && !window.game.get().team.holdFor; i++) window.game.tick(100);
+  });
+  await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of E3/);
+  await page.getByTestId('responses').getByRole('button', { name: 'Send imagery' }).click();
+  await untilOnStation(page);
+  await page.getByTestId('capture-photo').click();
+  await expect(page.getByTestId('alerts')).toContainText('CONTACT E3');
+
+  // Now it holds short of the contact.
+  await page.evaluate(() => {
+    for (let i = 0; i < 600 && !window.game.get().comms.messages.some((m) => m.status === 'new' && m.node === 'contact'); i++) window.game.tick(100);
   });
   await expect(page.getByTestId('comms-text')).toHaveText(/Contact in E3, a fortified checkpoint, on our route/);
   const responses = page.getByTestId('responses');

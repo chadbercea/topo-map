@@ -1,21 +1,18 @@
-import { COLS, parseSquare, ROWS, squareId, type SquareId } from '../map/grid';
-import { nextRandom } from './firefight';
-import { boostIntel, type IntelType } from './intel';
+import type { SquareId } from '../map/grid';
+import { boostIntel } from './intel';
 import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
-import { reveal } from './contacts';
 import { spendWeapon, WEAPON, type Weapon } from './ordnance';
 import { CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
 import { makeNoise, NOISE } from './noise';
 import { finishSignal, type Signal } from './signal';
-import { deliverImagery } from './sidejob';
 
 // Mini games play on the theater map itself (GDD). Starting one puts the map in that game's
 // mode and opens a companion panel; the result feeds back into the mission: the team gets
 // what it asked for (or doesn't) and the matching intel type jumps ahead.
 
-export type MiniGameKind = 'gridScan' | 'seekDestroy' | 'signal';
+export type MiniGameKind = 'seekDestroy' | 'signal';
 export type MiniGameStatus = 'active' | 'won' | 'lost';
 
 export type MiniGame = {
@@ -25,9 +22,8 @@ export type MiniGame = {
   eventId?: string;
   startedMs: number;
   durationMs: number;
-  targets: SquareId[]; // in the order they must be tapped
+  targets: SquareId[];
   hits: number;
-  hitAt: number[]; // mission time of each hit, for the scanning pulse
   misses: number;
   status: MiniGameStatus;
   // Seek and destroy only:
@@ -41,74 +37,20 @@ export type MiniGame = {
   signal?: Signal;
 };
 
-type Def = {
-  title: string;
-  instructions: string;
-  intel: IntelType;
-  durationMs: number;
-  build: (s: GameState, square: SquareId) => [SquareId[], number];
-  callsign: string; // who runs it on the radio
-  won: string; // what the team radios on success
-  lost: string;
-};
+type Def = { title: string; instructions: string };
 
-// Grid scan, ported from the War Room prototype (war-room.html): the ORION-3 satellite
-// images squares for ALPHA, each square pulses while it's being imaged and stays marked
-// afterwards. Here the pass is a mini game: tap the squares in order before it ends. The
-// squares are the ones the team needs: the one it asked about, then unimaged squares
-// ahead on its route, topped up with neighbours.
-const neighbours = (sq: SquareId) => {
-  const { col, row } = parseSquare(sq)!;
-  const out: SquareId[] = [];
-  for (const [dc, dr] of [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, 1], [1, -1], [-1, 1]])
-    if (col + dc >= 0 && col + dc < COLS && row + dr >= 0 && row + dr < ROWS) out.push(squareId(col + dc, row + dr));
-  return out;
-};
-
+// The satellite used to be a mini game here (tap squares in order); it's ORION-3 tasking now
+// (satellite.ts).
 export const MINIGAMES: Record<MiniGameKind, Def> = {
-  gridScan: {
-    title: 'Satellite grid scan',
-    instructions: 'Tap the squares in order before the satellite pass ends.',
-    intel: 'imagery',
-    durationMs: 10_000,
-    callsign: 'ORION-3',
-    build: (s, square) => {
-      const { route, waypoint } = s.team;
-      const ahead = route.slice(waypoint).filter((sq) => sq !== square && !s.map.scanned.includes(sq));
-      const picks = ahead.slice(0, 3);
-      const pool = neighbours(square).filter((sq) => !picks.includes(sq) && !s.map.scanned.includes(sq));
-      let rng = s.rng;
-      while (picks.length < 3 && pool.length) {
-        let r: number;
-        [r, rng] = nextRandom(rng);
-        picks.push(pool.splice(Math.floor(r * pool.length), 1)[0]);
-      }
-      return [[square, ...picks], rng];
-    },
-    won: 'Imagery received.',
-    lost: 'No usable imagery. Moving anyway.',
-  },
   // Seek and destroy (GDD, Battleship-style): the target's square becomes a 4x4 board and
   // its fighters hide in the cells. Fire on cells; a hit is a kill, a miss is a miss.
   seekDestroy: {
     title: 'Seek and destroy',
     instructions: 'Fire on the cells where you think they are.',
-    intel: 'target',
-    durationMs: 15_000,
-    callsign: 'OVERWATCH',
-    build: (s, square) => [[square], s.rng],
-    won: 'Target destroyed.',
-    lost: 'Some of them got away.',
   },
   signal: {
     title: 'Signal intercept',
     instructions: 'Tune until the signal peaks and hold it there, then shift the cipher until it reads.',
-    intel: 'signals',
-    durationMs: 30_000,
-    callsign: 'SIGINT',
-    build: (s, square) => [[square], s.rng],
-    won: 'Decoded.',
-    lost: 'Lost it.',
   },
 };
 
@@ -134,7 +76,6 @@ export function startSeek(s: GameState, contactId: string, weapon: Weapon): Game
       durationMs: w.runMs,
       targets: [c.square],
       hits: 0,
-      hitAt: [],
       misses: 0,
       status: 'active',
       shots: [],
@@ -183,39 +124,18 @@ function seekTap(s: GameState, square: SquareId, cell: number | undefined): Game
   return next;
 }
 
-const MISS_PENALTY_MS = 1_000;
-
-export function startMiniGame(s: GameState, kind: MiniGameKind, square: SquareId, callId?: string, eventId?: string): GameState {
-  const def = MINIGAMES[kind];
-  const [targets, rng] = def.build(s, square);
-  const pass = radio(s, def.callsign, `pass-${s.elapsedMs}`, `Pass over ${square}. Imaging ${targets.join(', ')}.`, 'read');
-  return {
-    ...s,
-    rng,
-    openEvent: null,
-    minigame: { kind, square, callId, eventId, startedMs: s.elapsedMs, durationMs: def.durationMs, targets, hits: 0, hitAt: [], misses: 0, status: 'active' },
-    team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on imagery' } : s.team,
-    comms: { ...s.comms, messages: [...s.comms.messages, pass] },
-  };
-}
-
 export const timeLeft = (s: GameState) => {
   const m = s.minigame;
   if (!m) return 0;
-  const penalty = m.kind === 'gridScan' ? m.misses * MISS_PENALTY_MS : 0; // a missed shot costs a round, not time
-  return Math.max(0, m.startedMs + m.durationMs - penalty - s.elapsedMs);
+  return Math.max(0, m.startedMs + m.durationMs - s.elapsedMs);
 };
 
-// A tap on the map while a mini game runs: the next target scores, anything else costs time.
+// A tap on the map while a mini game runs: seek and destroy fires on a cell; the signal is
+// played in its panel.
 export function tapMiniGame(s: GameState, square: SquareId, cell?: number): GameState {
   const m = s.minigame;
-  if (!m || m.status !== 'active') return s;
-  if (m.kind === 'seekDestroy') return seekTap(s, square, cell);
-  if (m.kind === 'signal') return s; // played in the panel, not on the map
-  if (square !== m.targets[m.hits]) return { ...s, minigame: { ...m, misses: m.misses + 1 } };
-  const hits = m.hits + 1;
-  const next = { ...s, minigame: { ...m, hits, hitAt: [...m.hitAt, s.elapsedMs] } };
-  return hits === m.targets.length ? finish(next, 'won') : next;
+  if (!m || m.status !== 'active' || m.kind !== 'seekDestroy') return s;
+  return seekTap(s, square, cell);
 }
 
 export const abortMiniGame = (s: GameState) => (s.minigame?.status === 'active' ? finish(s, 'lost') : s);
@@ -235,26 +155,7 @@ const radio = (s: GameState, from: string, id: string, text: string, status: Mes
 });
 
 function finish(s: GameState, status: 'won' | 'lost'): GameState {
-  const m = s.minigame!;
-  if (m.kind === 'seekDestroy') return finishSeek(s, status);
-  if (m.kind === 'signal') return finishSignal(s, status);
-  const def = MINIGAMES[m.kind];
-  let next: GameState = { ...s, minigame: { ...m, status } };
-  if (status === 'won') {
-    next = boostIntel(next, def.intel);
-    const scanned = [...new Set([...next.map.scanned, ...m.targets])];
-    next = reveal({ ...next, map: { ...next.map, scanned } }, m.targets, def.callsign);
-    next = deliverImagery(next, m.targets);
-  }
-  const sat = radio(s, def.callsign, `minigame-${m.startedMs}-sat`,
-    status === 'won' ? `${m.targets.join(', ')} imaged. Downlinked to ${s.team.callsign}.` : 'Pass ended. No usable imagery.', 'read');
-  const reply = radio(s, s.team.callsign, `minigame-${m.startedMs}`, status === 'won' ? def.won : def.lost, 'new');
-  return {
-    ...next,
-    events: m.eventId ? next.events.map((e) => (e.id === m.eventId ? { ...e, status: 'resolved' as const } : e)) : next.events,
-    team: next.team.holdFor === m.callId ? { ...next.team, holdFor: null } : next.team,
-    comms: { ...next.comms, messages: [...next.comms.messages, sat, reply] },
-  };
+  return s.minigame!.kind === 'seekDestroy' ? finishSeek(s, status) : finishSignal(s, status);
 }
 
 function finishSeek(s: GameState, status: 'won' | 'lost'): GameState {

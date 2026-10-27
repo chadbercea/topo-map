@@ -1,18 +1,25 @@
 import { game, useGame } from '../sim/store';
+import { satelliteBusy, slewMs } from '../sim/satellite';
+import { freshness } from '../sim/imagery';
 
-// Actions for the square HQ has selected on the map. For now: point the satellite at it.
+// Actions for the square HQ has selected on the map: task ORION-3 to look at it. The button
+// shows how long the satellite needs to get there from where it's looking now.
 export function SquareActions() {
   const selected = useGame((s) => s.map.selected);
-  const scans = useGame((s) => s.resources.scans);
-  const imaged = useGame((s) => !!s.map.selected && s.map.scanned.includes(s.map.selected));
-  const busy = useGame((s) => !!s.minigame);
-  if (!selected || busy) return null;
+  const travel = useGame((s) => (s.map.selected ? slewMs(s, s.map.selected) : 0));
+  const busy = useGame(satelliteBusy);
+  const seen = useGame((s) => {
+    const snap = s.map.selected ? s.imagery[s.map.selected] : undefined;
+    return snap ? freshness(snap, s.elapsedMs) : null;
+  });
+  const playing = useGame((s) => !!s.minigame);
+  if (!selected || playing) return null;
   return (
     <div className="panel square-actions" data-testid="square-actions">
       <span className="sq">{selected}</span>
-      <span className="note">{imaged ? 'imaged' : 'no imagery'}</span>
-      <button disabled={scans < 1} onClick={() => game.manualScan(selected)}>
-        Scan ▸ {scans < 1 && <small>· no scans</small>}
+      <span className="note">{seen ? `imagery ${seen}` : 'no imagery'}</span>
+      <button disabled={busy} onClick={() => game.lookAt(selected)} data-testid="look-here">
+        Look here · {travel ? `${Math.ceil(travel / 1000)}s` : 'now'} {busy && <small>· ORION-3 busy</small>}
       </button>
     </div>
   );

@@ -77,11 +77,11 @@ describe('response tree', () => {
     expect(s.team.holdFor).toMatch(/^unimaged-E4/);
   });
 
-  it('send imagery is gated by scans; an answered call cannot be answered again', () => {
+  it('send imagery is greyed out while ORION-3 is busy; an answered call cannot be answered again', () => {
     const send = TREE.unimaged.responses.find((r) => r.id === 'send')!;
     const s = walking();
     expect(blocked(s, send)).toBeNull();
-    expect(blocked({ ...s, resources: { ...s.resources, scans: 0 } }, send)).toBe('No scans left');
+    expect(blocked({ ...s, satellite: { ...s.satellite, state: 'capturing' } }, send)).toBe('ORION-3 busy');
     expect(blocked({ ...s, capabilities: [] }, send)).toBe('Unavailable');
 
     const store = atContact();

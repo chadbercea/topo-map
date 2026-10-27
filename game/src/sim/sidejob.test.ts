@@ -28,11 +28,12 @@ describe('client side job', () => {
     expect(s.team.holdFor).not.toBe('client-offer'); // ALPHA doesn't wait on the client
   });
 
-  it('a won scan of G2 in time pays the bonus, and the wrap-up lists it', () => {
+  it('a look at G2 in time pays the bonus, and the wrap-up lists it', () => {
     const store = offered();
     store.respond('client-offer', 'accept');
-    store.manualScan('G2');
-    for (const sq of store.get().minigame!.targets) store.tapMiniGame(sq);
+    store.lookAt('G2');
+    for (let i = 0; i < 200 && store.get().satellite.state === 'slewing'; i++) store.tick(100);
+    store.capture('photo');
     const s: GameState = store.get();
     expect(s.sideJob?.status).toBe('done');
     expect(s.resources.budget).toBe(10_000);

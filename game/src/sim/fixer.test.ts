@@ -17,11 +17,10 @@ describe('local fixer', () => {
   it('guide: instead of a scan, a local walks ALPHA in and says what is there', () => {
     const store = createStore(run(rich(initialState()), 500)); // holding short of F4
     const id = store.get().team.holdFor!;
-    const scans = store.get().resources.scans;
     store.respond(id, 'fixer');
     const s = store.get();
     expect(s.resources.budget).toBe(10_000 - FIXER_GUIDE);
-    expect(s.resources.scans).toBe(scans); // no scan spent
+    expect(s.satellite.state).toBe('idle'); // ORION-3 wasn't needed
     expect(s.map.scanned).toContain('F4');
     expect(run(s, 2_000).team.position).not.toEqual(s.team.position); // F4 is clear: they move
   });

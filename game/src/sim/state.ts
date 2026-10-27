@@ -1,3 +1,5 @@
+import { initialSatellite, type Satellite } from './satellite';
+import type { Snapshot } from './imagery';
 import { roster, vitalsFor, type Operator } from './team';
 import type { SquareId } from '../map/grid';
 import { squareCenter } from '../map/grid';
@@ -56,7 +58,9 @@ export type GameState = {
   comms: Comms;
   intel: Intel;
   minigame: MiniGame | null; // the mini game on the map, or its result until closed
-  resources: { budget: number; scans: number; rechargeAtMs: number | null }; // next scan back from the satellite
+  resources: { budget: number };
+  satellite: Satellite; // ORION-3: where it's looking and what it's doing
+  imagery: Record<string, Snapshot>; // the newest look at each square
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
   ordnance: Ordnance;
   noise: number; // 0-100, how loud the PMC has been
@@ -109,7 +113,9 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     comms: initialComms(),
     intel: initialIntel(MISSION.feed),
     minigame: null,
-    resources: { budget: 0, scans: 3, rechargeAtMs: null },
+    resources: { budget: 0 },
+    satellite: initialSatellite(ROUTE[0]),
+    imagery: {},
     capabilities: ['imagery'],
     ordnance: initialOrdnance(),
     noise: 0,
