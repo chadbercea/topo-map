@@ -133,6 +133,7 @@ export class MapScene extends Phaser.Scene {
     this.drawMarkers(_time);
     this.drawFight(_time);
     this.drawIntel();
+    this.drawPlans();
     this.drawSatellite(_time);
     this.drawMiniGame(_time);
   }
@@ -236,6 +237,29 @@ export class MapScene extends Phaser.Scene {
           g.lineBetween(ex, ey, ex - ux * h + uy * h * 0.6, ey - uy * h - ux * h * 0.6);
         }
       }
+    }
+  }
+
+  // A decoded plan (ILI-1169): a dashed red route from where the contact was last seen to
+  // where it means to go.
+  private drawPlans() {
+    const g = this.intelGfx;
+    const { contacts, events } = game.get();
+    const px = DPR / this.zoom;
+    for (const c of contacts) {
+      if (!c.planKnown || !c.planTo || (c.status !== 'hidden' && c.status !== 'revealed')) continue;
+      const seenAt = events.find((e) => e.id === `contact-${c.id}`)?.square ?? c.square;
+      if (seenAt === c.planTo) continue; // it's there
+      const a = squareCenter(seenAt)!;
+      const b = squareCenter(c.planTo)!;
+      const d = Math.hypot(b.x - a.x, b.y - a.y);
+      const ux = (b.x - a.x) / d;
+      const uy = (b.y - a.y) / d;
+      g.lineStyle(2 * px, 0xe5484d, 0.8);
+      for (let t = 0; t < d; t += 14 * px) g.lineBetween(a.x + ux * t, a.y + uy * t, a.x + ux * Math.min(d, t + 8 * px), a.y + uy * Math.min(d, t + 8 * px));
+      const h = 9 * px;
+      g.lineBetween(b.x, b.y, b.x - ux * h - uy * h * 0.6, b.y - uy * h + ux * h * 0.6);
+      g.lineBetween(b.x, b.y, b.x - ux * h + uy * h * 0.6, b.y - uy * h - ux * h * 0.6);
     }
   }
 

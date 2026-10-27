@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cipherText, LOCK_HOLD_MS, LOCK_WITHIN, strength } from './signal';
+import { HOP_MS, match, RECEIVE_MS, TRANSMISSION_MS, transcript } from './signal';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
 import { run } from './testkit';
@@ -17,62 +17,75 @@ describe('signal intercept', () => {
     expect(s.comms.messages.find((m) => m.id === 'hq-traffic-c2')?.text).toMatch(/enemy radio traffic near C2/);
   });
 
-  it('intercepting opens tuning; the meter peaks on the frequency', () => {
+  it('intercepting opens the transmission; the match reads 100% on their frequency', () => {
     const store = atTraffic();
     store.intercept('traffic-c2');
     const g = store.get().minigame!.signal!;
-    expect(store.get().minigame).toMatchObject({ kind: 'signal', status: 'active' });
-    expect(g.phase).toBe('tune');
+    expect(store.get().minigame).toMatchObject({ kind: 'signal', status: 'active', durationMs: TRANSMISSION_MS });
     store.tune(g.target);
-    expect(strength(store.get().minigame!.signal!)).toBe(1);
+    expect(match(store.get().minigame!.signal!)).toBe(1);
     store.tune(g.target + 3);
-    expect(strength(store.get().minigame!.signal!)).toBeCloseTo(0.5);
+    expect(match(store.get().minigame!.signal!)).toBeCloseTo(0.5);
   });
 
-  it('holding inside the band locks on; drifting out resets the lock', () => {
+  it('words come through only while the lines match, and never go backwards', () => {
     const store = atTraffic();
     store.intercept('traffic-c2');
-    const target = store.get().minigame!.signal!.target;
-    store.tune(target + LOCK_WITHIN);
-    store.set(run(store.get(), LOCK_HOLD_MS - 300));
-    store.tune(target + 2);
-    store.set(run(store.get(), 200));
-    expect(store.get().minigame!.signal!.lockMs).toBe(0);
-    store.tune(target);
-    store.set(run(store.get(), LOCK_HOLD_MS));
-    expect(store.get().minigame!.signal!.phase).toBe('decode');
-  });
-
-  it('decoding: shift until it reads; the decode marks the patrol and feeds signals intel', () => {
-    const store = atTraffic();
-    store.intercept('traffic-c2');
+    store.tune(store.get().minigame!.signal!.target + 4); // off
+    store.set(run(store.get(), 2_000));
+    expect(store.get().minigame!.signal!.progress).toBe(0);
     store.tune(store.get().minigame!.signal!.target);
-    store.set(run(store.get(), LOCK_HOLD_MS));
-    const g = store.get().minigame!.signal!;
-    expect(cipherText(g)).not.toBe(g.plain);
-    for (let i = 0; i < g.shift; i++) store.shiftCipher(1);
-    expect(cipherText(store.get().minigame!.signal!)).toBe('PATROL AT C2 MOVING TO D3 FOR THE DRONE');
-    const signals = store.get().intel.projects.signals?.progress ?? 0;
-    store.submitDecode();
-    const s: GameState = store.get();
+    store.set(run(store.get(), 1_000));
+    const got = store.get().minigame!.signal!.progress;
+    expect(got).toBeCloseTo(1_000 / RECEIVE_MS, 2);
+    expect(transcript(store.get().minigame!.signal!).length).toBeGreaterThan(0);
+  });
+
+  it('they hop every few seconds, so the line has to follow', () => {
+    const store = atTraffic();
+    store.intercept('traffic-c2');
+    const first = store.get().minigame!.signal!.target;
+    store.set(run(store.get(), HOP_MS + 100));
+    expect(store.get().minigame!.signal!.target).not.toBe(first);
+  });
+
+  // Follow them perfectly: re-tune onto their frequency every tick.
+  const follow = (ms: number) => {
+    const store = atTraffic();
+    store.intercept('traffic-c2');
+    for (let t = 0; t < ms && store.get().minigame?.status === 'active'; t += 100) {
+      store.tune(store.get().minigame!.signal!.target);
+      store.tick(100);
+    }
+    return store;
+  };
+
+  it('following them all the way decodes their plan: patrol marked, route known, signals intel', () => {
+    const signals = atTraffic().get().intel.projects.signals?.progress ?? 0;
+    const s: GameState = follow(TRANSMISSION_MS).get();
     expect(s.minigame!.status).toBe('won');
-    expect(s.contacts.find((c) => c.id === 'patrol')?.status).toBe('revealed');
-    expect(s.events.find((e) => e.id === 'contact-patrol')).toBeTruthy();
+    const patrol = s.contacts.find((c) => c.id === 'patrol')!;
+    expect(patrol).toMatchObject({ status: 'revealed', planKnown: true, planTo: 'D3' });
     expect(s.events.find((e) => e.id === 'traffic-c2')?.status).toBe('resolved');
     if (s.intel.projects.signals) expect(s.intel.projects.signals.progress).toBeGreaterThan(signals);
     expect(s.comms.messages.some((m) => m.from === 'SIGINT' && m.text === 'Decoded: "PATROL AT C2 MOVING TO D3 FOR THE DRONE".')).toBe(true);
   });
 
-  it('a wrong decode costs time; running out loses', () => {
+  it('part of it gives where they are but not their plan; nothing gives nothing', () => {
     const store = atTraffic();
     store.intercept('traffic-c2');
-    store.tune(store.get().minigame!.signal!.target);
-    store.set(run(store.get(), LOCK_HOLD_MS));
-    const before = store.get().minigame!.durationMs;
-    store.submitDecode(); // guess 0 is never the shift (3-22)
-    expect(store.get().minigame!.durationMs).toBe(before - 3_000);
-    store.set(run(store.get(), 30_000));
+    store.set({ ...store.get(), minigame: { ...store.get().minigame!, signal: { ...store.get().minigame!.signal!, progress: 0.5 } } });
+    store.abortMiniGame();
+    const patrol = store.get().contacts.find((c) => c.id === 'patrol')!;
     expect(store.get().minigame!.status).toBe('lost');
-    expect(store.get().contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
+    expect(patrol.status).toBe('revealed');
+    expect(patrol.planKnown).toBeFalsy();
+    expect(store.get().comms.messages.at(-1)?.text).toMatch(/they're at C2, but not what they plan/);
+
+    const deaf = atTraffic();
+    deaf.intercept('traffic-c2');
+    deaf.abortMiniGame(); // nothing came through
+    expect(deaf.get().minigame!.status).toBe('lost');
+    expect(deaf.get().contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
   });
 });
