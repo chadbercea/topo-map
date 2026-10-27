@@ -1,14 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { squarePoint, start, tapAt } from './helpers';
 
-test('a new event flags in the header and on its square; tapping the marker opens its card beside it', async ({ page, isMobile }) => {
+test('a new event lands inline in the intel stream and on its square; tapping the marker opens its card beside it', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'G2', title: 'Test contact' }));
   await expect(page.getByTestId('alerts')).toHaveCount(0); // no strip under the header any more
 
   const flag = page.getByTestId('new-event');
-  await expect(flag).toContainText('CONTACT G2 · Test contact');
+  await expect(flag).toContainText(/CONTACT\s*G2/);
+  await expect(flag).toContainText('Test contact');
+  await expect(page.getByTestId('blockers')).not.toContainText('Test contact'); // not in the header any more
 
   // Marker sits in the square's top-right quarter (G2 = col 6, row 1).
   await tapAt(page, isMobile, await squarePoint(page, 6, 1, 0.25, -0.25));
@@ -32,7 +34,7 @@ test('a new event flags in the header and on its square; tapping the marker open
   await expect(card).toHaveCount(0);
 });
 
-test('tapping the header flag opens the same card', async ({ page }) => {
+test('opening it from the intel stream opens the same card', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 'r', kind: 'request', square: 'F2', title: 'Need imagery' }));

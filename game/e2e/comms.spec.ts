@@ -7,7 +7,7 @@ test('ALPHA holds short of unimaged ground and asks; Move in blind sends it on',
   await fastForward(page, 500);
 
   const panel = page.getByTestId('team-panel');
-  await expect(page.getByTestId('comms')).toContainText('ALPHA · NEEDS A DECISION');
+  await expect(page.getByTestId('comms')).toHaveAttribute('aria-label', 'ALPHA needs a decision'); // the ask beside ALPHA's marker
   await expect(page.getByTestId('call-deadline')).toHaveCount(0); // ALPHA waits: no countdown
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4\. No imagery/);
 
@@ -18,15 +18,18 @@ test('ALPHA holds short of unimaged ground and asks; Move in blind sends it on',
   await expect(panel).toContainText('Moving to F4');
 });
 
-test('a call waits pinned in satcom with its answers; answering moves it into the thread', async ({ page }) => {
+test('ALPHA\u2019s ask pops up beside its marker; answering closes it, and the comms log keeps both sides', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 500);
-  const satcom = page.getByTestId('satcom');
-  await expect(satcom.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
-  await satcom.getByTestId('responses').getByRole('button').last().click();
-  await expect(satcom.getByTestId('comms')).toHaveCount(0);
-  await expect(satcom.locator('.thread')).toContainText('Holding short of F4');
+  const ask = page.getByTestId('comms');
+  await expect(ask.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
+  await expect(page.getByTestId('satcom').locator('.thread')).toContainText('waiting on HQ');
+  await ask.getByTestId('responses').getByRole('button').last().click();
+  await expect(ask).toHaveCount(0);
+  const log = page.getByTestId('satcom').locator('.thread');
+  await expect(log).toContainText('Holding short of F4');
+  await expect(log).toContainText('HQ › Move in blind');
 });
 
 test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, attack or go around', async ({ page }) => {
@@ -48,7 +51,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click();
-  await expect(page.getByTestId('blockers')).toContainText('CONTACT E3');
+  await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/);
 
   // Now it holds short of the contact.
   await page.evaluate(() => {
@@ -61,14 +64,14 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await expect.poll(() => page.evaluate(() => window.game.get().team.route)).toContain('E4');
 });
 
-test('news the map does not show is a banner, the stream keeps it, and the header flags it', async ({ page, isMobile }) => {
+test('news the map does not show lands in the stream as an alert, and the header flags the blocker', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
     window.game.set({ ...window.game.get(), noise: 70 });
     window.game.tick(100);
   });
-  await expect(page.getByTestId('banner')).toContainText('know a PMC is in the area');
+  await expect(page.getByTestId('intel-items')).toContainText('know a PMC is in the area');
   await expect(page.getByTestId('blockers')).toContainText('Enemy alerted');
   if (isMobile) await page.getByTestId('tab-intel').click();
   await expect(page.getByTestId('intel-items')).toContainText('Enemy radio net just lit up');

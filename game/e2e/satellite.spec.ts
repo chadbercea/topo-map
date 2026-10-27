@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start, untilOnStation } from './helpers';
 
-test('select a square, task ORION-3 there, take a burst: the look lands on the map', async ({ page }) => {
+test('select a square, task ORION-3 there, take a burst: the look lands on the map', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -32,7 +32,8 @@ test('select a square, task ORION-3 there, take a burst: the look lands on the m
   await expect(inset).toHaveAttribute('data-state', 'capturing');
   await fastForward(page, 6_100);
   await expect(page.getByTestId('satellite-result')).toHaveText('E3 · Burst: 5 fighters, unaware. Downlinked to ALPHA.');
-  await expect(page.getByTestId('blockers')).toContainText('E3'); // the checkpoint is found
+  await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/); // the checkpoint is found, inline in the stream
+  if (isMobile) await page.getByTestId('tab-orion').click(); // the new contact brought the intel tab forward
   await panel.getByRole('button', { name: 'Close' }).click();
   await expect(page.getByTestId('satellite-result')).toHaveCount(0); // closed: the panel stays, the look is filed
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
