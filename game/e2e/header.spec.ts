@@ -4,12 +4,6 @@ import { fastForward } from './helpers';
 test('the header anchors the mission: deadline, progress, what to do, what is in the way', async ({ page, isMobile }) => {
   await page.goto('?debug');
   const header = page.getByTestId('mission-timer');
-  await expect(header).toContainText('NO TEAM LINKED');
-  await expect(page.getByTestId('next')).toContainText('Send a SITREP');
-  await expect(page.getByTestId('blockers')).toContainText('No team linked');
-
-  await page.getByTestId('sitrep').click();
-  await page.getByTestId('codename').click();
   await expect(header).toContainText('BLACK BOX');
   await expect(page.getByTestId('phase-pips').locator('li[data-state="current"]')).toHaveCount(1);
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');

@@ -1,6 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { standby, initialState, type GameState, type Settings } from './state';
-import { setFilter, sitrep } from './link';
+import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { confirm, dismiss, respond } from './comms';
 import { cancelLook, capture, closeLook, lookAt, type CaptureMode } from './satellite';
@@ -32,15 +31,11 @@ export function createStore(initial: GameState = initialState()) {
     tick: (dtMs: number) => set(step(state, dtMs)),
     pause: () => state.phase === 'running' && set({ ...state, phase: 'paused' }),
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
-    // SITREP over satcom: the team texts back its code name (link.ts).
-    sitrep: () => set(sitrep(state)),
-    // Filter the intel stream; the team's code name links the team and starts the mission.
-    setFilter: (filter: string) => set(setFilter(state, filter)),
-    // No saves in the MVP: retry and restart both start over, back at the desk on standby.
-    restart: () => set(standby(state.settings, state.timer.totalMs)),
+    // No saves in the MVP: retry and restart both start the mission over, live.
+    restart: () => set(initialState(state.settings, state.timer.totalMs)),
     // Tuning: start over with a different mission length (1 to 30 minutes).
     setMissionLength: (minutes: number) =>
-      set(standby(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000))),
+      set(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000))),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
     // Tapping the selected square again clears it.
     selectSquare: (id: string | null) =>
@@ -93,7 +88,7 @@ export function createStore(initial: GameState = initialState()) {
 
 export type Store = ReturnType<typeof createStore>;
 
-export const game = createStore(standby());
+export const game = createStore(initialState());
 
 // Select a primitive or an existing object; a selector that builds a new object every
 // call would re-render forever.

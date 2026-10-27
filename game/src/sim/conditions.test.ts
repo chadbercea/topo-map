@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { initialState, standby } from './state';
+import { initialState } from './state';
 import { ground, groundInView, imageryOk, weather } from './conditions';
 import { blockers, winChecks } from './progress';
 
 describe('header readouts (ILI-1187)', () => {
   it('the weather clears through the morning, and imagery could be blinded by cloud later', () => {
-    const dawn = weather(standby());
-    const late = weather({ ...standby(), theaterMs: 6 * 60_000 }); // 4 h of game time
+    const dawn = weather(initialState());
+    const late = weather({ ...initialState(), elapsedMs: 6 * 60_000 }); // 4 h of game time
     expect(dawn).toMatchObject({ sky: 'High cloud', light: 'Night' });
     expect(late.sky).toBe('Clear');
     expect(late.visibilityKm).toBeGreaterThan(dawn.visibilityKm);
@@ -22,15 +22,13 @@ describe('header readouts (ILI-1187)', () => {
     expect(ground(initialState(), 'G5')!.imagery).toBe('known ground'); // the insertion point
   });
 
-  it('looks at the selected square, else where ALPHA is, and nothing before the link', () => {
+  it('looks at the selected square, else where ALPHA is', () => {
     const s = initialState();
     expect(groundInView(s)!.square).toBe('G5');
     expect(groundInView({ ...s, map: { ...s.map, selected: 'C2' } })!.square).toBe('C2');
-    expect(groundInView(standby())).toBeNull();
   });
 
-  it('blockers: no link before the SITREP, then what stands in the way', () => {
-    expect(blockers(standby())).toEqual([{ tone: 'decision', text: 'No team linked' }]);
+  it('blockers: what stands in the way', () => {
     const s = initialState();
     expect(blockers(s).map((b) => b.text)).toContain('No imagery ahead at F4');
     const hurt = { ...s, alerted: true, team: { ...s.team, operators: s.team.operators.map((o, i) => (i === 0 ? { ...o, health: 0 } : o)) } };

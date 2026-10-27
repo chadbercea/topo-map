@@ -16,7 +16,6 @@ const ALT_TEXT = 'the alternate exfil at A2'; // the call's wording for altExfil
 export const BLACK_BOX: MissionDef = registerMission({
   id: 'black-box',
   name: 'Operation Black Box',
-  codename: 'BLACK BOX',
   durationMs: 6 * 60 * 1000,
   route: ['G5', 'F4', 'E3', 'D3', 'C2', 'B1'],
   // If the salvage convoy sits on B1, the long way out: west past it to A2 (~3.5 km all told).

@@ -2,19 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { currentCall, kindOf, waitingCalls } from '../sim/comms';
 import { blocked } from '../sim/responses';
-import { replyText, sitrepText } from '../sim/link';
 import { gameClock } from '../sim/gameTime';
 
-// Satcom with the team (ILI-1186), bottom right beside the team panel: short texts, both
-// ways. Before the link there's one thing to do, send a SITREP; the team answers with its
-// code name. Once linked it's the team's texts, and any call waiting on HQ pins under them
-// with its answers (ILI-1172: several page as "1 of N"; ALPHA waits as long as it takes; a
+// Satcom with the team (ILI-1186), bottom right beside the team panel: the team's short
+// texts, and any call waiting on HQ pinned under them with its answers (ILI-1172: several page as "1 of N"; ALPHA waits as long as it takes; a
 // call never interrupts a mini game).
 export function CommsPanel() {
   const s = useGame((x) => x);
   const [focus, setFocus] = useState<string | null>(null);
   const log = useRef<HTMLOListElement>(null);
-  const { link } = s;
   // Calls still waiting show pinned below with their answers, not in the thread.
   const thread = s.comms.messages.filter((m) => (m.from === s.team.callsign || kindOf(m) === 'call') && !(kindOf(m) === 'call' && m.status === 'new'));
   const calls = waitingCalls(s.comms);
@@ -27,25 +23,14 @@ export function CommsPanel() {
   useEffect(() => {
     const el = log.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [thread.length, link.state]);
+  }, [thread.length]);
 
   return (
-    <section className="panel satcom" data-testid="satcom" data-link={link.state} aria-label="Satcom">
+    <section className="panel satcom" data-testid="satcom" aria-label="Satcom">
       <h2>
-        SATCOM · {link.state === 'linked' ? `${s.team.callsign} · ${link.codename}` : 'NO LINK'}
+        SATCOM · {s.team.callsign}
       </h2>
       <ol className="thread" ref={log} role="log" aria-live="polite">
-        {link.state !== 'none' && (
-          <li className="out">
-            <b>HQ</b> {sitrepText(s)}
-          </li>
-        )}
-        {link.state === 'pinging' && <li className="typing">{s.team.callsign} is typing…</li>}
-        {(link.state === 'replied' || link.state === 'linked') && (
-          <li className="in" data-testid="sitrep-reply">
-            <b>{s.team.callsign}</b> {replyText(s)}
-          </li>
-        )}
         {thread.map((m) => (
           <li key={m.id} className={m.from === s.team.callsign ? 'in' : 'out'}>
             <span className="t">{gameClock(m.atMs, Math.floor)}</span> <b>{m.from}</b> {m.text}
@@ -53,23 +38,6 @@ export function CommsPanel() {
           </li>
         ))}
       </ol>
-
-      {link.state === 'none' && (
-        <div className="actions">
-          <button className="primary" onClick={game.sitrep} data-testid="sitrep">
-            Send SITREP
-          </button>
-          <small>ALPHA is out there. Ask it who it is.</small>
-        </div>
-      )}
-      {link.state === 'replied' && (
-        <div className="actions">
-          <small>Filter the intel stream for</small>
-          <button className="tag" onClick={() => game.setFilter(link.codename)} data-testid="codename">
-            {link.codename}
-          </button>
-        </div>
-      )}
 
       {call && playing && <p className="waiting">{call.from} is waiting on you. Finish the job on the map first.</p>}
       {call && !playing && (

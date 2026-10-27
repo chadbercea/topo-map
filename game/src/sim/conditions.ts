@@ -27,7 +27,7 @@ const FORECAST: (Omit<Weather, 'light' | 'tempC'> & { fromMin: number })[] = [
 const SUNRISE_MIN = 32; // 0612Z
 
 export function weather(s: GameState): Weather {
-  const min = (s.theaterMs * TIME_SCALE) / 60_000;
+  const min = (s.elapsedMs * TIME_SCALE) / 60_000;
   const now = [...FORECAST].reverse().find((f) => min >= f.fromMin) ?? FORECAST[0];
   const { fromMin: _, ...w } = now;
   const light = min < SUNRISE_MIN - 25 ? 'Night' : min < SUNRISE_MIN + 20 ? 'First light' : 'Day';
@@ -83,11 +83,9 @@ export function ground(s: GameState, square: SquareId): Ground | null {
   };
 }
 
-// The square the header describes: the one HQ has selected, else where ALPHA is (once
-// linked), else the middle of the AO.
+// The square the header describes: the one HQ has selected, else where ALPHA is.
 export function groundInView(s: GameState): Ground | null {
   if (s.map.selected) return ground(s, s.map.selected);
   const { x, y } = s.team.position;
-  if (s.link.state === 'linked') return ground(s, squareId(Math.floor(x / CELL), Math.floor(y / CELL)));
-  return null;
+  return ground(s, squareId(Math.floor(x / CELL), Math.floor(y / CELL)));
 }
