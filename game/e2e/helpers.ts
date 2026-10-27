@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import type { Store } from '../src/sim/store';
+import { fitCamera } from '../src/game/fit';
 
 // ?debug puts the game store on window for tests.
 declare global {
@@ -44,7 +45,7 @@ export const freeze = (page: Page) =>
     window.frozen = true;
   });
 
-// Mirror MapScene's camera fit: the grid is centred in the map area between the panels.
+// MapScene's camera fit (src/game/fit.ts), in CSS px.
 const WORLD_W = 1600, WORLD_H = 1000, CELL = 200, MARGIN = 8;
 
 // The map area resizes when panels grow (a radio call, the readout); wait for it to settle.
@@ -62,10 +63,10 @@ async function mapBox(page: Page) {
 // view: the world rect the camera fits (all of it, or a seek-and-destroy square with margin).
 export async function worldToScreen(page: Page, wx: number, wy: number, view = { x: 0, y: 0, w: WORLD_W, h: WORLD_H }) {
   const box = await mapBox(page);
-  const zoom = Math.min((box.width - MARGIN * 2) / view.w, (box.height - MARGIN * 2) / view.h);
-  const cx = view.x + view.w / 2;
-  const cy = view.y + view.h / 2;
-  return { x: box.x + box.width / 2 + (wx - cx) * zoom, y: box.y + box.height / 2 + (wy - cy) * zoom };
+  const screen = page.viewportSize()!;
+  const area = { x: box.x, y: box.y, w: box.width, h: box.height };
+  const { zoom, sx, sy } = fitCamera({ w: screen.width, h: screen.height }, area, view, MARGIN);
+  return { x: sx + (wx - (view.x + view.w / 2)) * zoom, y: sy + (wy - (view.y + view.h / 2)) * zoom };
 }
 
 // Cell i (0-15, row by row) of a seek-and-destroy board, with the camera closed in on it.
