@@ -42,7 +42,6 @@ describe('kill sites', () => {
     const store = createStore(withContact());
     store.fire('t', 'drone');
     store.tapMiniGame('E3', 5);
-    store.closeMiniGame();
     let s = store.get();
     for (let i = 0; i < 3000 && !s.team.holdFor?.startsWith('site-call'); i++) s = run(s, 100);
     expect(s.comms.messages.find((m) => m.id === s.team.holdFor)?.text).toMatch(/^At the kill site in E3/);
@@ -61,7 +60,6 @@ describe('kill sites', () => {
     const store = createStore(withContact());
     store.fire('t', 'drone');
     store.tapMiniGame('E3', 5);
-    store.closeMiniGame();
     let s = store.get();
     for (let i = 0; i < 3000 && !s.team.holdFor?.startsWith('site-call'); i++) s = run(s, 100);
     const st = createStore(s);

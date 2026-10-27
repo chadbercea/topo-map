@@ -62,7 +62,7 @@ describe('signal intercept', () => {
 
   it('following them all the way decodes their plan: patrol marked, route known', () => {
     const s: GameState = follow(TRANSMISSION_MS).get();
-    expect(s.minigame!.status).toBe('won');
+    expect(s.minigame).toBeNull();
     const patrol = s.contacts.find((c) => c.id === 'patrol')!;
     expect(patrol).toMatchObject({ status: 'revealed', planKnown: true, planTo: 'D3' });
     expect(s.events.find((e) => e.id === 'traffic-c2')?.status).toBe('resolved');
@@ -75,7 +75,7 @@ describe('signal intercept', () => {
     store.set({ ...store.get(), minigame: { ...store.get().minigame!, signal: { ...store.get().minigame!.signal!, progress: 0.5 } } });
     store.abortMiniGame();
     const patrol = store.get().contacts.find((c) => c.id === 'patrol')!;
-    expect(store.get().minigame!.status).toBe('lost');
+    expect(store.get().minigame).toBeNull();
     expect(patrol.status).toBe('revealed');
     expect(patrol.planKnown).toBeFalsy();
     expect(store.get().comms.messages.at(-1)?.text).toMatch(/they're at C2, but not what they plan/);
@@ -83,7 +83,8 @@ describe('signal intercept', () => {
     const deaf = atTraffic();
     deaf.intercept('traffic-c2');
     deaf.abortMiniGame(); // nothing came through
-    expect(deaf.get().minigame!.status).toBe('lost');
+    expect(deaf.get().minigame).toBeNull();
+    expect(deaf.get().comms.messages.at(-1)?.text).toBe('Lost the signal.');
     expect(deaf.get().contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
   });
 });

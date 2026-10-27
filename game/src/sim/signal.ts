@@ -114,8 +114,10 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
     status: 'new',
     holds: false,
   };
+  // Over: no after-action panel (ILI-1204); the report says what came through.
   return {
     ...next,
+    minigame: null,
     events: next.events.map((e) => (e.id === m.eventId ? { ...e, status: 'resolved' as const } : e)),
     comms: { ...next.comms, messages: [...next.comms.messages, report] },
   };

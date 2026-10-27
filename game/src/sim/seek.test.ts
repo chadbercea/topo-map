@@ -33,11 +33,9 @@ describe('ordnance', () => {
     const store = createStore(found());
     store.fire('t', 'drone');
     store.abortMiniGame();
-    store.closeMiniGame();
     expect(weaponBlocked(store.get(), 'drone')).toBe('Used');
     store.fire('t', 'sniper');
     store.abortMiniGame();
-    store.closeMiniGame();
     expect(weaponBlocked(store.get(), 'sniper')).toMatch(/^Ready in \d+ min$/);
     store.set(run(store.get(), WEAPON.sniper.runMs + WEAPON.sniper.cooldownMs));
     expect(weaponBlocked(store.get(), 'sniper')).toBeNull();
@@ -88,7 +86,7 @@ describe('strike', () => {
     store.fire('t', 'drone');
     store.tapMiniGame('E3', 5); // covers 5, 6, 9, 10
     const s = store.get();
-    expect(s.minigame!.status).toBe('won');
+    expect(s.minigame).toBeNull(); // over at once: no after-action panel
     expect(s.contacts[0].status).toBe('cleared');
     expect(s.events[0].status).toBe('resolved');
     expect(s.comms.messages.at(-1)).toMatchObject({ from: 'REAPER-1', text: 'E3: target destroyed. 4 down. +$6,000.' });
