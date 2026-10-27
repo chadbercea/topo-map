@@ -21,6 +21,7 @@ The direction has changed a lot, and the repo keeps the history. I started with 
 
 A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5), recovers its black box at the crash site **B** (D3), and exfils at **C** (B1). The AO is 4 × 2.5 km in 500 m squares, and you have four hours of game time (six real minutes; the clock runs at 40×).
 
+- **Sitting down.** There's no briefing. You're HQ's intel cell, and the game opens on a live war room: the theater's intel stream running down the left, the map, and the team and satcom panels in the bottom-right corner. ALPHA is already in the field, but you have no link. Send a **SITREP** on satcom, and ALPHA texts back its code name, BLACK BOX. Filter the intel stream for it (type it, or tap the tag) and the team is linked: its intel, its heartbeats, and the mission clock all start.
 - **The map.** Topographic contours over an 8×5 grid (A1–H5), with a town you can switch on or off and a Topo or Relief view. ALPHA walks its route on its own. Climbs slow it down and tire the heavy gunner first.
 - **Imagery.** ALPHA stops short of any square nobody has imaged and asks: scan it, or push through blind? *Send imagery* starts the **grid scan**: tap the ORION-3 satellite's squares in order before the pass ends. Scans are a shared pool that recharges. You can also select any square and scan it yourself.
 - **Contacts.** Scans find contacts. One on the route makes ALPHA ask what to do:
@@ -31,7 +32,7 @@ A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5
   Walking into a contact nobody found is an ambush.
 - **Seek and destroy.** Tap a found contact for its target menu: drone strike (one 2×2 blast), sniper (one round at a time, then a cooldown), and a helicopter that's locked until upgrades. The square becomes a Battleship board. Painted targets show every fighter. Kills pay cash and leave kill sites ALPHA can search.
 - **Signal intercept.** Enemy radio traffic comes up mid-mission. **Intercept** it: tune the dial until the signal peaks, hold to lock on, then shift the cipher until it reads. The decode tells you the patrol is heading for the crash site. Or **Jam** it: the patrol slows down, but you never learn its plan.
-- **The team.** The ALPHA panel opens to a full readout when things get hot: heartbeats in green, yellow and red, ammo, meds and fatigue. Fights resolve on their own, and the medic patches people up afterwards. Send intel from the analysts' panel as buffs (faster, more accurate, harder to hit).
+- **The team.** The team panel shows every operator all the time: heartbeats in green, yellow and red, ammo and meds. Calls that need a decision pin in satcom beside it. Fights resolve on their own, and the medic patches people up afterwards. Send intel from the analysts' panel as buffs (faster, more accurate, harder to hit).
 - **The PMC side.** The client offers a bonus for a side job against the clock. Noise from strikes alerts the enemy, and too much makes the client disown you (no contract, no air support). A local fixer can guide ALPHA in or stage a distraction. Running low? Send a resupply bird. Combat ineffective? Send reinforcements.
 - **The wrap-up.** A win needs the black box at exfil with nobody down. It shows what your intel achieved, what new intel you found, and the payout.
 

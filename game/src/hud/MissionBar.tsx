@@ -1,45 +1,43 @@
 import { game, useGame } from '../sim/store';
 import { satelliteStatus } from '../sim/satellite';
-import { currentCall, waitingCalls } from '../sim/comms';
 import { nextUp, phasePips } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import { gameClock, gameSpan } from '../sim/gameTime';
 import { RadioLog } from './RadioLog';
-import { TeamPanel } from './TeamPanel';
 
 export const clock = (ms: number) => gameClock(ms);
 
 // The mission bar (ILI-1170, ILI-1173, quieted in ILI-1179): one strip along the top that
 // answers "where are we and what's next". Phase pips, the objective and the one next thing,
-// the resources, and the clock with pause. What ALPHA is doing lives in the team panel. A
-// minimized or held-back call waits here as a chip.
+// the resources, and the clock with pause. ALPHA and its calls live in the team and satcom
+// panels, bottom right (ILI-1186). Until the team is linked, HQ doesn't know its mission.
 export function MissionBar() {
   const s = useGame((x) => x);
   const { timer, phase, tick, resources, alerted, inbound, elapsedMs: now } = s;
   const noise = Math.round(s.noise);
   const next = nextUp(s);
-  const calls = waitingCalls(s.comms);
-  const call = currentCall(s.comms);
-  const playing = s.minigame?.status === 'active';
   const remaining = timer.remainingMs;
+  const linked = s.link.state === 'linked';
 
   return (
     <section className="panel bar-top" data-testid="mission-timer" data-phase={phase}>
       <div className="mission">
-        <h2>{s.mission.name.replace('Operation ', '').toUpperCase()}</h2>
-        <ol className="pips" data-testid="phase-pips">
-          {phasePips(s).map((p) => (
-            <li key={p.key} data-state={p.state} title={p.label}>
-              <span className="pip">{p.key}</span>
-              <span className="pip-label">{p.label.slice(2)}</span>
-              {p.detail && <span className="pip-detail">{p.detail}</span>}
-            </li>
-          ))}
-        </ol>
+        <h2>{linked ? s.link.codename : 'NO TEAM LINKED'}</h2>
+        {linked && (
+          <ol className="pips" data-testid="phase-pips">
+            {phasePips(s).map((p) => (
+              <li key={p.key} data-state={p.state} title={p.label}>
+                <span className="pip">{p.key}</span>
+                <span className="pip-label">{p.label.slice(2)}</span>
+                {p.detail && <span className="pip-detail">{p.detail}</span>}
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
       <div className="now-next">
         <p className="objective" data-testid="objective">
-          ◆ {objectiveText(s.mission)}
+          ◆ {linked ? objectiveText(s.mission) : 'Find a team in the field to support'}
         </p>
         <p className="lines">
           <span className="next" data-testid="next" data-tone={next.tone}>
@@ -48,7 +46,6 @@ export function MissionBar() {
           </span>
         </p>
       </div>
-      <TeamPanel />
       <span className="break" aria-hidden />
       <div className="stats">
         <p className="resources" data-testid="resources">
@@ -64,12 +61,6 @@ export function MissionBar() {
           </p>
         ))}
       </div>
-      {call && (s.comms.minimized || playing) && (
-        <button className="comms-badge" onClick={() => game.setCommsMinimized(false)} disabled={playing} data-testid="comms-badge">
-          ◂ {call.from} needs a decision
-          {calls.length > 1 && ` (+${calls.length - 1})`}
-        </button>
-      )}
       <RadioLog />
       <div className="timer-row">
         <span className="clock" data-testid="clock" data-warn={remaining <= 60_000 ? 'red' : remaining <= 180_000 ? 'amber' : undefined}>

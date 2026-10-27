@@ -10,10 +10,12 @@ declare global {
   }
 }
 
-// Open the game and close the briefing: the clock starts on Go.
+// Open the game and find the team (ILI-1186): SITREP on satcom, then filter the intel
+// stream for the code name ALPHA texts back. The mission clock starts on the link.
 export async function start(page: Page, query = '') {
   await page.goto(query);
-  await page.getByTestId('go').click();
+  await page.getByTestId('sitrep').click();
+  await page.getByTestId('codename').click();
 }
 
 // Advance mission time directly, so tests don't depend on CI's frame rate.

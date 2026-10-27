@@ -1,12 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, start } from './helpers';
 
-test('a wound shows on the condition line without the panel opening up, then heals', async ({ page }) => {
+test('the team panel shows every operator: heartbeat, status, ammo and meds', async ({ page, isMobile }) => {
+  await start(page);
+  if (isMobile) await page.getByTestId('tab-team').click();
+  await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
+  await expect(page.getByTestId('readout').locator('svg.ecg')).toHaveCount(5);
+  await expect(page.getByTestId('op-medic')).toContainText('MEDS');
+  await expect(page.getByTestId('team-condition')).toContainText('5/5 fit');
+});
+
+test('a wound shows on the operator’s heartbeat and status, then heals', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
-  const panel = page.getByTestId('team-panel');
-  const before = (await panel.boundingBox())!;
-
+  if (isMobile) await page.getByTestId('tab-team').click();
   await page.evaluate(() => {
     const s = window.game.get();
     const operators = s.team.operators.map((o) => (o.id === 'gunner' ? { ...o, health: 50 } : o));
@@ -15,22 +22,11 @@ test('a wound shows on the condition line without the panel opening up, then hea
   await fastForward(page, 200);
   const gunner = page.getByTestId('op-gunner');
   await expect(gunner).toHaveAttribute('data-condition', 'caution');
-  await expect(gunner).toContainText('Okafor CAUTION');
+  await expect(gunner).toContainText('CAUTION');
+  await expect(gunner.locator('svg.ecg')).toHaveAttribute('data-condition', 'caution');
   await expect(page.getByTestId('team-condition')).toContainText('5/5 fit');
-  await expect(page.getByTestId('readout')).toHaveCount(0);
-  expect((await panel.boundingBox())!.height).toBeCloseTo(before.height, 0); // the panel keeps its size
 
   // The medic treats the gunner twice (50 → 85 → 100, 4 s each).
   await fastForward(page, 10_000);
-  await expect(page.getByTestId('team-hurt')).toHaveText('All fine');
-});
-
-test('tapping the team header opens the full readout, and again closes it', async ({ page }) => {
-  await start(page);
-  const head = page.getByTestId('team-panel').getByRole('button', { name: /ALPHA/ });
-  await head.click();
-  await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
-  await expect(page.getByTestId('op-medic')).toContainText('MEDS');
-  await head.click();
-  await expect(page.getByTestId('readout')).toHaveCount(0);
+  await expect(gunner).toHaveAttribute('data-condition', 'fine');
 });

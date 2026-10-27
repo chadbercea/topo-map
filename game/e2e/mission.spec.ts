@@ -26,7 +26,7 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
   await expect(page.getByTestId('budget')).toHaveText('$20,000');
   await wrap.getByRole('button', { name: 'Play again' }).click();
   await expect(wrap).toHaveCount(0);
-  await expect(page.getByTestId('briefing')).toBeVisible();
+  await expect(page.getByTestId('sitrep')).toBeVisible(); // back at the desk, no link
   await expect(page.getByTestId('clock')).toHaveText('4:00');
 });
 

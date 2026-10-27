@@ -14,6 +14,8 @@ import { signalSystem } from './signal';
 import { missionSystem } from './mission';
 import { scriptSystem } from './script';
 import { casualtySystem, supportSystem } from './support';
+import { streamSystem } from './stream';
+import { linkSystem } from './link';
 
 // A system reads the state and returns the next one for a fixed slice of mission time.
 // New systems (movement, comms, ...) slot into SYSTEMS in the order they should run.
@@ -40,12 +42,14 @@ export const readoutSystem: System = (s) => {
 
 export const SYSTEMS: System[] = [timerSystem, noiseSystem, eventSystem, scriptSystem, satelliteSystem, signalSystem, minigameSystem, commsSystem, approachSystem, siteSystem, firefightSystem, casualtySystem, supportSystem, missionSystem, movementSystem, driftSystem, eyesSystem, readoutSystem];
 
-// One fixed tick: advance the clocks, then let every system have its turn.
+// One fixed tick: advance the clocks, then let every system have its turn. On standby only
+// the theater runs (the intel stream and the satcom link); the mission waits for the link.
 export function step(state: GameState, dtMs: number, systems: System[] = SYSTEMS): GameState {
+  if (state.phase === 'standby') return linkSystem(streamSystem({ ...state, tick: state.tick + 1, theaterMs: state.theaterMs + dtMs }));
   if (state.phase !== 'running') return state;
-  let next: GameState = { ...state, tick: state.tick + 1, elapsedMs: state.elapsedMs + dtMs };
+  let next: GameState = { ...state, tick: state.tick + 1, elapsedMs: state.elapsedMs + dtMs, theaterMs: state.theaterMs + dtMs };
   for (const system of systems) next = system(next, dtMs);
-  return next;
+  return streamSystem(next);
 }
 
 export const teamMode = (s: GameState): 'A' | 'B' => (s.elapsedMs < s.team.activeUntilMs ? 'B' : 'A');

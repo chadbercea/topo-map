@@ -11,6 +11,7 @@ export const PATROL_WALK_MS = 30_000; // it's on the move this long before it ge
 export const BLACK_BOX: MissionDef = registerMission({
   id: 'black-box',
   name: 'Operation Black Box',
+  codename: 'BLACK BOX',
   durationMs: 6 * 60 * 1000,
   route: ['G5', 'F4', 'E3', 'D3', 'C2', 'B1'],
 
