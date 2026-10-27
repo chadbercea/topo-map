@@ -24,14 +24,25 @@ const look = (store: Store, square: string, mode: 'photo' | 'burst' | 'video' = 
 };
 
 describe('ORION-3 tasking', () => {
-  it('Send imagery tasks ORION-3 to F4; ALPHA waits on it and does not time out', () => {
+  it('looking at F4 from the map answers ALPHA\'s call about F4; another square leaves it waiting', () => {
+    const elsewhere = atRequest();
+    elsewhere.lookAt('E3');
+    expect(elsewhere.get().satellite.callId).toBeNull();
+    expect(elsewhere.get().comms.messages.find((m) => m.id === REQUEST)?.status).toBe('new');
+    const store = atRequest();
+    store.lookAt('F4');
+    expect(store.get().satellite).toMatchObject({ aim: 'F4', callId: REQUEST });
+    expect(store.get().comms.messages.find((m) => m.id === REQUEST)).toMatchObject({ status: 'read', answer: 'send' });
+  });
+
+  it('Look at it tasks ORION-3 to F4; ALPHA waits on it and does not time out', () => {
     const store = atRequest();
     store.respond(REQUEST, 'send');
     const s = store.get();
     expect(s.satellite).toMatchObject({ state: 'slewing', aim: 'F4', callId: REQUEST });
     // G5 to F4 is one square diagonally.
     expect(s.satellite.arriveMs - s.elapsedMs).toBe(Math.round((SETTLE_MS + Math.SQRT2 * SLEW_MS_PER_SQUARE) / 100) * 100);
-    expect(s.team).toMatchObject({ holdFor: REQUEST, activity: 'Waiting on imagery' });
+    expect(s.team).toMatchObject({ holdFor: REQUEST, activity: 'Waiting on the look' });
     onStation(store);
     store.set(run(store.get(), 30_000)); // HQ takes its time choosing: the call doesn't lapse
     expect(store.get().team.holdFor).toBe(REQUEST);
@@ -68,7 +79,7 @@ describe('ORION-3 tasking', () => {
     expect(slewMs(s, 'E5')).toBe(SETTLE_MS + 2 * SLEW_MS_PER_SQUARE);
   });
 
-  it('while it captures it is busy: no new task, and Send imagery is greyed out', () => {
+  it('while it captures it is busy: no new task, and Look at it is greyed out', () => {
     const store = atRequest();
     look(store, 'G4', 'video');
     expect(store.get().satellite.state).toBe('capturing');
@@ -77,7 +88,7 @@ describe('ORION-3 tasking', () => {
     const send = store.get().comms.messages.find((m) => m.id === REQUEST)!.responses!.find((r) => r.id === 'send')!;
     store.respond(REQUEST, 'send');
     expect(store.get().comms.messages.find((m) => m.id === REQUEST)!.status).toBe('new');
-    expect(send.label).toBe('Send imagery');
+    expect(send.label).toBe('Look at it');
   });
 
   it('cancel stops it where it is, and ALPHA moves on without imagery', () => {

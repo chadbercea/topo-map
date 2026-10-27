@@ -7,10 +7,10 @@ test('intercept: follow their wave with the slider until the message is through'
   await freeze(page);
   await fastForward(page, 50_000);
   await page.getByTestId('alerts').getByRole('button', { name: /SIGNAL C2/ }).click();
-  await page.getByRole('button', { name: 'Intercept' }).click();
+  await page.getByRole('button', { name: 'Listen' }).click();
 
   const panel = page.getByTestId('minigame');
-  await expect(panel).toContainText('SIGNAL INTERCEPT · C2');
+  await expect(panel).toContainText('LISTEN · C2');
   await expect(panel).toContainText('lay your line over theirs');
 
   // Lay the line on theirs with the slider, then let some words through.

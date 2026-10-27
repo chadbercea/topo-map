@@ -67,7 +67,12 @@ export function createStore(initial: GameState = initialState()) {
       if (call?.responses?.some((r) => r.id === 'attack')) return set(respond(state, call.id, 'attack'));
       set({ ...applyEffect(state, 'attack', c.square), openEvent: null });
     },
-    lookAt: (square: string) => set(lookAt(state, square)),
+    // Looking at a square ALPHA is asking about answers its call (ILI-1177).
+    lookAt: (square: string) => {
+      const call = state.comms.messages.find((m) => m.id === state.team.holdFor && m.square === square && m.status === 'new');
+      if (call?.responses?.some((r) => r.id === 'send')) return set(respond(state, call.id, 'send'));
+      set(lookAt(state, square));
+    },
     capture: (mode: CaptureMode) => set(capture(state, mode)),
     cancelLook: () => set(cancelLook(state)),
     closeLook: () => set(closeLook(state)),

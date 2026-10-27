@@ -19,7 +19,7 @@ export function SquareActions() {
       <span className="sq">{selected}</span>
       <span className="note">{seen ? `imagery ${seen}` : 'no imagery'}</span>
       <button disabled={busy} onClick={() => game.lookAt(selected)} data-testid="look-here">
-        Look here · {travel ? `${Math.ceil(travel / 1000)}s` : 'now'} {busy && <small>· ORION-3 busy</small>}
+        Look · {travel ? `${Math.ceil(travel / 1000)}s` : 'now'} {busy && <small>· ORION-3 busy</small>}
       </button>
     </div>
   );

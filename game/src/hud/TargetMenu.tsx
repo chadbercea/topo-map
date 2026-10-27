@@ -6,7 +6,7 @@ const age = (ms: number) => `${Math.floor(ms / 60_000)}:${String(Math.floor((ms 
 
 // What HQ can see of it, in words: strikes aim at this.
 export function eyesLine(e: Eyes | null, now: number) {
-  if (!e) return 'No eyes on it: the sniper and heli can\'t aim. Task ORION-3, or a drone can guess.';
+  if (!e) return 'No eyes on it: the sniper and heli can\'t aim. Look at it first, or a drone can guess.';
   if (e.level === 'live') return 'Live: every fighter is where you see them.';
   if (e.level === 'fresh') return `Fresh look, ${age(now - e.atMs)} old: they should still be there.`;
   if (e.level === 'ghost') return `Look is ${age(now - e.atMs)} old: they may have moved. Shots can miss.`;
@@ -38,7 +38,7 @@ export function TargetMenu({ contactId }: { contactId: string }) {
       </p>
       {c.note && c.status === 'revealed' && <p className="note" data-testid="target-note">{c.note}</p>}
       {c.status === 'revealed' && (
-        <div className="options">
+        <div className="options" aria-label="Strike">
           {WEAPONS.map((w) => (
             <button key={w} disabled={!!weaponBlocked(state, w, c)} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`}>
               <span>{WEAPON[w].name}</span>
@@ -47,7 +47,7 @@ export function TargetMenu({ contactId }: { contactId: string }) {
           ))}
           {ahead && (
             <button onClick={() => game.sendTeam(c.id)} data-testid="send-team">
-              <span>Send {state.team.callsign} in</span>
+              <span>{state.team.callsign} attacks</span>
               <small>{state.team.decisions[c.square] === 'attack' ? 'ordered' : 'surprise attack'}</small>
             </button>
           )}

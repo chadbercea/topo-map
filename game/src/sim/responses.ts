@@ -32,16 +32,16 @@ export type CallNode = {
 // The tree's wording.
 export const TREE: Record<string, CallNode> = {
   unimaged: {
-    text: ({ square }) => `Holding short of ${square}. No imagery on it. Scan it, or tell us to push?`,
+    text: ({ square }) => `Holding short of ${square}. No imagery on it. Look at it first, or do we move in blind?`,
     responses: [
-      { id: 'send', label: 'Send imagery', requires: { capability: 'imagery' }, look: true, reply: 'Standing by for imagery.' },
-      { id: 'blind', label: 'Push through', effect: 'blind', reply: 'Copy, moving in blind.' },
+      { id: 'send', label: 'Look at it', requires: { capability: 'imagery' }, look: true, reply: 'Standing by for the look.' },
+      { id: 'blind', label: 'Move in blind', effect: 'blind', reply: 'Copy, moving in blind.' },
     ],
   },
   contact: {
-    text: ({ square, label }) => `Contact in ${square}, ${label}, on our route. Observe, hit it, or go around?`,
+    text: ({ square, label }) => `Contact in ${square}, ${label}, on our route. Hold and watch, attack, or go around?`,
     responses: [
-      { id: 'observe', label: 'Observe', effect: 'observe', reply: 'Copy, eyes on. Give us a few.', follow: 'contact-observed' },
+      { id: 'observe', label: 'Hold and watch', effect: 'observe', reply: 'Copy, eyes on. Give us a few.', follow: 'contact-observed' },
       { id: 'attack', label: 'Attack', effect: 'attack', reply: 'Moving in hard.' },
       { id: 'avoid', label: 'Go around', effect: 'avoid', reply: 'Going around.' },
     ],
@@ -50,7 +50,7 @@ export const TREE: Record<string, CallNode> = {
     text: ({ square }) => `At the kill site in ${square}. Want us to search it? It'll cost us time.`,
     responses: [
       { id: 'search', label: 'Search it', effect: 'search', reply: 'Searching. Give us fifteen.' },
-      { id: 'pass', label: 'Keep moving', effect: 'pass', reply: 'Moving on.' },
+      { id: 'pass', label: 'Move on', effect: 'pass', reply: 'Moving on.' },
     ],
   },
   // The team running low or combat ineffective (support.ts): one resupply bird covers both.
@@ -58,7 +58,7 @@ export const TREE: Record<string, CallNode> = {
     text: ({ label }) => `${label}. We need a resupply bird.`,
     responses: [
       { id: 'resupply', label: `Send resupply ($${RESUPPLY_COST.toLocaleString('en-US')})`, requires: { budget: RESUPPLY_COST }, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
-      { id: 'push', label: 'Push on', effect: 'pass', reply: 'Understood. Moving with what we have.' },
+      { id: 'push', label: 'Move on without', effect: 'pass', reply: 'Understood. Moving with what we have.' },
     ],
   },
   'contact-observed': {

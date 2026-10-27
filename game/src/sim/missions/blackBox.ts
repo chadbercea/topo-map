@@ -30,7 +30,7 @@ export const BLACK_BOX: MissionDef = registerMission({
       atMs: 50_000,
       id: 'hq-traffic-c2',
       event: { id: 'traffic-c2', kind: 'signal', square: 'C2', title: 'Enemy radio traffic' },
-      radio: 'Picking up enemy radio traffic near C2. Intercept it?',
+      radio: 'Picking up enemy radio traffic near C2. Listen in?',
       alert: true,
     },
   ],
