@@ -1,4 +1,3 @@
-import { waitingCalls } from './comms';
 import { missionDef } from './script';
 import type { GameState } from './state';
 
@@ -22,16 +21,11 @@ export function phasePips(s: GameState): Pip[] {
   return pips;
 }
 
-export type Pressing = { tone: 'call' | 'threat' | 'support' | 'objective'; text: string; atMs?: number };
+export type Pressing = { tone: 'threat' | 'support' | 'objective'; text: string; atMs?: number };
 
-// The single most pressing thing, in this order: a decision waiting, a known threat with
-// an ETA, support inbound, else the objective itself.
+// The single most pressing thing beyond the call card (which speaks for itself): a known
+// threat with an ETA, support inbound, else the objective itself.
 export function nextUp(s: GameState): Pressing {
-  const calls = waitingCalls(s.comms);
-  if (calls.length) {
-    const c = calls.find((m) => m.holds) ?? calls[0];
-    return { tone: 'call', text: `${c.from} needs a decision` };
-  }
   const threat = missionDef(s.script.mission)
     ?.threats?.(s)
     .filter((t) => t.atMs > s.elapsedMs)

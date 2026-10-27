@@ -271,7 +271,7 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .alert, .event-card, .comms, .incoming .dot, .ecg .trace, .minigame { animation: none; }
+  .alert, .event-card, .comms, .incoming .dot, .minigame { animation: none; }
 }
 
 .panel {
@@ -372,6 +372,13 @@ html, body {
 .menu button:hover,
 .menu button:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
 
+/* ORION-3's inset: Phaser draws the view; this is its frame and caption. */
+.sat-inset { position: fixed; z-index: 4; border: 1px solid var(--accent); pointer-events: none; box-shadow: 0 0 0 4px rgba(11, 15, 13, 0.6); }
+.sat-inset .caption { position: absolute; left: 0; right: 0; top: 0; padding: 2px 6px; font-size: 10px; letter-spacing: 0.12em; color: #0b0f0d; background: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sat-inset[data-state='capturing'] { animation: sat-pulse 1s ease-in-out infinite alternate; }
+@keyframes sat-pulse { to { border-color: #f2c14e; } }
+@media (prefers-reduced-motion: reduce) { .sat-inset[data-state='capturing'] { animation: none; } }
+
 /* The briefing: over the frozen map, light enough that the route shows through. */
 .briefing-overlay { background: rgba(11, 15, 13, 0.35); }
 /* Wide screens: off to the right, over the team column, so the route stays in view. */
@@ -441,18 +448,12 @@ html, body {
 
 .rank { width: 10px; height: 14px; fill: none; stroke: var(--accent); stroke-width: 1.4; flex: none; }
 
-.ecg { width: 72px; height: 18px; overflow: hidden; fill: none; stroke-width: 1.6; stroke-linejoin: round; }
-.ecg .trace { animation: ecg 1.2s linear infinite; }
 .op[data-condition='fine'] { --vital: #35d0a5; }
 .op[data-condition='caution'] { --vital: #f2c14e; }
 .op[data-condition='danger'] { --vital: #e5484d; }
 .op[data-condition='down'] { --vital: #4a5a53; }
-.ecg { stroke: var(--vital); }
 .op .status { color: var(--vital); }
-.op[data-condition='caution'] .ecg .trace { animation-duration: 0.85s; }
-.op[data-condition='danger'] .ecg .trace { animation-duration: 0.55s; }
 
-@keyframes ecg { to { transform: translateX(-40px); } }
 
 /* The call card: unmistakably a call that needs an answer. */
 .comms {
@@ -522,8 +523,6 @@ html, body {
 .bar-top .objective { color: #f2c14e; font-size: 11px; }
 .now-next .lines { display: flex; gap: 16px; min-width: 0; }
 .now-next .lines span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.now-next .now { color: var(--ink); flex: none; max-width: 50%; }
-.next[data-tone='call'], .next[data-tone='job'] { color: #f2c14e; }
 .next[data-tone='threat'] { color: #e5484d; }
 .next[data-tone='support'] { color: var(--accent); }
 .bar-top .stats { flex: none; display: grid; gap: 1px; font-size: 11px; min-width: 150px; }
@@ -534,13 +533,13 @@ html, body {
 /* Team column (ILI-1172): one size, rows that react; red edge in a fight. */
 .team[data-fight='true'] { border-color: #e5484d; }
 .team[data-fight='true'] h2 { color: #e5484d; }
-.team .rows { gap: 4px; margin-top: 6px; }
-.op.compact { grid-template-areas: none; display: grid; grid-template-columns: 40px minmax(0, 1fr) 36px 48px; align-items: center; gap: 6px; }
-.op.compact .ecg { width: 40px; height: 14px; }
-.op.compact .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op.compact .bar { height: 5px; }
-.op.compact .status { text-align: right; }
-.team .stats { margin-top: 6px; font-size: 10px; }
+/* The condition line: fit count, team ammo and meds, then who's hurt. */
+.team .condition { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 4px 6px; margin-top: 6px; font-size: 9px; color: var(--dim); }
+.team .condition .fit { color: var(--ink); font-size: 11px; margin-right: 4px; }
+.team .condition .bar { height: 5px; }
+/* One line, so the panel keeps its size however many are hurt. */
+.team .hurt { grid-column: 1 / -1; margin: 0; font-size: 10px; line-height: 14px; height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team .hurt .op { display: inline; color: var(--ink); margin-right: 10px; }
 
 .debug {
   position: fixed;
@@ -576,7 +575,7 @@ html, body {
   .slot-team { max-height: none; overflow: visible; }
 
   .bar-top { flex-wrap: wrap; gap: 2px 10px; padding: 6px 10px; }
-  .bar-top h2, .bar-top .objective, .bar-top .now { display: none; }
+  .bar-top h2, .bar-top .objective { display: none; }
   .now-next { order: 1; flex-basis: 100%; font-size: 11px; }
   .bar-top .stats { order: 2; flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 0 10px; font-size: 10px; }
   .bar-top .noise { min-width: 110px; }
@@ -591,13 +590,9 @@ html, body {
   .team { padding: 6px 10px; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; }
   .team-head { width: auto; gap: 6px; }
   .team .activity { text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .team .rows, .team .readout, .team .stats { grid-column: 1 / -1; }
-  .team .rows { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 4px; }
-  .op.compact { grid-template-columns: 1fr; justify-items: center; gap: 0; }
-  .op.compact .ecg { width: 100%; height: 14px; }
-  .op.compact .bar, .op.compact .status, .team:not([data-open='true']) .stats { display: none; }
-  .op.compact .name { font-size: 9px; max-width: 100%; }
-  .op:not(.compact) { grid-template-columns: 1fr 72px 1.4fr; grid-template-areas: 'who vitals supplies'; }
+  .team .condition, .team .readout { grid-column: 1 / -1; }
+  .team .condition { margin-top: 4px; }
+  .readout .op { grid-template-columns: 1fr 72px 1.4fr; grid-template-areas: 'who vitals supplies'; }
 
   .debug { bottom: auto; top: 40%; }
   /* A mini game is short; on a phone it gets the team strip's room so the board is tappable. */
