@@ -80,3 +80,6 @@ export async function tapAt(page: Page, isMobile: boolean, p: { x: number; y: nu
   if (isMobile) await page.touchscreen.tap(p.x, p.y);
   else await page.mouse.click(p.x, p.y);
 }
+
+// ALPHA's ask arrives as an orange flag at its marker; click it to read the ask and answer (ILI-1200).
+export const openAsk = (page: Page) => page.getByTestId('incoming').click();

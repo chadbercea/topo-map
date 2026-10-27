@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, start } from './helpers';
+import { fastForward, start, openAsk } from './helpers';
 
 test('running low, ALPHA asks for a resupply; the bird flies in and refills them', async ({ page }) => {
   await start(page, '?debug');
@@ -19,6 +19,7 @@ test('running low, ALPHA asks for a resupply; the bird flies in and refills them
     });
   });
   await fastForward(page, 300);
+  await openAsk(page);
   await expect(page.getByTestId('comms-text')).toHaveText('Running low on ammo. We need a resupply bird.');
   await page.getByTestId('responses').getByRole('button', { name: /Send resupply/ }).click();
   await expect(page.getByTestId('inbound-resupply')).toContainText('resupply bird inbound');
@@ -46,6 +47,7 @@ test('combat ineffective: ALPHA asks for a resupply bird, and replacements arriv
     });
   });
   await fastForward(page, 300);
+  await openAsk(page);
   await expect(page.getByTestId('comms-text')).toHaveText('Combat ineffective, 2 down. We need a resupply bird.');
   await page.getByTestId('responses').getByRole('button', { name: /Send resupply/ }).click();
   await expect(page.getByTestId('inbound-resupply')).toContainText('resupply bird inbound');
