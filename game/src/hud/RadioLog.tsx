@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useGame } from '../sim/store';
+import { gameClock } from '../sim/gameTime';
 
-const clock = (ms: number) => {
-  const s = Math.floor(ms / 1000);
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-};
+const clock = (ms: number) => gameClock(ms, Math.floor);
 
 // The radio log (ILI-1171): every message the mission has sent, newest first, for when you
 // want the record. Nothing here interrupts play.

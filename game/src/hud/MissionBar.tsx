@@ -3,13 +3,11 @@ import { satelliteStatus } from '../sim/satellite';
 import { currentCall, waitingCalls } from '../sim/comms';
 import { nextUp, phasePips } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
+import { gameClock, gameSpan } from '../sim/gameTime';
 import { RadioLog } from './RadioLog';
 import { TeamPanel } from './TeamPanel';
 
-export const clock = (ms: number) => {
-  const s = Math.max(0, Math.ceil(ms / 1000));
-  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-};
+export const clock = (ms: number) => gameClock(ms);
 
 // The mission bar (ILI-1170, ILI-1173, quieted in ILI-1179): one strip along the top that
 // answers "where are we and what's next". Phase pips, the objective and the one next thing,
@@ -46,7 +44,7 @@ export function MissionBar() {
         <p className="lines">
           <span className="next" data-testid="next" data-tone={next.tone}>
             Next: {next.text}
-            {next.atMs !== undefined && ` · ${clock(next.atMs - now)}`}
+            {next.atMs !== undefined && ` · ${gameSpan(next.atMs - now)}`}
           </span>
         </p>
       </div>
@@ -62,7 +60,7 @@ export function MissionBar() {
         </p>
         {inbound.map((i) => (
           <p key={i.kind} className="inbound" data-testid={`inbound-${i.kind}`}>
-            resupply bird inbound · {Math.max(0, Math.ceil((i.arrivesMs - now) / 1000))}s
+            resupply bird inbound · {gameSpan(i.arrivesMs - now)}
           </p>
         ))}
       </div>

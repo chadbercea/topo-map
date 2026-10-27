@@ -38,7 +38,7 @@ describe('ordnance', () => {
     store.fire('t', 'sniper');
     store.abortMiniGame();
     store.closeMiniGame();
-    expect(weaponBlocked(store.get(), 'sniper')).toMatch(/^Ready in \d+s$/);
+    expect(weaponBlocked(store.get(), 'sniper')).toMatch(/^Ready in \d+ min$/);
     store.set(run(store.get(), WEAPON.sniper.runMs + WEAPON.sniper.cooldownMs));
     expect(weaponBlocked(store.get(), 'sniper')).toBeNull();
   });

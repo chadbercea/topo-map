@@ -2,6 +2,7 @@ import { parseSquare, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import { reveal } from './contacts';
 import { awarenessOf, record, snapshot, type Awareness, type CaptureMode } from './imagery';
+import { gameSpan } from './gameTime';
 
 export type { CaptureMode };
 import type { GameState } from './state';
@@ -103,7 +104,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     map: { ...s.map, selected: null },
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
-  return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Moving to ${square}. On station in ${Math.ceil(ms / 1000)}s.` : `On station over ${square}.`));
+  return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Moving to ${square}. On station in ${gameSpan(ms)}.` : `On station over ${square}.`));
 }
 
 // On station: take the picture.
@@ -169,7 +170,7 @@ export const satelliteSystem: System = (s) => {
 // One line for the mission bar.
 export function satelliteStatus(s: GameState): string {
   const sat = s.satellite;
-  const secs = (ms: number) => `${Math.max(0, Math.ceil(ms / 1000))}s`;
+  const secs = gameSpan;
   switch (sat.state) {
     case 'idle':
       return `ORION-3 over ${sat.aim}`;

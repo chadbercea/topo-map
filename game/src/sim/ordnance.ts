@@ -1,6 +1,7 @@
 import type { GameState } from './state';
 import type { Contact } from './contacts';
 import { eyesOn } from './imagery';
+import { gameSpan } from './gameTime';
 
 // Ordnance for strikes (GDD, reworked in ILI-1168): the drone strike is one use, a 2x2
 // blast, and can fire blind; the sniper keeps working but slowly, one round at a time, at
@@ -33,7 +34,7 @@ export function weaponBlocked(s: GameState, w: Weapon, c?: Contact): string | nu
   const o = s.ordnance[w];
   if (!o.unlocked) return 'Unlocks with upgrades';
   if (o.uses === 0) return 'Used';
-  if (s.elapsedMs < o.readyAtMs) return `Ready in ${Math.ceil((o.readyAtMs - s.elapsedMs) / 1000)}s`;
+  if (s.elapsedMs < o.readyAtMs) return `Ready in ${gameSpan(o.readyAtMs - s.elapsedMs)}`;
   if (s.minigame?.status === 'active') return 'Busy';
   if (c && NEEDS_EYES[w]) {
     const eyes = eyesOn(s, c);

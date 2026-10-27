@@ -17,6 +17,7 @@ test('tapping a grid square selects it, tapping again clears it', async ({ page,
 });
 
 test('the camera follows ALPHA where the grid runs off screen, and stays put where it fits', async ({ page, isMobile }) => {
+  test.setTimeout(60_000); // the walk is thousands of ticks; a loaded CI runner took 31 s on desktop
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
