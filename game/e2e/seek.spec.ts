@@ -23,20 +23,22 @@ test('the target menu lists every weapon with its state, and Send ALPHA in', asy
   await expect(page.getByTestId('fire-heli')).toBeDisabled();
   await expect(page.getByTestId('fire-heli')).toContainText('Unlocks with upgrades');
   await expect(page.getByTestId('send-team')).toBeVisible();
+  await expect(page.getByTestId('eyes')).toContainText('Fresh look');
 });
 
-test('sniper: the square becomes a board; a shot on a fighter is a kill', async ({ page, isMobile }) => {
+test('sniper: the square opens with the fighters ORION-3 saw; a shot on one is a kill', async ({ page, isMobile }) => {
   await targetE3(page);
   await page.getByTestId('fire-sniper').click();
   const panel = page.getByTestId('minigame');
   await expect(panel).toContainText('SNIPER · E3');
+  await expect(page.getByTestId('strike-eyes')).toHaveAttribute('data-eyes', 'fresh');
   await expect(panel).toContainText('8 rounds left');
   await tapAt(page, isMobile, await e3Cell(page, 5)); // a fighter is in cell 5
   await expect(page.getByTestId('minigame-progress')).toHaveText('1 down');
   await expect(panel).toContainText('7 rounds left');
 });
 
-test('drone then sniper: the blast takes four of the checkpoint, the sniper finishes it', async ({ page, isMobile }) => {
+test('drone, a fresh look, then the sniper finishes it', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a dozen real taps, and CI taps slowly
   await targetE3(page);
   await page.getByTestId('fire-drone').click();
@@ -46,10 +48,12 @@ test('drone then sniper: the blast takes four of the checkpoint, the sniper fini
   await expect(page.getByTestId('resources')).toContainText('$6,000'); // confirmed kills pay
   await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
 
-  // Seen now, so no alert: open it again from its marker in E3's corner.
+  // The survivor ran for cover: look again to see where, then open it from its marker.
+  await photo(page, 'E3');
+  const cell = await page.evaluate(() => window.game.get().imagery.E3.seen[0].units[0]);
   await tapAt(page, isMobile, await squarePoint(page, 4, 2, 0.25, -0.25));
   await page.getByTestId('fire-sniper').click();
-  await tapAt(page, isMobile, await e3Cell(page, 1)); // the last fighter
+  await tapAt(page, isMobile, await e3Cell(page, cell)); // the last fighter, where the look shows it
   await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'won');
   await expect(page.getByTestId('minigame-result')).toContainText('Target destroyed.');
   await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();

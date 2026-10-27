@@ -32,7 +32,7 @@ describe('sound cues', () => {
 
   it('a sniper shot cracks, a kill thumps, a drone booms', () => {
     const s0 = walking();
-    const withContact = { ...s0, contacts: [{ ...makeContact('t', 'E3', 'x', 1, [5]), status: 'revealed' as const }] };
+    const withContact = { ...s0, contacts: [{ ...makeContact('t', 'E3', 'x', 1, [5]), status: 'revealed' as const, painted: true }] };
     const sniper = createStore(withContact);
     sniper.fire('t', 'sniper');
     const a = sniper.get();
@@ -40,7 +40,7 @@ describe('sound cues', () => {
     expect(cues(a, sniper.get())).toEqual(['shot']);
     sniper.set(run(sniper.get(), 1_300));
     const b = sniper.get();
-    sniper.tapMiniGame('E3', 5);
+    sniper.tapMiniGame('E3', b.contacts[0].units[0]); // the miss sent it to cover: aim where it is now
     expect(cues(b, sniper.get())).toContain('hit');
     const drone = createStore(withContact);
     drone.fire('t', 'drone');

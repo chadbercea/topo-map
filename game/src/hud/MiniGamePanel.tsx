@@ -1,4 +1,17 @@
 import { MINIGAMES, timeLeft } from '../sim/minigame';
+import type { Weapon } from '../sim/ordnance';
+
+const AIM: Record<Weapon, string> = {
+  sniper: 'Tap a fighter you can see. One round, one fighter.',
+  drone: 'Tap where to put the blast: it hits a 2×2 block.',
+  heli: 'Tap a row to strafe it end to end.',
+};
+const EYES = {
+  live: 'Live: they are where you see them.',
+  fresh: 'Fresh look: they should still be there.',
+  ghost: 'Old look: they may have moved.',
+  stale: 'Stale look: you are guessing.',
+} as const;
 import { WEAPON } from '../sim/ordnance';
 import { SignalControls } from './SignalControls';
 import { game, useGame } from '../sim/store';
@@ -18,7 +31,12 @@ export function MiniGamePanel() {
       <h2>{title}</h2>
       {active ? (
         <>
-          <p className="instructions">{def.instructions}</p>
+          <p className="instructions">{seek ? AIM[m.weapon!] : def.instructions}</p>
+          {seek && (
+            <p className="eyes" data-testid="strike-eyes" data-eyes={m.eyes ?? 'none'}>
+              {m.eyes ? EYES[m.eyes] : 'No eyes: a blind strike. Kills won\'t be confirmed or paid.'}
+            </p>
+          )}
           <div className="countdown">
             <span className="bar" role="timer" aria-label="Time left">
               <span style={{ width: `${(left / m.durationMs) * 100}%` }} />
@@ -30,7 +48,6 @@ export function MiniGamePanel() {
           ) : (
             <p>
               <span data-testid="minigame-progress">{m.hits} down</span> · {m.roundsLeft} round{m.roundsLeft === 1 ? '' : 's'} left
-              {m.weapon === 'drone' ? ' · 2×2 blast' : ''}
             </p>
           )}
           <button onClick={game.abortMiniGame}>Abort</button>

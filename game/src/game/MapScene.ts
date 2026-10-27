@@ -10,7 +10,7 @@ import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
 import { satellitePoint } from '../sim/satellite';
-import { freshness, groupOrigin } from '../sim/imagery';
+import { eyesOn, freshness, groupOrigin } from '../sim/imagery';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
@@ -154,8 +154,8 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
-  // Seek and destroy: the target square as a 4x4 board. Misses ring, kills cross out in red,
-  // a fighter the team already spotted shows amber.
+  // Strike: the target square with the fighters HQ can see in it. Live eyes follow them;
+  // an older look shows where they were, fading with its age. Misses ring, kills cross out.
   private drawBoard(g: Phaser.GameObjects.Graphics, m: NonNullable<ReturnType<typeof game.get>['minigame']>) {
     const sq = parseSquare(m.square)!;
     const x0 = sq.col * CELL;
@@ -171,9 +171,14 @@ export class MapScene extends Phaser.Scene {
     }
     g.lineStyle(2 * px, 0xe5484d, 0.95).strokeRect(x0, y0, CELL, CELL);
     const centre = (i: number) => ({ x: x0 + (i % BOARD + 0.5) * cell, y: y0 + (Math.floor(i / BOARD) + 0.5) * cell });
-    for (const i of m.spotted ?? []) {
+    const c = game.get().contacts.find((x) => x.id === m.contactId);
+    const live = m.eyes === 'live' && c ? (eyesOn(game.get(), c)?.units ?? []) : null;
+    const alpha = m.eyes === 'live' || m.eyes === 'fresh' ? 1 : m.eyes === 'ghost' ? 0.45 : 0.2;
+    for (const i of live ?? m.spotted ?? []) {
       const p = centre(i);
-      g.lineStyle(2 * px, 0xf2c14e, 0.9).strokeCircle(p.x, p.y, cell * 0.3);
+      g.fillStyle(0x0b0f0d, 0.8 * alpha).fillCircle(p.x, p.y, cell * 0.2);
+      g.fillStyle(0xe5484d, alpha).fillCircle(p.x, p.y, cell * 0.14);
+      if (m.eyes !== 'live') g.lineStyle(1 * px, 0xe5484d, 0.5 * alpha).strokeCircle(p.x, p.y, cell * 0.32);
     }
     for (const shot of m.shots ?? []) {
       const p = centre(shot.cell);
@@ -193,7 +198,8 @@ export class MapScene extends Phaser.Scene {
   // show who was moving, and where to.
   private drawIntel() {
     const g = this.intelGfx.clear();
-    const { imagery, contacts, elapsedMs: now } = game.get();
+    const { imagery, contacts, elapsedMs: now, minigame } = game.get();
+    const board = minigame?.kind === 'seekDestroy' && minigame.status === 'active' ? minigame.contactId : null;
     const px = DPR / this.zoom;
     const cell = CELL / BOARD;
     for (const snap of Object.values(imagery)) {
@@ -201,10 +207,10 @@ export class MapScene extends Phaser.Scene {
       const alpha = age === 'live' || age === 'fresh' ? 1 : age === 'ghost' ? 0.45 : 0.18;
       for (const seen of snap.seen) {
         const c = contacts.find((x) => x.id === seen.contactId);
-        if (!c || !c.units.length) continue;
+        if (!c || c.status === 'cleared' || c.id === board) continue; // a strike draws its own
         // Live looks follow them; anything else shows where they were.
         const o = snap.live ? groupOrigin(c, now) : seen;
-        const units = snap.live ? c.units : seen.units.filter((u) => c.units.includes(u));
+        const units = snap.live ? c.units : seen.units;
         let cx = 0;
         let cy = 0;
         for (const u of units) {

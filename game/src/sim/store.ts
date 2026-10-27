@@ -56,7 +56,10 @@ export function createStore(initial: GameState = initialState()) {
     sendIntel: (type: IntelType) => set(sendIntel(state, type)),
     boostIntel: (type: IntelType, amount?: number) => set(boostIntel(state, type, amount)),
     tapMiniGame: (square: string, cell?: number) => state.phase === 'running' && set(tapMiniGame(state, square, cell)),
-    fire: (contactId: string, weapon: Weapon) => !weaponBlocked(state, weapon) && set(startSeek(state, contactId, weapon)),
+    fire: (contactId: string, weapon: Weapon) => {
+      const c = state.contacts.find((x) => x.id === contactId);
+      if (c && !weaponBlocked(state, weapon, c)) set(startSeek(state, contactId, weapon));
+    },
     // Send ALPHA at a found contact: answers its call if it's waiting on one, else decides ahead.
     sendTeam: (contactId: string) => {
       const c = state.contacts.find((x) => x.id === contactId);
