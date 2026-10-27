@@ -5,12 +5,12 @@ test('panels leave a clear space between them (where a strike closes in)', async
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 'x', kind: 'contact', square: 'A1', title: 'Test' }));
-  await expect(page.getByTestId('alerts')).toBeVisible();
+  await expect(page.getByTestId('new-event')).toBeVisible();
   await page.waitForTimeout(300); // let the map area refit
   const map = (await page.getByTestId('map-area').boundingBox())!;
   expect(map.width).toBeGreaterThan(200);
   expect(map.height).toBeGreaterThan(150);
-  for (const id of ['mission-timer', 'team-panel', 'satcom', 'intel-stream', 'alerts']) {
+  for (const id of ['mission-timer', 'team-panel', 'satcom', 'intel-stream']) {
     const p = await page.getByTestId(id).boundingBox();
     if (!p) continue; // on a phone the dock shows one of stream, team and satcom at a time
     const overlaps = p.x < map.x + map.width && p.x + p.width > map.x && p.y < map.y + map.height && p.y + p.height > map.y;

@@ -9,7 +9,14 @@ export type SceneStatus = { width: number; height: number; renderer: string; poi
 export const EV = {
   sceneStatus: 'scene-status',
   mapRect: 'map-rect',
+  camera: 'camera', // the map camera moved or zoomed
 } as const;
+
+// World to screen (CSS px) for the map's camera, set by the scene, so a panel can sit next
+// to a grid square (ILI-1189: an event's card opens beside its square).
+let projector: ((x: number, y: number) => { x: number; y: number }) | null = null;
+export const setProjector = (p: typeof projector) => (projector = p);
+export const toScreen = (x: number, y: number) => projector?.(x, y) ?? null;
 
 // The part of the screen the map gets, between the HUD panels, in CSS px. cover*: the open
 // screen the grid covers, below the mission bar, right of a docked intel stream and above the

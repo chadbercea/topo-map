@@ -32,7 +32,7 @@ test('select a square, task ORION-3 there, take a burst: the look lands on the m
   await expect(inset).toHaveAttribute('data-state', 'capturing');
   await fastForward(page, 6_100);
   await expect(page.getByTestId('satellite-result')).toHaveText('Burst: 5 fighters, unaware. Downlinked to ALPHA.');
-  await expect(page.getByTestId('alerts')).toContainText('E3'); // the checkpoint is found
+  await expect(page.getByTestId('blockers')).toContainText('E3'); // the checkpoint is found
   await panel.getByRole('button', { name: 'Close' }).click();
   await expect(panel).toHaveCount(0);
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');

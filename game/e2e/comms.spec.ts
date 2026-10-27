@@ -48,7 +48,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click();
-  await expect(page.getByTestId('alerts')).toContainText('CONTACT E3');
+  await expect(page.getByTestId('blockers')).toContainText('CONTACT E3');
 
   // Now it holds short of the contact.
   await page.evaluate(() => {

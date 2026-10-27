@@ -3,6 +3,8 @@ import { blockers, nextUp, phasePips, winChecks } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import { groundInView, weather } from '../sim/conditions';
 import { gameClock, gameSpan, zulu } from '../sim/gameTime';
+import { liveAlerts } from '../sim/comms';
+import { LABEL } from './EventCard';
 
 export const clock = (ms: number) => gameClock(ms);
 
@@ -17,6 +19,11 @@ export function MissionBar() {
   const linked = s.link.state === 'linked';
   const next = nextUp(s);
   const blocks = blockers(s);
+  // New on the map (ILI-1189): each event nobody has opened yet, at the front of the
+  // blockers; tapping one opens its card beside its square. HQ's news the map can't show
+  // flashes here for a moment too (it stays in the intel stream).
+  const fresh = s.events.filter((e) => e.status === 'new');
+  const news = liveAlerts(s.comms, now);
   const wx = weather(s);
   const area = groundInView(s);
   const remaining = timer.remainingMs;
@@ -59,6 +66,18 @@ export function MissionBar() {
           {next.atMs !== undefined && ` · ${gameSpan(next.atMs - now)}`}
         </p>
         <ul className="blockers" data-testid="blockers" aria-label="Blockers">
+          {fresh.map((e) => (
+            <li key={e.id} className="event" data-kind={e.kind}>
+              <button onClick={() => game.openEvent(e.id)} data-testid="new-event">
+                {LABEL[e.kind]} {e.square} · {e.title}
+              </button>
+            </li>
+          ))}
+          {news.map((m) => (
+            <li key={m.id} className="news" data-tone="threat" data-testid="banner">
+              {m.from}: {m.text}
+            </li>
+          ))}
           {blocks.length ? (
             blocks.slice(0, 3).map((b) => (
               <li key={b.text} data-tone={b.tone}>

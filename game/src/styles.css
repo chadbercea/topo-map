@@ -43,10 +43,9 @@ html, body {
      rest. Along the bottom, what needs an answer on the map and the square actions, then
      the team panel and satcom in the bottom-right corner. */
   grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(0, 340px) minmax(0, 360px);
-  grid-template-rows: auto minmax(36px, auto) minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
     'bar bar bar bar'
-    'stream alerts alerts alerts'
     'stream map map map'
     'stream band team satcom';
 }
@@ -62,31 +61,18 @@ html, body {
 .band-cards { display: grid; gap: 6px; justify-items: center; align-content: end; min-width: 0; }
 .band-cards > * { width: min(420px, 100%); }
 
-/* Alerts get their own row above the map. */
-.alerts {
-  grid-area: alerts;
-  align-self: start;
-  justify-self: center;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  max-width: 100%;
-}
-
-.alert {
-  font: inherit;
-  font-size: 12px;
-  color: var(--ink);
-  cursor: pointer;
-  min-height: 36px;
-  animation: alert-in 160ms ease-out;
-}
-
-.alert b, .event-card h2 { color: var(--accent); }
-.alert[data-kind='contact'] { border-color: #e5484d; }
-.alert[data-kind='contact'] b, .event-card[data-kind='contact'] h2 { color: #e5484d; }
-.alert[data-kind='request'] b, .event-card[data-kind='request'] h2 { color: #f2c14e; }
+.event-card h2 { color: var(--accent); }
+.event-card[data-kind='contact'] h2 { color: #e5484d; }
+.event-card[data-kind='request'] h2 { color: #f2c14e; }
+/* Beside its square on a wide screen (ILI-1189), edged in the event's colour on the side
+   that faces the square. */
+.event-card[data-anchored='true'] { z-index: 5; background: var(--bg); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.event-card[data-anchored='true'][data-side='right'] { border-left: 3px solid var(--kind, var(--accent)); }
+.event-card[data-anchored='true'][data-side='left'] { border-right: 3px solid var(--kind, var(--accent)); }
+.event-card[data-kind='contact'] { --kind: #e5484d; }
+.event-card[data-kind='request'] { --kind: #f2c14e; }
+.event-card[data-kind='signal'] { --kind: #8fb8ff; }
+.event-card[data-kind='site'] { --kind: #b8c4bf; }
 
 .event-card {
   display: grid;
@@ -96,8 +82,7 @@ html, body {
 
 .event-card .title { color: var(--ink); font-size: 14px; }
 .target-menu { display: grid; gap: 6px; }
-.alert[data-kind='signal'] { border-color: #8fb8ff; }
-.alert[data-kind='signal'] b, .event-card[data-kind='signal'] h2 { color: #8fb8ff; }
+.event-card[data-kind='signal'] h2 { color: #8fb8ff; }
 .event-card .intercept {
   font: inherit; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
   color: #0b0f0d; background: #8fb8ff; border: 1px solid #8fb8ff; min-height: 40px; padding: 0 16px; cursor: pointer; justify-self: start;
@@ -277,7 +262,7 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .alert, .event-card, .comms, .incoming .dot, .ecg .trace, .minigame { animation: none; }
+  .event-card, .comms, .incoming .dot, .ecg .trace, .minigame { animation: none; }
 }
 
 .panel {
@@ -313,8 +298,15 @@ html, body {
 .bar-top[data-phase='paused'] .clock { color: var(--dim); }
 .clock[data-warn='amber'] { color: #f2c14e; }
 .clock[data-warn='red'] { color: #e5484d; }
-.banner { font-size: 12px; color: var(--ink); border-color: #e5484d; max-width: 100%; animation: alert-in 160ms ease-out; }
-.banner b { color: #e5484d; letter-spacing: 0.08em; margin-right: 4px; }
+/* New on the map, in the header's blockers (ILI-1189): tap to open its card by its square. */
+.bar-top .blockers li.event { padding: 0; border-color: var(--kind, #e5484d); animation: alert-in 160ms ease-out; }
+.bar-top .blockers li.event[data-kind='contact'] { --kind: #e5484d; }
+.bar-top .blockers li.event[data-kind='request'] { --kind: #f2c14e; }
+.bar-top .blockers li.event[data-kind='signal'] { --kind: #8fb8ff; }
+.bar-top .blockers li.event[data-kind='site'] { --kind: #b8c4bf; }
+.bar-top .blockers li.event button { font: inherit; color: var(--kind); background: none; border: none; padding: 0 6px; min-height: 18px; cursor: pointer; letter-spacing: 0.04em; }
+.bar-top .blockers li.event button::before { content: '● '; }
+.bar-top .blockers li.news { animation: alert-in 160ms ease-out; }
 .target-menu .note { color: #f2c14e; font-size: 12px; }
 
 .pause {
@@ -615,15 +607,13 @@ html, body {
 /* Phone portrait: the bar (ALPHA's status on its second line), the open map, a tools row
    (square actions), and the band for whatever needs an answer. */
 @media (max-aspect-ratio: 1/1) {
-  .alert { font-size: 11px; min-height: 30px; padding: 4px 8px; }
   .hud {
     gap: 6px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
     grid-template-areas:
       'bar'
       'assets'
-      'alerts'
       'map'
       'tools'
       'band'
@@ -638,7 +628,6 @@ html, body {
   .dock-tabs button { flex: 1; font: inherit; font-size: 10px; letter-spacing: 0.12em; color: var(--dim); background: var(--panel); border: 1px solid var(--line); min-height: 32px; cursor: pointer; }
   .dock-tabs button[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); }
   .dock-tabs .badge { margin-left: 6px; color: #0b0f0d; background: #f2c14e; padding: 0 5px; }
-  .alerts:empty { display: none; }
   .slot-band { display: contents; }
   .band-cards { grid-area: band; }
   .band-cards:empty { display: none; }

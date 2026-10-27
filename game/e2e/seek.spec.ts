@@ -8,7 +8,7 @@ async function targetE3(page: Page) {
   await freeze(page);
   await page.evaluate(() => window.game.respond(window.game.get().team.holdFor!, 'blind'));
   await photo(page, 'E3');
-  await page.getByTestId('alerts').getByRole('button', { name: /E3/ }).click();
+  await page.getByTestId('new-event').filter({ hasText: /E3/ }).click();
   await expect(page.getByTestId('event-card')).toContainText('A fortified checkpoint');
   await expect(page.getByTestId('target-menu')).toBeVisible();
 }
@@ -57,7 +57,7 @@ test('drone, a fresh look, then the sniper finishes it', async ({ page, isMobile
   await expect(page.getByTestId('minigame')).toHaveAttribute('data-status', 'won');
   await expect(page.getByTestId('minigame-result')).toContainText('Target destroyed.');
   await page.getByTestId('minigame').getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByTestId('alerts')).toContainText('KILL SITE E3'); // ALPHA can search it
+  await expect(page.getByTestId('blockers')).toContainText('KILL SITE E3'); // ALPHA can search it
 });
 
 test('a drone strike is loud: the noise meter jumps', async ({ page, isMobile }) => {

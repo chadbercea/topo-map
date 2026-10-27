@@ -1,30 +1,41 @@
 import { expect, test } from '@playwright/test';
 import { squarePoint, start, tapAt } from './helpers';
 
-test('a new event flags an alert and a marker; tapping the marker opens its card', async ({ page, isMobile }) => {
+test('a new event flags in the header and on its square; tapping the marker opens its card beside it', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'G2', title: 'Test contact' }));
+  await expect(page.getByTestId('alerts')).toHaveCount(0); // no strip under the header any more
 
-  const alerts = page.getByTestId('alerts');
-  await expect(alerts).toContainText('CONTACT G2 · Test contact');
+  const flag = page.getByTestId('new-event');
+  await expect(flag).toContainText('CONTACT G2 · Test contact');
 
-  // Marker sits in the square's top-right quarter (G2 = col 6, row 1), near ALPHA so it's on
-  // screen on a phone too.
+  // Marker sits in the square's top-right quarter (G2 = col 6, row 1).
   await tapAt(page, isMobile, await squarePoint(page, 6, 1, 0.25, -0.25));
   const card = page.getByTestId('event-card');
   await expect(card).toContainText('Test contact');
-  await expect(alerts).toHaveCount(0); // seen, so no longer flagged
+  await expect(flag).toHaveCount(0); // seen, so no longer flagged
   await expect(page.getByTestId('selected-square')).toHaveText('—'); // the marker took the tap
+
+  if (!isMobile) {
+    // Beside its square: the card's near edge is within a square's width of G2.
+    await expect(card).toHaveAttribute('data-anchored', 'true');
+    const box = (await card.boundingBox())!;
+    const g2 = await squarePoint(page, 6, 1);
+    const side = await card.getAttribute('data-side');
+    const near = side === 'left' ? box.x + box.width : box.x; // the edge that faces the square
+    expect(Math.abs(near - g2.x)).toBeLessThan(140);
+    expect(box.y).toBeLessThan(g2.y + 120);
+  }
 
   await card.getByRole('button', { name: 'Close' }).click();
   await expect(card).toHaveCount(0);
 });
 
-test('tapping an alert opens the same card', async ({ page }) => {
+test('tapping the header flag opens the same card', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 'r', kind: 'request', square: 'F2', title: 'Need imagery' }));
-  await page.getByTestId('alerts').getByRole('button').click();
+  await page.getByTestId('new-event').click();
   await expect(page.getByTestId('event-card')).toContainText('REQUEST · F2');
 });
