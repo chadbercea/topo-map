@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { start } from './helpers';
 
 test('analysts work intel, and finished intel can be sent to the team as a buff', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   const panel = page.getByTestId('intel-panel');
   await panel.getByRole('button').first().click(); // intel is a tab; open its drawer

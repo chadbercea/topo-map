@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { boardCell, freeze, photo, squarePoint, tapAt } from './helpers';
+import { boardCell, freeze, photo, squarePoint, start, tapAt } from './helpers';
 
 // Image E3 so the checkpoint is found, then open its target menu.
 async function targetE3(page: Page) {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
   await page.evaluate(() => window.game.respond(window.game.get().team.holdFor!, 'blind'));

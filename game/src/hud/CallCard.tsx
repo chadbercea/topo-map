@@ -7,8 +7,8 @@ import { clock } from './MissionBar';
 
 // The call card (ILI-1172): decisions only, in their own card at the bottom, apart from the
 // team panel. Several waiting calls page as "1 of N". Minimize sends it to a chip on the
-// mission bar. There's no Dismiss: ignoring a call is letting it run out, and the card
-// shows that clock. A call never covers a mini game; it waits on the bar until it's over.
+// mission bar. There's no Dismiss: ALPHA waits for an answer (only the client's offer runs
+// out, and the card shows that clock). A call never covers a mini game; it waits on the bar.
 export function CallCard() {
   const s = useGame((x) => x);
   const [focus, setFocus] = useState<string | null>(null);

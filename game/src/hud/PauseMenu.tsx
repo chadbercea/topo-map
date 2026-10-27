@@ -28,7 +28,7 @@ export function PauseMenu() {
 
   useEffect(() => first.current?.focus(), [phase]);
 
-  if (phase === 'running' || phase === 'ended') return null; // the wrap-up covers the end
+  if (phase !== 'paused' && phase !== 'exited') return null; // the briefing and the wrap-up have their own
 
   return (
     <div className="overlay" data-testid="pause-menu" data-phase={phase}>

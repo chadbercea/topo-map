@@ -1,3 +1,4 @@
+import { Briefing } from './Briefing';
 import { DebugPanel } from './DebugPanel';
 import { EventAlerts, EventCard } from './EventAlerts';
 import { game, useGame } from '../sim/store';
@@ -50,6 +51,7 @@ export function Hud() {
         </div>
       </div>
       {debug && <DebugPanel />}
+      <Briefing />
       <PauseMenu />
       <WrapUp />
     </div>

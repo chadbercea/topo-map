@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { start } from './helpers';
 
 test('panels sit around the map, never on it', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 'x', kind: 'contact', square: 'A1', title: 'Test' }));
   await expect(page.getByTestId('alerts')).toBeVisible();
@@ -18,13 +19,13 @@ test('panels sit around the map, never on it', async ({ page }) => {
 });
 
 test('the team panel shows what the team is doing', async ({ page }) => {
-  await page.goto('');
+  await start(page);
   await expect(page.getByTestId('team-panel')).toContainText('ALPHA');
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
 
 test('intel is a tab that opens its drawer on tap', async ({ page }) => {
-  await page.goto('');
+  await start(page);
   const panel = page.getByTestId('intel-panel');
   await expect(panel.getByText('Imagery')).toBeHidden();
   await panel.getByRole('button').click();

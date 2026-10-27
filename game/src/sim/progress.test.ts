@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { HOLD_TIMEOUT_MS } from './comms';
 import { PATROL_MOVES_MS } from './missions/blackBox';
 import { callDeadline, nextUp, phasePips } from './progress';
 import { initialState } from './state';
@@ -16,11 +15,11 @@ describe('mission progression', () => {
     expect(phasePips({ ...s, mission: { ...s.mission, phase: 'complete' } }).every((p) => p.state === 'done')).toBe(true);
   });
 
-  it('a decision waiting comes first, with the hold timing out', () => {
+  it('a decision waiting comes first, with no countdown: ALPHA waits', () => {
     const s = run(initialState(), 500); // ALPHA holds short of F4
     const hold = s.comms.messages.find((m) => m.id === s.team.holdFor)!;
-    expect(nextUp(s)).toMatchObject({ tone: 'call', text: 'ALPHA needs a decision', atMs: hold.atMs + HOLD_TIMEOUT_MS });
-    expect(callDeadline(s, hold)).toBe(hold.atMs + HOLD_TIMEOUT_MS);
+    expect(nextUp(s)).toEqual({ tone: 'call', text: 'ALPHA needs a decision', atMs: undefined });
+    expect(callDeadline(s, hold)).toBeNull();
   });
 
   it('the patrol shows an ETA only once someone has found it', () => {

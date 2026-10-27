@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, squarePoint, tapAt, untilOnStation } from './helpers';
+import { fastForward, freeze, squarePoint, start, tapAt, untilOnStation } from './helpers';
 
 test('select a square, task ORION-3 there, take a burst: the look lands on the map', async ({ page, isMobile }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
@@ -30,7 +30,7 @@ test('select a square, task ORION-3 there, take a burst: the look lands on the m
 });
 
 test('ALPHA asks for imagery: Send imagery, then a photo on station lets it move', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
   await page.getByTestId('responses').getByRole('button', { name: 'Send imagery' }).click();
@@ -43,7 +43,7 @@ test('ALPHA asks for imagery: Send imagery, then a photo on station lets it move
 });
 
 test('Cancel calls it off while it moves', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await page.evaluate(() => window.game.lookAt('A1'));

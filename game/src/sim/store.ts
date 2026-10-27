@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { initialState, type GameState, type Settings } from './state';
+import { briefing, initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { confirm, dismiss, respond } from './comms';
 import { boostIntel, sendIntel, type IntelType } from './intel';
@@ -32,11 +32,13 @@ export function createStore(initial: GameState = initialState()) {
     tick: (dtMs: number) => set(step(state, dtMs)),
     pause: () => state.phase === 'running' && set({ ...state, phase: 'paused' }),
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
-    // No saves in the MVP: retry and restart both start the mission over.
-    restart: () => set(initialState(state.settings, state.timer.totalMs)),
+    // Go: the briefing closes and the clock starts.
+    go: () => state.phase === 'briefing' && set({ ...state, phase: 'running' }),
+    // No saves in the MVP: retry and restart both start the mission over, from the briefing.
+    restart: () => set(briefing(state.settings, state.timer.totalMs)),
     // Tuning: start over with a different mission length (1 to 30 minutes).
     setMissionLength: (minutes: number) =>
-      set(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000))),
+      set(briefing(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000))),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
     // Tapping the selected square again clears it.
     selectSquare: (id: string | null) =>
@@ -87,7 +89,7 @@ export function createStore(initial: GameState = initialState()) {
 
 export type Store = ReturnType<typeof createStore>;
 
-export const game = createStore();
+export const game = createStore(briefing());
 
 // Select a primitive or an existing object; a selector that builds a new object every
 // call would re-render forever.

@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze } from './helpers';
+import { fastForward, freeze, start } from './helpers';
 
 test('intercept: follow their wave with the slider until the message is through', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 50_000);
@@ -36,7 +36,7 @@ test('intercept: follow their wave with the slider until the message is through'
 });
 
 test('jam instead: the traffic is gone, and HQ says what it costs', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 50_000);
   await page.getByTestId('alerts').getByRole('button', { name: /SIGNAL C2/ }).click();

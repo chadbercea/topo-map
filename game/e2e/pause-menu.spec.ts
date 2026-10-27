@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { fastForward } from './helpers';
+import { fastForward, start } from './helpers';
 
 const tick = async (page: Page) => Number(await page.getByTestId('tick').textContent());
 const menu = (page: Page) => page.getByTestId('pause-menu');
@@ -9,19 +9,31 @@ const press = async (page: Page, name: string, isMobile: boolean) => {
   else await button.click();
 };
 
-test('restart starts the mission over from 06:00', async ({ page, isMobile }) => {
-  await page.goto('?debug');
+test('the mission opens on the briefing with the clock stopped; Go starts it', async ({ page, isMobile }) => {
+  await page.goto('');
+  await expect(page.getByTestId('briefing')).toContainText('Recover the black box at D3');
+  await page.waitForTimeout(500);
+  expect(await tick(page)).toBe(0);
+  await expect(page.getByTestId('clock')).toHaveText('06:00');
+  await press(page, 'Go', isMobile);
+  await expect(page.getByTestId('briefing')).toHaveCount(0);
+  await expect.poll(() => tick(page)).toBeGreaterThan(0);
+});
+
+test('restart goes back to the briefing at 06:00', async ({ page, isMobile }) => {
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 2_000); // well into the mission: 20+ ticks
   await press(page, 'Pause', isMobile);
   await press(page, 'Restart', isMobile);
   await expect(menu(page)).toHaveCount(0);
-  expect(await tick(page)).toBeLessThan(10); // back near zero (a few frames run after the click)
+  await expect(page.getByTestId('briefing')).toBeVisible();
+  expect(await tick(page)).toBe(0);
   await expect(page.getByTestId('clock')).toHaveText('06:00');
 });
 
 test('exit leaves the mission and start mission begins a new one', async ({ page, isMobile }) => {
-  await page.goto('');
+  await start(page);
   await press(page, 'Pause', isMobile);
   await press(page, 'Exit', isMobile);
   await expect(menu(page)).toHaveAttribute('data-phase', 'exited');
@@ -30,11 +42,12 @@ test('exit leaves the mission and start mission begins a new one', async ({ page
   expect(await tick(page)).toBe(frozen);
   await press(page, 'Start mission', isMobile);
   await expect(menu(page)).toHaveCount(0);
+  await press(page, 'Go', isMobile); // a new mission opens on its briefing
   await expect.poll(() => tick(page)).toBeGreaterThan(0);
 });
 
 test('Esc toggles the menu and hiding the tab pauses', async ({ page }) => {
-  await page.goto('');
+  await start(page);
   await page.keyboard.press('Escape');
   await expect(menu(page)).toHaveAttribute('data-phase', 'paused');
   await page.keyboard.press('Escape');

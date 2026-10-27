@@ -27,7 +27,6 @@ export type CallContext = { square: string; label?: string };
 export type CallNode = {
   text: (c: CallContext) => string;
   responses: Response[];
-  timeout: Effect; // what the team does if HQ stays silent
 };
 
 export { FIXER_DISTRACTION, FIXER_GUIDE } from './prices';
@@ -36,7 +35,6 @@ export { FIXER_DISTRACTION, FIXER_GUIDE } from './prices';
 export const TREE: Record<string, CallNode> = {
   unimaged: {
     text: ({ square }) => `Holding short of ${square}. No imagery on it. Scan it, or tell us to push?`,
-    timeout: 'blind',
     responses: [
       { id: 'send', label: 'Send imagery', requires: { capability: 'imagery' }, look: true, reply: 'Standing by for imagery.' },
       { id: 'blind', label: 'Push through', effect: 'blind', reply: 'Copy, moving in blind.' },
@@ -46,7 +44,6 @@ export const TREE: Record<string, CallNode> = {
   },
   contact: {
     text: ({ square, label }) => `Contact in ${square}, ${label}, on our route. Observe, hit it, or go around?`,
-    timeout: 'push',
     responses: [
       { id: 'observe', label: 'Observe', effect: 'observe', reply: 'Copy, eyes on. Give us a few.', follow: 'contact-observed' },
       { id: 'attack', label: 'Attack', effect: 'attack', reply: 'Moving in hard.' },
@@ -55,7 +52,6 @@ export const TREE: Record<string, CallNode> = {
   },
   site: {
     text: ({ square }) => `At the kill site in ${square}. Want us to search it? It'll cost us time.`,
-    timeout: 'pass',
     responses: [
       { id: 'search', label: 'Search it', effect: 'search', reply: 'Searching. Give us fifteen.' },
       { id: 'pass', label: 'Keep moving', effect: 'pass', reply: 'Moving on.' },
@@ -64,7 +60,6 @@ export const TREE: Record<string, CallNode> = {
   // The team running low (GDD team resources): HQ can send a resupply bird.
   'low-supplies': {
     text: ({ label }) => `Running low on ${label}. Can you get us a resupply?`,
-    timeout: 'pass',
     responses: [
       { id: 'resupply', label: `Send a resupply bird ($${RESUPPLY_COST.toLocaleString('en-US')})`, requires: { budget: RESUPPLY_COST }, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
       { id: 'no', label: 'Make it last', effect: 'pass', reply: 'Understood. Conserving.' },
@@ -73,7 +68,6 @@ export const TREE: Record<string, CallNode> = {
   // Combat ineffective (GDD support options): HQ can send reinforcements.
   ineffective: {
     text: ({ label }) => `We're combat ineffective, ${label}. We need reinforcements.`,
-    timeout: 'pass',
     responses: [
       { id: 'reinforce', label: `Send reinforcements ($${REINFORCE_COST.toLocaleString('en-US')})`, requires: { budget: REINFORCE_COST }, effect: 'reinforce', reply: 'Copy. Holding for the bird.', hold: 30_000 },
       { id: 'push', label: 'Push on', effect: 'pass', reply: 'Understood. Moving with what we have.' },
@@ -81,7 +75,6 @@ export const TREE: Record<string, CallNode> = {
   },
   'contact-observed': {
     text: ({ square, label }) => `Eyes on ${square}: ${label}, dug in, not moving. Target's painted for you. Hit it, or go around?`,
-    timeout: 'push',
     responses: [
       { id: 'attack', label: 'Attack', effect: 'attack', reply: 'Moving in hard.' },
       { id: 'avoid', label: 'Go around', effect: 'avoid', reply: 'Going around.' },

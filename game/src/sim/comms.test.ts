@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHATTER_MS, currentCall, HOLD_TIMEOUT_MS, kindOf } from './comms';
+import { CHATTER_MS, currentCall, kindOf } from './comms';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
 import { run, walking } from './testkit';
@@ -29,11 +29,11 @@ describe('comms', () => {
     expect(run(s, 5_000).team.position).toEqual(s.team.position);
   });
 
-  it('if HQ stays silent the team pushes on blind', () => {
-    const s = run(initialState(), HOLD_TIMEOUT_MS + 1_000);
-    expect(ids(s).some((id) => id.endsWith('-timeout'))).toBe(true);
-    expect(s.team.decisions.F4).toBe('blind');
-    expect(run(s, 2_000).team.position).not.toEqual(s.team.position);
+  it('if HQ stays silent the team keeps holding: nothing is decided for HQ', () => {
+    const s = run(initialState(), 60_000);
+    expect(currentCall(s.comms)).toMatchObject({ node: 'unimaged', square: 'F4', status: 'new' });
+    expect(s.team.decisions.F4).toBeUndefined();
+    expect(s.team.position).toEqual(initialState().team.position);
   });
 
   it('dismissing a hold hides it but the team keeps waiting', () => {

@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, photo } from './helpers';
+import { fastForward, freeze, photo, start } from './helpers';
 
 test('the client calls with a side job behind ALPHA’s call; take it, image G2, get paid', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 90_000);
@@ -21,7 +21,7 @@ test('the client calls with a side job behind ALPHA’s call; take it, image G2,
 });
 
 test('a second waiting call can be brought up with the more control', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   // ALPHA is holding short of F4; the client calls on top.
   await page.evaluate(() => {

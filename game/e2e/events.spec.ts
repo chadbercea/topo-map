@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { squarePoint, tapAt } from './helpers';
+import { squarePoint, start, tapAt } from './helpers';
 
 test('a new event flags an alert and a marker; tapping the marker opens its card', async ({ page, isMobile }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'B4', title: 'Test contact' }));
 
@@ -21,7 +21,7 @@ test('a new event flags an alert and a marker; tapping the marker opens its card
 });
 
 test('tapping an alert opens the same card', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 'r', kind: 'request', square: 'F2', title: 'Need imagery' }));
   await page.getByTestId('alerts').getByRole('button').click();

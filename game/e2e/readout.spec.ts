@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { fastForward } from './helpers';
+import { fastForward, start } from './helpers';
 
 test('a wound shows in the team rows without the panel opening up, then heals', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   const panel = page.getByTestId('team-panel');
   const before = (await panel.boundingBox())!;
@@ -26,7 +26,7 @@ test('a wound shows in the team rows without the panel opening up, then heals', 
 });
 
 test('tapping the team header opens the full readout, and again closes it', async ({ page }) => {
-  await page.goto('');
+  await start(page);
   const head = page.getByTestId('team-panel').getByRole('button', { name: /ALPHA/ });
   await head.click();
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);

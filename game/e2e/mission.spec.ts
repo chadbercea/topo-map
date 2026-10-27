@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { freeze } from './helpers';
+import { freeze, start } from './helpers';
 
 test('the objective leads ALPHA from the crash site to exfil, and the mission completes', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
@@ -10,7 +10,7 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
   // Clear ground the whole way, so nothing stops the walk.
   await page.evaluate(() => {
     const s = window.game.get();
-    window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route] } });
+    window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, holdFor: null } });
   });
   await page.evaluate(() => {
     for (let i = 0; i < 6000 && window.game.get().mission.phase !== 'exfil'; i++) window.game.tick(100);
@@ -26,11 +26,12 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
   await expect(page.getByTestId('budget')).toHaveText('$20,000');
   await wrap.getByRole('button', { name: 'Play again' }).click();
   await expect(wrap).toHaveCount(0);
+  await expect(page.getByTestId('briefing')).toBeVisible();
   await expect(page.getByTestId('clock')).toHaveText('06:00');
 });
 
 test('running out of time fails the mission; the wrap-up offers a retry', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
     const s = window.game.get();

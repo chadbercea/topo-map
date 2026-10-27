@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { start } from './helpers';
 
 test('switching map views changes the layers and is remembered', async ({ page }) => {
-  await page.goto('?debug');
+  await start(page, '?debug');
   const layers = page.getByTestId('layers');
   const views = page.getByTestId('map-views');
   await expect(layers).toHaveText('topo+city');
