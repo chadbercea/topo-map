@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DebugPanel } from './DebugPanel';
-import { EventAlerts, EventCard } from './EventAlerts';
+import { EventCard } from './EventCard';
 import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
 import { MiniGamePanel } from './MiniGamePanel';
@@ -42,7 +42,6 @@ export function Hud() {
       <div className="slot-bar">
         <MissionBar />
       </div>
-      <EventAlerts />
       <div className="slot-stream">
         <IntelStream />
       </div>

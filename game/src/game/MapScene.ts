@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { bus, EV, getMapRect, insetRect, type SceneStatus } from './events';
+import { bus, EV, getMapRect, insetRect, setProjector, type SceneStatus } from './events';
 import { clampCenter, fitCamera, followCenter } from './fit';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
@@ -16,6 +16,7 @@ import { eyesOn, freshness, groupOrigin } from '../sim/imagery';
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
 const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff } as const;
+const FLASH_MS = 2_500; // a new event's square flashes this long, in mission time
 const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 const MAX_TEXTURE = 4096;
@@ -107,6 +108,10 @@ export class MapScene extends Phaser.Scene {
         },
       });
 
+    setProjector((x, y) => {
+      const c = this.cameras.main;
+      return { x: (c.width / 2 + (x - c.scrollX - c.width / 2) * c.zoom) / DPR, y: (c.height / 2 + (y - c.scrollY - c.height / 2) * c.zoom) / DPR };
+    });
     this.scale.on(Phaser.Scale.Events.RESIZE, this.layout, this);
     bus.on(EV.mapRect, this.layout, this);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onDown, this);
@@ -334,12 +339,22 @@ export class MapScene extends Phaser.Scene {
   private drawMarkers(time: number) {
     const g = this.markerGfx.clear();
     const r = (MARKER_R * DPR) / this.zoom;
-    const { events, openEvent, minigame } = game.get();
+    const { events, openEvent, minigame, elapsedMs } = game.get();
     const board = minigame?.kind === 'seekDestroy' && minigame.status === 'active' ? minigame.square : null;
+    const px = (DPR * 1) / this.zoom;
     for (const e of events) {
       if (e.status === 'resolved' || e.square === board) continue; // its board is open
       const { x, y } = this.markerPos(e.square);
       const color = EVENT_COLOR[e.kind];
+      const sq = parseSquare(e.square)!;
+      // Where it happened (ILI-1189): a new event flashes its whole square for a moment, and
+      // the square of the open card stays outlined, so the card and its ground read as one.
+      const age = elapsedMs - e.atMs;
+      if (e.status === 'new' && age < FLASH_MS) {
+        const a = 0.35 * (1 - age / FLASH_MS) * (0.6 + 0.4 * Math.abs(Math.sin(time / 120)));
+        g.fillStyle(color, a).fillRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+      }
+      if (e.id === openEvent) g.lineStyle(3 * px, color, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
       if (e.status === 'new') {
         // Pulse until the player looks at it.
         const t = (time % 1200) / 1200;
@@ -415,6 +430,7 @@ export class MapScene extends Phaser.Scene {
     const k = reducedMotion() ? 1 : Math.min(1, delta / 150);
     this.camCenter = Math.hypot(dx, dy) * cam.zoom < 0.5 ? this.camTarget : { x: this.camCenter.x + dx * k, y: this.camCenter.y + dy * k };
     cam.centerOn(this.camCenter.x, this.camCenter.y);
+    bus.emit(EV.camera);
   }
 
   // The open part of the screen the grid covers, in device px (ILI-1186): below the mission
@@ -451,6 +467,7 @@ export class MapScene extends Phaser.Scene {
       this.camTarget = this.camCenter;
       cam.centerOn(this.camCenter.x, this.camCenter.y);
     }
+    bus.emit(EV.camera);
     this.drawTerrain();
     this.drawOutside();
     this.drawGrid();

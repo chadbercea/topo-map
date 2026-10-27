@@ -7,7 +7,7 @@ test('intercept: follow their wave with the slider until the message is through'
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 50_000);
-  await page.getByTestId('alerts').getByRole('button', { name: /SIGNAL C2/ }).click();
+  await page.getByTestId('new-event').filter({ hasText: /SIGNAL C2/ }).click();
   await page.getByRole('button', { name: 'Listen' }).click();
 
   const panel = page.getByTestId('minigame');
@@ -33,14 +33,14 @@ test('intercept: follow their wave with the slider until the message is through'
   await expect(page.getByTestId('minigame-result')).toContainText('PATROL AT C2 MOVING TO D3');
   await page.getByTestId('look-at-signal').click();
   await expect(page.getByTestId('satellite')).toContainText('ORION-3 · C2');
-  await expect(page.getByTestId('alerts')).toContainText('CONTACT C2');
+  await expect(page.getByTestId('blockers')).toContainText('CONTACT C2');
 });
 
 test('jam instead: the traffic is gone, and HQ says what it costs', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 50_000);
-  await page.getByTestId('alerts').getByRole('button', { name: /SIGNAL C2/ }).click();
+  await page.getByTestId('new-event').filter({ hasText: /SIGNAL C2/ }).click();
   await page.getByRole('button', { name: 'Jam', exact: true }).click();
   await expect(page.getByTestId('event-card')).toHaveCount(0);
   const log = await page.evaluate(() => window.game.get().comms.messages.map((m) => m.text));
