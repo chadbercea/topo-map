@@ -18,7 +18,7 @@ const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 const MAX_TEXTURE = 4096;
 const OUTSIDE_DIM = 0.45; // how much of the ground outside the grid shows through
 const FAR_SCALE = 0.2; // texture px per world unit for the coarse layer, before DPR
-const MAX_FRAME_MS = 50; // the most sim time one rendered frame may advance
+const MAX_FRAME_MS = 100; // the most sim time one rendered frame may advance
 // Browser tests set window.frozen to stop the clock while they tap through a timed mini
 // game, so a slow renderer can't run the timer out; time then moves only via game.tick.
 const frozen = () => (window as { frozen?: boolean }).frozen === true;

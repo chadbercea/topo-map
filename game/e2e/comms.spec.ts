@@ -30,6 +30,7 @@ test('comms can be minimized to a badge and reopened', async ({ page }) => {
 });
 
 test('Send imagery: a won scan finds the checkpoint in E3 and ALPHA asks to observe, attack or go around', async ({ page, isMobile }) => {
+  test.setTimeout(60_000); // a dozen real taps, and CI taps slowly
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);

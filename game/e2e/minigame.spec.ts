@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { freeze, squarePoint, tapAt } from './helpers';
 
 test('the grid scan dims the map to its targets; tapping them in order wins it', async ({ page, isMobile }) => {
+  test.setTimeout(60_000); // a dozen real taps, and CI taps slowly
   await page.goto('?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
