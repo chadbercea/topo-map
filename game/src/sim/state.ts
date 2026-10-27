@@ -25,8 +25,8 @@ import { initialMission, type Mission } from './mission';
 export type Phase = 'running' | 'paused' | 'ended' | 'exited';
 
 export type MapView = 'topo' | 'relief';
-export type Settings = { sound: boolean; mapView: MapView; city: boolean };
-export const DEFAULT_SETTINGS: Settings = { sound: true, mapView: 'topo', city: true };
+export type Settings = { mapView: MapView; city: boolean };
+export const DEFAULT_SETTINGS: Settings = { mapView: 'topo', city: true };
 
 export type GameState = {
   tick: number;
