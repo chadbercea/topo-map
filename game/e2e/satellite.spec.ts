@@ -18,15 +18,23 @@ test('select a square, task ORION-3 there, take a burst: the look lands on the m
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
   await untilOnStation(page);
   await expect(panel).toHaveAttribute('data-state', 'onStation');
+  // The view comes up in an inset over the map's corner; the map itself stays put.
+  const inset = page.getByTestId('satellite-inset');
+  await expect(inset).toContainText('ORION-3 · E3 · ON STATION');
+  const map = (await page.getByTestId('map-area').boundingBox())!;
+  const box = (await inset.boundingBox())!;
+  expect(box.x + box.width).toBeLessThanOrEqual(map.x + map.width);
   await expect(page.getByTestId('capture-modes').getByRole('button')).toHaveCount(3);
   await page.getByTestId('capture-burst').click();
   await expect(panel).toHaveAttribute('data-state', 'capturing');
+  await expect(inset).toHaveAttribute('data-state', 'capturing');
   await fastForward(page, 6_100);
   await expect(page.getByTestId('satellite-result')).toHaveText('Burst: 5 fighters, unaware. Downlinked to ALPHA.');
   await expect(page.getByTestId('alerts')).toContainText('E3'); // the checkpoint is found
   await panel.getByRole('button', { name: 'Close' }).click();
   await expect(panel).toHaveCount(0);
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
+  await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
 });
 
 test('ALPHA asks for imagery: Look at it, then a photo on station lets it move', async ({ page }) => {

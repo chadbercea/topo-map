@@ -1,24 +1,5 @@
 import { ammoLeft, condition, medsLeft, type Operator } from '../sim/team';
 
-// One beat of an ECG trace, repeated; the strip scrolls left under a fixed window.
-const BEAT = 'M0 10 H8 L10 7 L12 10 H15 L17 2 L19 17 L21 10 H26 L29 6 L32 10 H40';
-
-function Heartbeat({ o }: { o: Operator }) {
-  const c = condition(o);
-  return (
-    <svg className="ecg" data-condition={c} viewBox="0 0 40 20" preserveAspectRatio="none" aria-hidden>
-      {c === 'down' ? (
-        <path d="M0 10 H40" />
-      ) : (
-        <g className="trace">
-          <path d={BEAT} />
-          <path d={BEAT} transform="translate(40 0)" />
-        </g>
-      )}
-    </svg>
-  );
-}
-
 // Rank as chevrons (grade 5 = three) with a rocker per grade above that.
 function RankIcon({ grade, title }: { grade: number; title: string }) {
   const rockers = Math.max(0, grade - 5);
@@ -35,29 +16,18 @@ function RankIcon({ grade, title }: { grade: number; title: string }) {
   );
 }
 
-const Bar = ({ value, label }: { value: number; label: string }) => (
+export const Bar = ({ value, label }: { value: number; label: string }) => (
   <span className="bar" role="meter" aria-label={label} aria-valuenow={Math.round(value * 100)} aria-valuemin={0} aria-valuemax={100}>
     <span style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
   </span>
 );
 
-const STATUS = { fine: 'FINE', caution: 'CAUTION', danger: 'DANGER', down: 'DOWN' } as const;
+export const STATUS = { fine: 'FINE', caution: 'CAUTION', danger: 'DANGER', down: 'DOWN' } as const;
 
-// Compact: the team panel's fixed row (heartbeat, name, the operator's key supply, status).
-// Full: the expanded readout with every supply.
-export function OperatorRow({ o, compact = false }: { o: Operator; compact?: boolean }) {
+// One operator in the full readout (the team panel opened): rank, name, role, status and
+// every supply.
+export function OperatorRow({ o }: { o: Operator }) {
   const c = condition(o);
-  if (compact) {
-    const medic = o.role === 'Medic';
-    return (
-      <li className="op compact" data-condition={c} data-testid={`op-${o.id}`}>
-        <Heartbeat o={o} />
-        <span className="name">{o.name}</span>
-        <Bar value={medic ? medsLeft(o) : ammoLeft(o)} label={`${o.name} ${medic ? 'meds' : 'ammo'}`} />
-        <span className="status">{STATUS[c]}</span>
-      </li>
-    );
-  }
   return (
     <li className="op" data-condition={c} data-testid={`op-${o.id}`}>
       <div className="who">
@@ -66,7 +36,6 @@ export function OperatorRow({ o, compact = false }: { o: Operator; compact?: boo
         <span className="role">{o.role}</span>
       </div>
       <div className="vitals">
-        <Heartbeat o={o} />
         <span className="status">{STATUS[c]}</span>
       </div>
       <div className="supplies">

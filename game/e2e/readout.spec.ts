@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, start } from './helpers';
 
-test('a wound shows in the team rows without the panel opening up, then heals', async ({ page }) => {
+test('a wound shows on the condition line without the panel opening up, then heals', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   const panel = page.getByTestId('team-panel');
@@ -15,14 +15,14 @@ test('a wound shows in the team rows without the panel opening up, then heals', 
   await fastForward(page, 200);
   const gunner = page.getByTestId('op-gunner');
   await expect(gunner).toHaveAttribute('data-condition', 'caution');
-  await expect(gunner).toContainText('Okafor');
-  await expect(page.getByTestId('team-rows').locator('li')).toHaveCount(5);
+  await expect(gunner).toContainText('Okafor CAUTION');
+  await expect(page.getByTestId('team-condition')).toContainText('5/5 fit');
   await expect(page.getByTestId('readout')).toHaveCount(0);
   expect((await panel.boundingBox())!.height).toBeCloseTo(before.height, 0); // the panel keeps its size
 
   // The medic treats the gunner twice (50 → 85 → 100, 4 s each).
   await fastForward(page, 10_000);
-  await expect(gunner).toHaveAttribute('data-condition', 'fine');
+  await expect(page.getByTestId('team-hurt')).toHaveText('All fine');
 });
 
 test('tapping the team header opens the full readout, and again closes it', async ({ page }) => {

@@ -14,9 +14,9 @@ describe('mission progression', () => {
     expect(phasePips({ ...s, mission: { ...s.mission, phase: 'complete' } }).every((p) => p.state === 'done')).toBe(true);
   });
 
-  it('a decision waiting comes first, with no countdown: ALPHA waits', () => {
+  it('a decision waiting stays on the call card; Next keeps pointing at the objective', () => {
     const s = run(initialState(), 500); // ALPHA holds short of F4
-    expect(nextUp(s)).toEqual({ tone: 'call', text: 'ALPHA needs a decision' });
+    expect(nextUp(s)).toEqual({ tone: 'objective', text: 'Reach the crash site at D3' });
   });
 
   it('the patrol shows an ETA only once someone has found it', () => {

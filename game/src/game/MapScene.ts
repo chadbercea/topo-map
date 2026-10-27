@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { bus, EV, getMapRect, type SceneStatus } from './events';
+import { bus, EV, getMapRect, insetRect, type SceneStatus } from './events';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
 import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
@@ -92,6 +92,11 @@ export class MapScene extends Phaser.Scene {
             .text(c * CELL, r * CELL, squareId(c, r), { fontFamily: 'JetBrains Mono, monospace', fontSize: `${11 * DPR}px`, color: '#6f8a7d' })
         );
 
+    // ORION-3's inset: a second camera on the square it's looking at. Taps go to the map.
+    this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
+    this.inset.inputEnabled = false;
+    this.inset.ignore([...this.labels, this.teamLabel]); // the caption names the square
+
     this.scale.on(Phaser.Scale.Events.RESIZE, this.layout, this);
     bus.on(EV.mapRect, this.layout, this);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onDown, this);
@@ -105,6 +110,7 @@ export class MapScene extends Phaser.Scene {
         this.focused = focused;
         this.layout();
       }
+      if (this.insetSquare() !== this.insetOn) this.placeInset();
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.layout, this);
@@ -340,12 +346,30 @@ export class MapScene extends Phaser.Scene {
 
   // The part of the world in view: all of it, or a seek-and-destroy square with a margin.
   private focused: string | null = null;
-  // Close in on a seek-and-destroy board, or on the square ORION-3 is looking at.
+  // Close in on a seek-and-destroy board, so its cells are big enough to tap.
   private focusSquare() {
+    const { minigame: m } = game.get();
+    return m?.kind === 'seekDestroy' && m.status === 'active' ? m.square : null;
+  }
+
+  // The square ORION-3 is looking at, shown in the inset; the main map doesn't move.
+  private inset!: Phaser.Cameras.Scene2D.Camera;
+  private insetOn: string | null = null;
+  private insetSquare() {
     const { minigame: m, satellite: sat } = game.get();
-    if (m?.kind === 'seekDestroy' && m.status === 'active') return m.square;
-    if (!m && (sat.state === 'onStation' || sat.state === 'capturing')) return sat.aim;
-    return null;
+    return !m && (sat.state === 'onStation' || sat.state === 'capturing') ? sat.aim : null;
+  }
+
+  private placeInset() {
+    this.insetOn = this.insetSquare();
+    const r = getMapRect();
+    const sq = this.insetOn ? parseSquare(this.insetOn) : null;
+    if (!sq || !r) return void this.inset.setVisible(false);
+    const box = insetRect(r);
+    const size = box.size * DPR;
+    this.inset.setViewport(box.x * DPR, box.y * DPR, size, size).setVisible(true);
+    this.inset.setZoom(size / (CELL * 1.5));
+    this.inset.centerOn((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL);
   }
 
   private focus() {
@@ -394,6 +418,7 @@ export class MapScene extends Phaser.Scene {
       const r = i % ROWS;
       label.setPosition(c * CELL + (4 * DPR) / this.zoom, r * CELL + (3 * DPR) / this.zoom);
     });
+    this.placeInset();
     this.status();
   }
 
@@ -545,6 +570,7 @@ export class MapScene extends Phaser.Scene {
         .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color: '#f2c14e' })
         .setOrigin(0.5, 0));
       label.setText(`${letter} · ${name}`).setScale(1 / this.zoom).setPosition(p.x, p.y + r * 1.2);
+      this.inset.ignore(label);
     });
   }
 

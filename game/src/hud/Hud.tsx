@@ -5,6 +5,7 @@ import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
 import { MapViews } from './MapViews';
 import { MiniGamePanel } from './MiniGamePanel';
+import { SatelliteInset } from './SatelliteInset';
 import { SatellitePanel } from './SatellitePanel';
 import { SquareActions } from './SquareActions';
 import { MissionBar } from './MissionBar';
@@ -31,6 +32,7 @@ export function Hud() {
       </div>
       <EventAlerts />
       <MapArea />
+      <SatelliteInset />
       <div className="slot-team">
         <TeamPanel />
       </div>

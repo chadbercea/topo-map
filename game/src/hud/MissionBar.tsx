@@ -10,10 +10,10 @@ export const clock = (ms: number) => {
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
 
-// The mission bar (ILI-1170, ILI-1173): one strip along the top that answers "where are we
-// and what's next". Phase pips, the objective, Now (ALPHA's activity) and Next (the most
-// pressing thing), the resources, and the clock with pause. A minimized or held-back call
-// waits here as a chip.
+// The mission bar (ILI-1170, ILI-1173, quieted in ILI-1179): one strip along the top that
+// answers "where are we and what's next". Phase pips, the objective and the one next thing,
+// the resources, and the clock with pause. What ALPHA is doing lives in the team panel. A
+// minimized or held-back call waits here as a chip.
 export function MissionBar() {
   const s = useGame((x) => x);
   const { timer, phase, tick, resources, alerted, inbound, elapsedMs: now } = s;
@@ -43,9 +43,6 @@ export function MissionBar() {
           ◆ {objectiveText(s.mission)}
         </p>
         <p className="lines">
-          <span className="now" data-testid="now">
-            Now: {s.team.activity}
-          </span>
           <span className="next" data-testid="next" data-tone={next.tone}>
             Next: {next.text}
             {next.atMs !== undefined && ` · ${clock(next.atMs - now)}`}
