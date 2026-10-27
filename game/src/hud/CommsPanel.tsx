@@ -4,8 +4,11 @@ import { currentCall, kindOf, waitingCalls } from '../sim/comms';
 import { blocked } from '../sim/responses';
 import { gameClock } from '../sim/gameTime';
 
-// Satcom with the team (ILI-1186), bottom right beside the team panel: the team's short
-// texts, and any call waiting on HQ pinned under them with its answers (ILI-1172: several page as "1 of N"; ALPHA waits as long as it takes; a
+export const RELAY = 'RELAY-7'; // the comms satellite HQ talks to the team through
+
+// Satcom (ILI-1186), bottom right beside the team panel: RELAY-7, the comms satellite, and
+// the link through it to the team (ILI-1195). Only the team's short texts and calls live
+// here, any call waiting on HQ pinned under them with its answers; imagery is ORION-3's (ILI-1172: several page as "1 of N"; ALPHA waits as long as it takes; a
 // call never interrupts a mini game).
 export function CommsPanel() {
   const s = useGame((x) => x);
@@ -28,7 +31,10 @@ export function CommsPanel() {
   return (
     <section className="panel satcom" data-testid="satcom" aria-label="Satcom">
       <h2>
-        SATCOM · {s.team.callsign}
+        <span>COMMS SAT</span>
+        <span className="status" data-testid="relay-status">
+          {RELAY} ↔ {s.team.callsign} · link good
+        </span>
       </h2>
       <ol className="thread" ref={log} role="log" aria-live="polite">
         {thread.map((m) => (

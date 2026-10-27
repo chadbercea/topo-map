@@ -32,7 +32,7 @@ test('intercept: follow their wave with the slider until the message is through'
   await expect(panel).toHaveAttribute('data-status', 'won');
   await expect(page.getByTestId('minigame-result')).toContainText('PATROL AT C2 MOVING TO D3');
   await page.getByTestId('look-at-signal').click();
-  await expect(page.getByTestId('satellite')).toContainText('ORION-3 · C2');
+  await expect(page.getByTestId('satellite')).toContainText('ORION-3 to C2');
   await expect(page.getByTestId('blockers')).toContainText('CONTACT C2');
 });
 
