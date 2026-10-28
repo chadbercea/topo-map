@@ -74,15 +74,16 @@ export function IntelStream() {
 }
 
 // ALPHA's ask, raised where it can't be missed when its flag is out of sight: at the top of
-// the intel stream, and on a phone at the top of the action panel that covers the dock.
-export function IncomingAlert({ as: Tag, testId }: { as: 'li' | 'div'; testId: string }) {
+// the intel stream, and on a phone at the top of the action panel that covers the dock (brief:
+// one line, so the strikes under it stay in view).
+export function IncomingAlert({ as: Tag, testId, brief = false }: { as: 'li' | 'div'; testId: string; brief?: boolean }) {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const call = useGame((s) => currentCall(s.comms));
   if (!call) return null;
   return (
-    <Tag className="incoming-alert" data-testid="incoming-alert" role="alert">
+    <Tag className="incoming-alert" data-testid="incoming-alert" data-brief={brief} role="alert">
       <span className="who">INCOMING · {call.from}</span>
-      <p>{call.text}</p>
+      {!brief && <p>{call.text}</p>}
       {playing ? (
         <small>Answer when the strike is done.</small>
       ) : (

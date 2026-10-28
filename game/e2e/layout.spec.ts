@@ -10,7 +10,8 @@ test('panels leave a clear space between them (where a strike closes in)', async
   const map = (await page.getByTestId('map-area').boundingBox())!;
   expect(map.width).toBeGreaterThan(200);
   expect(map.height).toBeGreaterThan(150);
-  for (const id of ['mission-timer', 'team-panel', 'satcom', 'intel-stream']) {
+  // The status widget floats in the map's corner on purpose (ILI-1216); the rest stay clear.
+  for (const id of ['mission-strip', 'team-panel', 'satcom', 'intel-stream']) {
     const p = await page.getByTestId(id).boundingBox();
     if (!p) continue; // on a phone the dock shows one of stream, team and satcom at a time
     const overlaps = p.x < map.x + map.width && p.x + p.width > map.x && p.y < map.y + map.height && p.y + p.height > map.y;

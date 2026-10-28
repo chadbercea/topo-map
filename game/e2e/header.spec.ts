@@ -1,10 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { fastForward } from './helpers';
 
-test('the header anchors the mission: deadline, progress, what to do, what is in the way', async ({ page, isMobile }) => {
+test('the status widget and the mission strip: deadline, progress, what to do, what is in the way (ILI-1216)', async ({ page, isMobile }) => {
   await page.goto('?debug');
-  const header = page.getByTestId('mission-timer');
-  await expect(header).toContainText('BLACK BOX');
+  // The mission and its progress run along the map's foot; the clock sits in the widget.
+  const strip = page.getByTestId('mission-strip');
+  await expect(strip).toContainText('BLACK BOX');
+  await expect(page.getByTestId('mission-timer').getByTestId('clock')).toBeVisible();
+  await expect(strip.getByTestId('objective')).toBeAttached();
   await expect(page.getByTestId('phase-pips').locator('li[data-state="current"]')).toHaveCount(1);
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
   await page.waitForFunction(() => window.game?.get().team.holdFor);

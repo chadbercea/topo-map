@@ -43,11 +43,11 @@ html, body {
      rest. Along the bottom: the comms log, what needs an answer on the map, and the team
      panel in the bottom-right corner. */
   grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(0, 420px);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto auto;
   grid-template-areas:
-    'bar bar bar'
     'stream map map'
-    'satcom band team';
+    'satcom band team'
+    'satcom strip team';
 }
 
 /* RELAY-7, the comms satellite (ILI-1195, ILI-1199), logs under the intel stream: its name on
@@ -61,7 +61,8 @@ html, body {
 .slot-satcom { grid-area: satcom; align-self: end; min-width: 0; }
 .dock-tabs { display: none; }
 
-.slot-bar { grid-area: bar; min-width: 0; }
+.slot-widget { grid-area: map; justify-self: end; align-self: start; width: min(380px, 100%); min-width: 0; position: relative; z-index: 1; }
+.slot-strip { grid-area: strip; min-width: 0; align-self: end; }
 .map-area { grid-area: map; min-height: 0; }
 .recentre { pointer-events: auto; font: inherit; font-size: 11px; letter-spacing: 0.1em; color: var(--accent); border: 1px solid var(--accent); min-height: 32px; padding: 0 10px; cursor: pointer; align-self: end; }
 .recentre kbd { font: inherit; font-size: 10px; color: var(--dim); border: 1px solid var(--line); padding: 0 4px; margin-left: 4px; }
@@ -326,7 +327,7 @@ html, body {
   letter-spacing: 0.04em;
 }
 
-.bar-top[data-phase='paused'] .clock { color: var(--dim); }
+.status-widget[data-phase='paused'] .clock { color: var(--dim); }
 .clock[data-warn='amber'] { color: #f2c14e; }
 .clock[data-warn='red'] { color: #e5484d; }
 
@@ -508,6 +509,7 @@ html, body {
 /* ALPHA's ask, raised in the intel stream when its flag is out of sight (ILI-1203). */
 .incoming-alert { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid #ff8a2a; border-left-width: 3px; background: rgba(255, 138, 42, 0.12); animation: alert-in 160ms ease-out; }
 .incoming-alert .who { color: #ff8a2a; font-size: 10px; letter-spacing: 0.12em; }
+.incoming-alert[data-brief='true'] { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 4px 10px; }
 .incoming-alert p { margin: 0; color: var(--ink); font-size: 12px; line-height: 1.35; }
 .incoming-alert small { color: var(--dim); font-size: 10px; }
 .incoming-alert button { justify-self: start; font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #0b0f0d; background: #ff8a2a; border: none; min-height: 30px; padding: 0 12px; cursor: pointer; }
@@ -578,7 +580,6 @@ html, body {
 .comms .actions small { font-size: 10px; text-transform: none; letter-spacing: 0; }
 .pager { display: flex; align-items: center; gap: 4px; margin-left: auto; color: var(--ink); letter-spacing: 0; }
 .pager button { font: inherit; color: var(--dim); background: none; border: 1px solid var(--line); min-width: 32px; min-height: 28px; cursor: pointer; }
-.bar-top .resources { color: var(--ink); }
 
 /* A code name, on the stream or in a text: tap it to filter the stream for it. */
 .tag { font: inherit; font-size: 10px; letter-spacing: 0.1em; color: #f2c14e; background: none; border: 1px solid rgba(242, 193, 78, 0.5); padding: 1px 6px; min-height: 22px; cursor: pointer; }
@@ -622,11 +623,24 @@ html, body {
 
 @keyframes blink { 50% { opacity: 0.2; } }
 
-/* The mission header (ILI-1187): the mission and its progress, what to do and what's in the
-   way, the ground and weather in view, and the deadline. */
-.bar-top { display: flex; align-items: stretch; gap: 18px; padding: 8px 14px; }
-.bar-top > div { display: grid; align-content: center; gap: 3px; min-width: 0; }
-.bar-top h2 { margin: 0; }
+/* The status widget (ILI-1216), the map's top-right corner: the contract window's clock and
+   pause, then the weather, ORION-3 and the ground in view. */
+.status-widget { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'deadline pause' 'area area'; gap: 6px 10px; padding: 8px 12px; }
+.status-widget .hdr-deadline { grid-area: deadline; display: grid; gap: 2px; align-content: start; }
+.status-widget .pause { grid-area: pause; align-self: start; }
+.status-widget .hdr-area { grid-area: area; display: grid; gap: 2px; font-size: 11px; border-top: 1px solid var(--line); padding-top: 6px; min-width: 0; }
+.hdr-area p { margin: 0; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hdr-area b { color: var(--accent); font-weight: 600; margin-right: 4px; }
+.hdr-area .contacts { color: #e5484d; }
+.hdr-deadline .label { font-size: 9px; letter-spacing: 0.12em; color: var(--dim); }
+.hdr-deadline .when { font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.status-widget .clock { font-size: 26px; line-height: 1; }
+
+/* The mission strip (ILI-1216), along the map's foot: the mission and its phases, the win
+   conditions, what to do and what's in the way. */
+.mission-strip { display: flex; align-items: center; gap: 18px; padding: 8px 14px; }
+.mission-strip > div { display: grid; align-content: center; gap: 3px; min-width: 0; }
+.mission-strip h2 { margin: 0; }
 .hdr-mission { flex: none; }
 .hdr-mission .pending { font-size: 10px; }
 .pips { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px; font-size: 10px; color: var(--dim); }
@@ -636,32 +650,22 @@ html, body {
 .pips li[data-state='current'] { color: var(--ink); }
 .pips li[data-state='current'] .pip { border-color: #f2c14e; color: #f2c14e; }
 .pip-detail { color: #f2c14e; }
-.bar-top .win { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px; font-size: 10px; color: var(--dim); }
-.bar-top .win li[data-done='true'] { color: var(--accent); }
+.mission-strip .win { list-style: none; margin: 0; padding: 0; display: flex; gap: 10px; font-size: 10px; color: var(--dim); }
+.mission-strip .win li[data-done='true'] { color: var(--accent); }
 .hdr-task { flex: 1 1 0; }
-.bar-top .objective { color: #f2c14e; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar-top .next { color: var(--ink); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mission-strip .objective { margin: 0; color: #f2c14e; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mission-strip .next { margin: 0; color: var(--ink); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .next[data-tone='threat'] { color: #e5484d; }
 .next[data-tone='support'] { color: var(--accent); }
-.bar-top .blockers { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; font-size: 10px; }
+.mission-strip .blockers { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: nowrap; overflow: hidden; font-size: 10px; }
 .blockers li { white-space: nowrap; padding: 0 6px; border: 1px solid var(--line); color: var(--ink); }
 .blockers li[data-tone='decision'] { border-color: #f2c14e; color: #f2c14e; }
 .blockers li[data-tone='threat'] { border-color: #e5484d; color: #e5484d; }
 .blockers li.clear { border-color: transparent; color: var(--dim); padding: 0; }
 .blockers li.more { color: var(--dim); }
-.bar-top .hdr-area { flex: 0 1 420px; font-size: 11px; }
-.hdr-area p { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hdr-area b { color: var(--accent); font-weight: 600; margin-right: 4px; }
-.hdr-area .contacts { color: #e5484d; }
-.hdr-deadline { flex: none; justify-items: end; text-align: right; }
-.hdr-deadline .label { font-size: 9px; letter-spacing: 0.12em; color: var(--dim); }
-.hdr-deadline .when { font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
-.bar-top .clock { font-size: 26px; line-height: 1; }
-.bar-top .pause { align-self: center; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @media (max-width: 1280px) {
   .pips li:not([data-state='current']) .pip-label { display: none; }
-  .bar-top .hdr-area { flex-basis: 280px; }
 }
 
 /* Team column (ILI-1172): one size, rows that react; red edge in a fight. */
@@ -682,13 +686,14 @@ html, body {
   .hud {
     gap: 6px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto auto auto;
     grid-template-areas:
-      'bar'
+      'widget'
       'assets'
       'map'
       'tools'
       'band'
+      'strip'
       'handle'
       'tabs'
       'dock';
@@ -710,20 +715,23 @@ html, body {
   .band-cards > * { width: 100%; }
   .map-controls { grid-area: tools; flex-direction: row; justify-content: flex-end; flex-wrap: wrap; }
 
-  /* The header on a phone: two lines. The mission and pips with the clock and pause, then
-     Next and the most pressing blocker. The ground, weather and win conditions wait for a
-     wider screen. */
+  /* On a phone (ILI-1216): the status widget is one slim line on top (clock, ORION-3,
+     pause); the mission strip two lines above the dock (the mission and its phases; Next and
+     the most pressing blocker). Weather, ground and win conditions wait for a wider screen. */
   .hud { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
-  .bar-top { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'mission deadline pause' 'task task task'; gap: 2px 8px; padding: 4px 8px; }
-  .bar-top .hdr-mission { grid-area: mission; display: flex; align-items: center; gap: 8px; }
-  .bar-top .win, .bar-top .pending, .bar-top .hdr-area, .bar-top .objective { display: none; }
-  .bar-top .hdr-task { grid-area: task; display: flex; gap: 8px; align-items: center; }
-  .bar-top .next { font-size: 10px; flex: 1; min-width: 0; }
+  .slot-widget { grid-area: widget; justify-self: stretch; width: auto; }
+  .status-widget { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'deadline area pause'; align-items: center; gap: 2px 10px; padding: 4px 8px; }
+  .status-widget .hdr-area { border-top: none; padding-top: 0; font-size: 10px; }
+  .status-widget .wx, .status-widget .ground, .hdr-deadline .label, .hdr-deadline .when { display: none; }
+  .status-widget .hdr-deadline { display: flex; align-items: baseline; }
+  .status-widget .pause { align-self: center; min-width: 32px; min-height: 28px; }
+  .status-widget .clock { font-size: 18px; }
+  .mission-strip { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 4px 8px; }
+  .mission-strip .hdr-mission { display: flex; align-items: center; gap: 8px; }
+  .mission-strip .win, .mission-strip .pending, .mission-strip .objective { display: none; }
+  .mission-strip .hdr-task { display: flex; gap: 8px; align-items: center; }
+  .mission-strip .next { font-size: 10px; flex: 1; min-width: 0; }
   .blockers li:not(:first-child) { display: none; }
-  .bar-top .hdr-deadline { grid-area: deadline; display: flex; align-items: baseline; gap: 6px; }
-  .hdr-deadline .label, .hdr-deadline .when { display: none; }
-  .bar-top .pause { grid-area: pause; min-width: 32px; min-height: 28px; }
-  .bar-top .clock { font-size: 18px; }
   .pips { gap: 4px; }
   .pips .pip-label { display: none; }
   /* HQ's assets get their own slim row under the header, clear of the map. */
@@ -749,7 +757,7 @@ html, body {
 
 /* Touch screens (ILI-1214): every control at least 44 px tall. */
 @media (pointer: coarse) {
-  .dock-tabs button, .recentre, .bar-top .pause, .square-card button, .action-panel button, .satcom > .actions button, .ask .flag, .incoming-alert button { min-height: 44px; }
+  .dock-tabs button, .recentre, .status-widget .pause, .square-card button, .action-panel button, .satcom > .actions button, .ask .flag, .incoming-alert button { min-height: 44px; }
   .square-card .x { min-width: 44px; }
 }
 @media (prefers-reduced-motion: reduce) { .stream, .team, .satcom { transition: none; } }
@@ -768,11 +776,11 @@ html, body {
     gap: 8px 12px;
     padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
     grid-template-columns: minmax(0, 1fr) clamp(300px, 38vw, 380px);
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'bar bar'
       'map tabs'
-      'map dock';
+      'map dock'
+      'strip dock';
   }
   /* The band (a mini game, HQ's assets) floats at the foot of the map, so the open map runs to
      the bottom and ALPHA's flag stays at its marker. */
@@ -784,22 +792,20 @@ html, body {
   .stream, .team, .satcom { height: auto; min-height: 0; }
   .dock-tabs { grid-area: tabs; display: flex; }
 
-  /* The header in two rows: mission, task and clock; then the ground, weather and ORION-3. */
-  .bar-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: 'mission task deadline pause' 'area area area area'; gap: 4px 14px; padding: 6px 12px; }
-  .bar-top .hdr-mission { grid-area: mission; }
-  .bar-top .win { display: none; }
-  .bar-top .hdr-task { grid-area: task; }
-  .bar-top .hdr-area { grid-area: area; display: flex; gap: 14px; font-size: 10px; border-top: 1px solid var(--line); padding-top: 4px; }
-  .bar-top .hdr-area p { flex: 0 1 auto; min-width: 0; margin: 0; }
-  .bar-top .hdr-deadline { grid-area: deadline; }
+  /* The status widget in the map's top-right corner, left of the rail (ILI-1216). */
+  .slot-widget { width: min(320px, 100%); }
+  .status-widget { padding: 6px 10px; }
+  .status-widget .hdr-area { font-size: 10px; }
   .hdr-deadline .when { display: none; }
-  .bar-top .pause { grid-area: pause; }
-  .bar-top .clock { font-size: 22px; }
+  .status-widget .clock { font-size: 22px; }
+  .mission-strip { gap: 14px; padding: 6px 12px; }
+  .mission-strip .win { display: none; }
   .pips .pip-label { display: none; }
 }
 /* Short screens (a phone on its side): the header keeps to one row. */
 @media (min-width: 700px) and (max-width: 1199px) and (max-height: 520px) {
-  .bar-top .hdr-area, .bar-top .blockers, .hdr-deadline .label { display: none; }
+  .status-widget .hdr-area, .mission-strip .blockers, .mission-strip .objective, .hdr-deadline .label { display: none; }
+  .status-widget { grid-template-areas: 'deadline pause'; }
   .hud { gap: 6px 10px; }
 }
 /* While a square holds the rail (medium) or its actions cover the dock (compact), the panels

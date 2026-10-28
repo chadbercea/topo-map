@@ -124,7 +124,7 @@ export function SquareCard() {
           style={{ left: side.left, top: side.top, bottom: side.bottom, width: side.width, maxHeight: side.maxHeight }}
           aria-label={`Act on ${square}`}
         >
-          {tier !== 'wide' && askHidden && <IncomingAlert as="div" testId="answer-alpha-panel" />}
+          {tier !== 'wide' && askHidden && <IncomingAlert as="div" testId="answer-alpha-panel" brief />}
           <Actions s={s} square={square} />
         </section>
       )}

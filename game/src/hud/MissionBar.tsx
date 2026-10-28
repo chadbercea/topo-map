@@ -7,23 +7,68 @@ import { gameClock, gameSpan, zulu } from '../sim/gameTime';
 
 export const clock = (ms: number) => gameClock(ms);
 
-// The mission header (ILI-1187): the anchor for the mission. At a glance it answers what to
-// do (objective, next), how far along it is (phases, win conditions), what's in the way
-// (blockers), what the ground and weather are like where HQ is looking, and the deadline.
+// The mission's status, split in two (ILI-1216). The status widget sits in the map's top-right
+// corner: the contract window's clock and pause, then the weather, ORION-3 and the ground where
+// HQ is looking. The mission strip runs along the foot of the map: the mission and its
+// phases, the win conditions, what to do (objective, next) and what's in the way (blockers).
 // Everything else lives in its own panel: ALPHA and its calls bottom right (ILI-1186), the
 // assets by the map's tools.
-export function MissionBar() {
+export function StatusWidget() {
   const s = useGame((x) => x);
-  const { timer, phase, tick, elapsedMs: now } = s;
-  const next = nextUp(s);
-  const blocks = blockers(s);
+  const { timer, phase, tick } = s;
   const wx = weather(s);
   const area = groundInView(s);
   const remaining = timer.remainingMs;
   const warn = remaining <= 60_000 ? 'red' : remaining <= 180_000 ? 'amber' : undefined;
 
   return (
-    <section className="panel bar-top" data-testid="mission-timer" data-phase={phase}>
+    <section className="panel status-widget" data-testid="mission-timer" data-phase={phase}>
+      <div className="hdr-deadline">
+        <span className="label">CONTRACT WINDOW</span>
+        <span className="clock" data-testid="clock" data-warn={warn}>
+          {clock(remaining)}
+        </span>
+        <span className="when">{`closes ${zulu(timer.totalMs)} · now ${zulu(s.elapsedMs)}`}</span>
+      </div>
+      <button className="pause" onClick={game.pause} disabled={phase !== 'running'} aria-label="Pause" data-testid="pause-toggle">
+        ❚❚
+      </button>
+      <span className="sr-only" data-testid="tick">
+        {tick}
+      </span>
+      <div className="hdr-area" data-testid="conditions">
+        <p className="wx" data-testid="weather">
+          <b>WX</b> {wx.sky} · vis {wx.visibilityKm} km · wind {wx.wind.from} {wx.wind.kmh} km/h · {wx.tempC}°C · {wx.light}
+        </p>
+        <p className="sat" data-testid="satellite" data-state={s.satellite.state} aria-label="ORION-3 imaging satellite">
+          <b>SAT</b> <span data-testid="satellite-status">{s.minigame?.status === 'active' ? 'ORION-3 · tied up' : satelliteStatus(s)}</span>
+        </p>
+        <p className="ground" data-testid="ground">
+          {area ? (
+            <>
+              <b>{area.square}</b> {area.lowM}–{area.highM} m · {area.slope}
+              {area.features.map((f) => ` · ${f}`)} · {area.imagery}
+              {area.contacts > 0 && <span className="contacts"> · {area.contacts} contact{area.contacts > 1 && 's'}</span>}
+            </>
+          ) : (
+            <>
+              <b>AO</b> 4 × 2.5 km · 500 m squares · tap a square for its ground
+            </>
+          )}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+export function MissionStrip() {
+  const s = useGame((x) => x);
+  const now = s.elapsedMs;
+  const next = nextUp(s);
+  const blocks = blockers(s);
+
+  return (
+    <section className="panel mission-strip" data-testid="mission-strip">
       <div className="hdr-mission">
         <h2>{s.mission.name.replace('Operation ', '').toUpperCase()}</h2>
         {(
@@ -69,42 +114,6 @@ export function MissionBar() {
           {blocks.length > 3 && <li className="more">+{blocks.length - 3}</li>}
         </ul>
       </div>
-
-      <div className="hdr-area" data-testid="conditions">
-        <p className="wx" data-testid="weather">
-          <b>WX</b> {wx.sky} · vis {wx.visibilityKm} km · wind {wx.wind.from} {wx.wind.kmh} km/h · {wx.tempC}°C · {wx.light}
-        </p>
-        <p className="sat" data-testid="satellite" data-state={s.satellite.state} aria-label="ORION-3 imaging satellite">
-          <b>SAT</b> <span data-testid="satellite-status">{s.minigame?.status === 'active' ? 'ORION-3 · tied up' : satelliteStatus(s)}</span>
-        </p>
-        <p className="ground" data-testid="ground">
-          {area ? (
-            <>
-              <b>{area.square}</b> {area.lowM}–{area.highM} m · {area.slope}
-              {area.features.map((f) => ` · ${f}`)} · {area.imagery}
-              {area.contacts > 0 && <span className="contacts"> · {area.contacts} contact{area.contacts > 1 && 's'}</span>}
-            </>
-          ) : (
-            <>
-              <b>AO</b> 4 × 2.5 km · 500 m squares · tap a square for its ground
-            </>
-          )}
-        </p>
-      </div>
-
-      <div className="hdr-deadline">
-        <span className="label">CONTRACT WINDOW</span>
-        <span className="clock" data-testid="clock" data-warn={warn}>
-          {clock(remaining)}
-        </span>
-        <span className="when">{`closes ${zulu(timer.totalMs)} · now ${zulu(s.elapsedMs)}`}</span>
-      </div>
-      <button className="pause" onClick={game.pause} disabled={phase !== 'running'} aria-label="Pause" data-testid="pause-toggle">
-        ❚❚
-      </button>
-      <span className="sr-only" data-testid="tick">
-        {tick}
-      </span>
     </section>
   );
 }
