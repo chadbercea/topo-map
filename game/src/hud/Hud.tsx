@@ -5,6 +5,7 @@ import { MapArea } from './MapArea';
 import { MiniGamePanel } from './MiniGamePanel';
 import { SquareCard } from './SquareCard';
 import { Assets } from './Assets';
+import { Recentre } from './Recentre';
 import { MissionBar } from './MissionBar';
 import { CommsPanel } from './CommsPanel';
 import { AskWindow } from './AskWindow';
@@ -54,6 +55,7 @@ export function Hud() {
           <MiniGamePanel />
         </div>
         <div className="map-controls">
+          <Recentre />
           <Assets />
         </div>
       </div>
