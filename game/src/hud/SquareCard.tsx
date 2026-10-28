@@ -10,6 +10,7 @@ import { RESUPPLY_COST } from '../sim/support';
 import { EVENT_LABEL } from '../sim/stream';
 import { TargetMenu } from './TargetMenu';
 import { IncomingAlert, useAskHidden } from './IntelStream';
+import { useTier } from './tier';
 import type { GameState } from '../sim/state';
 
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
@@ -27,7 +28,8 @@ const ACTIONS = 300; // the action panel's width
 // listening to or jamming a signal, a resupply drop) is its own action panel, docked beside
 // the card, shown only when there's something to act on. One card at a time; tapping another
 // square moves it, tapping the same square or × clears both. On a phone the card docks at the
-// top of the map and the action panel over the dock tabs.
+// top of the map and the action panel over the dock tabs; on a fold or tablet both take over
+// the side rail, the card on top (ILI-1213).
 export function SquareCard() {
   const s = useGame((x) => x);
   const square = lookSquare(s);
@@ -36,7 +38,8 @@ export function SquareCard() {
   const picRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
   const [actHeight, setActHeight] = useState(0);
-  const askHidden = useAskHidden(); // on a phone the action panel covers the dock, and the stream's raised ask with it
+  const askHidden = useAskHidden(); // docked, the action panel covers the stream, and its raised ask with it
+  const tier = useTier();
   const sent = useRef('');
   const [, redraw] = useState(0);
   useEffect(() => {
@@ -64,10 +67,27 @@ export function SquareCard() {
 
   const area = getMapRect();
   if (!square || !area) return null;
-  const phone = matchMedia('(max-aspect-ratio: 1/1)').matches;
-  const at = phone ? docked(area) : beside(square, area, height, s.team.position);
   const acting = hasActions(s, square);
-  const side = acting ? (phone ? footed(at.top + height) : alongside(at, area, height, actHeight, squareRect(square))) : null;
+  const rail = tier === 'medium' ? railRect() : null;
+  let at: Placed;
+  let side: Docked | null = null;
+  let pic: { width?: number; height: number };
+  if (rail) {
+    // The rail: the card on top, the actions under it; the card gives up room to them.
+    const room = acting ? rail.height - Math.min(actHeight || 200, rail.height / 2) - 8 : rail.height;
+    at = { left: rail.x, top: rail.y, width: rail.width, maxHeight: room, side: 'rail' };
+    const below = rail.y + Math.min(height, room) + 8;
+    if (acting) side = { left: rail.x, top: below, bottom: undefined, width: rail.width, maxHeight: rail.y + rail.height - below, side: 'rail' };
+    pic = { height: Math.min(PICTURE, Math.round(rail.height * 0.42)) };
+  } else if (tier === 'compact') {
+    at = docked(area);
+    if (acting) side = footed(at.top + height);
+    pic = { width: THUMB, height: THUMB };
+  } else {
+    at = beside(square, area, height, s.team.position);
+    if (acting) side = alongside(at, area, height, actHeight, squareRect(square));
+    pic = { height: PICTURE };
+  }
   return (
     <>
       <section
@@ -80,7 +100,7 @@ export function SquareCard() {
         role="dialog"
         aria-label={`Square ${square}`}
       >
-        <Card s={s} square={square} picRef={picRef} phone={phone} />
+        <Card s={s} square={square} picRef={picRef} pic={pic} />
       </section>
       {side && (
         <section
@@ -92,7 +112,7 @@ export function SquareCard() {
           style={{ left: side.left, top: side.top, bottom: side.bottom, width: side.width, maxHeight: side.maxHeight }}
           aria-label={`Act on ${square}`}
         >
-          {phone && askHidden && <IncomingAlert as="div" testId="answer-alpha-panel" />}
+          {tier !== 'wide' && askHidden && <IncomingAlert as="div" testId="answer-alpha-panel" />}
           <Actions s={s} square={square} />
         </section>
       )}
@@ -102,6 +122,7 @@ export function SquareCard() {
 
 type Area = NonNullable<ReturnType<typeof getMapRect>>;
 type Placed = { left: number; top: number; width: number; maxHeight: number; side: string };
+type Docked = { left: number; top?: number; bottom?: number; width: number; maxHeight: number; side: string };
 
 // The action panel docks to the card on its far side from the square when there's room;
 // else on the square's other side, so card and panel bracket it; else under the card. It
@@ -136,7 +157,7 @@ function footed(cardBottom: number) {
 }
 
 // Anything in this square HQ can act on: an unresolved event, or ALPHA standing here.
-function hasActions(s: GameState, square: string) {
+export function hasActions(s: GameState, square: string) {
   return s.events.some((e) => e.square === square && e.status !== 'resolved') || squareAt(s.team.position.x, s.team.position.y) === square;
 }
 
@@ -158,12 +179,21 @@ function beside(square: string, area: Area, height: number, team: { x: number; y
   return { left, top, width: WIDTH, maxHeight, side: right ? 'right' : 'left' };
 }
 
+// A fold or tablet (ILI-1213): the side rail, from its tabs to the foot of the screen.
+function railRect() {
+  const tabs = document.querySelector('.dock-tabs')?.getBoundingClientRect();
+  const hud = document.querySelector('.hud');
+  if (!tabs || !hud) return null;
+  const foot = hud.getBoundingClientRect().bottom - parseFloat(getComputedStyle(hud).paddingBottom);
+  return { x: tabs.x, y: tabs.y, width: tabs.width, height: foot - tabs.y };
+}
+
 // A phone: across the top of the open map (the camera keeps ALPHA low and centred).
 function docked(area: Area): Placed {
   return { left: area.x + 8, top: area.y + 8, width: area.width - 16, maxHeight: Math.round(area.height * 0.85), side: 'dock' };
 }
 
-function Card({ s, square, picRef, phone }: { s: GameState; square: string; picRef: React.RefObject<HTMLDivElement | null>; phone: boolean }) {
+function Card({ s, square, picRef, pic }: { s: GameState; square: string; picRef: React.RefObject<HTMLDivElement | null>; pic: { width?: number; height: number } }) {
   const sat = s.satellite;
   const now = s.elapsedMs;
   const working = sat.aim === square && sat.state !== 'idle'; // ORION-3 is on this square
@@ -213,7 +243,7 @@ function Card({ s, square, picRef, phone }: { s: GameState; square: string; picR
             className="sc-picture"
             data-testid="satellite-inset"
             data-state={working ? sat.state : 'imaged'}
-            style={phone ? { width: THUMB, height: THUMB } : { height: PICTURE }}
+            style={pic}
             aria-label={`ORION-3's picture of ${square}`}
           />
         )}

@@ -3,7 +3,9 @@ import { DebugPanel } from './DebugPanel';
 import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
 import { MiniGamePanel } from './MiniGamePanel';
-import { SquareCard } from './SquareCard';
+import { hasActions, SquareCard } from './SquareCard';
+import { lookSquare } from '../sim/satellite';
+import { useTier } from './tier';
 import { Assets } from './Assets';
 import { Recentre } from './Recentre';
 import { MissionBar } from './MissionBar';
@@ -27,11 +29,19 @@ type Tab = 'intel' | 'satcom' | 'team';
 // (ILI-1202): its status is a line in the header. Any square HQ works, picked on the map or
 // opened from the stream, gets one card beside it (SquareCard, ILI-1203): its details, the
 // scan, ORION-3's larger picture, and the strikes and support to call in there. When ALPHA needs something its ask pops up beside its marker
-// (AskWindow). On a phone the stream, comms and team share one docked panel with tabs.
+// (AskWindow). On a phone the stream, comms and team share one docked panel with tabs; on a
+// fold or tablet they share a rail down the right, and an open square takes it over (ILI-1213).
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
   const askHidden = useAskHidden(); // ALPHA's ask is raised in the stream: light its tab
+  const tier = useTier();
+  // What a docked square covers: the whole rail (medium), or the dock under its actions (compact).
+  const cover = useGame((s) => {
+    const sq = lookSquare(s);
+    if (!sq || tier === 'wide') return undefined;
+    return tier === 'medium' ? 'rail' : hasActions(s, sq) ? 'dock' : undefined;
+  });
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
   // on the map itself (ILI-1201), so the dock stays where it is.
   // New events run inline in the intel stream (ILI-1197): a new one brings it forward.
@@ -41,7 +51,7 @@ export function Hud() {
   }, [fresh]);
 
   return (
-    <div className="hud" data-playing={playing} data-tab={tab}>
+    <div className="hud" data-playing={playing} data-tab={tab} data-tier={tier} data-cover={cover}>
       <div className="slot-bar">
         <MissionBar />
       </div>

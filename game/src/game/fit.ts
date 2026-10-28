@@ -10,15 +10,16 @@ export type Rect = { x: number; y: number; w: number; h: number };
 type Size = { w: number; h: number };
 
 // The open screen the grid must cover (ILI-1186): below the mission bar, right of a docked
-// intel stream, above the bottom-right panels or a phone's dock. All of the screen by default.
-export type Cover = { left: number; top: number; bottom: number };
-const open = (screen: Size, cover?: Cover) => ({ left: cover?.left ?? 0, top: cover?.top ?? 0, bottom: cover?.bottom ?? screen.h });
+// intel stream, left of a fold's or tablet's side rail (ILI-1213), above the bottom-right
+// panels or a phone's dock. All of the screen by default.
+export type Cover = { left: number; top: number; bottom: number; right?: number };
+const open = (screen: Size, cover?: Cover) => ({ left: cover?.left ?? 0, top: cover?.top ?? 0, bottom: cover?.bottom ?? screen.h, right: cover?.right ?? screen.w });
 
 // zoom, and the screen point the view's centre lands on.
 export function fitCamera(screen: Size, area: Rect, view: Rect, margin: number, cover?: Cover) {
   const whole = view.w === WORLD_W && view.h === WORLD_H;
   const c = open(screen, cover);
-  if (whole) return { zoom: Math.max((screen.w - c.left) / WORLD_W, (c.bottom - c.top) / WORLD_H), sx: (c.left + screen.w) / 2, sy: (c.top + c.bottom) / 2 };
+  if (whole) return { zoom: Math.max((c.right - c.left) / WORLD_W, (c.bottom - c.top) / WORLD_H), sx: (c.left + c.right) / 2, sy: (c.top + c.bottom) / 2 };
   const zoom = Math.max(0.01, Math.min((area.w - margin * 2) / view.w, (area.h - margin * 2) / view.h));
   return { zoom, sx: area.x + area.w / 2, sy: area.y + area.h / 2 };
 }
@@ -31,7 +32,7 @@ type Point = { x: number; y: number };
 export function clampCenter(c: Point, screen: Size, zoom: number, cover?: Cover, bounds: Rect = { x: 0, y: 0, w: WORLD_W, h: WORLD_H }): Point {
   const o = open(screen, cover);
   const left = (screen.w / 2 - o.left) / zoom;
-  const right = screen.w / 2 / zoom;
+  const right = (o.right - screen.w / 2) / zoom;
   const top = (screen.h / 2 - o.top) / zoom;
   const bottom = (o.bottom - screen.h / 2) / zoom;
   const clamp = (v: number, lo: number, hi: number) => (lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));

@@ -480,9 +480,15 @@ export class MapScene extends Phaser.Scene {
   }
 
   // The open part of the screen the grid covers, in device px (ILI-1186): below the mission
-  // bar, right of a docked intel stream, above the bottom-right panels or the phone's dock.
+  // bar, right of a docked intel stream, left of a side rail, above the bottom-right panels or
+  // the phone's dock.
   private cover(r: ReturnType<typeof getMapRect>, height: number) {
-    return { left: (r?.coverLeft ?? 0) * DPR, top: (r?.coverTop ?? 0) * DPR, bottom: r?.coverBottom !== undefined ? r.coverBottom * DPR : height };
+    return {
+      left: (r?.coverLeft ?? 0) * DPR,
+      top: (r?.coverTop ?? 0) * DPR,
+      bottom: r?.coverBottom !== undefined ? r.coverBottom * DPR : height,
+      right: r?.coverRight !== undefined ? r.coverRight * DPR : undefined,
+    };
   }
 
   // Zoom first, then draw: the grid fills the viewport (fit.ts), and lines, labels and the
