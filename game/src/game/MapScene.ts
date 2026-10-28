@@ -17,6 +17,9 @@ import { eyesOn, freshness, groupOrigin } from '../sim/imagery';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
+// The team's formation, in gaps: along the heading (forward +), across it. Point man first.
+const WEDGE: [number, number][] = [[1.4, 0], [0.4, -1], [0.4, 1], [-0.7, -0.5], [-0.8, 0.6]];
+const PING_MS = [2300, 3100, 2700, 3700, 4300]; // each operator's own beat
 const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff } as const;
 const WATER = 0x5fa8d3;
 const FLASH_MS = 2_500; // a new event's square flashes this long, in mission time
@@ -162,7 +165,7 @@ export class MapScene extends Phaser.Scene {
     this.lastFrame = now;
     this.pan(delta);
     this.follow(delta);
-    this.drawTeam();
+    this.drawTeam(_time);
     const st = game.get();
     const key = `${st.team.waypoint}|${st.team.route.join()}|${st.map.scanned.length}|${st.contacts.filter((c) => c.status === 'revealed').map((c) => c.square)}`;
     if (key !== this.routeKey) {
@@ -746,22 +749,49 @@ export class MapScene extends Phaser.Scene {
   private missionKey = '';
 
   private lastTeam = { x: NaN, y: NaN };
+  private heading = -Math.PI / 2; // the way the team faces, radians; eased toward its next step
 
-  private drawTeam() {
-    const { position } = game.get().team;
-    if (position.x === this.lastTeam.x && position.y === this.lastTeam.y) return;
-    this.lastTeam = position;
-    const r = (6 * DPR) / this.zoom;
-    this.teamGfx
-      .clear()
-      .fillStyle(TEAM, 0.25)
-      .fillCircle(position.x, position.y, r * 2)
-      .fillStyle(TEAM, 1)
-      .fillCircle(position.x, position.y, r)
-      .lineStyle((1.5 * DPR) / this.zoom, 0x0b0f0d, 1)
-      .strokeCircle(position.x, position.y, r);
-    this.teamLabel.setScale(1 / this.zoom).setPosition(position.x + r * 1.8, position.y - r * 2.6);
-    this.drawRoute();
+  // ALPHA is five people, not a dot (ILI-1210): one per operator, in a loose wedge facing where the team
+  // is headed. Each drifts a little on its own and pings on its own beat, so the team reads as
+  // alive. The downed stay in the group, dim and hollow. Reduced motion: still and quiet.
+  private drawTeam(time = 0) {
+    const { position, path, route, waypoint, operators } = game.get().team;
+    const moved = position.x !== this.lastTeam.x || position.y !== this.lastTeam.y;
+    if (moved) {
+      this.lastTeam = position;
+      this.drawRoute();
+    }
+    const next = path[0] ?? (route[waypoint] && squareCenter(route[waypoint]));
+    if (next && Math.hypot(next.x - position.x, next.y - position.y) > 1) {
+      const want = Math.atan2(next.y - position.y, next.x - position.x);
+      const turn = Math.atan2(Math.sin(want - this.heading), Math.cos(want - this.heading));
+      this.heading += reducedMotion() ? turn : turn * 0.06;
+    }
+    const still = reducedMotion();
+    const u = DPR / this.zoom; // one CSS pixel in world units
+    const gap = 11 * u;
+    const fx = Math.cos(this.heading);
+    const fy = Math.sin(this.heading);
+    const g = this.teamGfx.clear();
+    operators.forEach((o, i) => {
+      const [along, across] = WEDGE[i % WEDGE.length];
+      const k = i * 1.7 + 0.4; // each one's own rhythm
+      const dx = still ? 0 : Math.sin(time / (900 + i * 170) + k) * 0.28 + Math.sin(time / 2300 + k * 2) * 0.18;
+      const dy = still ? 0 : Math.cos(time / (1100 + i * 130) + k) * 0.28;
+      const a = (along + dx) * gap;
+      const c = (across + dy) * gap;
+      const x = position.x + fx * a - fy * c;
+      const y = position.y + fy * a + fx * c;
+      const down = o.health <= 0;
+      if (!down && !still) {
+        const every = PING_MS[i % PING_MS.length];
+        const t = ((time + i * 611) % every) / 900; // 0..1 over the ring's life
+        if (t < 1) g.lineStyle(1.2 * u, TEAM, 0.7 * (1 - t)).strokeCircle(x, y, (3 + 11 * t) * u);
+      }
+      if (down) g.lineStyle(1.2 * u, TEAM, 0.45).strokeCircle(x, y, 2.6 * u);
+      else g.fillStyle(TEAM, 1).fillCircle(x, y, 3.2 * u).lineStyle(1.2 * u, 0x0b0f0d, 1).strokeCircle(x, y, 3.2 * u);
+    });
+    if (moved || this.teamLabel.scale !== 1 / this.zoom) this.teamLabel.setScale(1 / this.zoom).setPosition(position.x + 16 * u, position.y - 22 * u);
   }
 
   private onDown(p: Phaser.Input.Pointer) {
