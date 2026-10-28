@@ -57,10 +57,12 @@ export function SquareCard() {
   useLayoutEffect(() => {
     const el = cardRef.current;
     // Their natural heights, not as clamped: where they go sets how tall they may be, and
-    // measuring the clamped height would chase its own tail.
-    if (el && el.scrollHeight !== height) setHeight(el.scrollHeight);
+    // measuring the clamped height would chase its own tail. A height grows at once but only
+    // shrinks by more than a line: where a panel sits can re-wrap it a few px shorter, and that
+    // shorter height can pick the other spot, where it measures taller again (React #185).
+    if (el && settle(height, el.scrollHeight) !== height) setHeight(el.scrollHeight);
     const act = actRef.current;
-    if (act && act.scrollHeight !== actHeight) setActHeight(act.scrollHeight);
+    if (act && settle(actHeight, act.scrollHeight) !== actHeight) setActHeight(act.scrollHeight);
     const pic = picRef.current?.getBoundingClientRect();
     const frame = pic ? { x: Math.round(pic.x), y: Math.round(pic.y), width: Math.round(pic.width), height: Math.round(pic.height) } : null;
     const key = JSON.stringify(frame);
@@ -217,6 +219,9 @@ function railRect() {
 }
 
 // A phone: across the top of the open map (the camera keeps ALPHA low and centred).
+const SLACK = 32; // px a measured height may shrink by before the panels move for it
+const settle = (was: number, now: number) => (now > was || was - now > SLACK ? now : was);
+
 function docked(area: Area): Placed {
   return { left: area.x + 8, top: area.y + 8, width: area.width - 16, maxHeight: Math.round(area.height * 0.85), side: 'dock' };
 }
