@@ -108,20 +108,21 @@ test('news the map does not show lands in the stream as an alert, and the header
   await expect(page.getByTestId('intel-items')).toContainText('Enemy radio net just lit up');
 });
 
-test('when the square card covers ALPHA\u2019s flag, the intel stream raises the ask in orange', async ({ page, isMobile }) => {
+test('when the square card opens where ALPHA\u2019s flag was, the flag moves clear of it (ILI-1215)', async ({ page, isMobile }) => {
   test.skip(isMobile, 'the phone card docks across the top of the map, clear of ALPHA');
   await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
-  await expect(page.getByTestId('incoming-alert')).toHaveCount(0); // the flag is in plain sight
-  // H5 is ALPHA's right-hand neighbour on the map's edge: its card can only open to the left, over the flag.
+  // H5 is ALPHA's right-hand neighbour on the map's edge: its card can only open to the left, over the flag's spot.
   await page.evaluate(() => window.game.selectSquare('H5'));
-  const alert = page.getByTestId('incoming-alert');
-  await expect(alert).toContainText('INCOMING · ALPHA');
-  await expect(alert).toContainText('Holding short of F4');
-  await page.getByTestId('answer-alpha').click();
-  // The ask opens over the card.
-  await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
+  await expect(page.getByTestId('square-card')).toBeVisible();
+  await page.waitForTimeout(800);
+  const flag = (await page.getByTestId('comms').boundingBox())!;
+  const card = (await page.getByTestId('square-card').boundingBox())!;
+  const apart = flag.x + flag.width <= card.x || card.x + card.width <= flag.x || flag.y + flag.height <= card.y || card.y + card.height <= flag.y;
+  expect(apart).toBe(true);
+  await expect(page.getByTestId('incoming-alert')).toHaveCount(0); // in plain sight, so not raised elsewhere
+  await page.getByTestId('incoming').click();
   await page.getByTestId('responses').getByRole('button', { name: 'Move in blind' }).click();
-  await expect(page.getByTestId('incoming-alert')).toHaveCount(0);
+  await expect(page.getByTestId('comms')).toHaveCount(0);
 });

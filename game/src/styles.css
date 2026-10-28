@@ -517,6 +517,11 @@ html, body {
 .ask.comms { border-color: var(--comms); }
 .ask[data-pinned='true']::after { content: ''; position: absolute; left: -6px; bottom: -6px; width: 8px; height: 8px; border-left: 1px solid var(--comms); border-bottom: 1px solid var(--comms); }
 .ask[data-pinned='true'][data-side='left']::after { left: auto; right: -6px; border-left: none; border-right: 1px solid var(--comms); }
+/* Hung below the marker (ILI-1215: above was taken): the corner tick goes on top. */
+.ask[data-pinned='true'][data-below='true']::after { bottom: auto; top: -6px; border-bottom: none; border-top: 1px solid var(--comms); }
+/* The band flips to the map's other side when ALPHA walks under it (ILI-1215). */
+.slot-band[data-flip='true'] { grid-template-columns: auto minmax(0, 1fr); }
+.slot-band[data-flip='true'] .map-controls { order: -1; align-items: flex-start; }
 /* Collapsed: just the orange flag. */
 .ask.comms[data-open='false'] { padding: 0; border: none; background: none; }
 .ask .flag { display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; font: inherit; font-size: 11px; letter-spacing: 0.12em; color: #0b0f0d; background: var(--comms); border: none; cursor: pointer; }

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { bus, EV, getMapRect, toScreen } from '../game/events';
-import { CELL, parseSquare, squareAt } from '../map/grid';
+import { bus, EV, getMapRect } from '../game/events';
+import { squareAt } from '../map/grid';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lookSquare, satelliteBusy, slewMs, type CaptureMode } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
@@ -11,6 +11,7 @@ import { EVENT_LABEL } from '../sim/stream';
 import { TargetMenu } from './TargetMenu';
 import { IncomingAlert, useAskHidden } from './IntelStream';
 import { useTier } from './tier';
+import { alphaBox, obstacles, pick, squareBox } from './overlays';
 import type { GameState } from '../sim/state';
 
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
@@ -55,9 +56,11 @@ export function SquareCard() {
   // Phaser draws ORION-3's picture of the square into the card's picture frame.
   useLayoutEffect(() => {
     const el = cardRef.current;
-    if (el && el.offsetHeight !== height) setHeight(el.offsetHeight);
+    // Their natural heights, not as clamped: where they go sets how tall they may be, and
+    // measuring the clamped height would chase its own tail.
+    if (el && el.scrollHeight !== height) setHeight(el.scrollHeight);
     const act = actRef.current;
-    if (act && act.offsetHeight !== actHeight) setActHeight(act.offsetHeight);
+    if (act && act.scrollHeight !== actHeight) setActHeight(act.scrollHeight);
     const pic = picRef.current?.getBoundingClientRect();
     const frame = pic ? { x: Math.round(pic.x), y: Math.round(pic.y), width: Math.round(pic.width), height: Math.round(pic.height) } : null;
     const key = JSON.stringify(frame);
@@ -97,7 +100,7 @@ export function SquareCard() {
     pic = { width: THUMB, height: THUMB };
   } else {
     at = beside(square, area, height, s.team.position);
-    if (acting) side = alongside(at, area, height, actHeight, squareRect(square));
+    if (acting) side = alongside(at, area, height, actHeight, square, s.team.position);
     pic = { height: PICTURE };
   }
   return (
@@ -106,6 +109,7 @@ export function SquareCard() {
         ref={cardRef}
         className="square-card"
         data-testid="square-card"
+        data-overlay="card"
         data-square={square}
         data-side={at.side}
         style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight }}
@@ -119,6 +123,7 @@ export function SquareCard() {
           ref={actRef}
           className="action-panel"
           data-testid="action-panel"
+          data-overlay="actions"
           data-square={square}
           data-side={side.side}
           style={{ left: side.left, top: side.top, bottom: side.bottom, width: side.width, maxHeight: side.maxHeight }}
@@ -137,28 +142,31 @@ type Placed = { left: number; top: number; width: number; maxHeight: number; sid
 type Docked = { left: number; top?: number; bottom?: number; width: number; maxHeight: number; side: string };
 
 // The action panel docks to the card on its far side from the square when there's room;
-// else on the square's other side, so card and panel bracket it; else under the card. It
-// never covers the square or runs off the open map; a tall one scrolls.
-function alongside(card: Placed, area: Area, cardHeight: number, height: number, sq: { x0: number; x1: number } | null) {
+// else on the square's other side, so card and panel bracket it; else under the card. Each
+// tries level with the card, then below what floats at the top, then down at the map's foot,
+// and takes the first spot clear of the card, the square, ALPHA and the other panels
+// (ILI-1215). A tall one scrolls.
+function alongside(card: Placed, area: Area, cardHeight: number, height: number, square: string, team: { x: number; y: number }): Docked {
   const gap = 8;
-  const top = Math.max(area.y + 8, Math.min(card.top, area.y + area.height - 8 - height));
-  const maxHeight = area.y + area.height - 8 - top;
+  const h = height || 200;
+  const sq = squareBox(square);
+  const lo = area.y + 8;
+  const hi = area.y + area.height - 8 - h;
+  const clampTop = (y: number) => Math.max(lo, Math.min(y, hi));
+  const others = obstacles(['card', 'actions', 'flag']);
   const fits = (x: number) => x >= area.x + 8 && x + ACTIONS <= area.x + area.width - 8;
   const cardRight = card.side !== 'left'; // the card sits right of the square
   const far = cardRight ? card.left + card.width + gap : card.left - gap - ACTIONS;
-  const across = sq && (cardRight ? sq.x0 - 10 - ACTIONS : sq.x1 + 10);
-  const x = fits(far) ? far : across !== null && fits(across) ? across : null;
-  if (x !== null) return { left: x, top, bottom: undefined, width: ACTIONS, maxHeight, side: x === far ? 'far' : 'across' };
-  const below = card.top + cardHeight + gap;
-  return { left: card.left, top: below, bottom: undefined, width: card.width, maxHeight: Math.max(120, area.y + area.height - 8 - below), side: 'below' };
-}
-
-// The square's left and right edges on screen.
-function squareRect(square: string) {
-  const sq = parseSquare(square)!;
-  const tl = toScreen(sq.col * CELL, sq.row * CELL);
-  const br = toScreen((sq.col + 1) * CELL, (sq.row + 1) * CELL);
-  return tl && br ? { x0: tl.x, x1: br.x } : null;
+  const across = sq && (cardRight ? sq.x - 10 - ACTIONS : sq.x + sq.w + 10);
+  const tops = [card.top, ...others.map((o) => o.y + o.h + 8), hi].map(clampTop);
+  const spots = [
+    ...(fits(far) ? tops.map((y) => ({ x: far, y, w: ACTIONS, h, side: 'far' })) : []),
+    ...(across !== null && fits(across) ? tops.map((y) => ({ x: across, y, w: ACTIONS, h, side: 'across' })) : []),
+    { x: card.left, y: card.top + cardHeight + gap, w: card.width, h, side: 'below' },
+  ];
+  const cardBox = { x: card.left, y: card.top, w: card.width, h: cardHeight };
+  const at = pick(spots, [...others, cardBox, sq, alphaBox(team)]);
+  return { left: at.x, top: at.y, width: at.w, maxHeight: Math.max(120, area.y + area.height - 8 - at.y), side: at.side };
 }
 
 // A phone: over the dock at the foot of the screen, the card keeping the top of the map;
@@ -174,21 +182,29 @@ export function hasActions(s: GameState, square: string) {
 }
 
 // Beside the square, on the side away from ALPHA when both have room (so ALPHA's flag stays
-// clear), top level with it, kept inside the open map.
+// clear), top level with it, kept inside the open map. Each side tries level with the square,
+// then below what's floating at the top (the status widget), then down at the map's foot,
+// and takes the first spot clear of the other panels and ALPHA (ILI-1215).
 function beside(square: string, area: Area, height: number, team: { x: number; y: number }): Placed {
-  const sq = parseSquare(square)!;
-  const tl = toScreen(sq.col * CELL, sq.row * CELL);
-  const br = toScreen((sq.col + 1) * CELL, (sq.row + 1) * CELL);
-  const alpha = toScreen(team.x, team.y);
+  const sq = squareBox(square);
+  const alpha = alphaBox(team);
   const maxHeight = area.height - 16;
-  if (!tl || !br) return { left: area.x + 8, top: area.y + 8, width: WIDTH, maxHeight, side: 'right' };
-  const roomRight = br.x + 10 + WIDTH <= area.x + area.width - 8;
-  const roomLeft = tl.x - 10 - WIDTH >= area.x + 8;
-  const alphaRight = !!alpha && alpha.x > (tl.x + br.x) / 2;
-  const right = roomRight && !(alphaRight && roomLeft);
-  const left = right ? br.x + 10 : Math.max(area.x + 8, tl.x - 10 - WIDTH);
-  const top = Math.max(area.y + 8, Math.min(tl.y, area.y + area.height - 8 - height));
-  return { left, top, width: WIDTH, maxHeight, side: right ? 'right' : 'left' };
+  if (!sq) return { left: area.x + 8, top: area.y + 8, width: WIDTH, maxHeight, side: 'right' };
+  const h = height || 300;
+  const lo = area.y + 8;
+  const hi = area.y + area.height - 8 - h;
+  const clampTop = (y: number) => Math.max(lo, Math.min(y, hi));
+  const others = obstacles(['card', 'actions', 'flag']);
+  const tops = [sq.y, ...others.map((o) => o.y + o.h + 8), hi].map(clampTop);
+  const right = { x: sq.x + sq.w + 10, side: 'right' };
+  const left = { x: sq.x - 10 - WIDTH, side: 'left' };
+  const fits = (x: number) => x >= area.x + 8 && x + WIDTH <= area.x + area.width - 8;
+  const alphaRight = !!alpha && alpha.x + alpha.w / 2 > sq.x + sq.w / 2;
+  const sides = (alphaRight ? [left, right] : [right, left]).filter((c) => fits(c.x));
+  if (!sides.length) sides.push({ x: Math.max(area.x + 8, Math.min(sq.x - 10 - WIDTH, area.x + area.width - 8 - WIDTH)), side: 'left' });
+  const spots = sides.flatMap((c) => tops.map((y) => ({ x: c.x, y, w: WIDTH, h, side: c.side })));
+  const at = pick(spots, [...others, alpha, sq]);
+  return { left: at.x, top: at.y, width: WIDTH, maxHeight, side: at.side };
 }
 
 // A fold or tablet (ILI-1213): the side rail, from its tabs to the foot of the screen.
