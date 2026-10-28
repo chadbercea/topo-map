@@ -3,7 +3,7 @@ import { squareCenter } from '../map/grid';
 import { LOOT } from './missions/blackBox';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { run, walking } from './testkit';
+import { answer, run, walking } from './testkit';
 
 // The salvage convoy that cuts the exfil (ILI-1192): clear ground, the convoy left in.
 const toTheConvoy = () => {
@@ -30,7 +30,7 @@ describe('the salvage convoy on the exfil (ILI-1192)', () => {
 
   it('move exfil: ALPHA swings wide to A2 and gets out there, about 3.5 km all told', () => {
     const store = toTheConvoy();
-    store.respond('exfil-cut', 'divert');
+    answer(store, 'exfil-cut', 'divert');
     expect(store.get().mission.c).toBe('A2');
     expect(store.get().team.route.slice(-3)).toEqual(['C2', 'B2', 'A2']);
     // Clear ground to the new exfil, for the walk.
@@ -44,7 +44,7 @@ describe('the salvage convoy on the exfil (ILI-1192)', () => {
   it('hit the convoy: ALPHA fights for it, takes the haul, and exfils at B1', () => {
     const store = toTheConvoy();
     const before = store.get().resources.budget;
-    store.respond('exfil-cut', 'engage');
+    answer(store, 'exfil-cut', 'engage');
     const s = until(store.get(), (x) => x.phase === 'ended');
     expect(s.contacts.find((c) => c.id === 'convoy')?.status).toBe('cleared');
     expect(s.comms.messages.some((m) => m.id === 'convoy-loot')).toBe(true);

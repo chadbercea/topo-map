@@ -4,6 +4,7 @@ import { WEAPON, weaponBlocked } from './ordnance';
 import type { GameState } from './state';
 import { createStore } from './store';
 import { run, walking, untilHold } from './testkit';
+import { LINK_MS } from './comms';
 
 // The technicals in E3, found: four fighters in cells 5, 6, 9 and 10 of the 4x4 over the
 // square. `look` is how old ORION-3's photo of them is (null: nobody has looked).
@@ -129,6 +130,7 @@ describe('strike', () => {
     store.set(untilHold(store.get())); // ALPHA reaches F4 and holds short of E3
     expect(store.get().team.holdFor).toBe('contact-call-t');
     store.sendTeam('t');
+    store.tick(LINK_MS);
     expect(store.get().team.holdFor).toBeNull();
     expect(store.get().team.decisions.E3).toBe('attack');
   });

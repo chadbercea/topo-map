@@ -3,7 +3,7 @@ import { ammoLevel, LOW, RESUPPLY_COST, RESUPPLY_FLIGHT_MS } from './support';
 import { LOADOUT } from './team';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { run, walking } from './testkit';
+import { answer, run, walking } from './testkit';
 import { wrapUp } from './wrapup';
 
 // ALPHA after a long fight: a fifth of its ammo left, and money in the bank.
@@ -27,7 +27,7 @@ describe('resupply', () => {
 
   it('a resupply bird costs budget, flies in, and refills everyone standing', () => {
     const store = createStore(run(lowOnAmmo(), 200));
-    store.respond(lowCall(store.get())!.id, 'resupply');
+    answer(store, lowCall(store.get())!.id, 'resupply');
     expect(store.get().resources.budget).toBe(10_000 - RESUPPLY_COST);
     expect(store.get().inbound).toHaveLength(1);
     store.set(run(store.get(), RESUPPLY_FLIGHT_MS - 500));
@@ -39,7 +39,7 @@ describe('resupply', () => {
 
   it('asks once per shortage, even after HQ says to make it last', () => {
     const store = createStore(run(lowOnAmmo(0), 200));
-    store.respond(lowCall(store.get())!.id, 'push');
+    answer(store, lowCall(store.get())!.id, 'push');
     expect(run(store.get(), 5_000).comms.messages.filter((m) => m.node === 'resupply')).toHaveLength(1);
   });
 
@@ -72,7 +72,7 @@ describe('combat ineffective', () => {
 
   it('the bird brings replacements for the downed, and the dead still count in the wrap-up', () => {
     const store = createStore(run(mauled(), 200));
-    store.respond(ineffective(store.get())!.id, 'resupply');
+    answer(store, ineffective(store.get())!.id, 'resupply');
     expect(store.get().resources.budget).toBe(10_000 - RESUPPLY_COST);
     store.set(run(store.get(), RESUPPLY_FLIGHT_MS + 200));
     const ops = store.get().team.operators;
@@ -86,7 +86,7 @@ describe('combat ineffective', () => {
 
   it('push on: the team carries on short-handed', () => {
     const store = createStore(run(mauled(), 200));
-    store.respond(ineffective(store.get())!.id, 'push');
+    answer(store, ineffective(store.get())!.id, 'push');
     expect(store.get().team.holdFor).toBeNull();
     const before = store.get().team.position;
     expect(run(store.get(), 2_000).team.position).not.toEqual(before);
