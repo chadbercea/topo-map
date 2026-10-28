@@ -8,7 +8,7 @@ import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
 import { Assets } from './Assets';
 import { Recentre } from './Recentre';
-import { MissionBar } from './MissionBar';
+import { MissionStrip, StatusWidget } from './MissionBar';
 import { CommsPanel } from './CommsPanel';
 import { AskWindow } from './AskWindow';
 import { IntelStream, useAskHidden } from './IntelStream';
@@ -24,8 +24,9 @@ type Tab = 'intel' | 'satcom' | 'team';
 type Sheet = 'peek' | 'half' | 'full';
 const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 
-// The war room (ILI-1186): HQ sits down to a live, multi-panel view of the theater. The
-// mission bar runs along the top; down the left the intel stream, with the comms log under it
+// The war room (ILI-1186): HQ sits down to a live, multi-panel view of the theater. The clock,
+// weather and ORION-3 sit in a widget in the map's top-right corner, and the mission's status
+// runs along the map's foot (ILI-1216); down the left the intel stream, with the comms log under it
 // (ILI-1199); the map fills the rest. Along the bottom: the mini game and HQ's assets, then
 // the team panel in the bottom-right corner. ORION-3, the imaging satellite, has no panel
 // (ILI-1202): its status is a line in the header. Any square HQ works, picked on the map or
@@ -64,8 +65,11 @@ export function Hud() {
 
   return (
     <div className="hud" data-playing={playing} data-tab={tab} data-tier={tier} data-cover={cover} data-sheet={sheet}>
-      <div className="slot-bar">
-        <MissionBar />
+      <div className="slot-widget">
+        <StatusWidget />
+      </div>
+      <div className="slot-strip">
+        <MissionStrip />
       </div>
       <div className="slot-stream">
         <IntelStream />
