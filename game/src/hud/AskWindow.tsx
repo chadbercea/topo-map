@@ -18,7 +18,6 @@ export function AskWindow() {
   const pos = useGame((s) => s.team.position);
   const callsign = useGame((s) => s.team.callsign);
   const playing = useGame((s) => s.minigame?.status === 'active');
-  useGame((s) => s); // re-check, on every change, whether the square card covers the flag
   const [focus, setFocus] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null); // the ask HQ opened; a new one arrives as a flag
   // Pinned where ALPHA was when it asked, so the window holds still while you answer even if
@@ -28,13 +27,34 @@ export function AskWindow() {
   const flagRef = useRef<HTMLElement>(null);
   // The flag may sit under the square card or its action panel (or wait out a mini game); say so, and the intel
   // stream raises ALPHA's ask where it can't be missed.
-  useLayoutEffect(() => {
+  const check = useRef(() => {});
+  check.current = () => {
     const flag = flagRef.current?.getBoundingClientRect();
     const panels = [...document.querySelectorAll('[data-testid="square-card"], [data-testid="action-panel"]')].map((el) => el.getBoundingClientRect());
     const covered = !!flag && panels.some((card) => flag.left < card.right && flag.right > card.left && flag.top < card.bottom && flag.bottom > card.top);
-    const hidden = !!waitingCalls(comms).length && (!flag || (covered && openId !== currentCall(comms)?.id));
+    const c = game.get().comms;
+    const hidden = !!waitingCalls(c).length && (!flag || (covered && openId !== currentCall(c)?.id));
     if (hidden !== getAskHidden()) bus.emit(EV.askHidden, hidden);
-  });
+  };
+  useLayoutEffect(() => check.current());
+  // The flag rides the camera and the card settles after the state that opened it: check
+  // again a frame after either moves, once the page has laid out.
+  useEffect(() => {
+    let frame = 0;
+    const again = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => check.current());
+    };
+    for (const e of [EV.overlays, EV.camera, EV.mapRect]) bus.on(e, again);
+    // And a few times a second regardless: panels settle and reflow in ways no event reports,
+    // and a buried call must surface. It's a handful of rect reads.
+    const every = setInterval(() => check.current(), 300);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearInterval(every);
+      for (const e of [EV.overlays, EV.camera, EV.mapRect]) bus.off(e, again);
+    };
+  }, []);
   useEffect(() => {
     const open = () => {
       const call = currentCall(game.get().comms);

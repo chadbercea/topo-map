@@ -682,21 +682,28 @@ html, body {
   .hud {
     gap: 6px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto auto;
     grid-template-areas:
       'bar'
       'assets'
       'map'
       'tools'
       'band'
+      'handle'
       'tabs'
       'dock';
   }
   /* Stream, team and satcom share one docked panel; the tabs pick which. */
   .slot-stream, .slot-team, .slot-satcom { grid-area: dock; align-self: stretch; }
   .hud:not([data-tab='intel']) .slot-stream, .hud:not([data-tab='team']) .slot-team, .hud:not([data-tab='satcom']) .slot-satcom { display: none; }
-  .stream, .team, .satcom { height: 30dvh; max-height: 30dvh; }
+  .stream, .team, .satcom { height: var(--sheet, 30dvh); max-height: var(--sheet, 30dvh); transition: height 160ms ease-out, max-height 160ms ease-out; }
   .dock-tabs { grid-area: tabs; display: flex; }
+  /* The bottom sheet (ILI-1214): peek shows just the tabs, half the panel, full most of it. */
+  .hud[data-sheet='full'] { --sheet: 62dvh; }
+  .hud[data-sheet='peek'] :is(.slot-stream, .slot-team, .slot-satcom) { display: none; }
+  .sheet-handle { grid-area: handle; pointer-events: auto; justify-self: center; display: grid; place-items: center; width: 96px; height: 22px; margin-bottom: -4px; padding: 0; background: none; border: none; cursor: grab; touch-action: none; }
+  .sheet-handle span { width: 44px; height: 4px; border-radius: 2px; background: var(--line); }
+  .sheet-handle:active span { background: var(--accent); }
   .slot-band { display: contents; }
   .band-cards { grid-area: band; }
   .band-cards:empty { display: none; }
@@ -732,7 +739,20 @@ html, body {
   .square-card .sc-picture { width: 160px; }
   .square-card .facts { font-size: 10px; }
   .comms .actions button { min-height: 32px; padding: 0 8px; font-size: 10px; }
+  /* The action panel on a phone: tight, so every strike shows under the card. */
+  .action-panel .ap-head { padding: 4px 10px; }
+  .action-panel .sc-event { padding: 4px 10px 6px; }
+  .action-panel .target-menu { gap: 4px; }
+  .action-panel .target-menu .options { gap: 4px; }
+  .action-panel .target-menu .options button { padding: 2px 8px; gap: 0; }
 }
+
+/* Touch screens (ILI-1214): every control at least 44 px tall. */
+@media (pointer: coarse) {
+  .dock-tabs button, .recentre, .bar-top .pause, .square-card button, .action-panel button, .satcom > .actions button, .ask .flag, .incoming-alert button { min-height: 44px; }
+  .square-card .x { min-width: 44px; }
+}
+@media (prefers-reduced-motion: reduce) { .stream, .team, .satcom { transition: none; } }
 
 /* The panels' tabs, at the compact and medium tiers (ILI-1213). */
 .dock-tabs { gap: 4px; pointer-events: auto; }
