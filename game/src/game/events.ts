@@ -26,7 +26,7 @@ export const toScreen = (x: number, y: number) => projector?.(x, y) ?? null;
 // The part of the screen the map gets, between the HUD panels, in CSS px. cover*: the open
 // screen the grid covers, below the mission bar, right of a docked intel stream and above the
 // bottom-right panels or a phone's dock (ILI-1186).
-export type MapRect = { x: number; y: number; width: number; height: number; coverLeft?: number; coverTop?: number; coverBottom?: number };
+export type MapRect = { x: number; y: number; width: number; height: number; coverLeft?: number; coverTop?: number; coverBottom?: number; coverRight?: number };
 
 let lastRect: MapRect | null = null;
 bus.on(EV.mapRect, (r: MapRect) => (lastRect = r));
