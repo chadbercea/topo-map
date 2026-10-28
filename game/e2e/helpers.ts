@@ -94,8 +94,14 @@ export async function openAsk(page: Page) {
     if (await panel.count()) return panel.click();
     const answer = page.getByTestId('answer-alpha');
     if (await answer.count()) {
-      if (!(await answer.isVisible())) await page.getByTestId('tab-intel').click();
-      return answer.click();
+      if (await answer.isVisible()) return answer.click();
+      // In the stream behind another tab: open it, unless the action panel covers the dock and
+      // its tabs (it raises the ask itself, a moment later).
+      const tab = page.getByTestId('tab-intel');
+      if (await tab.isVisible()) {
+        await tab.click();
+        return answer.click();
+      }
     }
     // The flag rides ALPHA's marker, so on a live clock it may never hold still long enough
     // to count as stable: click it where it is (collision.spec checks nothing covers it).
