@@ -181,29 +181,39 @@ html, body {
 .square-card .facts { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; margin: 0; padding: 6px 10px; font-size: 11px; flex: 1; }
 .square-card .facts dt { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 9px; line-height: 15px; }
 .square-card .facts dd { margin: 0; color: var(--ink); line-height: 15px; }
-.square-card .sc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--line); }
-.square-card .sc-row .bar { flex: 1; height: 6px; }
-.square-card .secs { color: var(--ink); font-size: 11px; margin: 0; flex-basis: 100%; }
+:is(.square-card, .action-panel) .sc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--line); }
+:is(.square-card, .action-panel) .sc-row .bar { flex: 1; height: 6px; }
+:is(.square-card, .action-panel) .secs { color: var(--ink); font-size: 11px; margin: 0; flex-basis: 100%; }
 .square-card .facts .result { color: #f2c14e; }
-.square-card .sc-row .bar + .secs, .square-card .sc-row .bar + button { flex-basis: auto; }
+:is(.square-card, .action-panel) .sc-row .bar + .secs, :is(.square-card, .action-panel) .sc-row .bar + button { flex-basis: auto; }
 .square-card .modes { display: flex; gap: 6px; flex: 1; }
-.square-card button { font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: none; border: 1px solid var(--accent); min-height: 32px; padding: 0 12px; cursor: pointer; }
+:is(.square-card, .action-panel) button { font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: none; border: 1px solid var(--accent); min-height: 32px; padding: 0 12px; cursor: pointer; }
 .square-card .modes button { flex: 1; padding: 3px 6px; display: grid; justify-items: center; gap: 1px; }
 .square-card .modes small { color: var(--dim); text-transform: none; letter-spacing: 0; font-size: 10px; }
 .square-card .modes button:hover small { color: inherit; }
-.square-card button:hover:not(:disabled) { color: #0b0f0d; background: var(--accent); }
-.square-card button:disabled { opacity: 0.45; cursor: default; }
-.square-card button.quiet { color: var(--dim); border-color: transparent; }
-.square-card .sc-event { padding: 6px 10px 8px; border-top: 1px solid var(--line); border-left: 3px solid var(--kind, var(--accent)); }
-.square-card .sc-event h3 { margin: 0; font-size: 10px; letter-spacing: 0.12em; color: var(--kind, var(--accent)); }
-.square-card .sc-event .title { font-size: 12px; margin: 0; }
-.square-card .sc-event .note { font-size: 11px; margin: 0; }
-.square-card .target-menu .options { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 4px; }
-.square-card .target-menu .options button { justify-self: stretch; min-height: 40px; padding: 4px 6px; font-size: 10px; line-height: 1.2; text-transform: none; letter-spacing: 0; border-color: #e5484d; }
-.square-card .target-menu .options button:hover:not(:disabled) { color: var(--ink); background: rgba(229, 72, 77, 0.18); }
-.square-card .signal-options button.intercept { color: #0b0f0d; background: #8fb8ff; border-color: #8fb8ff; }
-.square-card .signal-options button.jam { color: #8fb8ff; border-color: #8fb8ff; }
+:is(.square-card, .action-panel) button:hover:not(:disabled) { color: #0b0f0d; background: var(--accent); }
+:is(.square-card, .action-panel) button:disabled { opacity: 0.45; cursor: default; }
+:is(.square-card, .action-panel) button.quiet { color: var(--dim); border-color: transparent; }
+:is(.square-card, .action-panel) .sc-event { padding: 6px 10px 8px; border-top: 1px solid var(--line); border-left: 3px solid var(--kind, var(--accent)); }
+:is(.square-card, .action-panel) .sc-event h3 { margin: 0; font-size: 10px; letter-spacing: 0.12em; color: var(--kind, var(--accent)); }
+:is(.square-card, .action-panel) .sc-event .title { font-size: 12px; margin: 0; }
+:is(.square-card, .action-panel) .sc-event .note { font-size: 11px; margin: 0; }
+:is(.square-card, .action-panel) .target-menu .options { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 4px; }
+:is(.square-card, .action-panel) .target-menu .options button { justify-self: stretch; min-height: 40px; padding: 4px 6px; font-size: 10px; line-height: 1.2; text-transform: none; letter-spacing: 0; border-color: #e5484d; }
+:is(.square-card, .action-panel) .target-menu .options button:hover:not(:disabled) { color: var(--ink); background: rgba(229, 72, 77, 0.18); }
+:is(.square-card, .action-panel) .signal-options button.intercept { color: #0b0f0d; background: #8fb8ff; border-color: #8fb8ff; }
+:is(.square-card, .action-panel) .signal-options button.jam { color: #8fb8ff; border-color: #8fb8ff; }
 @media (prefers-reduced-motion: reduce) { .square-card, .square-card .sc-picture { animation: none; } }
+/* The action panel (ILI-1211): what HQ can do about the square, docked to the square card. */
+/* Not quite opaque, blurred like the other panels: Chrome mis-composites a fully opaque fixed
+   layer over the WebGL map (a white block, flipped, on the software renderer). */
+.action-panel { position: fixed; z-index: 7; display: grid; align-content: start; overflow-y: auto; pointer-events: auto; background: rgba(11, 15, 13, 0.97); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid #e5484d; animation: ask-in 160ms ease-out; }
+.action-panel .ap-head { padding: 7px 10px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--line); }
+.action-panel .ap-head b { color: var(--ink); font-weight: 600; }
+.action-panel > .sc-event:first-of-type, .action-panel .ap-head + .sc-row { border-top: none; }
+.action-panel .target-menu .options { grid-template-columns: 1fr 1fr; gap: 6px; }
+.action-panel .target-menu .options button { min-height: 44px; font-size: 11px; }
+@media (prefers-reduced-motion: reduce) { .action-panel { animation: none; } }
 
 .event-card button {
   justify-self: start;

@@ -31,8 +31,6 @@ export function IntelStream() {
   const open = useGame((s) => s.openEvent);
   const items = useMemo(() => streamView(game.get()), [stream, messages, events]);
   const hidden = useAskHidden();
-  const playing = useGame((s) => s.minigame?.status === 'active');
-  const call = useGame((s) => currentCall(s.comms));
 
   return (
     <section className="panel stream" data-testid="intel-stream" aria-label="Intel stream">
@@ -40,20 +38,7 @@ export function IntelStream() {
         INTEL <span className="count">{items.length}</span>
       </h2>
       <ol className="items" data-testid="intel-items">
-        {hidden && call && (
-          // ALPHA's flag is out of sight: raise the ask here, where it can't be missed.
-          <li className="incoming-alert" data-testid="incoming-alert" role="alert">
-            <span className="who">INCOMING · {call.from}</span>
-            <p>{call.text}</p>
-            {playing ? (
-              <small>Answer when the strike is done.</small>
-            ) : (
-              <button onClick={() => bus.emit(EV.openAsk)} data-testid="answer-alpha">
-                Answer ›
-              </button>
-            )}
-          </li>
-        )}
+        {hidden && <IncomingAlert as="li" testId="answer-alpha" />}
         {items.map((i) => (
           <li
             key={i.id}
@@ -85,5 +70,26 @@ export function IntelStream() {
         ))}
       </ol>
     </section>
+  );
+}
+
+// ALPHA's ask, raised where it can't be missed when its flag is out of sight: at the top of
+// the intel stream, and on a phone at the top of the action panel that covers the dock.
+export function IncomingAlert({ as: Tag, testId }: { as: 'li' | 'div'; testId: string }) {
+  const playing = useGame((s) => s.minigame?.status === 'active');
+  const call = useGame((s) => currentCall(s.comms));
+  if (!call) return null;
+  return (
+    <Tag className="incoming-alert" data-testid="incoming-alert" role="alert">
+      <span className="who">INCOMING · {call.from}</span>
+      <p>{call.text}</p>
+      {playing ? (
+        <small>Answer when the strike is done.</small>
+      ) : (
+        <button onClick={() => bus.emit(EV.openAsk)} data-testid={testId}>
+          Answer ›
+        </button>
+      )}
+    </Tag>
   );
 }

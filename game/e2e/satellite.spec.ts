@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start, untilOnStation, openAsk, linked } from './helpers';
 
-test('pick a square, scan it, look on station: the larger square, the find, and the strikes on one card', async ({ page }) => {
+test('pick a square, scan it, look on station: the larger square and the find on the card, the strikes beside it', async ({ page }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -40,9 +40,12 @@ test('pick a square, scan it, look on station: the larger square, the find, and 
   await expect(page.getByTestId('intel-items')).toContainText('E3 imaged (burst): 5 fighters, unaware'); // the contact's block on the card says what's there
   await expect(page.getByTestId('square-facts')).toContainText(/Found\s*.*checkpoint/i);
   await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/); // inline in the stream too
-  await expect(card.getByTestId('event-card')).toContainText('CONTACT · E3');
-  await expect(card.getByTestId('fire-sniper')).toBeVisible();
-  await expect(card.getByTestId('send-team')).toBeVisible();
+  // What to do about it is the action panel beside the card (ILI-1211), every strike in view.
+  const act = page.getByTestId('action-panel');
+  await expect(card.getByTestId('event-card')).toHaveCount(0);
+  await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
+  await expect(act.getByTestId('fire-sniper')).toBeInViewport({ ratio: 1 });
+  await expect(act.getByTestId('send-team')).toBeInViewport({ ratio: 1 });
   await card.getByRole('button', { name: 'Close' }).click();
   await expect(card).toHaveCount(0); // closed: the look is filed
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');

@@ -26,12 +26,12 @@ export function AskWindow() {
   const anchors = useRef(new Map<string, { x: number; y: number }>());
   const [, redraw] = useState(0);
   const flagRef = useRef<HTMLElement>(null);
-  // The flag may sit under the square card (or wait out a mini game); say so, and the intel
+  // The flag may sit under the square card or its action panel (or wait out a mini game); say so, and the intel
   // stream raises ALPHA's ask where it can't be missed.
   useLayoutEffect(() => {
     const flag = flagRef.current?.getBoundingClientRect();
-    const card = document.querySelector('[data-testid="square-card"]')?.getBoundingClientRect();
-    const covered = !!flag && !!card && flag.left < card.right && flag.right > card.left && flag.top < card.bottom && flag.bottom > card.top;
+    const panels = [...document.querySelectorAll('[data-testid="square-card"], [data-testid="action-panel"]')].map((el) => el.getBoundingClientRect());
+    const covered = !!flag && panels.some((card) => flag.left < card.right && flag.right > card.left && flag.top < card.bottom && flag.bottom > card.top);
     const hidden = !!waitingCalls(comms).length && (!flag || (covered && openId !== currentCall(comms)?.id));
     if (hidden !== getAskHidden()) bus.emit(EV.askHidden, hidden);
   });
