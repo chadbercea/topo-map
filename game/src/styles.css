@@ -483,6 +483,12 @@ html, body {
 .satcom > .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .satcom > .actions small { color: var(--dim); font-size: 11px; }
 .satcom > .actions .primary { font: inherit; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #0b0f0d; background: #f2c14e; border: 1px solid #f2c14e; min-height: 36px; padding: 0 14px; cursor: pointer; }
+/* ALPHA's call answered from the panel (ILI-1207): the flag's orange buttons, under the thread. */
+.satcom > .actions[data-testid='satcom-responses'] { --comms: #ff8a2a; padding-top: 6px; border-top: 1px solid var(--line); }
+.satcom > .actions[data-testid='satcom-responses'] button { font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--comms); background: none; border: 1px solid var(--comms); min-height: 32px; padding: 0 10px; cursor: pointer; }
+.satcom > .actions[data-testid='satcom-responses'] button:hover:not(:disabled), .satcom > .actions[data-testid='satcom-responses'] button:focus-visible { color: #0b0f0d; background: var(--comms); }
+.satcom > .actions[data-testid='satcom-responses'] button:disabled { opacity: 0.5; cursor: default; }
+.satcom > .actions[data-testid='satcom-responses'] small { font-size: 10px; text-transform: none; letter-spacing: 0; }
 
 /* The call: unmistakably a call that needs an answer: who's calling, the question, the answers. */
 /* ALPHA's ask (ILI-1199): a small window at the top right of its marker, tiny text replies. */
