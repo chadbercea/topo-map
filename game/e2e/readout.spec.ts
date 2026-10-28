@@ -1,13 +1,14 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, start } from './helpers';
 
-test('the team panel shows every operator: heartbeat, status, ammo and meds', async ({ page, isMobile }) => {
+test('the team panel shows every operator: heartbeat, status, ammo and meds, under TEAM (ILI-1223)', async ({ page, isMobile }) => {
   await start(page);
   if (isMobile) await page.getByTestId('tab-team').click();
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
   await expect(page.getByTestId('readout').locator('svg.ecg')).toHaveCount(5);
   await expect(page.getByTestId('op-medic')).toContainText('MEDS');
-  await expect(page.getByTestId('team-condition')).toContainText('5/5 fit');
+  await expect(page.getByTestId('team-title')).toHaveText('TEAM');
+  await expect(page.getByTestId('team-condition')).toHaveCount(0); // no team totals: each row has its own
 });
 
 test('a wound shows on the operator’s heartbeat and status, then heals', async ({ page, isMobile }) => {
@@ -24,7 +25,6 @@ test('a wound shows on the operator’s heartbeat and status, then heals', async
   await expect(gunner).toHaveAttribute('data-condition', 'caution');
   await expect(gunner).toContainText('CAUTION');
   await expect(gunner.locator('svg.ecg')).toHaveAttribute('data-condition', 'caution');
-  await expect(page.getByTestId('team-condition')).toContainText('5/5 fit');
 
   // The medic treats the gunner twice (50 → 85 → 100, 4 s each).
   await fastForward(page, 10_000);
