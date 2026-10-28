@@ -97,12 +97,11 @@ export async function openAsk(page: Page) {
       if (!(await answer.isVisible())) await page.getByTestId('tab-intel').click();
       return answer.click();
     }
-    const ok = await page
-      .getByTestId('incoming')
-      .click({ timeout: 3_000 }) // CI's software renderer is slow to call anything stable
-      .then(() => true)
-      .catch(() => false);
-    if (ok) return;
+    // The flag rides ALPHA's marker, so on a live clock it may never hold still long enough
+    // to count as stable: click it where it is (collision.spec checks nothing covers it).
+    const flag = page.getByTestId('incoming');
+    if (await flag.count()) return flag.dispatchEvent('click');
+    await page.waitForTimeout(500);
   }
   throw new Error('ALPHA\'s ask never came up to answer');
 }
