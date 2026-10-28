@@ -37,6 +37,19 @@ test('ALPHA\u2019s ask flags at its marker and opens on a click; answering close
   await expect(log).toContainText('HQ › Move in blind');
 });
 
+test('COMMS SAT answers ALPHA too: the call\'s replies wait under the thread (ILI-1207)', async ({ page, isMobile }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  await fastForward(page, 500);
+  if (isMobile) await page.getByTestId('tab-satcom').click();
+  const replies = page.getByTestId('satcom').getByTestId('satcom-responses');
+  await replies.getByRole('button', { name: 'Move in blind' }).click();
+  await expect(replies).toHaveCount(0);
+  await expect(page.getByTestId('comms')).toHaveCount(0); // the flag came down with it
+  await expect(page.getByTestId('satcom').locator('.thread')).toContainText('HQ › Move in blind');
+});
+
 test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, attack or go around', async ({ page }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');

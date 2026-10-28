@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
-import { currentCall, waitingCalls } from '../sim/comms';
+import { currentCall, waitingCalls, type Message } from '../sim/comms';
 import { blocked } from '../sim/responses';
 import { bus, EV, getAskHidden, getMapRect, toScreen } from '../game/events';
 
@@ -18,7 +18,7 @@ export function AskWindow() {
   const pos = useGame((s) => s.team.position);
   const callsign = useGame((s) => s.team.callsign);
   const playing = useGame((s) => s.minigame?.status === 'active');
-  const state = useGame((s) => s);
+  useGame((s) => s); // re-check, on every change, whether the square card covers the flag
   const [focus, setFocus] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null); // the ask HQ opened; a new one arrives as a flag
   // Pinned where ALPHA was when it asked, so the window holds still while you answer even if
@@ -124,25 +124,34 @@ export function AskWindow() {
             <p className="text" data-testid="comms-text">
               {call.text}
             </p>
-            <div className="actions" data-testid="responses">
-              {call.responses ? (
-                call.responses.map((r) => {
-                  const why = blocked(state, r);
-                  return (
-                    <button key={r.id} disabled={!!why} onClick={() => game.respond(call.id, r.id)} title={why ?? undefined}>
-                      {r.label}
-                      {why && <small> ({why})</small>}
-                    </button>
-                  );
-                })
-              ) : (
-                <button onClick={() => game.confirmCall(call.id)}>{call.holds ? 'Copy, proceed' : 'Copy'}</button>
-              )}
-            </div>
+            <Replies call={call} testId="responses" />
           </>
         )}
       </section>
     </>
+  );
+}
+
+// HQ's answers to a call, as buttons: each reply, greyed with the reason when HQ can't afford
+// it or lacks the kit, or a plain Copy. The same buttons at ALPHA's flag and in COMMS SAT.
+export function Replies({ call, testId }: { call: Message; testId: string }) {
+  const state = useGame((s) => s);
+  return (
+    <div className="actions" data-testid={testId}>
+      {call.responses ? (
+        call.responses.map((r) => {
+          const why = blocked(state, r);
+          return (
+            <button key={r.id} disabled={!!why} onClick={() => game.respond(call.id, r.id)} title={why ?? undefined}>
+              {r.label}
+              {why && <small> ({why})</small>}
+            </button>
+          );
+        })
+      ) : (
+        <button onClick={() => game.confirmCall(call.id)}>{call.holds ? 'Copy, proceed' : 'Copy'}</button>
+      )}
+    </div>
   );
 }
 

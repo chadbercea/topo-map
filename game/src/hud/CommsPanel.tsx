@@ -1,16 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from '../sim/store';
-import { kindOf } from '../sim/comms';
+import { currentCall, kindOf } from '../sim/comms';
+import { Replies } from './AskWindow';
 import { gameClock } from '../sim/gameTime';
 
 export const RELAY = 'RELAY-7'; // the comms satellite HQ talks to the team through
 
 // COMMS SAT (ILI-1199): RELAY-7 and the link through it to ALPHA, under the intel stream. A
-// log of every text and call both ways, HQ's answers included. Nothing to press here: when
-// ALPHA needs something, its ask pops up beside its marker on the map (AskWindow).
+// log of every text and call both ways, HQ's answers included. When ALPHA needs something its
+// flag goes up on the map (AskWindow), and the replies wait here too, under the thread
+// (ILI-1207): the comms panel is where HQ answers comms. They wait out a mini game, as the flag does.
 export function CommsPanel() {
   const callsign = useGame((s) => s.team.callsign);
   const messages = useGame((s) => s.comms.messages);
+  const call = useGame((s) => (s.minigame?.status === 'active' ? undefined : currentCall(s.comms)));
   const log = useRef<HTMLOListElement>(null);
   const thread = messages.filter((m) => m.from === callsign || kindOf(m) === 'call');
 
@@ -37,6 +40,7 @@ export function CommsPanel() {
           </li>
         ))}
       </ol>
+      {call && <Replies call={call} testId="satcom-responses" />}
     </section>
   );
 }
