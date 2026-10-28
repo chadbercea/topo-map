@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, untilOnStation, openAsk } from './helpers';
+import { fastForward, freeze, start, untilOnStation, openAsk, linked } from './helpers';
 
 test('ALPHA holds short of unimaged ground and asks; Move in blind sends it on', async ({ page, isMobile }) => {
   await start(page, '?debug');
@@ -47,6 +47,13 @@ test('COMMS SAT answers ALPHA too: the call\'s replies wait under the thread (IL
   await replies.getByRole('button', { name: 'Move in blind' }).click();
   await expect(replies).toHaveCount(0);
   await expect(page.getByTestId('comms')).toHaveCount(0); // the flag came down with it
+  // It goes up the link (ILI-1209): sending, then ALPHA reads it back.
+  await expect(page.getByTestId('satcom').getByTestId('sending')).toContainText('HQ › Move in blind · sending');
+  await expect(page.getByTestId('sent')).toContainText('Move in blind · sending to ALPHA');
+  await linked(page);
+  await expect(page.getByTestId('sending')).toHaveCount(0);
+  await expect(page.getByTestId('sent')).toHaveCount(0);
+  await expect(page.getByTestId('satcom').locator('.thread')).toContainText('Copy, moving in blind.');
   await expect(page.getByTestId('satcom').locator('.thread')).toContainText('HQ › Move in blind');
 });
 
@@ -58,6 +65,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await fastForward(page, 500);
   await openAsk(page);
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
+  await linked(page);
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click(); // F4 is clear
   await page.getByTestId('square-card').getByRole('button', { name: 'Close' }).click();
@@ -69,6 +77,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await openAsk(page);
   await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of E3/);
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
+  await linked(page);
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click();
   await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/);
@@ -82,6 +91,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   const responses = page.getByTestId('responses');
   for (const name of ['Hold and watch', 'Attack', 'Go around']) await expect(responses.getByRole('button', { name })).toBeVisible();
   await responses.getByRole('button', { name: 'Go around' }).click();
+  await linked(page);
   await expect.poll(() => page.evaluate(() => window.game.get().team.route)).toContain('E4');
 });
 

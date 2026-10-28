@@ -89,3 +89,6 @@ export async function openAsk(page: Page) {
   if (!(await answer.isVisible())) await page.getByTestId('tab-intel').click();
   await answer.click();
 }
+
+// HQ's answer takes the link's time to reach ALPHA (ILI-1209, LINK_MS): wait it out on a frozen clock.
+export const linked = (page: Page) => fastForward(page, 2_500);

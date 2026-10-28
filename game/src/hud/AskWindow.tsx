@@ -55,6 +55,19 @@ export function AskWindow() {
 
   const calls = waitingCalls(comms);
   const call = calls.find((m) => m.id === focus) ?? currentCall(comms);
+  // HQ's answer on its way up the link (ILI-1209): where the flag was, a tag says it's going out
+  // until ALPHA reads it back.
+  const out = comms.inFlight.at(-1);
+  const sent = out && comms.messages.find((m) => m.id === out.id);
+  if (!call && sent && !playing) {
+    const where = place(anchors.current.get(sent.id) ?? pos);
+    const label = out.responseId ? sent.responses?.find((r) => r.id === out.responseId)?.label : 'Copy';
+    return (
+      <p className="ask sent" data-testid="sent" data-pinned={where.inView} style={where.style && { ...where.style, width: undefined }} role="status">
+        <Dish /> {label} · sending to {sent.from}
+      </p>
+    );
+  }
   if (!call || playing) return null;
   const at = calls.indexOf(call);
   if (!anchors.current.has(call.id)) anchors.current.set(call.id, { x: Math.round(pos.x), y: Math.round(pos.y) });
@@ -66,22 +79,7 @@ export function AskWindow() {
     setOpenId(next);
   };
   const who = call.from === callsign ? callsign : call.from;
-
-  // Top right of the marker, inside the open map; else the open map's foot.
-  const area = getMapRect();
-  const raw = toScreen(anchor.x, anchor.y);
-  const p = raw && { x: Math.round(raw.x), y: Math.round(raw.y) };
-  const inView = !!p && !!area && p.x >= area.x && p.x <= area.x + area.width - 40 && p.y >= area.y + 40 && p.y <= area.y + area.height;
-  const w = Math.min(WIDTH, innerWidth - 32);
-  const right = inView && p!.x + 14 + w <= area!.x + area!.width; // room on the marker's right?
-  const side = right ? 'right' : 'left';
-  const style = inView
-    ? right
-      ? { left: p!.x + 14, top: Math.max(p!.y - 14, area!.y + 120), width: w }
-      : { right: innerWidth - Math.max(area!.x + w, p!.x - 14), top: Math.max(p!.y - 14, area!.y + 120), width: w } // flag and window both end at the marker
-    : area
-      ? { left: area.x + 8, top: area.y + area.height - 8, width: w }
-      : undefined;
+  const { p, inView, side, style } = place(anchor);
 
   return (
     <>
@@ -130,6 +128,26 @@ export function AskWindow() {
       </section>
     </>
   );
+}
+
+// Top right of the marker, inside the open map (top left when there's no room on the right);
+// else the open map's foot.
+function place(anchor: { x: number; y: number }) {
+  const area = getMapRect();
+  const raw = toScreen(anchor.x, anchor.y);
+  const p = raw && { x: Math.round(raw.x), y: Math.round(raw.y) };
+  const inView = !!p && !!area && p.x >= area.x && p.x <= area.x + area.width - 40 && p.y >= area.y + 40 && p.y <= area.y + area.height;
+  const w = Math.min(WIDTH, innerWidth - 32);
+  const right = inView && p!.x + 14 + w <= area!.x + area!.width; // room on the marker's right?
+  const side = right ? 'right' : 'left';
+  const style = inView
+    ? right
+      ? { left: p!.x + 14, top: Math.max(p!.y - 14, area!.y + 120), width: w }
+      : { right: innerWidth - Math.max(area!.x + w, p!.x - 14), top: Math.max(p!.y - 14, area!.y + 120), width: w } // flag and window both end at the marker
+    : area
+      ? { left: area.x + 8, top: area.y + area.height - 8, width: w }
+      : undefined;
+  return { p, inView, side, style };
 }
 
 // HQ's answers to a call, as buttons: each reply, greyed with the reason when HQ can't afford

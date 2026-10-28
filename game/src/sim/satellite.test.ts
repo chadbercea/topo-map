@@ -5,7 +5,7 @@ import { PATROL_MOVES_MS, PATROL_WALK_MS } from './missions/blackBox';
 import { SETTLE_MS, SLEW_MS_PER_SQUARE, slewMs } from './satellite';
 import { initialState, type GameState } from './state';
 import { createStore, type Store } from './store';
-import { run, walking } from './testkit';
+import { answer, run, walking } from './testkit';
 
 // At the start ALPHA holds short of F4, which nobody has imaged. ORION-3 is over G5.
 const atRequest = () => createStore(run(initialState(), 500));
@@ -37,7 +37,7 @@ describe('ORION-3 tasking', () => {
 
   it('Look at it tasks ORION-3 to F4; ALPHA waits on it and does not time out', () => {
     const store = atRequest();
-    store.respond(REQUEST, 'send');
+    answer(store, REQUEST, 'send');
     const s = store.get();
     expect(s.satellite).toMatchObject({ state: 'slewing', aim: 'F4', callId: REQUEST });
     // G5 to F4 is one square diagonally.
@@ -50,7 +50,7 @@ describe('ORION-3 tasking', () => {
 
   it('a photo images the square and releases ALPHA', () => {
     const store = atRequest();
-    store.respond(REQUEST, 'send');
+    answer(store, REQUEST, 'send');
     onStation(store);
     store.capture('photo');
     const s = store.get();
@@ -86,14 +86,14 @@ describe('ORION-3 tasking', () => {
     store.lookAt('A1');
     expect(store.get().satellite.aim).toBe('G4');
     const send = store.get().comms.messages.find((m) => m.id === REQUEST)!.responses!.find((r) => r.id === 'send')!;
-    store.respond(REQUEST, 'send');
+    answer(store, REQUEST, 'send');
     expect(store.get().comms.messages.find((m) => m.id === REQUEST)!.status).toBe('new');
     expect(send.label).toBe('Look at it');
   });
 
   it('cancel stops it where it is, and ALPHA moves on without imagery', () => {
     const store = atRequest();
-    store.respond(REQUEST, 'send');
+    answer(store, REQUEST, 'send');
     store.tick(1_000);
     store.cancelLook();
     expect(store.get().satellite.state).toBe('idle');

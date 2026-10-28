@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, untilOnStation, openAsk } from './helpers';
+import { fastForward, freeze, start, untilOnStation, openAsk, linked } from './helpers';
 
 test('pick a square, scan it, look on station: the larger square, the find, and the strikes on one card', async ({ page }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
@@ -54,6 +54,7 @@ test('ALPHA asks for imagery: Look at it, then a photo on station lets it move',
   await freeze(page);
   await openAsk(page);
   await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
+  await linked(page);
   await expect(page.getByTestId('team-panel')).toContainText('Waiting on the look');
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click();

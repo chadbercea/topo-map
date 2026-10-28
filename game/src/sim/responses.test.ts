@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { OBSERVE_MS } from './contacts';
+import { LINK_MS, waitingCalls } from './comms';
 import { blocked, TREE } from './responses';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { run, walking, untilHold } from './testkit';
+import { answer, run, walking, untilHold } from './testkit';
 
 // ALPHA at F4 with the technicals in E3 found: it holds short and asks what to do.
 const atContact = () => {
@@ -35,7 +36,7 @@ describe('response tree', () => {
 
   it('attack: the team moves in and fights with surprise', () => {
     const store = atContact();
-    store.respond(CALL, 'attack');
+    answer(store, CALL, 'attack');
     expect(msg(store.get(), CALL)).toMatchObject({ status: 'read', answer: 'attack' });
     expect(store.get().team.holdFor).toBeNull();
     let s = store.get();
@@ -45,7 +46,7 @@ describe('response tree', () => {
 
   it('observe: the team watches, gets a look next door, then asks again', () => {
     const store = atContact();
-    store.respond(CALL, 'observe');
+    answer(store, CALL, 'observe');
     let s = store.get();
     expect(s.contacts[0].observed).toBe(true);
     const held = s.team.position;
@@ -59,7 +60,7 @@ describe('response tree', () => {
 
   it('go around: the route detours through a neighbour and the contact is avoided', () => {
     const store = atContact();
-    store.respond(CALL, 'avoid');
+    answer(store, CALL, 'avoid');
     const s = store.get();
     expect(s.team.route).not.toContain('E3');
     expect(s.team.route[2]).toBe('E4'); // touches F4 before and D3 after
@@ -70,7 +71,7 @@ describe('response tree', () => {
     const store = atContact();
     const s0 = store.get();
     store.set({ ...s0, map: { ...s0.map, scanned: s0.map.scanned.filter((sq) => sq !== 'E4') } });
-    store.respond(CALL, 'avoid');
+    answer(store, CALL, 'avoid');
     const s = run(store.get(), 500);
     expect(s.team.holdFor).toMatch(/^unimaged-E4/);
   });
@@ -83,9 +84,28 @@ describe('response tree', () => {
     expect(blocked({ ...s, capabilities: [] }, send)).toBe('Unavailable');
 
     const store = atContact();
-    store.respond(CALL, 'attack');
+    answer(store, CALL, 'attack');
     const after = store.get();
     store.respond(CALL, 'avoid');
     expect(store.get()).toBe(after);
+  });
+
+  it('an answer goes up the link: ALPHA keeps holding, then reads it back and acts (ILI-1209)', () => {
+    const store = atContact();
+    store.respond(CALL, 'attack');
+    const sent = store.get();
+    expect(waitingCalls(sent.comms)).toHaveLength(0); // the flag comes down at once
+    expect(sent.team.holdFor).toBe(CALL); // but the team hasn't heard yet
+    expect(sent.comms.messages.some((m) => m.text === 'Moving in hard.')).toBe(false);
+    store.respond(CALL, 'avoid'); // one answer at a time
+    expect(store.get()).toBe(sent);
+    store.tick(LINK_MS - 100);
+    expect(store.get().team.holdFor).toBe(CALL);
+    store.tick(100);
+    const landed = store.get();
+    expect(landed.comms.messages.at(-1)?.text).toBe('Moving in hard.');
+    expect(landed.comms.messages.find((m) => m.id === CALL)?.answer).toBe('attack');
+    expect(landed.team.holdFor).not.toBe(CALL);
+    expect(landed.comms.inFlight).toHaveLength(0);
   });
 });

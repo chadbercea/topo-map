@@ -2,6 +2,7 @@
 import { initialState, ROUTE, type GameState } from './state';
 import { createStore } from './store';
 import { step } from './systems';
+import { LINK_MS } from './comms';
 
 export const run = (s: GameState, ms: number) => {
   for (let t = 0; t < ms; t += 100) s = step(s, 100);
@@ -34,4 +35,10 @@ export function untilHold(s: GameState, maxMs = 120_000) {
   let next = s;
   for (let t = 0; t < maxMs && !next.team.holdFor; t += 100) next = run(next, 100);
   return next;
+}
+
+// Answer a call through the store and wait out the link, so the answer has landed (ILI-1209).
+export function answer(store: ReturnType<typeof createStore>, id: string, responseId: string) {
+  store.respond(id, responseId);
+  store.tick(LINK_MS);
 }

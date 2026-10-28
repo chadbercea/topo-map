@@ -3,7 +3,7 @@ import { squareCenter } from '../map/grid';
 import { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH, SEARCH_MS } from './sites';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { run, walking } from './testkit';
+import { answer, run, walking } from './testkit';
 
 const withContact = (status: 'revealed' | 'hidden' = 'revealed'): GameState => {
   const s = walking();
@@ -47,7 +47,7 @@ describe('kill sites', () => {
     expect(s.comms.messages.find((m) => m.id === s.team.holdFor)?.text).toMatch(/^At the kill site in E3/);
     const budget = s.resources.budget;
     const st = createStore(s);
-    st.respond(s.team.holdFor!, 'search');
+    answer(st, s.team.holdFor!, 'search');
     s = st.get();
     expect(s.resources.budget).toBe(budget + SEARCH_CASH);
     expect(s.events.find((e) => e.kind === 'site')?.status).toBe('resolved');
@@ -63,7 +63,7 @@ describe('kill sites', () => {
     let s = store.get();
     for (let i = 0; i < 3000 && !s.team.holdFor?.startsWith('site-call'); i++) s = run(s, 100);
     const st = createStore(s);
-    st.respond(s.team.holdFor!, 'pass');
+    answer(st, s.team.holdFor!, 'pass');
     expect(st.get().events.find((e) => e.kind === 'site')?.status).toBe('resolved');
     expect(st.get().team.holdFor).toBeNull();
   });

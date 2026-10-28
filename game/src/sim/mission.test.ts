@@ -3,7 +3,7 @@ import { squareCenter } from '../map/grid';
 import { RECOVER_MS } from './mission';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { run, walking } from './testkit';
+import { answer, run, walking } from './testkit';
 
 const until = (s: GameState, done: (x: GameState) => boolean, maxMs = 600_000) => {
   for (let t = 0; t < maxMs && !done(s); t += 100) s = run(s, 100);
@@ -41,7 +41,7 @@ describe('mission A to B to C', () => {
       contacts: [{ id: 'x', square: 'D3', label: 'a squad', strength: 1, status: 'revealed' as const, observed: false, units: [0], total: 1 }],
     };
     const store = createStore(until(s, (x) => x.team.holdFor === 'contact-call-x'));
-    store.respond('contact-call-x', 'avoid');
+    answer(store, 'contact-call-x', 'avoid');
     expect(store.get().team.route).toContain('D3');
     expect(store.get().team.decisions.D3).toBe('push');
   });

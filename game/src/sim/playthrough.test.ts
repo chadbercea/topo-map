@@ -12,6 +12,9 @@ function play(strategy: 'sharp' | 'silent') {
     if (s.minigame?.status === 'active') continue;
     if (s.satellite.state === 'onStation') store.capture('photo'); // a quick look
     if (s.satellite.result) store.closeLook();
+    // Answers take the link's time to land (ILI-1209), so it jams the patrol's radio to buy time.
+    const signal = s.events.find((e) => e.kind === 'signal' && e.status !== 'resolved');
+    if (signal) store.jam(signal.id);
     const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.status === 'new');
     if (!call?.responses) continue;
     const ids = call.responses.map((r) => r.id);

@@ -36,15 +36,22 @@ export const ALERT_MS = 6_000; // how long an alert banner stays up, in mission 
 export type Comms = {
   messages: Message[];
   queued: Message[]; // calls that come in later (an observation's report), by atMs
+  inFlight: Sent[]; // HQ's answers on their way up the link to the team
   minimized: boolean;
   lastWaypoint: number; // to notice the team arriving somewhere
 };
 
 export const CHATTER_MS = 8_000; // routine calls mark themselves read after this
 
+// The link (ILI-1209): HQ's answer takes a moment to reach the team. Until it lands the team
+// keeps doing what it was doing; then it reads the order back and acts on it.
+export const LINK_MS = 2_500;
+export type Sent = { id: string; responseId: string | null; atMs: number }; // null: a plain Copy
+export const sending = (c: Comms, id: string) => c.inFlight.find((x) => x.id === id);
 
 
-export const initialComms = (): Comms => ({ messages: [], queued: [], minimized: false, lastWaypoint: 1 });
+
+export const initialComms = (): Comms => ({ messages: [], queued: [], inFlight: [], minimized: false, lastWaypoint: 1 });
 
 const call = (s: GameState, id: string, text: string, holds = false, eventId?: string): Message => ({
   id,
@@ -56,7 +63,8 @@ const call = (s: GameState, id: string, text: string, holds = false, eventId?: s
   eventId,
 });
 
-export const commsSystem: System = (s) => {
+export const commsSystem: System = (st) => {
+  const s = deliver(st);
   const { comms, team } = s;
   const incoming: Message[] = [];
 
@@ -85,6 +93,7 @@ export const commsSystem: System = (s) => {
     // Only a new hold changes what the team says it's doing.
     team: { ...team, holdFor, activity: holdFor && holdFor !== team.holdFor ? 'Holding for HQ' : team.activity },
     comms: {
+      ...comms,
       messages: [...messages, ...incoming],
       queued: comms.queued.filter((m) => !due.includes(m)),
       // A new call always opens the comms window.
@@ -97,11 +106,35 @@ export const commsSystem: System = (s) => {
 // The call on screen in the comms card: the oldest unanswered hold, else the newest call
 // waiting for an answer. Log lines and alerts never take the card.
 export function currentCall(c: Comms): Message | undefined {
-  const fresh = c.messages.filter((m) => m.status === 'new' && kindOf(m) === 'call');
+  const fresh = waitingCalls(c);
   return fresh.find((m) => m.holds) ?? fresh.at(-1);
 }
 
-export const waitingCalls = (c: Comms) => c.messages.filter((m) => m.status === 'new' && kindOf(m) === 'call');
+// Calls still waiting on HQ: an answer on its way up the link no longer waits.
+export const waitingCalls = (c: Comms) => c.messages.filter((m) => m.status === 'new' && kindOf(m) === 'call' && !sending(c, m.id));
+
+// HQ answers a call: a reply (responseId), or a plain Copy (null). It goes up the link and
+// lands LINK_MS later (deliver).
+export function send(s: GameState, id: string, responseId: string | null): GameState {
+  const m = s.comms.messages.find((x) => x.id === id);
+  if (!m || m.status !== 'new' || sending(s.comms, id)) return s;
+  if (responseId !== null) {
+    const r = m.responses?.find((x) => x.id === responseId);
+    if (!r || blocked(s, r)) return s;
+  }
+  return { ...s, comms: { ...s.comms, inFlight: [...s.comms.inFlight, { id, responseId, atMs: s.elapsedMs + LINK_MS }] } };
+}
+
+// Answers that have reached the team take effect: the reply's effects and the team's readback
+// (respond), or the go-ahead (confirm). One that can no longer be carried out (the budget
+// went elsewhere meanwhile) drops, and the call waits on HQ again.
+function deliver(s: GameState): GameState {
+  const due = s.comms.inFlight.filter((x) => x.atMs <= s.elapsedMs);
+  if (!due.length) return s;
+  let next: GameState = { ...s, comms: { ...s.comms, inFlight: s.comms.inFlight.filter((x) => !due.includes(x)) } };
+  for (const x of due) next = x.responseId === null ? confirm(next, x.id) : respond(next, x.id, x.responseId);
+  return next;
+}
 
 // Alerts still on screen: the newest few raised in the last few seconds.
 export const liveAlerts = (c: Comms, now: number) => c.messages.filter((m) => m.alert && now - m.atMs < ALERT_MS).slice(-3);

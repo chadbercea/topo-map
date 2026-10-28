@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
-import { confirm, dismiss, respond } from './comms';
+import { dismiss, respond, send } from './comms';
 import { cancelLook, capture, closeLook, lookAt, type CaptureMode } from './satellite';
 import { abortMiniGame, startSeek, tapMiniGame } from './minigame';
 import { weaponBlocked, type Weapon } from './ordnance';
@@ -64,8 +64,8 @@ export function createStore(initial: GameState = initialState()) {
       });
     },
     closeEvent: () => set(closeSquare(state)),
-    confirmCall: (id: string) => set(confirm(state, id)),
-    respond: (id: string, responseId: string) => set(respond(state, id, responseId)),
+    confirmCall: (id: string) => set(send(state, id, null)),
+    respond: (id: string, responseId: string) => set(send(state, id, responseId)),
     tapMiniGame: (square: string, cell?: number) => state.phase === 'running' && set(tapMiniGame(state, square, cell)),
     fire: (contactId: string, weapon: Weapon) => {
       const c = state.contacts.find((x) => x.id === contactId);
@@ -76,10 +76,11 @@ export function createStore(initial: GameState = initialState()) {
       const c = state.contacts.find((x) => x.id === contactId);
       if (!c) return;
       const call = state.comms.messages.find((m) => m.id === state.team.holdFor && m.square === c.square && m.status === 'new');
-      if (call?.responses?.some((r) => r.id === 'attack')) return set(respond(state, call.id, 'attack'));
+      if (call?.responses?.some((r) => r.id === 'attack')) return set(send(state, call.id, 'attack')); // an order: it goes up the link
       set({ ...applyEffect(state, 'attack', c.square), openEvent: null });
     },
-    // Looking at a square ALPHA is asking about answers its call (ILI-1177).
+    // Looking at a square ALPHA is asking about answers its call (ILI-1177). ORION-3 is HQ's own:
+    // it moves now, with no wait on the link.
     lookAt: (square: string) => {
       const call = state.comms.messages.find((m) => m.id === state.team.holdFor && m.square === square && m.status === 'new');
       if (call?.responses?.some((r) => r.id === 'send')) return set(respond(state, call.id, 'send'));
