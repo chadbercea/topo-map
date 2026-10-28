@@ -57,10 +57,12 @@ export function SquareCard() {
   useLayoutEffect(() => {
     const el = cardRef.current;
     // Their natural heights, not as clamped: where they go sets how tall they may be, and
-    // measuring the clamped height would chase its own tail.
-    if (el && el.scrollHeight !== height) setHeight(el.scrollHeight);
+    // measuring the clamped height would chase its own tail. A height grows at once but only
+    // shrinks by more than a line: where a panel sits can re-wrap it a few px shorter, and that
+    // shorter height can pick the other spot, where it measures taller again (React #185).
+    if (el && settle(height, el.scrollHeight) !== height) setHeight(el.scrollHeight);
     const act = actRef.current;
-    if (act && act.scrollHeight !== actHeight) setActHeight(act.scrollHeight);
+    if (act && settle(actHeight, act.scrollHeight) !== actHeight) setActHeight(act.scrollHeight);
     const pic = picRef.current?.getBoundingClientRect();
     const frame = pic ? { x: Math.round(pic.x), y: Math.round(pic.y), width: Math.round(pic.width), height: Math.round(pic.height) } : null;
     const key = JSON.stringify(frame);
@@ -217,6 +219,9 @@ function railRect() {
 }
 
 // A phone: across the top of the open map (the camera keeps ALPHA low and centred).
+const SLACK = 32; // px a measured height may shrink by before the panels move for it
+const settle = (was: number, now: number) => (now > was || was - now > SLACK ? now : was);
+
 function docked(area: Area): Placed {
   return { left: area.x + 8, top: area.y + 8, width: area.width - 16, maxHeight: Math.round(area.height * 0.85), side: 'dock' };
 }
@@ -275,21 +280,25 @@ function Card({ s, square, picRef, pic }: { s: GameState; square: string; picRef
             aria-label={`ORION-3's picture of ${square}`}
           />
         )}
+        {/* The one home for a square's details (ILI-1220): the clock widget no longer repeats them. */}
         <dl className="facts" data-testid="square-facts">
-          <dt>Ground</dt>
-          <dd>
-            {g.lowM}–{g.highM} m · {g.slope}
-            {g.features.length ? ` · ${g.features.join(', ')}` : ''}
+          <dt>Elevation</dt>
+          <dd data-testid="square-elevation">
+            {g.lowM}–{g.highM} m
           </dd>
+          <dt>Slope</dt>
+          <dd>{g.slope}</dd>
+          <dt>Features</dt>
+          <dd>{g.features.length ? g.features.join(', ') : 'open ground'}</dd>
           <dt>Weather</dt>
           <dd>
             {wx.sky.toLowerCase()} · vis {wx.visibilityKm} km · {wx.light.toLowerCase()}
           </dd>
           <dt>Imagery</dt>
           <dd>{snap ? `${snap.mode === 'eyes' ? 'eyes on' : snap.mode} ${zulu(snap.atMs)} · ${seen}` : g.imagery}</dd>
-          <dt>Found</dt>
-          <dd>
-            {found.length ? found.map((c) => c.label).join(', ') : snap ? 'nothing seen' : 'not looked at yet'}
+          <dt>Contacts</dt>
+          <dd data-testid="square-contacts">
+            {found.length ? `${found.length} · ${found.map((c) => c.label).join(', ')}` : snap ? 'none seen' : 'not looked at yet'}
             {result && ( // what this look saw
               <span className="result" data-testid="satellite-result">
                 {' '}

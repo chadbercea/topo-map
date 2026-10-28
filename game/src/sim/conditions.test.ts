@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { initialState } from './state';
-import { ground, groundInView, imageryOk, weather } from './conditions';
+import { ground, imageryOk, weather } from './conditions';
 import { blockers, winChecks } from './progress';
 
 describe('header readouts (ILI-1187)', () => {
@@ -20,12 +20,6 @@ describe('header readouts (ILI-1187)', () => {
     expect(g.features).toContain('town');
     expect(g.imagery).toBe('no imagery');
     expect(ground(initialState(), 'G5')!.imagery).toBe('known ground'); // the insertion point
-  });
-
-  it('looks at the selected square, else where ALPHA is', () => {
-    const s = initialState();
-    expect(groundInView(s)!.square).toBe('G5');
-    expect(groundInView({ ...s, map: { ...s.map, selected: 'C2' } })!.square).toBe('C2');
   });
 
   it('blockers: what stands in the way', () => {

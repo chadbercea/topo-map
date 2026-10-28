@@ -633,7 +633,6 @@ html, body {
 .status-widget .hdr-area { grid-area: area; display: grid; gap: 2px; font-size: 11px; border-top: 1px solid var(--line); padding-top: 6px; min-width: 0; }
 .hdr-area p { margin: 0; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hdr-area b { color: var(--accent); font-weight: 600; margin-right: 4px; }
-.hdr-area .contacts { color: #e5484d; }
 .hdr-deadline .label { font-size: 9px; letter-spacing: 0.12em; color: var(--dim); }
 .hdr-deadline .when { font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
 .status-widget .clock { font-size: 26px; line-height: 1; }
@@ -724,7 +723,7 @@ html, body {
   .slot-widget { grid-area: widget; justify-self: stretch; width: auto; }
   .status-widget { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'deadline area pause'; align-items: center; gap: 2px 10px; padding: 4px 8px; }
   .status-widget .hdr-area { border-top: none; padding-top: 0; font-size: 10px; }
-  .status-widget .wx, .status-widget .ground, .hdr-deadline .label, .hdr-deadline .when { display: none; }
+  .status-widget .wx, .hdr-deadline .label, .hdr-deadline .when { display: none; }
   .status-widget .hdr-deadline { display: flex; align-items: baseline; }
   .status-widget .pause { align-self: center; min-width: 32px; min-height: 28px; }
   .status-widget .clock { font-size: 18px; }

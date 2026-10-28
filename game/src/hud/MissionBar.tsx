@@ -1,15 +1,15 @@
 import { game, useGame } from '../sim/store';
 import { blockers, nextUp, phasePips, winChecks } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
-import { groundInView, weather } from '../sim/conditions';
+import { weather } from '../sim/conditions';
 import { satelliteStatus } from '../sim/satellite';
 import { gameClock, gameSpan, zulu } from '../sim/gameTime';
 
 export const clock = (ms: number) => gameClock(ms);
 
 // The mission's status, split in two (ILI-1216). The status widget sits in the map's top-right
-// corner: the contract window's clock and pause, then the weather, ORION-3 and the ground where
-// HQ is looking. The mission strip runs along the foot of the map: the mission and its
+// corner: the contract window's clock and pause, then the weather and ORION-3. A square's ground
+// is on its card (ILI-1220). The mission strip runs along the foot of the map: the mission and its
 // phases, the win conditions, what to do (objective, next) and what's in the way (blockers).
 // Everything else lives in its own panel: ALPHA and its calls bottom right (ILI-1186), the
 // assets by the map's tools.
@@ -17,7 +17,6 @@ export function StatusWidget() {
   const s = useGame((x) => x);
   const { timer, phase, tick } = s;
   const wx = weather(s);
-  const area = groundInView(s);
   const remaining = timer.remainingMs;
   const warn = remaining <= 60_000 ? 'red' : remaining <= 180_000 ? 'amber' : undefined;
 
@@ -42,19 +41,6 @@ export function StatusWidget() {
         </p>
         <p className="sat" data-testid="satellite" data-state={s.satellite.state} aria-label="ORION-3 imaging satellite">
           <b>SAT</b> <span data-testid="satellite-status">{s.minigame?.status === 'active' ? 'ORION-3 · tied up' : satelliteStatus(s)}</span>
-        </p>
-        <p className="ground" data-testid="ground">
-          {area ? (
-            <>
-              <b>{area.square}</b> {area.lowM}–{area.highM} m · {area.slope}
-              {area.features.map((f) => ` · ${f}`)} · {area.imagery}
-              {area.contacts > 0 && <span className="contacts"> · {area.contacts} contact{area.contacts > 1 && 's'}</span>}
-            </>
-          ) : (
-            <>
-              <b>AO</b> 4 × 2.5 km · 500 m squares · tap a square for its ground
-            </>
-          )}
         </p>
       </div>
     </section>

@@ -1,4 +1,4 @@
-import { CELL, METRES_PER_UNIT, parseSquare, squareId, type SquareId } from '../map/grid';
+import { CELL, METRES_PER_UNIT, parseSquare, type SquareId } from '../map/grid';
 import { heightAt, theater } from '../map/terrain';
 import { generateCity, TOWN } from '../map/city';
 import { TIME_SCALE } from './gameTime';
@@ -81,11 +81,4 @@ export function ground(s: GameState, square: SquareId): Ground | null {
     imagery,
     contacts: s.contacts.filter((c) => c.square === square && c.status === 'revealed').length,
   };
-}
-
-// The square the header describes: the one HQ has selected, else where ALPHA is.
-export function groundInView(s: GameState): Ground | null {
-  if (s.map.selected) return ground(s, s.map.selected);
-  const { x, y } = s.team.position;
-  return ground(s, squareId(Math.floor(x / CELL), Math.floor(y / CELL)));
 }
