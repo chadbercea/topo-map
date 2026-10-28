@@ -22,7 +22,7 @@ export function StatusWidget() {
   const warn = remaining <= 60_000 ? 'red' : remaining <= 180_000 ? 'amber' : undefined;
 
   return (
-    <section className="panel status-widget" data-testid="mission-timer" data-phase={phase}>
+    <section className="panel status-widget" data-testid="mission-timer" data-phase={phase} data-overlay="widget">
       <div className="hdr-deadline">
         <span className="label">CONTRACT WINDOW</span>
         <span className="clock" data-testid="clock" data-warn={warn}>

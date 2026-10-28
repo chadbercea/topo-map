@@ -3,6 +3,7 @@ import { game, useGame } from '../sim/store';
 import { currentCall, waitingCalls, type Message } from '../sim/comms';
 import { blocked } from '../sim/responses';
 import { bus, EV, getAskHidden, getMapRect, toScreen } from '../game/events';
+import { obstacles, overlap, pick } from './overlays';
 
 const WIDTH = 260;
 
@@ -25,13 +26,18 @@ export function AskWindow() {
   const anchors = useRef(new Map<string, { x: number; y: number }>());
   const [, redraw] = useState(0);
   const flagRef = useRef<HTMLElement>(null);
-  // The flag may sit under the square card or its action panel (or wait out a mini game); say so, and the intel
+  const size = useRef({ w: 110, h: 34 }); // the flag's (or open window's) size, as last drawn
+  // The flag may end up under a floating panel when nowhere is clear (or wait out a mini game); say so, and the intel
   // stream raises ALPHA's ask where it can't be missed.
   const check = useRef(() => {});
   check.current = () => {
     const flag = flagRef.current?.getBoundingClientRect();
-    const panels = [...document.querySelectorAll('[data-testid="square-card"], [data-testid="action-panel"]')].map((el) => el.getBoundingClientRect());
-    const covered = !!flag && panels.some((card) => flag.left < card.right && flag.right > card.left && flag.top < card.bottom && flag.bottom > card.top);
+    // Its real size, for placing it next time it draws (no redraw here: near an edge a fixed
+    // box shrinks to fit, and re-placing it on every size change would loop).
+    if (flag) size.current = { w: Math.round(flag.width), h: Math.round(flag.height) };
+    // Anything floating over it: the card, its actions, the status widget, the band (ILI-1215).
+    const box = flag && { x: flag.x, y: flag.y, w: flag.width, h: flag.height };
+    const covered = !!box && obstacles(['flag']).some((o) => overlap(box, o) > 0);
     const c = game.get().comms;
     const hidden = !!waitingCalls(c).length && (!flag || (covered && openId !== currentCall(c)?.id));
     if (hidden !== getAskHidden()) bus.emit(EV.askHidden, hidden);
@@ -80,10 +86,10 @@ export function AskWindow() {
   const out = comms.inFlight.at(-1);
   const sent = out && comms.messages.find((m) => m.id === out.id);
   if (!call && sent && !playing) {
-    const where = place(anchors.current.get(sent.id) ?? pos);
+    const where = place(anchors.current.get(sent.id) ?? pos, size.current);
     const label = out.responseId ? sent.responses?.find((r) => r.id === out.responseId)?.label : 'Copy';
     return (
-      <p className="ask sent" data-testid="sent" data-pinned={where.inView} style={where.style && { ...where.style, width: undefined }} role="status">
+      <p className="ask sent" data-testid="sent" data-overlay="flag" data-pinned={where.inView} style={where.style && { ...where.style, width: undefined }} role="status">
         <Dish /> {label} · sending to {sent.from}
       </p>
     );
@@ -99,7 +105,7 @@ export function AskWindow() {
     setOpenId(next);
   };
   const who = call.from === callsign ? callsign : call.from;
-  const { p, inView, side, style } = place(anchor);
+  const { p, inView, side, below, style } = place(anchor, size.current);
 
   return (
     <>
@@ -108,9 +114,11 @@ export function AskWindow() {
         ref={flagRef}
         className="ask comms"
         data-testid="comms"
+        data-overlay="flag"
         data-open={open}
         data-pinned={inView}
         data-side={side}
+        data-below={below}
         style={open ? style : style && { ...style, width: undefined }}
         role={open ? 'dialog' : 'status'}
         aria-label={`${call.from} needs a decision`}
@@ -150,24 +158,29 @@ export function AskWindow() {
   );
 }
 
-// Top right of the marker, inside the open map (top left when there's no room on the right);
-// else the open map's foot.
-function place(anchor: { x: number; y: number }) {
+// Beside the marker, inside the open map, clear of the other floating panels (ILI-1215): top
+// right, top left, bottom right, bottom left, the first that's clear; else the least covered.
+// Off the open map, it waits at the open map's foot. size: the flag's or window's size.
+function place(anchor: { x: number; y: number }, size: { w: number; h: number }) {
   const area = getMapRect();
   const raw = toScreen(anchor.x, anchor.y);
   const p = raw && { x: Math.round(raw.x), y: Math.round(raw.y) };
-  const inView = !!p && !!area && p.x >= area.x && p.x <= area.x + area.width - 40 && p.y >= area.y + 40 && p.y <= area.y + area.height;
+  const inView = !!p && !!area && p.x >= area.x && p.x <= area.x + area.width && p.y >= area.y && p.y <= area.y + area.height;
   const w = Math.min(WIDTH, innerWidth - 32);
-  const right = inView && p!.x + 14 + w <= area!.x + area!.width; // room on the marker's right?
-  const side = right ? 'right' : 'left';
-  const style = inView
-    ? right
-      ? { left: p!.x + 14, top: Math.max(p!.y - 14, area!.y + 120), width: w }
-      : { right: innerWidth - Math.max(area!.x + w, p!.x - 14), top: Math.max(p!.y - 14, area!.y + 120), width: w } // flag and window both end at the marker
-    : area
-      ? { left: area.x + 8, top: area.y + area.height - 8, width: w }
-      : undefined;
-  return { p, inView, side, style };
+  if (!inView || !area) return { p, inView: false, side: 'right', below: false, style: area ? { left: area.x + 8, top: area.y + area.height - 8, width: w } : undefined };
+  const { x, y } = p!;
+  const { w: fw, h: fh } = size;
+  const spots = [
+    { x: x + 14, y: y - 14 - fh, side: 'right', below: false },
+    { x: x - 14 - fw, y: y - 14 - fh, side: 'left', below: false },
+    { x: x + 14, y: y + 14, side: 'right', below: true },
+    { x: x - 14 - fw, y: y + 14, side: 'left', below: true },
+  ]
+    .map((c) => ({ ...c, w: fw, h: fh }))
+    .filter((c) => c.x >= area.x + 4 && c.x + c.w <= area.x + area.width - 4 && c.y >= area.y + 4 && c.y + c.h <= area.y + area.height - 4);
+  const at = spots.length ? pick(spots, obstacles(['flag'])) : { x: Math.max(area.x + 4, x - fw / 2), y: area.y + 4, w: fw, h: fh, side: 'right', below: true };
+  // The window hangs from its top-left (styles: translateY(-100%), so top is its foot).
+  return { p, inView, side: at.side, below: at.below, style: { left: Math.round(at.x), top: Math.round(at.y + at.h), width: w } };
 }
 
 // HQ's answers to a call, as buttons: each reply, greyed with the reason when HQ can't afford

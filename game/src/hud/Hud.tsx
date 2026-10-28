@@ -6,6 +6,8 @@ import { MiniGamePanel } from './MiniGamePanel';
 import { hasActions, SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
+import { alphaBox, overlap } from './overlays';
+import { bus, EV } from '../game/events';
 import { Assets } from './Assets';
 import { Recentre } from './Recentre';
 import { MissionStrip, StatusWidget } from './MissionBar';
@@ -39,6 +41,7 @@ export function Hud() {
   const [tab, setTab] = useState<Tab>('team');
   const askHidden = useAskHidden(); // ALPHA's ask is raised in the stream: light its tab
   const tier = useTier();
+  const flip = useBandFlip();
   // What a docked square covers: the whole rail (medium), or the dock under its actions (compact).
   const cover = useGame((s) => {
     const sq = lookSquare(s);
@@ -76,11 +79,11 @@ export function Hud() {
       </div>
       <MapArea />
       <SquareCard />
-      <div className="slot-band">
-        <div className="band-cards">
+      <div className="slot-band" data-flip={flip}>
+        <div className="band-cards" data-overlay="band">
           <MiniGamePanel />
         </div>
-        <div className="map-controls">
+        <div className="map-controls" data-overlay="band">
           <Recentre />
           <Assets />
         </div>
@@ -134,4 +137,36 @@ function SheetHandle({ sheet, setSheet }: { sheet: Sheet; setSheet: (s: Sheet) =
       <span aria-hidden />
     </button>
   );
+}
+
+// The band (HQ's assets, a mini game) sits at a corner of the map's foot; when ALPHA walks
+// under it, it moves to the other side (ILI-1215). Checked a frame after the camera moves.
+function useBandFlip() {
+  const [flip, setFlip] = useState(false);
+  useEffect(() => {
+    let frame = 0;
+    let last = -Infinity;
+    const check = () => {
+      const alpha = alphaBox(game.get().team.position);
+      const r = document.querySelector('.map-controls')?.getBoundingClientRect();
+      // At most every few seconds, so it can't flicker when ALPHA is under both spots.
+      if (!alpha || !r?.width || performance.now() - last < 3000) return;
+      if (overlap(alpha, { x: r.x, y: r.y, w: r.width, h: r.height }) > 0) {
+        last = performance.now();
+        setFlip((f) => !f);
+      }
+    };
+    const again = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(check);
+    };
+    bus.on(EV.camera, again);
+    const every = setInterval(check, 500); // ALPHA walks while the camera stays put
+    return () => {
+      cancelAnimationFrame(frame);
+      clearInterval(every);
+      bus.off(EV.camera, again);
+    };
+  }, []);
+  return flip;
 }
