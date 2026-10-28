@@ -59,10 +59,11 @@ test('drone, a fresh look, then the sniper finishes it', async ({ page, isMobile
   await expect(page.getByTestId('intel-items')).toContainText(/KILL SITE\s*E3/); // ALPHA can search it
 });
 
-test('a drone strike is loud: the noise meter jumps', async ({ page, isMobile }) => {
+test('a drone strike is loud: the enemy hears it, though no operator made it (ILI-1222)', async ({ page, isMobile }) => {
   await targetE3(page);
-  await expect(page.getByTestId('noise').getByRole('meter')).toHaveAttribute('aria-valuenow', '0');
+  expect(await page.evaluate(() => window.game.get().noise)).toBe(0);
   await page.getByTestId('fire-drone').click();
   await tapAt(page, isMobile, await e3Cell(page, 0));
-  await expect.poll(async () => Number(await page.getByTestId('noise').getByRole('meter').getAttribute('aria-valuenow'))).toBeGreaterThan(30);
+  await expect.poll(() => page.evaluate(() => window.game.get().noise)).toBeGreaterThan(30);
+  expect(await page.evaluate(() => window.game.get().team.operators.every((o) => o.noise === 0))).toBe(true);
 });

@@ -3,12 +3,13 @@ import { ammoLevel, medsLevel } from '../sim/support';
 import { Bar, OperatorRow } from './OperatorRow';
 
 // The team panel (ILI-1123, bottom right since ILI-1186): every operator's heartbeat,
-// status, ammo and meds, always on screen, with what ALPHA is doing over it. Red while it's
+// status, noise (ILI-1222), ammo and meds, always on screen, with what ALPHA is doing over it. Red while it's
 // engaged.
 export function TeamPanel() {
   const callsign = useGame((s) => s.team.callsign);
   const activity = useGame((s) => s.team.activity);
   const fighting = useGame((s) => !!s.team.fight);
+  const alerted = useGame((s) => s.alerted);
   const operators = useGame((s) => s.team.operators);
   const ammo = useGame(ammoLevel);
   const meds = useGame(medsLevel);
@@ -19,6 +20,11 @@ export function TeamPanel() {
       <h2>
         <span className="callsign">{callsign}</span>
         <span className="activity">{activity}</span>
+        {alerted && ( // the enemy knows a PMC is here; each operator's noise is on their row
+          <b className="alerted" data-testid="alerted">
+            ALERTED
+          </b>
+        )}
       </h2>
       <p className="condition" data-testid="team-condition">
         <span className="fit">

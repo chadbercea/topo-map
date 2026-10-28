@@ -67,7 +67,7 @@ export const supportSystem: System = (s) => {
         operators: next.team.operators.map((o) => {
           if (o.health > 0) return { ...o, ...LOADOUT[o.role] };
           const name = SPARE_NAMES[(s.stats.lost.length + spare++) % SPARE_NAMES.length];
-          return { ...o, id: `${o.role}-${s.elapsedMs}-${spare}`, name, health: 100, ...LOADOUT[o.role] };
+          return { ...o, id: `${o.role}-${s.elapsedMs}-${spare}`, name, health: 100, noise: 0, ...LOADOUT[o.role] };
         }),
       },
       comms: {
