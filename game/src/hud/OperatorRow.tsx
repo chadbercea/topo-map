@@ -44,7 +44,8 @@ export const Bar = ({ value, label }: { value: number; label: string }) => (
 
 export const STATUS = { fine: 'FINE', caution: 'CAUTION', danger: 'DANGER', down: 'DOWN' } as const;
 
-// One operator in the team panel: rank, name, role, heartbeat, status and every supply.
+// One operator in the team panel: rank, name, role, heartbeat, status, how loud they've been
+// (ILI-1222) and every supply.
 export function OperatorRow({ o }: { o: Operator }) {
   const c = condition(o);
   return (
@@ -57,6 +58,9 @@ export function OperatorRow({ o }: { o: Operator }) {
       <div className="vitals">
         <Heartbeat o={o} />
         <span className="status">{STATUS[c]}</span>
+        <span className="noise" data-testid={`noise-${o.id}`} title={`${o.name} noise`}>
+          <Bar value={o.noise / 100} label={`${o.name} noise`} />
+        </span>
       </div>
       <div className="supplies">
         <span>AMMO</span>

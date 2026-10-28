@@ -5,7 +5,7 @@ import type { Operator, Role } from './team';
 import type { Message } from './comms';
 import { contactIn, effectiveStrength } from './contacts';
 import { CASH_PER_TEAM_KILL, earn, markSite } from './sites';
-import { ALERT_AMBUSH, makeNoise, NOISE } from './noise';
+import { ALERT_AMBUSH, makeNoise, NOISE, NOISE_PER_ROUND } from './noise';
 
 // Contact resolves on its own (GDD: the player doesn't control the team). Walking into a
 // square with a live contact starts a firefight: an attack on a found contact has surprise
@@ -96,7 +96,7 @@ export const firefightSystem: System = (s, dt) => {
       if (!alive(o) || o.ammo <= 0) return o;
       const rounds = Math.min(o.ammo, ROUNDS_PER_S[o.role] * secs);
       fired += rounds;
-      return { ...o, ammo: o.ammo - rounds };
+      return { ...o, ammo: o.ammo - rounds, noise: Math.min(100, o.noise + rounds * NOISE_PER_ROUND) }; // whoever fires is heard
     });
     const enemy = Math.max(0, fight.enemy - fired * HIT_PER_ROUND);
 

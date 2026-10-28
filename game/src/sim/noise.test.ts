@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
-import { ALERT_AT, ALERT_HARDEN, FADE_PER_S, NOISE } from './noise';
+import { ALERT_AT, ALERT_HARDEN, FADE_PER_S, NOISE, NOISE_PER_ROUND } from './noise';
 import type { GameState } from './state';
 import { createStore } from './store';
 import { step } from './systems';
@@ -57,5 +57,33 @@ describe('noise', () => {
       return s.team.operators.reduce((n, o) => n + o.health, 0);
     };
     expect(at(true)).toBeLessThan(at(false));
+  });
+});
+
+describe('noise per operator (ILI-1222)', () => {
+  const inFight = () => {
+    const s0 = withContacts();
+    return step({ ...s0, team: { ...s0.team, position: squareCenter('E3')!, waypoint: 3 } }, 100);
+  };
+  const noiseOf = (s: GameState, id: string) => s.team.operators.find((o) => o.id === id)!.noise;
+
+  it('whoever fires is heard: the heavy gunner louder than the medic', () => {
+    const s = step(inFight(), 1_000);
+    expect(noiseOf(s, 'heavy')).toBeGreaterThan(noiseOf(s, 'medic'));
+    expect(noiseOf(s, 'medic')).toBeGreaterThan(0);
+    expect(noiseOf(s, 'heavy')).toBeCloseTo(9 * NOISE_PER_ROUND, 1); // a second of fire; the fade starts next tick
+  });
+
+  it('fades like the rest', () => {
+    const s0 = walking();
+    const loud = { ...s0, team: { ...s0.team, operators: s0.team.operators.map((o) => ({ ...o, noise: 20 })) } };
+    const s = run(loud, 10_000);
+    expect(s.team.operators.every((o) => Math.abs(o.noise - (20 - FADE_PER_S * 10)) < 1e-6)).toBe(true);
+  });
+
+  it("doesn't alert the enemy on its own, for now: the alert runs on the total", () => {
+    const s0 = withContacts();
+    const s = step({ ...s0, team: { ...s0.team, operators: s0.team.operators.map((o) => ({ ...o, noise: 100 })) } }, 100);
+    expect(s.alerted).toBe(false);
   });
 });
