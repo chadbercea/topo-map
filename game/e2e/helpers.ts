@@ -84,13 +84,26 @@ export async function tapAt(page: Page, isMobile: boolean, p: { x: number; y: nu
 // ALPHA's ask arrives as an orange flag at its marker; click it to read the ask and answer
 // (ILI-1200). If the flag is under the square card, the intel stream raises it (ILI-1203).
 export async function openAsk(page: Page) {
-  // On a phone the action panel covers the dock and raises the ask itself (ILI-1211).
-  const panel = page.getByTestId('answer-alpha-panel');
-  if (await panel.count()) return panel.click();
-  const answer = page.getByTestId('answer-alpha');
-  if (!(await answer.count())) return page.getByTestId('incoming').click();
-  if (!(await answer.isVisible())) await page.getByTestId('tab-intel').click();
-  await answer.click();
+  // Let the camera finish following ALPHA first: the flag rides with it, and may end up under
+  // the square card, where the ask is raised elsewhere instead. That can take a moment to
+  // show, so keep looking until one of them takes the click.
+  await settledCamera(page);
+  for (let i = 0; i < 12; i++) {
+    // On a phone the action panel covers the dock and raises the ask itself (ILI-1211).
+    const panel = page.getByTestId('answer-alpha-panel');
+    if (await panel.count()) return panel.click();
+    const answer = page.getByTestId('answer-alpha');
+    if (await answer.count()) {
+      if (!(await answer.isVisible())) await page.getByTestId('tab-intel').click();
+      return answer.click();
+    }
+    // The flag rides ALPHA's marker, so on a live clock it may never hold still long enough
+    // to count as stable: click it where it is (collision.spec checks nothing covers it).
+    const flag = page.getByTestId('incoming');
+    if (await flag.count()) return flag.dispatchEvent('click');
+    await page.waitForTimeout(500);
+  }
+  throw new Error('ALPHA\'s ask never came up to answer');
 }
 
 // HQ's answer takes the link's time to reach ALPHA (ILI-1209, LINK_MS): wait it out on a frozen clock.

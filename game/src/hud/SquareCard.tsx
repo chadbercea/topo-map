@@ -16,7 +16,7 @@ import type { GameState } from '../sim/state';
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
 const WIDTH = 340;
 const PICTURE = 272; // the larger square: one square tall, CSS px (ILI-1206: twice the first cut)
-const THUMB = 160; // on a phone, beside the facts
+const THUMB = 128; // on a phone, beside the facts
 const ACTIONS = 300; // the action panel's width
 
 // The square card (ILI-1203): the one place HQ works a square from. Tap a square on the map,
@@ -41,6 +41,7 @@ export function SquareCard() {
   const askHidden = useAskHidden(); // docked, the action panel covers the stream, and its raised ask with it
   const tier = useTier();
   const sent = useRef('');
+  const placedKey = useRef('');
   const [, redraw] = useState(0);
   useEffect(() => {
     const again = () => redraw((n) => n + 1);
@@ -62,8 +63,19 @@ export function SquareCard() {
     const key = JSON.stringify(frame);
     if (key !== sent.current) bus.emit(EV.inset, frame);
     sent.current = key;
+    // Where the card and its actions ended up, for anything that must stay clear of them.
+    const r = (e: HTMLElement | null) => e && [e.offsetLeft, e.offsetTop, e.offsetWidth, e.offsetHeight].join();
+    const placed = `${r(cardRef.current)}|${r(actRef.current)}`;
+    if (placed !== placedKey.current) bus.emit(EV.overlays);
+    placedKey.current = placed;
   });
-  useEffect(() => () => void bus.emit(EV.inset, null), []);
+  useEffect(
+    () => () => {
+      bus.emit(EV.inset, null);
+      bus.emit(EV.overlays);
+    },
+    [],
+  );
 
   const area = getMapRect();
   if (!square || !area) return null;

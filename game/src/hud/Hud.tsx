@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DebugPanel } from './DebugPanel';
 import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
@@ -21,6 +21,8 @@ const debug = new URLSearchParams(location.search).has('debug');
 if (debug) Object.assign(window, { game });
 
 type Tab = 'intel' | 'satcom' | 'team';
+type Sheet = 'peek' | 'half' | 'full';
+const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 
 // The war room (ILI-1186): HQ sits down to a live, multi-panel view of the theater. The
 // mission bar runs along the top; down the left the intel stream, with the comms log under it
@@ -46,12 +48,22 @@ export function Hud() {
   // on the map itself (ILI-1201), so the dock stays where it is.
   // New events run inline in the intel stream (ILI-1197): a new one brings it forward.
   const fresh = useGame((s) => s.events.filter((e) => e.status === 'new').length);
+  // On a phone the dock is a bottom sheet (ILI-1214): peek (just the tabs), half or full.
+  const [sheet, setSheet] = useState<Sheet>('half');
   useEffect(() => {
-    if (fresh) setTab('intel');
+    if (fresh) {
+      setTab('intel');
+      setSheet((h) => (h === 'peek' ? 'half' : h)); // news opens a peeking sheet
+    }
   }, [fresh]);
+  const pick = (t: Tab) => {
+    // A tab always shows its panel: a folded sheet opens. Folding is the handle's job.
+    setSheet((h) => (h === 'peek' ? 'half' : h));
+    setTab(t);
+  };
 
   return (
-    <div className="hud" data-playing={playing} data-tab={tab} data-tier={tier} data-cover={cover}>
+    <div className="hud" data-playing={playing} data-tab={tab} data-tier={tier} data-cover={cover} data-sheet={sheet}>
       <div className="slot-bar">
         <MissionBar />
       </div>
@@ -75,9 +87,10 @@ export function Hud() {
       <div className="slot-satcom">
         <CommsPanel />
       </div>
+      {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
       <nav className="dock-tabs" aria-label="Panels">
         {(['intel', 'satcom', 'team'] as const).map((t) => (
-          <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)} data-testid={`tab-${t}`} data-alert={t === 'intel' && askHidden && tab !== 'intel'}>
+          <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'intel' && askHidden && tab !== 'intel'}>
             {t === 'satcom' ? 'COMMS' : t.toUpperCase()}
           </button>
         ))}
@@ -87,5 +100,34 @@ export function Hud() {
       <PauseMenu />
       <WrapUp />
     </div>
+  );
+}
+
+// The bottom sheet's grip (ILI-1214): drag it up or down to snap to the next size, or tap it
+// to fold the sheet down to its tabs and back.
+function SheetHandle({ sheet, setSheet }: { sheet: Sheet; setSheet: (s: Sheet) => void }) {
+  const start = useRef<number | null>(null);
+  const step = (d: number) => setSheet(SHEETS[Math.max(0, Math.min(SHEETS.length - 1, SHEETS.indexOf(sheet) + d))]);
+  return (
+    <button
+      className="sheet-handle"
+      data-testid="sheet-handle"
+      aria-label={sheet === 'peek' ? 'Show panels' : 'Fold panels down'}
+      onPointerDown={(e) => {
+        start.current = e.clientY;
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }}
+      onPointerUp={(e) => {
+        const from = start.current;
+        start.current = null;
+        if (from === null) return;
+        const dy = e.clientY - from;
+        if (Math.abs(dy) < 24) setSheet(sheet === 'peek' ? 'half' : 'peek');
+        else step(dy < 0 ? 1 : -1);
+      }}
+      onPointerCancel={() => (start.current = null)}
+    >
+      <span aria-hidden />
+    </button>
   );
 }
