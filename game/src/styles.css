@@ -445,9 +445,6 @@ html, body {
 .team .activity { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .team[data-fight='true'] { border-color: #e5484d; }
 .team[data-fight='true'] .callsign { color: #e5484d; }
-.team .condition { display: grid; grid-template-columns: auto auto 1fr auto 1fr; align-items: center; gap: 6px; font-size: 9px; }
-.team .condition .fit { color: var(--ink); font-size: 11px; }
-.team .condition .bar { height: 5px; }
 
 
 /* Mode B readout: a row per operator. */
