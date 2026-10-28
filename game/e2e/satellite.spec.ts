@@ -13,7 +13,7 @@ test('pick a square, scan it, look on station: the larger square and the find on
   const card = page.getByTestId('square-card');
   await expect(card).toHaveAttribute('data-square', 'E3');
   await expect(page.getByTestId('square-status')).toHaveText('no imagery');
-  await expect(page.getByTestId('square-facts')).toContainText(/Ground\s*\d+–\d+ m/);
+  await expect(page.getByTestId('square-facts')).toContainText(/Elevation\s*\d+–\d+ m/);
   await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
   await expect(page.getByTestId('look-here')).toHaveText(/Scan · \d+ min/);
   await page.getByTestId('look-here').click();
@@ -38,7 +38,7 @@ test('pick a square, scan it, look on station: the larger square and the find on
 
   // The find, and what HQ can call in on it, right there.
   await expect(page.getByTestId('intel-items')).toContainText('E3 imaged (burst): 5 fighters, unaware'); // the contact's block on the card says what's there
-  await expect(page.getByTestId('square-facts')).toContainText(/Found\s*.*checkpoint/i);
+  await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/); // inline in the stream too
   // What to do about it is the action panel beside the card (ILI-1211), every strike in view.
   const act = page.getByTestId('action-panel');

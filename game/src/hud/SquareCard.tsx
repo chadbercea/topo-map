@@ -275,21 +275,25 @@ function Card({ s, square, picRef, pic }: { s: GameState; square: string; picRef
             aria-label={`ORION-3's picture of ${square}`}
           />
         )}
+        {/* The one home for a square's details (ILI-1220): the clock widget no longer repeats them. */}
         <dl className="facts" data-testid="square-facts">
-          <dt>Ground</dt>
-          <dd>
-            {g.lowM}–{g.highM} m · {g.slope}
-            {g.features.length ? ` · ${g.features.join(', ')}` : ''}
+          <dt>Elevation</dt>
+          <dd data-testid="square-elevation">
+            {g.lowM}–{g.highM} m
           </dd>
+          <dt>Slope</dt>
+          <dd>{g.slope}</dd>
+          <dt>Features</dt>
+          <dd>{g.features.length ? g.features.join(', ') : 'open ground'}</dd>
           <dt>Weather</dt>
           <dd>
             {wx.sky.toLowerCase()} · vis {wx.visibilityKm} km · {wx.light.toLowerCase()}
           </dd>
           <dt>Imagery</dt>
           <dd>{snap ? `${snap.mode === 'eyes' ? 'eyes on' : snap.mode} ${zulu(snap.atMs)} · ${seen}` : g.imagery}</dd>
-          <dt>Found</dt>
-          <dd>
-            {found.length ? found.map((c) => c.label).join(', ') : snap ? 'nothing seen' : 'not looked at yet'}
+          <dt>Contacts</dt>
+          <dd data-testid="square-contacts">
+            {found.length ? `${found.length} · ${found.map((c) => c.label).join(', ')}` : snap ? 'none seen' : 'not looked at yet'}
             {result && ( // what this look saw
               <span className="result" data-testid="satellite-result">
                 {' '}

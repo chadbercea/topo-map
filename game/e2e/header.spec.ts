@@ -19,8 +19,9 @@ test('the status widget and the mission strip: deadline, progress, what to do, w
   if (isMobile) return; // the ground, weather and win conditions wait for a wider screen
   await expect(page.getByTestId('win-checks')).toContainText('5/5 alive');
   await expect(page.getByTestId('weather')).toContainText('High cloud');
-  await expect(page.getByTestId('ground')).toContainText('G5'); // where ALPHA is
+  // A square's ground is on its card, not in the widget (ILI-1220).
+  await expect(page.getByTestId('ground')).toHaveCount(0);
   await page.evaluate(() => window.game.selectSquare('E2'));
-  await expect(page.getByTestId('ground')).toContainText(/E2 \d+–\d+ m/);
-  await expect(page.getByTestId('ground')).toContainText('town');
+  await expect(page.getByTestId('square-elevation')).toHaveText(/^\d+–\d+ m$/);
+  await expect(page.getByTestId('square-facts')).toContainText(/Features\s*town/);
 });
