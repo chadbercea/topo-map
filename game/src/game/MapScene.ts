@@ -412,7 +412,7 @@ export class MapScene extends Phaser.Scene {
     if (!sq || !frame) return void this.inset.setVisible(false);
     const h = Math.round(frame.height * DPR);
     this.inset.setViewport(Math.round(frame.x * DPR), Math.round(frame.y * DPR), Math.round(frame.width * DPR), h).setVisible(true);
-    this.inset.setZoom(h / (CELL * 1.25)); // the square fills most of the height, its neighbours either side
+    this.inset.setZoom(h / CELL); // the square fills the height (ILI-1206), a sliver of its neighbours either side
     this.inset.centerOn((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL);
   }
 

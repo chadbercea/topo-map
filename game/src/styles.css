@@ -171,6 +171,8 @@ html, body {
 .square-card .sc-head b { color: var(--accent); font-weight: 600; }
 .square-card .sc-status { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; }
 .square-card .sc-head[data-state='slewing'] .sc-status, .square-card .sc-head[data-state='onStation'] .sc-status, .square-card .sc-head[data-state='capturing'] .sc-status { color: #f2c14e; }
+.square-card .rescan { margin-left: auto; min-height: 24px; padding: 0 8px; font-size: 10px; }
+.square-card .rescan + .x { margin-left: 0; }
 .square-card .x { margin-left: auto; font: inherit; font-size: 16px; line-height: 1; color: var(--dim); background: none; border: 1px solid transparent; min-width: 32px; min-height: 28px; cursor: pointer; }
 .square-card .x:hover { color: var(--ink); border-color: var(--line); }
 .square-card .sc-picture { flex: none; width: 100%; outline: 1px solid var(--line); outline-offset: -1px; }
@@ -196,7 +198,8 @@ html, body {
 .square-card .sc-event h3 { margin: 0; font-size: 10px; letter-spacing: 0.12em; color: var(--kind, var(--accent)); }
 .square-card .sc-event .title { font-size: 12px; margin: 0; }
 .square-card .sc-event .note { font-size: 11px; margin: 0; }
-.square-card .target-menu .options button { justify-self: stretch; min-height: 40px; padding: 4px 8px; font-size: 11px; text-transform: none; letter-spacing: 0; border-color: #e5484d; }
+.square-card .target-menu .options { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 4px; }
+.square-card .target-menu .options button { justify-self: stretch; min-height: 40px; padding: 4px 6px; font-size: 10px; line-height: 1.2; text-transform: none; letter-spacing: 0; border-color: #e5484d; }
 .square-card .target-menu .options button:hover:not(:disabled) { color: var(--ink); background: rgba(229, 72, 77, 0.18); }
 .square-card .signal-options button.intercept { color: #0b0f0d; background: #8fb8ff; border-color: #8fb8ff; }
 .square-card .signal-options button.jam { color: #8fb8ff; border-color: #8fb8ff; }
@@ -712,7 +715,7 @@ html, body {
   .debug { bottom: auto; top: 40%; }
   .hud[data-playing='true'] .minigame .instructions { display: none; }
   .square-card > .sc-body { flex-direction: row; }
-  .square-card .sc-picture { width: 96px; }
+  .square-card .sc-picture { width: 160px; }
   .square-card .facts { font-size: 10px; }
   .comms .actions button { min-height: 32px; padding: 0 8px; font-size: 10px; }
 }
