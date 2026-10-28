@@ -37,7 +37,7 @@ test('pick a square, scan it, look on station: the larger square, the find, and 
   await fastForward(page, 6_100);
 
   // The find, and what HQ can call in on it, right there.
-  await expect(page.getByTestId('satellite-result')).toContainText('Burst: 5 fighters, unaware');
+  await expect(page.getByTestId('intel-items')).toContainText('E3 imaged (burst): 5 fighters, unaware'); // the contact's block on the card says what's there
   await expect(page.getByTestId('square-facts')).toContainText(/Found\s*.*checkpoint/i);
   await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/); // inline in the stream too
   await expect(card.getByTestId('event-card')).toContainText('CONTACT · E3');

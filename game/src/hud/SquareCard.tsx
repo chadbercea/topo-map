@@ -12,8 +12,9 @@ import { TargetMenu } from './TargetMenu';
 import type { GameState } from '../sim/state';
 
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
-const WIDTH = 300;
-const PICTURE = 170; // the larger square's picture height, CSS px (a 96 px thumbnail on a phone)
+const WIDTH = 340;
+const PICTURE = 272; // the larger square: one square tall, CSS px (ILI-1206: twice the first cut)
+const THUMB = 160; // on a phone, beside the facts
 
 // The square card (ILI-1203): the one place HQ works a square from. Tap a square on the map,
 // or open an event in the intel stream, and a card pins beside it: what HQ knows of the
@@ -130,6 +131,12 @@ function Card({ s, square, picRef, phone }: { s: GameState; square: string; picR
         <span className="sc-status" data-testid="square-status">
           {status}
         </span>
+        {!working && snap && (
+          // Already imaged: the picture's the point, so a look again is a small header button.
+          <button className="rescan" disabled={satelliteBusy(s)} onClick={() => game.lookAt(square)} data-testid="look-here">
+            Rescan · {slewMs(s, square) ? gameSpan(slewMs(s, square)) : 'now'}
+          </button>
+        )}
         <button className="x" onClick={close} aria-label="Close">
           ×
         </button>
@@ -142,7 +149,7 @@ function Card({ s, square, picRef, phone }: { s: GameState; square: string; picR
             className="sc-picture"
             data-testid="satellite-inset"
             data-state={working ? sat.state : 'imaged'}
-            style={phone ? { width: 96, height: 96 } : { height: PICTURE }}
+            style={phone ? { width: THUMB, height: THUMB } : { height: PICTURE }}
             aria-label={`ORION-3's picture of ${square}`}
           />
         )}
@@ -161,7 +168,7 @@ function Card({ s, square, picRef, phone }: { s: GameState; square: string; picR
           <dt>Found</dt>
           <dd>
             {found.length ? found.map((c) => c.label).join(', ') : snap ? 'nothing seen' : 'not looked at yet'}
-            {result && (
+            {result && !events.length && ( // a contact's own block says what's there
               <span className="result" data-testid="satellite-result">
                 {' '}
                 · {CAPTURE[result.mode].label}: {describe(result)}
@@ -205,10 +212,10 @@ function Card({ s, square, picRef, phone }: { s: GameState; square: string; picR
         </div>
       )}
       {/* ORION-3 */}
-      {!working && (
+      {!working && !snap && (
         <div className="sc-row square-actions" data-testid="square-actions">
           <button disabled={satelliteBusy(s)} onClick={() => game.lookAt(square)} data-testid="look-here">
-            {snap ? 'Scan again' : 'Scan'} · {slewMs(s, square) ? gameSpan(slewMs(s, square)) : 'now'}
+            Scan · {slewMs(s, square) ? gameSpan(slewMs(s, square)) : 'now'}
           </button>
         </div>
       )}
