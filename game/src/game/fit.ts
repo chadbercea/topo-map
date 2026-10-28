@@ -4,7 +4,7 @@
 // isn't (Chad, 2026-10-26). A strike closes in on its square inside the space between the
 // panels, so every cell can be tapped.
 
-import { WORLD_H, WORLD_W } from '../map/grid';
+import { CELL, WORLD_H, WORLD_W } from '../map/grid';
 
 export type Rect = { x: number; y: number; w: number; h: number };
 type Size = { w: number; h: number };
@@ -26,15 +26,26 @@ export function fitCamera(screen: Size, area: Rect, view: Rect, margin: number, 
 type Point = { x: number; y: number };
 
 // Keep the camera's centre where the grid always covers the open screen (on an axis where it
-// fits exactly, that pins the centre).
-export function clampCenter(c: Point, screen: Size, zoom: number, cover?: Cover): Point {
+// fits exactly, that pins the centre). bounds: the world the screen must stay inside; the AO
+// by default, PAN when HQ pans by hand.
+export function clampCenter(c: Point, screen: Size, zoom: number, cover?: Cover, bounds: Rect = { x: 0, y: 0, w: WORLD_W, h: WORLD_H }): Point {
   const o = open(screen, cover);
   const left = (screen.w / 2 - o.left) / zoom;
   const right = screen.w / 2 / zoom;
   const top = (screen.h / 2 - o.top) / zoom;
   const bottom = (o.bottom - screen.h / 2) / zoom;
   const clamp = (v: number, lo: number, hi: number) => (lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
-  return { x: clamp(c.x, left, WORLD_W - right), y: clamp(c.y, top, WORLD_H - bottom) };
+  return { x: clamp(c.x, bounds.x + left, bounds.x + bounds.w - right), y: clamp(c.y, bounds.y + top, bounds.y + bounds.h - bottom) };
+}
+
+// How far HQ can pan by hand (ILI-1205): two squares past the AO on every side, where the
+// detailed terrain is still drawn.
+export const PAN: Rect = { x: -2 * CELL, y: -2 * CELL, w: WORLD_W + 4 * CELL, h: WORLD_H + 4 * CELL };
+
+// The centre that puts ALPHA in the middle of the open map.
+export function centreOn(alpha: Point, area: Rect, screen: Size, zoom: number, cover?: Cover): Point {
+  const want = { x: alpha.x - (area.x + area.w / 2 - screen.w / 2) / zoom, y: alpha.y - (area.y + area.h / 2 - screen.h / 2) / zoom };
+  return clampCenter(want, screen, zoom, cover);
 }
 
 // Follow ALPHA only when it needs to (ILI-1181): while ALPHA is well inside the open map
@@ -45,7 +56,5 @@ export function followCenter(center: Point, alpha: Point, area: Rect, screen: Si
   const sx = (alpha.x - center.x) * zoom + screen.w / 2;
   const sy = (alpha.y - center.y) * zoom + screen.h / 2;
   const inside = sx >= area.x + band && sx <= area.x + area.w - band && sy >= area.y + band && sy <= area.y + area.h - band;
-  if (inside) return center;
-  const want = { x: alpha.x - (area.x + area.w / 2 - screen.w / 2) / zoom, y: alpha.y - (area.y + area.h / 2 - screen.h / 2) / zoom };
-  return clampCenter(want, screen, zoom, cover);
+  return inside ? center : centreOn(alpha, area, screen, zoom, cover);
 }

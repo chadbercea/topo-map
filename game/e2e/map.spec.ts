@@ -55,3 +55,25 @@ test('the camera follows ALPHA where the grid runs off screen, and stays put whe
   const moved = (await page.evaluate(() => window.mapCamera().scrollX)) !== scroll0;
   expect(moved).toBe(!!isMobile); // 16:10 desktop: the grid fits exactly, nothing to follow
 });
+
+test('WASD pans the map on both axes; F goes back to ALPHA and follows it again', async ({ page }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  const cam = () => page.evaluate(() => window.mapCamera());
+  const hold = async (key: string, ms: number) => {
+    await page.keyboard.down(key);
+    await page.waitForTimeout(ms);
+    await page.keyboard.up(key);
+  };
+  const before = await cam();
+  await hold('a', 500);
+  await hold('w', 500);
+  const after = await cam();
+  expect(after.scrollX).toBeLessThan(before.scrollX); // panned left
+  expect(after.scrollY).toBeLessThan(before.scrollY); // and up
+  await expect(page.getByTestId('recentre')).toBeVisible();
+  await page.keyboard.press('f');
+  await expect(page.getByTestId('recentre')).toHaveCount(0);
+  await expect.poll(async () => Math.abs((await cam()).scrollX - before.scrollX), { timeout: 5_000 }).toBeLessThan(2);
+});

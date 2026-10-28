@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { bus, EV, getMapRect, setProjector, type InsetRect, type SceneStatus } from './events';
-import { clampCenter, fitCamera, followCenter } from './fit';
+import { centreOn, clampCenter, fitCamera, followCenter, PAN } from './fit';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
 import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
@@ -32,6 +32,13 @@ const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').match
 
 // The theater map: contour lines of the fictional terrain under the A1–H5 grid. The camera
 // fits the grid to the screen; line widths and labels are redrawn per zoom so they stay crisp.
+const PAN_SPEED = 700; // CSS px a second, while a key is held
+// Keys go to whatever has focus first: no panning while typing or on the signal dial.
+const typing = () => {
+  const el = document.activeElement;
+  return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement;
+};
+
 export class MapScene extends Phaser.Scene {
   private contours: ContourLine[] = [];
   private farContours: ContourLine[] = [];
@@ -116,6 +123,11 @@ export class MapScene extends Phaser.Scene {
     this.scale.on(Phaser.Scale.Events.RESIZE, this.layout, this);
     bus.on(EV.mapRect, this.layout, this);
     bus.on(EV.inset, this.placeInset, this);
+    // WASD and the arrow keys pan the map (ILI-1205); F goes back to ALPHA. No key capture,
+    // so they never swallow a key a button or the signal dial needs.
+    this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT,F', false) as Record<string, Phaser.Input.Keyboard.Key>;
+    this.keys.F.on('down', () => !typing() && this.recentre());
+    bus.on(EV.recentre, this.recentre, this);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.track, this);
     this.unsubscribe = game.subscribe(() => {
@@ -133,6 +145,7 @@ export class MapScene extends Phaser.Scene {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.layout, this);
       bus.off(EV.mapRect, this.layout, this);
       bus.off(EV.inset, this.placeInset, this);
+      bus.off(EV.recentre, this.recentre, this);
       this.unsubscribe?.();
     });
 
@@ -147,6 +160,7 @@ export class MapScene extends Phaser.Scene {
     const now = performance.now();
     if (!frozen()) this.loop.advance(this.lastFrame === null ? 0 : Math.min(now - this.lastFrame, delta, MAX_FRAME_MS));
     this.lastFrame = now;
+    this.pan(delta);
     this.follow(delta);
     this.drawTeam();
     const st = game.get();
@@ -419,7 +433,7 @@ export class MapScene extends Phaser.Scene {
   private camCenter: { x: number; y: number } | null = null;
   private camTarget: { x: number; y: number } | null = null;
   private follow(delta: number) {
-    if (this.focused || !this.camCenter || !this.camTarget) return;
+    if (this.focused || this.panned || !this.camCenter || !this.camTarget) return;
     const { width, height } = this.scale;
     const r = getMapRect();
     const area = r ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR } : { x: 0, y: 0, w: width, h: height };
@@ -432,6 +446,34 @@ export class MapScene extends Phaser.Scene {
     this.camCenter = Math.hypot(dx, dy) * cam.zoom < 0.5 ? this.camTarget : { x: this.camCenter.x + dx * k, y: this.camCenter.y + dy * k };
     cam.centerOn(this.camCenter.x, this.camCenter.y);
     bus.emit(EV.camera);
+  }
+
+  // Pan by hand (ILI-1205): while a direction key is held the map slides that way, up to two
+  // squares past the AO, and stops following ALPHA until F (or the HUD's button) recentres.
+  private keys!: Record<string, Phaser.Input.Keyboard.Key>;
+  private panned = false;
+  private pan(delta: number) {
+    if (this.focused || !this.camCenter || typing()) return;
+    const k = this.keys;
+    const dx = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0);
+    const dy = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0);
+    if (!dx && !dy) return;
+    const cam = this.cameras.main;
+    const step = (PAN_SPEED * DPR * Math.min(delta, 50)) / 1000 / cam.zoom;
+    const { width, height } = this.scale;
+    const next = { x: this.camCenter.x + dx * step, y: this.camCenter.y + dy * step };
+    this.camCenter = this.camTarget = clampCenter(next, { w: width, h: height }, cam.zoom, this.cover(getMapRect(), height), PAN);
+    cam.centerOn(this.camCenter.x, this.camCenter.y);
+    if (!this.panned) bus.emit(EV.panned, (this.panned = true));
+    bus.emit(EV.camera);
+  }
+
+  private recentre() {
+    const { width, height } = this.scale;
+    const r = getMapRect();
+    const area = r ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR } : { x: 0, y: 0, w: width, h: height };
+    this.camTarget = centreOn(game.get().team.position, area, { w: width, h: height }, this.cameras.main.zoom, this.cover(r, height));
+    if (this.panned) bus.emit(EV.panned, (this.panned = false));
   }
 
   // The open part of the screen the grid covers, in device px (ILI-1186): below the mission
@@ -464,7 +506,8 @@ export class MapScene extends Phaser.Scene {
       // the grid at this zoom.
       const screen = { w: width, h: height };
       const start = this.camCenter ?? clampCenter({ x: WORLD_W / 2, y: WORLD_H / 2 }, screen, zoom, cover);
-      this.camCenter = clampCenter(this.camCenter ? start : followCenter(start, game.get().team.position, area, screen, zoom, cover), screen, zoom, cover);
+      const bounds = this.panned ? PAN : undefined; // a hand-panned view keeps its room
+      this.camCenter = clampCenter(this.camCenter ? start : followCenter(start, game.get().team.position, area, screen, zoom, cover), screen, zoom, cover, bounds);
       this.camTarget = this.camCenter;
       cam.centerOn(this.camCenter.x, this.camCenter.y);
     }

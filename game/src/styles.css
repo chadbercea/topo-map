@@ -63,6 +63,8 @@ html, body {
 
 .slot-bar { grid-area: bar; min-width: 0; }
 .map-area { grid-area: map; min-height: 0; }
+.recentre { pointer-events: auto; font: inherit; font-size: 11px; letter-spacing: 0.1em; color: var(--accent); border: 1px solid var(--accent); min-height: 32px; padding: 0 10px; cursor: pointer; align-self: end; }
+.recentre kbd { font: inherit; font-size: 10px; color: var(--dim); border: 1px solid var(--line); padding: 0 4px; margin-left: 4px; }
 .slot-band { grid-area: band; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
 .band-cards { display: grid; gap: 6px; justify-items: center; align-content: end; min-width: 0; }
 .band-cards > * { width: min(420px, 100%); }

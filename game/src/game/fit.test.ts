@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampCenter, fitCamera, followCenter } from './fit';
+import { centreOn, clampCenter, fitCamera, followCenter, PAN } from './fit';
 
 const phone = { w: 390, h: 664 };
 const open = { x: 16, y: 120, w: 358, h: 300 }; // the map between the panels
@@ -29,5 +29,18 @@ describe('camera fit', () => {
     const next = followCenter(center, { x: 1300, y: 900 }, open, phone, zoom);
     expect(next.x).toBeGreaterThan(center.x);
     expect(next).toEqual(clampCenter(next, phone, zoom));
+  });
+
+  it('panning by hand goes two squares past the AO on both axes, and no further (ILI-1205)', () => {
+    const screen = { w: 1440, h: 900 };
+    // 16:10 at an exact fit is pinned on the AO, but the hand-pan room moves both ways.
+    expect(clampCenter({ x: 100, y: 900 }, screen, 0.9, undefined, PAN)).toEqual({ x: 400, y: 900 });
+    expect(clampCenter({ x: -5000, y: -5000 }, screen, 0.9, undefined, PAN)).toEqual({ x: -400 + 720 / 0.9, y: -400 + 450 / 0.9 });
+  });
+
+  it('recentres ALPHA in the open map', () => {
+    const zoom = 0.664;
+    const c = centreOn({ x: 800, y: 500 }, open, phone, zoom);
+    expect((800 - c.x) * zoom + phone.w / 2).toBeCloseTo(open.x + open.w / 2);
   });
 });
