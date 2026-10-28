@@ -88,7 +88,7 @@ export async function openAsk(page: Page) {
   // the square card, where the ask is raised elsewhere instead. That can take a moment to
   // show, so keep looking until one of them takes the click.
   await settledCamera(page);
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 12; i++) {
     // On a phone the action panel covers the dock and raises the ask itself (ILI-1211).
     const panel = page.getByTestId('answer-alpha-panel');
     if (await panel.count()) return panel.click();
@@ -99,7 +99,7 @@ export async function openAsk(page: Page) {
     }
     const ok = await page
       .getByTestId('incoming')
-      .click({ timeout: 500 })
+      .click({ timeout: 3_000 }) // CI's software renderer is slow to call anything stable
       .then(() => true)
       .catch(() => false);
     if (ok) return;
