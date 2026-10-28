@@ -54,5 +54,6 @@ test('combat ineffective: ALPHA asks for a resupply bird, and replacements arriv
   await linked(page);
   await expect(page.getByTestId('inbound-resupply')).toContainText('resupply bird inbound');
   await fastForward(page, 20_500);
-  await expect(page.getByTestId('team-panel')).toContainText('5/5 fit');
+  // Replacements are standing: no one down (each row shows its own status, ILI-1223).
+  await expect(page.getByTestId('readout').locator('li[data-condition="down"]')).toHaveCount(0);
 });

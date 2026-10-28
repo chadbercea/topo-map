@@ -22,7 +22,7 @@ test('panels leave a clear space between them (where a strike closes in)', async
 
 test('the team panel shows what the team is doing', async ({ page }) => {
   await start(page);
-  await expect(page.getByTestId('team-panel')).toContainText('ALPHA');
+  await expect(page.getByTestId('team-title')).toHaveText('TEAM'); // not the callsign (ILI-1223)
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
 
