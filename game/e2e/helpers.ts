@@ -84,6 +84,9 @@ export async function tapAt(page: Page, isMobile: boolean, p: { x: number; y: nu
 // ALPHA's ask arrives as an orange flag at its marker; click it to read the ask and answer
 // (ILI-1200). If the flag is under the square card, the intel stream raises it (ILI-1203).
 export async function openAsk(page: Page) {
+  // On a phone the action panel covers the dock and raises the ask itself (ILI-1211).
+  const panel = page.getByTestId('answer-alpha-panel');
+  if (await panel.count()) return panel.click();
   const answer = page.getByTestId('answer-alpha');
   if (!(await answer.count())) return page.getByTestId('incoming').click();
   if (!(await answer.isVisible())) await page.getByTestId('tab-intel').click();
