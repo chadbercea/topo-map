@@ -6,6 +6,15 @@ import type { AvatarState } from './orionScene'; // a type only: the module itse
 // does, or when WebGL isn't there, the still SVG mark (`fallback`) shows instead.
 
 export function OrionAvatar({ state, fallback }: { state: AvatarState; fallback: ReactNode }) {
+  return <WireAvatar state={state} fallback={fallback} load={loadOrion} className="o-sat-3d" />;
+}
+const loadOrion = () => import('./orionScene');
+
+type Mount<S> = (host: HTMLElement, stateRef: { current: S }, repaint: { current: (() => void) | null }) => (() => void) | null;
+
+// Any of the HUD's wireframes (ILI-1236 shares this with COMMS's terminal): `load` imports its
+// scene module, whose `mount` builds and runs it.
+export function WireAvatar<S>({ state, fallback, load, className }: { state: S; fallback: ReactNode; load: () => Promise<{ mount: Mount<S> }>; className: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef(state);
   const repaint = useRef<(() => void) | null>(null);
@@ -22,7 +31,7 @@ export function OrionAvatar({ state, fallback }: { state: AvatarState; fallback:
     if (!host) return;
     let dead = false;
     let stop = () => {};
-    import('./orionScene')
+    load()
       .then(({ mount }) => {
         if (dead) return;
         const built = mount(host, stateRef, repaint);
@@ -36,10 +45,10 @@ export function OrionAvatar({ state, fallback }: { state: AvatarState; fallback:
       stop();
       repaint.current = null;
     };
-  }, []);
+  }, [load]);
 
   return (
-    <div ref={hostRef} className="o-sat-3d" data-ready={ready || undefined} aria-hidden>
+    <div ref={hostRef} className={className} data-ready={ready || undefined} aria-hidden>
       {!ready && fallback}
     </div>
   );

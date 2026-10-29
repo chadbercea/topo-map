@@ -5,6 +5,7 @@ import { classify } from '../sim/stream';
 import { Replies } from './AskWindow';
 import { gameClock } from '../sim/gameTime';
 import { bus, EV, getAskHidden } from '../game/events';
+import { CommsStrip } from './CommsStrip';
 
 export const RELAY = 'RELAY-7'; // the comms satellite HQ talks to the team through
 
@@ -52,6 +53,8 @@ export function CommsPanel() {
           {RELAY} ↔ {callsign} · link good
         </span>
       </h2>
+      {/* The link itself, always on screen (ILI-1236): ALPHA's terminal and RELAY-7's signal. */}
+      <CommsStrip />
       {hidden && <IncomingAlert as="div" testId="answer-alpha" />}
       <ol className="thread" ref={log} role="log" aria-live="polite" data-testid="comms-feed">
         {feed.map((f) => {

@@ -126,3 +126,19 @@ test('when the square card opens where ALPHA\u2019s flag was, the flag moves cle
   await page.getByTestId('responses').getByRole('button', { name: 'Move in blind' }).click();
   await expect(page.getByTestId('comms')).toHaveCount(0);
 });
+
+test('COMMS’s strip follows the link: incoming while ALPHA waits, sending while the answer is up, then idle (ILI-1236)', async ({ page, isMobile }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  await freeze(page);
+  if (isMobile) await page.getByTestId('tab-satcom').click();
+  const strip = page.getByTestId('comms-avatar');
+  await expect(strip).toBeVisible();
+  await expect(strip).toHaveAttribute('data-state', 'incoming');
+  await expect(page.getByTestId('comms-traffic')).toHaveText('incoming');
+  await expect(page.getByTestId('satcom-responses')).toBeInViewport({ ratio: 1 }); // the strip leaves the replies on screen
+  await page.evaluate(() => window.game.respond(window.game.get().team.holdFor!, 'blind'));
+  await expect(strip).toHaveAttribute('data-state', 'sending');
+  await fastForward(page, 3_000);
+  await expect(strip).toHaveAttribute('data-state', 'idle');
+});
