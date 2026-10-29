@@ -26,27 +26,43 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
 
-test('the war room: COMMS down the left, the team bottom right, ORION-3 a line in the header (ILI-1225)', async ({ page, isMobile }) => {
+test('layout A: mission and COMMS down the left, ORION-3 down the right, small widgets and TEAM along the bottom (ILI-1226)', async ({ page, isMobile }) => {
   await start(page);
   if (isMobile) {
-    // One dock, two tabs: no INTEL (ILI-1225).
+    // One dock, three tabs: COMMS, ORION-3, TEAM; no INTEL (ILI-1225).
     await expect(page.getByTestId('tab-intel')).toHaveCount(0);
-    for (const [tab, id] of [['satcom', 'satcom'], ['team', 'team-panel']] as const) {
+    for (const [tab, id] of [['satcom', 'satcom'], ['orion', 'satellite'], ['team', 'team-panel']] as const) {
       await page.getByTestId(`tab-${tab}`).click();
       await expect(page.getByTestId(id)).toBeVisible();
     }
     return;
   }
   const view = page.viewportSize()!;
-  await expect(page.getByTestId('intel-stream')).toHaveCount(0);
-  const comms = (await page.getByTestId('satcom').boundingBox())!;
-  const team = (await page.getByTestId('team-panel').boundingBox())!;
+  const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
+  const mission = await box('mission-strip');
+  const comms = await box('satcom');
+  const orion = await box('satellite');
+  const small = await box('small-widgets');
+  const team = await box('team-panel');
+  const map = await box('map-area');
+  // Top left the mission, the clock in it; COMMS under it.
+  expect(mission.x).toBeLessThan(40);
+  expect(mission.y).toBeLessThan(40);
+  await expect(page.getByTestId('mission-strip').getByTestId('clock')).toBeVisible();
   expect(comms.x).toBeLessThan(40);
-  expect(comms.y).toBeLessThan(40); // the full left side
-  expect(comms.y + comms.height).toBeGreaterThan(view.height - 40);
-  expect(team.x).toBeGreaterThan(view.width * 0.4);
-  expect(team.x + team.width).toBeGreaterThan(view.width - 40);
-  expect(team.y + team.height).toBeGreaterThan(view.height - 40);
-  // ORION-3 has no panel: its status is a line in the header.
-  await expect(page.getByTestId('mission-timer').getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
+  expect(comms.y).toBeGreaterThan(mission.y + mission.height - 1);
+  // ORION-3 down the right, right of the map.
+  expect(orion.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
+  expect(orion.x + orion.width).toBeGreaterThan(view.width - 40);
+  await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
+  // Along the bottom: the small widgets, then TEAM, under COMMS and the map.
+  for (const b of [small, team]) {
+    expect(b.y).toBeGreaterThan(comms.y + comms.height - 1);
+    expect(b.y + b.height).toBeGreaterThan(view.height - 40);
+  }
+  expect(small.x).toBeLessThan(40);
+  expect(team.x).toBeGreaterThan(small.x + small.width - 1);
+  expect(team.x + team.width).toBeLessThanOrEqual(orion.x);
+  await expect(page.getByTestId('weather')).toBeVisible();
+  await expect(page.getByTestId('resources')).toContainText('Budget');
 });

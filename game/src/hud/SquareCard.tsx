@@ -101,8 +101,9 @@ export function SquareCard() {
     if (acting) side = footed(at.top + height);
     pic = { width: THUMB, height: THUMB };
   } else {
-    at = beside(square, area, height, s.team.position);
-    if (acting) side = alongside(at, area, height, actHeight, square, s.team.position);
+    const room = floatArea(area);
+    at = beside(square, room, height, s.team.position);
+    if (acting) side = alongside(at, room, height, actHeight, square, s.team.position);
     pic = { height: PICTURE };
   }
   return (
@@ -140,6 +141,16 @@ export function SquareCard() {
 }
 
 type Area = NonNullable<ReturnType<typeof getMapRect>>;
+
+// On a wide screen the map runs on under ORION-3's column wherever its panel doesn't reach
+// (ILI-1226). The card and its actions may float there, clear of ORION-3's panel as of any
+// other panel.
+function floatArea(area: Area): Area {
+  const hud = document.querySelector('.hud');
+  if (!hud) return area;
+  const right = hud.getBoundingClientRect().right - parseFloat(getComputedStyle(hud).paddingRight);
+  return { ...area, width: Math.max(area.width, right - area.x) };
+}
 type Placed = { left: number; top: number; width: number; maxHeight: number; side: string };
 type Docked = { left: number; top?: number; bottom?: number; width: number; maxHeight: number; side: string };
 

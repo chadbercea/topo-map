@@ -16,13 +16,13 @@ test('tapping a grid square selects it and opens its zoomed view; tapping again 
     await expect(selected).toHaveText('—');
     return;
   }
-  await tap(7, 1);
-  await expect(selected).toHaveText('H2');
-  await tap(7, 1);
+  await tap(5, 1); // F2: H2 is under ORION-3's column now (ILI-1226)
+  await expect(selected).toHaveText('F2');
+  await tap(5, 1);
   await expect(selected).toHaveText('—');
 });
 
-test('the camera follows ALPHA where the grid runs off screen, and stays put where it fits', async ({ page, isMobile }) => {
+test('the camera follows ALPHA where the grid runs off the open map, keeping it clear of the panels', async ({ page }) => {
   test.setTimeout(60_000); // the walk is thousands of ticks; a loaded CI runner took 31 s on desktop
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -40,8 +40,9 @@ test('the camera follows ALPHA where the grid runs off screen, and stays put whe
   const check = async () => {
     const { p, box, view } = await where();
     expect(p.x >= 0 && p.x <= view.width && p.y >= 0 && p.y <= view.height, 'ALPHA on screen').toBe(true);
-    // A phone's grid runs off the sides: the camera keeps ALPHA across the open map.
-    if (isMobile) expect(p.x >= box.x && p.x <= box.x + box.width, 'ALPHA across the open map').toBe(true);
+    // The grid runs off the open map (a phone's sides; on desktop under ORION-3's column,
+    // ILI-1226): the camera keeps ALPHA across the open map.
+    expect(p.x >= box.x && p.x <= box.x + box.width, 'ALPHA across the open map').toBe(true);
   };
   const scroll0 = await page.evaluate(() => window.mapCamera().scrollX);
   await check(); // at the start, on G5
@@ -53,7 +54,7 @@ test('the camera follows ALPHA where the grid runs off screen, and stays put whe
     await check();
   }
   const moved = (await page.evaluate(() => window.mapCamera().scrollX)) !== scroll0;
-  expect(moved).toBe(!!isMobile); // 16:10 desktop: the grid fits exactly, nothing to follow
+  expect(moved).toBe(true); // desktop too, since layout A narrowed the open map (ILI-1226)
 });
 
 test('WASD pans the map on both axes; F goes back to ALPHA and follows it again', async ({ page }) => {

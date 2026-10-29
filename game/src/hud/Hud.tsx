@@ -10,7 +10,7 @@ import { alphaBox, overlap } from './overlays';
 import { bus, EV } from '../game/events';
 import { Assets } from './Assets';
 import { Recentre } from './Recentre';
-import { MissionStrip, StatusWidget } from './MissionBar';
+import { EnvWidget, MissionPanel, OrionPanel } from './MissionBar';
 import { CommsPanel } from './CommsPanel';
 import { AskWindow } from './AskWindow';
 import { useAskHidden } from './CommsPanel';
@@ -22,20 +22,20 @@ const debug = new URLSearchParams(location.search).has('debug');
 // Tests and debugging drive the game directly through window.game when ?debug is on.
 if (debug) Object.assign(window, { game });
 
-type Tab = 'satcom' | 'team';
+type Tab = 'satcom' | 'orion' | 'team';
 type Sheet = 'peek' | 'half' | 'full';
 const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 
-// The war room (ILI-1186): HQ sits down to a live, multi-panel view of the theater. The clock,
-// weather and ORION-3 sit in a widget in the map's top-right corner, and the mission's status
-// runs along the map's foot (ILI-1216); down the left COMMS, HQ's one feed since the intel
-// stream went (ILI-1199, ILI-1225); the map fills the rest. Along the bottom: the mini game and HQ's assets, then
-// the team panel in the bottom-right corner. ORION-3, the imaging satellite, has no panel
-// (ILI-1202): its status is a line in the header. Any square HQ works, picked on the map or
-// named in COMMS, gets one card beside it (SquareCard, ILI-1203): its details, the
-// scan, ORION-3's larger picture, and the strikes and support to call in there. When ALPHA needs something its ask pops up beside its marker
-// (AskWindow). On a phone COMMS and the team share one docked panel with tabs; on a
-// fold or tablet they share a rail down the right, and an open square takes it over (ILI-1213).
+// The war room, layout A (ILI-1186, ILI-1226): HQ sits down to a live, multi-panel view of the
+// theater. Top left MISSION · BLACK BOX, the clock and the mission in one panel; under it COMMS,
+// HQ's one feed (ILI-1225). The map fills the middle, the mini game floating at its foot. Down
+// the whole right side ORION-3 (ILI-1219). Along the bottom the small widgets, Environment and
+// Logistics, then TEAM. Any square HQ works, picked on the map or named in COMMS, gets one card
+// beside it (SquareCard, ILI-1203): its details, the scan, ORION-3's larger picture, and the
+// strikes and support to call in there. When ALPHA needs something its ask pops up beside its
+// marker (AskWindow). On a fold or tablet the mission floats over the map's corner and COMMS,
+// ORION-3 and TEAM share a rail down the right behind tabs, an open square taking it over
+// (ILI-1213); on a phone the mission is the line on top and the three share a bottom sheet.
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
@@ -70,10 +70,7 @@ export function Hud() {
   return (
     <div className="hud" data-playing={playing} data-tab={tab} data-tier={tier} data-cover={cover} data-sheet={sheet}>
       <div className="slot-widget">
-        <StatusWidget />
-      </div>
-      <div className="slot-strip">
-        <MissionStrip />
+        <MissionPanel />
       </div>
       <MapArea />
       <SquareCard />
@@ -83,20 +80,28 @@ export function Hud() {
         </div>
         <div className="map-controls" data-overlay="band">
           <Recentre />
-          <Assets />
         </div>
       </div>
-      <div className="slot-team">
-        <TeamPanel />
+      <div className="slot-orion" data-overlay="orion">
+        <OrionPanel />
+      </div>
+      <div className="slot-bottom">
+        <div className="slot-small" data-testid="small-widgets">
+          <EnvWidget />
+          <Assets />
+        </div>
+        <div className="slot-team">
+          <TeamPanel />
+        </div>
       </div>
       <div className="slot-satcom">
         <CommsPanel />
       </div>
       {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
       <nav className="dock-tabs" aria-label="Panels">
-        {(['satcom', 'team'] as const).map((t) => (
+        {(['satcom', 'orion', 'team'] as const).map((t) => (
           <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'satcom' && askHidden && tab !== 'satcom'}>
-            {t === 'satcom' ? 'COMMS' : t.toUpperCase()}
+            {t === 'satcom' ? 'COMMS' : t === 'orion' ? 'ORION-3' : t.toUpperCase()}
           </button>
         ))}
       </nav>
