@@ -24,6 +24,9 @@ export function AskWindow() {
   // Pinned where ALPHA was when it asked, so the window holds still while you answer even if
   // the team keeps walking (a resupply ask doesn't stop it).
   const anchors = useRef(new Map<string, { x: number; y: number }>());
+  // Once open, the window holds still on screen too (ILI-1227): the camera follows ALPHA now,
+  // and a window sliding with the map is one you can't click. It lets go when it closes.
+  const held = useRef<{ id: string; at: ReturnType<typeof place> } | null>(null);
   const [, redraw] = useState(0);
   const flagRef = useRef<HTMLElement>(null);
   const size = useRef({ w: 110, h: 34 }); // the flag's (or open window's) size, as last drawn
@@ -105,7 +108,10 @@ export function AskWindow() {
     setOpenId(next);
   };
   const who = call.from === callsign ? callsign : call.from;
-  const { p, inView, side, below, style } = place(anchor, size.current);
+  if (!open || held.current?.id !== call.id) held.current = null;
+  const where = held.current?.at ?? place(anchor, size.current);
+  if (open && !held.current && where.inView) held.current = { id: call.id, at: where };
+  const { p, inView, side, below, style } = where;
 
   return (
     <>
