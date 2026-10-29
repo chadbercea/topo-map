@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { bus, EV } from '../game/events';
 
-// After HQ pans the map by hand (WASD or the arrow keys, ILI-1205) the camera stops
-// following ALPHA; this brings it back, as F does.
+// The camera stays centred on ALPHA (ILI-1227). After HQ pans the map by hand (WASD, the arrow
+// keys, a drag or a pinch) it stays where HQ put it, and this button, in TEAM's title line,
+// brings it back, as F does. It sits over the panel's corner, so it never moves the panel's
+// layout.
 export function Recentre() {
   const [panned, setPanned] = useState(false);
   useEffect(() => {
@@ -11,7 +13,7 @@ export function Recentre() {
   }, []);
   if (!panned) return null;
   return (
-    <button className="panel recentre" onClick={() => bus.emit(EV.recentre)} data-testid="recentre" title="Back to ALPHA, and follow it (F)">
+    <button className="recentre" onClick={() => bus.emit(EV.recentre)} data-testid="recentre" title="Back to ALPHA, and follow it (F)">
       ◎ ALPHA <kbd>F</kbd>
     </button>
   );

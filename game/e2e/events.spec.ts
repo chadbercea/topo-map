@@ -4,7 +4,7 @@ import { squarePoint, start, tapAt } from './helpers';
 test('a new event marks its square on the map; tapping the marker opens its square card beside it (ILI-1225)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
-  await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'E2', title: 'Test contact' }));
+  await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'F4', title: 'Test contact' }));
   await expect(page.getByTestId('alerts')).toHaveCount(0); // no strip under the header any more
 
   // No intel stream any more: the task is a marker on its square (ILI-1225).
@@ -12,22 +12,22 @@ test('a new event marks its square on the map; tapping the marker opens its squa
   await expect.poll(status).toBe('new');
   await expect(page.getByTestId('blockers')).not.toContainText('Test contact'); // not in the header any more
 
-  // Marker sits in the square's top-right quarter (E2 = col 4, row 1; clear of the status widget).
-  await tapAt(page, isMobile, await squarePoint(page, 4, 1, 0.25, -0.25));
+  // Marker sits in the square's top-right quarter (F4 = col 5, row 3: next to ALPHA, in view).
+  await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25, -0.25));
   const card = page.getByTestId('square-card');
   await expect(card).toBeVisible(); // recon on the card; what to do about it beside it (ILI-1211)
   await expect(page.getByTestId('action-panel').getByTestId('event-card')).toContainText('Test contact');
   await expect.poll(status).toBe('seen'); // seen, so no longer flagged
-  await expect(page.getByTestId('selected-square')).toHaveText('E2'); // the event opens its square's card
+  await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the event opens its square's card
 
   if (!isMobile) {
-    // Beside its square: the card's near edge is within a square's width of E2.
+    // Beside its square: the card's near edge is within a square's width of F4.
     const box = (await card.boundingBox())!;
-    const e2 = await squarePoint(page, 4, 1);
+    const f4 = await squarePoint(page, 5, 3);
     const side = await card.getAttribute('data-side');
     const near = side === 'left' ? box.x + box.width : box.x; // the edge that faces the square
-    expect(Math.abs(near - e2.x)).toBeLessThan(140);
-    expect(box.y).toBeLessThan(e2.y + 120);
+    expect(Math.abs(near - f4.x)).toBeLessThan(140);
+    expect(box.y).toBeLessThan(f4.y + 320); // level with it, or below what keeps it off ALPHA
   }
 
   await card.getByRole('button', { name: 'Close' }).click();

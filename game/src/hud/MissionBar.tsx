@@ -2,7 +2,6 @@ import { game, useGame } from '../sim/store';
 import { blockers, nextUp, phasePips, winChecks } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import { weather } from '../sim/conditions';
-import { satelliteStatus } from '../sim/satellite';
 import { gameClock, gameSpan, zulu } from '../sim/gameTime';
 
 export const clock = (ms: number) => gameClock(ms);
@@ -84,18 +83,6 @@ export function EnvWidget() {
       <p className="wx" data-testid="weather">
         {wx.sky} · vis {wx.visibilityKm} km · wind {wx.wind.from} {wx.wind.kmh} km/h · {wx.tempC}°C · {wx.light}
       </p>
-    </section>
-  );
-}
-
-// ORION-3's panel (ILI-1226 places it down the right; ILI-1219 makes it the big panel where the
-// scan happens). For now, what it's doing.
-export function OrionPanel() {
-  const s = useGame((x) => x);
-  return (
-    <section className="panel orion" data-testid="satellite" data-state={s.satellite.state} aria-label="ORION-3 imaging satellite">
-      <h2>ORION-3</h2>
-      <p data-testid="satellite-status">{s.minigame?.status === 'active' ? 'ORION-3 · tied up' : satelliteStatus(s)}</p>
     </section>
   );
 }

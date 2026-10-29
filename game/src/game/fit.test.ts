@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { centreOn, clampCenter, fitCamera, followCenter, PAN } from './fit';
+import { centreOn, clampCenter, fitCamera, PAN } from './fit';
 
 const phone = { w: 390, h: 664 };
 const open = { x: 16, y: 120, w: 358, h: 300 }; // the map between the panels
@@ -20,15 +20,15 @@ describe('camera fit', () => {
     expect(clampCenter({ x: 100, y: 900 }, { w: 1440, h: 900 }, 0.9)).toEqual({ x: 800, y: 500 });
   });
 
-  it('follows ALPHA only when it nears the edge of the open map', () => {
+  it("keeps ALPHA centred in the open map, even near the AO's edge (ILI-1227)", () => {
     const zoom = 0.664;
-    const center = { x: 800, y: 500 };
-    // ALPHA a little right of centre, well inside: the camera stays put
-    expect(followCenter(center, { x: 850, y: 420 }, open, phone, zoom)).toBe(center);
-    // ALPHA at G5, off screen: the camera moves toward it, as far as the grid allows
-    const next = followCenter(center, { x: 1300, y: 900 }, open, phone, zoom);
-    expect(next.x).toBeGreaterThan(center.x);
-    expect(next).toEqual(clampCenter(next, phone, zoom));
+    const screen = { x: (a: { x: number }, c: { x: number }) => (a.x - c.x) * zoom + phone.w / 2 };
+    const mid = open.x + open.w / 2;
+    // ALPHA a little right of centre: the camera centres it all the same
+    expect(screen.x({ x: 850 }, centreOn({ x: 850, y: 420 }, open, phone, zoom, undefined, PAN))).toBeCloseTo(mid);
+    // ALPHA on the AO's edge (B1's corner): the hand-pan room lets the camera centre it there too
+    const corner = { x: 210, y: 90 };
+    expect(screen.x(corner, centreOn(corner, open, phone, zoom, undefined, PAN))).toBeCloseTo(mid);
   });
 
   it('panning by hand goes two squares past the AO on both axes, and no further (ILI-1205)', () => {
