@@ -441,6 +441,17 @@ html, body {
 .team .op .ecg { width: 52px; height: 16px; }
 .team .op .status { width: 52px; }
 .team .op .supplies { grid-template-columns: auto 1fr auto 1fr; }
+/* Wide (ILI-1237): TEAM sizes to what it holds. It was a fixed 230 px strip the width of the
+   bottom row, its three columns stretched apart and its bars 200 px long: mostly empty space.
+   Now each row's parts sit together at set widths, the bars are short, and the panel is as wide
+   and as tall as its rows, at the bottom row's left; the map shows on beside it. */
+@media (min-width: 1200px) {
+  .slot-bottom { justify-items: start; }
+  .slot-team { width: max-content; max-width: 100%; }
+  .team { height: auto; max-height: 260px; }
+  .team .op { grid-template-columns: 150px max-content 260px; justify-content: start; gap: 16px; }
+  .team .op .supplies { grid-template-columns: auto 90px auto 90px; gap: 6px; }
+}
 .team h2 { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
 .team .callsign { color: var(--accent); letter-spacing: 0.12em; flex: none; }
 .team .activity { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
