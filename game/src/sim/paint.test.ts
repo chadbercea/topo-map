@@ -26,11 +26,12 @@ describe('target painting', () => {
     expect(store.get().minigame).toMatchObject({ eyes: 'live', spotted: store.get().contacts[0].units });
   });
 
-  it('unpainted and unseen, the sniper can’t aim; a drone strike shows nothing', () => {
+  it('unpainted and unseen, the sniper can’t aim; the drone still flies', () => {
     const store = createStore(facing());
     store.fire('cp', 'sniper');
     expect(store.get().minigame).toBeNull();
     store.fire('cp', 'drone');
-    expect(store.get().minigame).toMatchObject({ eyes: null, spotted: [] });
+    expect(store.get().minigame).toBeNull(); // no board: REAPER-1 is on its way (ILI-1252)
+    expect(store.get().drone).toMatchObject({ kills: null });
   });
 });

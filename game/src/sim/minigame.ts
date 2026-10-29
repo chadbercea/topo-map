@@ -92,18 +92,8 @@ export function startSeek(s: GameState, contactId: string, weapon: Weapon): Game
   };
 }
 
-// Where a round lands: the drone's blast covers the cell tapped and the ones right and
-// below it; the heli strafes the whole row; the sniper hits one cell.
-const blast = (cell: number) => {
-  const r = Math.floor(cell / BOARD);
-  const c = cell % BOARD;
-  const out = [cell];
-  if (c + 1 < BOARD) out.push(cell + 1);
-  if (r + 1 < BOARD) out.push(cell + BOARD);
-  if (c + 1 < BOARD && r + 1 < BOARD) out.push(cell + BOARD + 1);
-  return out;
-};
-
+// Where a round lands: the heli strafes the whole row; the sniper hits one cell. (The drone
+// has no board: drone.ts.)
 const strafe = (cell: number) => {
   const r = Math.floor(cell / BOARD) * BOARD;
   return [r, r + 1, r + 2, r + 3];
@@ -113,7 +103,7 @@ function seekTap(s: GameState, square: SquareId, cell: number | undefined): Game
   const m = s.minigame!;
   if (square !== m.square || cell === undefined || !m.roundsLeft || s.elapsedMs < (m.nextShotMs ?? 0)) return s;
   const c = s.contacts.find((x) => x.id === m.contactId)!;
-  const cells = m.weapon === 'drone' ? blast(cell) : m.weapon === 'heli' ? strafe(cell) : [cell];
+  const cells = m.weapon === 'heli' ? strafe(cell) : [cell];
   const kills = c.units.filter((u) => cells.includes(u));
   // Kills HQ watched happen are confirmed: they pay, and come off its picture. A blind
   // strike's kills are only found later.
@@ -123,7 +113,7 @@ function seekTap(s: GameState, square: SquareId, cell: number | undefined): Game
   const hit = { ...c, units: c.units.filter((u) => !kills.includes(u)) };
   const after = m.scattered || !hit.units.length ? hit : scatter(hit, s.elapsedMs + cell);
   const units = after.units;
-  const loud = m.weapon === 'drone' ? NOISE.drone : m.weapon === 'heli' ? NOISE.heli / WEAPON.heli.rounds : NOISE.sniperRound;
+  const loud = m.weapon === 'heli' ? NOISE.heli / WEAPON.heli.rounds : NOISE.sniperRound;
   const next: GameState = {
     ...makeNoise(seen ? confirmKills(earn(s, kills.length * CASH_PER_STRIKE_KILL), c.id, kills) : s, loud), // every shot is heard
     contacts: s.contacts.map((x) => (x === c ? { ...x, units } : x)),

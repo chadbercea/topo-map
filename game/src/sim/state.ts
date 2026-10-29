@@ -8,6 +8,7 @@ import { initialComms, type Comms } from './comms';
 import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
 import type { MiniGame } from './minigame';
+import type { DroneRun } from './drone';
 import type { Contact, Decision } from './contacts';
 import { BLACK_BOX } from './missions/blackBox';
 import type { MissionDef } from './script';
@@ -58,6 +59,7 @@ export type GameState = {
   openEvent: string | null; // the event card on screen
   comms: Comms;
   minigame: MiniGame | null; // the mini game on the map, or its result until closed
+  drone: DroneRun | null; // REAPER-1's strike: in flight, over the square, or just done
   resources: { budget: number };
   satellite: Satellite; // ORION-3: where it's looking and what it's doing
   imagery: Record<string, Snapshot>; // the newest look at each square
@@ -113,6 +115,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     openEvent: null,
     comms: initialComms(),
     minigame: null,
+    drone: null,
     resources: { budget: 0 },
     satellite: initialSatellite(ROUTE[0]),
     imagery: {},

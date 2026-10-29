@@ -1,3 +1,4 @@
+import { FLIGHT_MS } from './drone';
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { ALERT_AT, ALERT_HARDEN, FADE_PER_S, NOISE, NOISE_PER_ROUND } from './noise';
@@ -21,8 +22,8 @@ describe('noise', () => {
   it('a drone strike is loud; a sniper round is quiet', () => {
     const drone = createStore(withContacts());
     drone.fire('t', 'drone');
-    drone.tapMiniGame('E3', 0);
-    expect(drone.get().noise).toBe(NOISE.drone);
+    drone.set(run(drone.get(), FLIGHT_MS));
+    expect(drone.get().noise).toBeGreaterThanOrEqual(NOISE.drone - 1); // heard as it arrives
     const sniper = createStore(withContacts());
     sniper.fire('t', 'sniper');
     sniper.tapMiniGame('E3', 0);
