@@ -2,7 +2,8 @@ import { expect, test, type Locator } from '@playwright/test';
 import { freeze, start } from './helpers';
 
 // The medium tier (ILI-1213): a fold open either way, a tablet, a phone on its side. The map
-// on the left, the panels in a rail on the right behind tabs; an opened square takes the rail.
+// on the left, the panels in a rail on the right behind tabs; a picked square shows in
+// ORION-3's tab, its actions floating over the map (ILI-1228).
 const SIZES = [
   ['fold upright', 750, 832],
   ['fold sideways', 832, 750],
@@ -14,7 +15,7 @@ const box = async (l: Locator) => (await l.boundingBox())!;
 const inside = (b: { x: number; y: number; width: number; height: number }, w: number, h: number) => b.x >= 0 && b.y >= 0 && b.x + b.width <= w + 0.5 && b.y + b.height <= h + 0.5;
 
 for (const [name, width, height] of SIZES) {
-  test(`${name} (${width}×${height}): the map and a side rail; a square takes the rail`, async ({ page, isMobile }) => {
+  test(`${name} (${width}×${height}): the map and a side rail; a picked square is in ORION-3's tab, its actions over the map`, async ({ page, isMobile }) => {
     test.skip(isMobile, 'sets its own viewport');
     await page.setViewportSize({ width, height });
     await start(page, '?debug');
@@ -35,30 +36,31 @@ for (const [name, width, height] of SIZES) {
     // ALPHA's flag is at its marker in the open map, not parked at the map's foot.
     await expect(page.getByTestId('comms')).toHaveAttribute('data-pinned', 'true');
 
-    // Open E3 with the checkpoint found: card on top of the rail, its actions under it, both
-    // inside the screen and clear of each other; the panels underneath step aside.
+    // Open E3 with the checkpoint found: ORION-3's tab comes forward with the square in it, and
+    // what HQ can do about it floats over the map, both inside the screen.
     await page.evaluate(() => {
       const g = window.game;
+      g.selectSquare('E3');
       g.lookAt('E3');
       for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
       g.capture('photo');
     });
+    await expect(page.locator('.hud')).toHaveAttribute('data-tab', 'orion');
     const card = page.getByTestId('square-card');
     const act = page.getByTestId('action-panel');
-    await expect(card).toHaveAttribute('data-side', 'rail');
+    await expect(card).toHaveAttribute('data-square', 'E3');
     await expect(act).toBeVisible();
-    await expect(page.getByTestId('satcom')).toBeHidden();
     const c = await box(card);
     const a = await box(act);
-    expect(Math.abs(c.x - rail.x)).toBeLessThan(1);
-    expect(a.y).toBeGreaterThanOrEqual(c.y + c.height);
-    expect(inside(c, width, height) && inside(a, width, height)).toBe(true);
-    await expect(card.getByRole('button', { name: 'Close' })).toBeInViewport({ ratio: 1 });
+    expect(c.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
+    expect(a.x + a.width).toBeLessThanOrEqual(rail.x + 1); // over the map
+    expect(inside(a, width, height)).toBe(true);
     await expect(act.getByTestId('fire-sniper')).toBeVisible();
 
     await card.getByRole('button', { name: 'Close' }).click();
     await expect(act).toHaveCount(0);
-    await expect(page.getByTestId('satcom')).toBeVisible();
+    await expect(card).toHaveCount(0);
+    await expect(page.getByTestId('satellite')).toBeVisible();
   });
 }
 

@@ -171,6 +171,9 @@ html, body {
    in its frame; every other block has its own background. */
 .square-card { position: fixed; z-index: 7; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow-y: auto; pointer-events: auto; border: 1px solid var(--accent); animation: ask-in 160ms ease-out; }
 .square-card > *, .square-card .facts { background: var(--bg); }
+/* In ORION-3's panel (ILI-1228) the square's details sit in the panel, not floating over the map. */
+.orion .square-card { position: static; z-index: auto; overflow: visible; animation: none; border: none; border-top: 1px solid var(--line); padding: 0; }
+.orion .square-card > *, .orion .square-card .facts { background: none; }
 .square-card > .sc-body { background: none; display: flex; flex-direction: column; }
 .square-card .sc-head { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 10px; font-size: 11px; letter-spacing: 0.08em; border-bottom: 1px solid var(--line); }
 .square-card .sc-head b { color: var(--accent); font-weight: 600; }
@@ -216,6 +219,8 @@ html, body {
 .action-panel .target-menu .options { grid-template-columns: 1fr 1fr; gap: 6px; }
 .action-panel .target-menu .options button { min-height: 44px; font-size: 11px; }
 @media (prefers-reduced-motion: reduce) { .action-panel { animation: none; } }
+/* On a phone the actions sit in ORION-3's sheet, under the square (ILI-1228). */
+.orion .action-panel.in-sheet { position: static; z-index: auto; overflow: visible; animation: none; border: none; border-top: 1px solid #e5484d; padding: 0; background: var(--panel); }
 
 .event-card button {
   justify-self: start;
@@ -725,6 +730,7 @@ html, body {
   .hud[data-playing='true'] .minigame .instructions { display: none; }
   .square-card > .sc-body { flex-direction: row; }
   .orion .o-picture { width: auto; height: min(60vw, calc(var(--sheet, 30dvh) - 90px)); align-self: center; }
+  .orion .o-empty { display: none; } /* no picture yet: the square and Scan come first in the sheet */
   .square-card .facts { font-size: 10px; }
   .comms .actions button { min-height: 32px; padding: 0 8px; font-size: 10px; }
   /* The action panel on a phone: tight, so every strike shows under the card. */
@@ -788,10 +794,6 @@ html, body {
   .mission .blockers, .mission .objective, .mission .pips { display: none; }
   .hud { gap: 6px 10px; }
 }
-/* While a square holds the rail (medium) or its actions cover the dock (compact), the panels
-   underneath step out of the way: nothing ghosts through. */
-.hud[data-cover='rail'] :is(.slot-team, .slot-satcom, .slot-orion, .dock-tabs),
-.hud[data-cover='dock'] :is(.slot-team, .slot-satcom, .slot-orion, .dock-tabs) { visibility: hidden; }
 
 /* HQ's answer on its way up the link (ILI-1209): it blinks until ALPHA reads it back. */
 .satcom .thread .sending { animation: sending 0.8s steps(2, jump-none) infinite; }

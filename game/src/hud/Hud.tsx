@@ -3,7 +3,7 @@ import { DebugPanel } from './DebugPanel';
 import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
 import { MiniGamePanel } from './MiniGamePanel';
-import { hasActions, SquareCard } from './SquareCard';
+import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
 import { Assets } from './Assets';
@@ -28,24 +28,17 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 // theater. Top left MISSION · BLACK BOX, the clock and the mission in one panel; under it COMMS,
 // HQ's one feed (ILI-1225). The map fills the middle, the mini game floating at its foot. Down
 // the whole right side ORION-3 (ILI-1219). Along the bottom the small widgets, Environment and
-// Logistics, then TEAM. Any square HQ works, picked on the map or named in COMMS, gets one card
-// beside it (SquareCard, ILI-1203): its details, the scan, ORION-3's larger picture, and the
-// strikes and support to call in there. When ALPHA needs something its ask pops up beside its
-// marker (AskWindow). On a fold or tablet the mission floats over the map's corner and COMMS,
-// ORION-3 and TEAM share a rail down the right behind tabs, an open square taking it over
-// (ILI-1213); on a phone the mission is the line on top and the three share a bottom sheet.
+// Logistics, then TEAM. A square HQ picks, on the map or named in COMMS, shows in ORION-3's
+// panel, its details and Scan (ILI-1228), and what HQ can call in on it floats beside it (the
+// action panel). When ALPHA needs something its ask pops up beside its marker (AskWindow). On
+// a fold or tablet the mission floats over the map's corner and COMMS, ORION-3 and TEAM share a
+// rail down the right behind tabs (ILI-1213); on a phone the mission is the line on top and the
+// three share a bottom sheet. Picking a square or tasking ORION-3 brings its tab forward.
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
   const askHidden = useAskHidden(); // ALPHA's ask is raised in COMMS: light its tab
   const tier = useTier();
-  // What a docked square covers: the whole rail (medium), or the dock under its actions (compact).
-  // While ORION-3 works the card steps aside there (ILI-1219), so nothing is covered.
-  const cover = useGame((s) => {
-    const sq = lookSquare(s);
-    if (!sq || tier === 'wide' || (s.satellite.state !== 'idle' && !s.minigame)) return undefined;
-    return tier === 'medium' ? 'rail' : hasActions(s, sq) ? 'dock' : undefined;
-  });
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
   // on the map itself (ILI-1201), so the dock stays where it is.
   // A new event marks its square on the map, and its report lands in COMMS (ILI-1225): that
@@ -54,13 +47,16 @@ export function Hud() {
   // On a phone the dock is a bottom sheet (ILI-1214): peek (just the tabs), half or full.
   const [sheet, setSheet] = useState<Sheet>('half');
   useEffect(() => {
-    if (fresh) {
+    // Not while HQ works a square: ORION-3's panel holds it, and the news can wait (ILI-1228).
+    if (fresh && !lookSquare(game.get())) {
       setTab('satcom');
       setSheet((h) => (h === 'peek' ? 'half' : h)); // news opens a peeking sheet
     }
   }, [fresh]);
   // Tasking ORION-3 brings its panel forward on a fold or phone (ILI-1219).
-  const tasked = useGame((s) => s.satellite.state !== 'idle');
+  // So does picking a square: its details and Scan are there (ILI-1228).
+  // Keyed on what changed, so a strike ending with a square still picked brings it back too.
+  const tasked = useGame((s) => (lookSquare(s) ? `${lookSquare(s)}|${s.satellite.state}|${!!s.minigame}` : ''));
   useEffect(() => {
     if (tasked) {
       setTab('orion');
@@ -74,7 +70,7 @@ export function Hud() {
   };
 
   return (
-    <div className="hud" data-playing={playing} data-tab={tab} data-tier={tier} data-cover={cover} data-sheet={sheet}>
+    <div className="hud" data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet}>
       <div className="slot-widget">
         <MissionPanel />
       </div>
