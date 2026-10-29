@@ -18,9 +18,11 @@ async function touch(page: Page, steps: { x: number; y: number }[][]) {
   await send('touchEnd', []);
 }
 
+// Where the gestures start: open map, off-centre, since ALPHA (and its call flag) sits in the
+// middle now (ILI-1227).
 const mid = async (page: Page) => {
   const b = (await page.getByTestId('map-area').boundingBox())!;
-  return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+  return { x: b.x + b.width * 0.3, y: b.y + b.height * 0.3 }; // up and left of ALPHA: grid, not off its foot
 };
 
 test('drag pans the map without picking a square; a tap still picks one', async ({ page, isMobile }) => {
