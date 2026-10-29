@@ -1,25 +1,26 @@
 import type { ReactNode } from 'react';
 import { useGame } from '../sim/store';
-import { weather, type Weather } from '../sim/conditions';
-import { zulu } from '../sim/gameTime';
+import { imageryOk, weather, type Weather } from '../sim/conditions';
 
 const COMPASS: Record<string, number> = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
-const VIS_MAX_KM = 15; // the forecast's clearest
+const CLOUD_WARN = 70; // cloud cover where the tile warns that ORION-3 could soon be blind (imageryOk: under 80)
 
-// ENVIRONMENT (ILI-1218): the AO's conditions as a war-room readout. On a wide screen a grid of
-// tiles above ORION-3, each with its icon, its label and its value: sky, visibility, wind (the
-// arrow points where it blows), temperature, light and cloud cover. On a fold or phone (slim)
-// one line of icons and values.
+// ENVIRONMENT (ILI-1218): the AO's conditions, each reading an icon and a value: sky,
+// visibility, wind (the arrow points where it blows), temperature, light and cloud cover. On a
+// wide screen a six-stack, three and three, inside ORION-3 under the satellite (ILI-1249): the
+// weather is what limits the picture, so it sits beside it, and the cloud tile warns as cover
+// nears what would blind the satellite. On a fold or phone (slim) one line of icons and values.
 export function EnvWidget({ slim = false }: { slim?: boolean }) {
   const s = useGame((x) => x);
   const wx = weather(s);
-  const tiles: { key: string; label: string; icon: ReactNode; value: string; sub?: ReactNode }[] = [
+  const cloud = !imageryOk(wx) ? 'red' : wx.cloudPct >= CLOUD_WARN ? 'amber' : undefined;
+  const tiles: { key: string; label: string; icon: ReactNode; value: string; warn?: string }[] = [
     { key: 'sky', label: 'Sky', icon: <Cloud />, value: wx.sky },
-    { key: 'vis', label: 'Visibility', icon: <Eye />, value: `${wx.visibilityKm} km`, sub: <Meter value={wx.visibilityKm / VIS_MAX_KM} label="Visibility" /> },
-    { key: 'wind', label: 'Wind', icon: <Arrow deg={(COMPASS[wx.wind.from] ?? 0) + 180} />, value: `${wx.wind.from} ${wx.wind.kmh} km/h` },
+    { key: 'vis', label: 'Visibility', icon: <Eye />, value: `${wx.visibilityKm} km` },
+    { key: 'wind', label: 'Wind', icon: <Arrow deg={(COMPASS[wx.wind.from] ?? 0) + 180} />, value: `${wx.wind.from} ${wx.wind.kmh}` },
     { key: 'temp', label: 'Temp', icon: <Thermo />, value: `${wx.tempC}°C` },
     { key: 'light', label: 'Light', icon: wx.light === 'Day' ? <Sun /> : <Moon dawn={wx.light === 'First light'} />, value: wx.light },
-    { key: 'cloud', label: 'Cloud', icon: <Cloud />, value: `${wx.cloudPct}%`, sub: <Meter value={wx.cloudPct / 100} label="Cloud cover" /> },
+    { key: 'cloud', label: 'Cloud cover', icon: <Cloud />, value: `${wx.cloudPct}%`, warn: cloud },
   ];
 
   if (slim)
@@ -37,38 +38,22 @@ export function EnvWidget({ slim = false }: { slim?: boolean }) {
     );
 
   return (
-    <section className="panel env-hud" data-testid="conditions" data-wx={wx.light} aria-label="Environment">
-      <h2>
-        <span>ENVIRONMENT</span>
-        <span className="env-stamp">AO · {zulu(s.elapsedMs)}</span>
-      </h2>
-      <dl className="env-grid" data-testid="weather" aria-label={describe(wx)}>
-        {tiles.map((t) => (
-          <div key={t.key} className="env-tile" data-key={t.key}>
-            <dt>
-              {t.icon}
-              {t.label}
-            </dt>
-            <dd>{t.value}</dd>
-            {t.sub}
-          </div>
-        ))}
-      </dl>
-    </section>
+    <dl className="env-stack" data-testid="conditions" data-wx={wx.light} aria-label={`Environment: ${describe(wx)}`}>
+      {tiles.map((t) => (
+        <div key={t.key} className="env-tile" data-key={t.key} data-warn={t.warn} title={t.label} data-testid={t.key === 'cloud' ? 'cloud-tile' : undefined}>
+          <dt>
+            {t.icon}
+            <span className="sr-only">{t.label}</span>
+          </dt>
+          <dd>{t.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
 // The whole readout in one line, for screen readers and tests.
-const describe = (w: Weather) => `${w.sky} · vis ${w.visibilityKm} km · wind ${w.wind.from} ${w.wind.kmh} km/h · ${w.tempC}°C · ${w.light}`;
-
-function Meter({ value, label }: { value: number; label: string }) {
-  const v = Math.max(0, Math.min(1, value));
-  return (
-    <span className="env-meter" role="meter" aria-label={label} aria-valuenow={Math.round(v * 100)} aria-valuemin={0} aria-valuemax={100}>
-      <span style={{ width: `${v * 100}%` }} />
-    </span>
-  );
-}
+const describe = (w: Weather) => `${w.sky} · vis ${w.visibilityKm} km · wind ${w.wind.from} ${w.wind.kmh} km/h · ${w.tempC}°C · ${w.light} · cloud ${w.cloudPct}%`;
 
 // Line icons, 16 px, in the text's colour.
 const Icon = ({ children, style }: { children: ReactNode; style?: React.CSSProperties }) => (

@@ -55,11 +55,12 @@ test('layout A: mission and COMMS down the left, ENVIRONMENT over ORION-3 down t
   expect(orion.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
   expect(orion.x + orion.width).toBeGreaterThan(view.width - 40);
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
-  // ENVIRONMENT tops the right column, over ORION-3: a HUD readout, every reading a tile.
-  expect(env.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
-  expect(env.y).toBeLessThan(orion.y);
-  expect(orion.y).toBeGreaterThan(env.y + env.height - 1);
-  await expect(page.getByTestId('weather').locator('.env-tile')).toHaveCount(6);
+  // ENVIRONMENT is inside ORION-3, six tiles under the satellite and over the picture (ILI-1249).
+  const sat = await box('orion-avatar');
+  expect(env.x).toBeGreaterThanOrEqual(orion.x);
+  expect(env.x + env.width).toBeLessThanOrEqual(orion.x + orion.width + 1);
+  expect(env.y).toBeGreaterThanOrEqual(sat.y + sat.height - 1);
+  await expect(page.getByTestId('satellite').getByTestId('conditions').locator('.env-tile')).toHaveCount(6);
   await expect(page.getByTestId('small-widgets')).toHaveCount(0);
   // Along the bottom: TEAM, under COMMS and the map.
   expect(team.y).toBeGreaterThan(comms.y + comms.height - 1);

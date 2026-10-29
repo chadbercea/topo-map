@@ -8,6 +8,7 @@ import { Actions, Card, hasActions } from './SquareCard';
 import { TargetMenu } from './TargetMenu';
 import { OrionAvatar } from './OrionAvatar';
 import { useTier } from './tier';
+import { EnvWidget } from './EnvWidget';
 
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
 
@@ -97,7 +98,9 @@ export function OrionPanel() {
     <section ref={panelRef} className="panel orion" onScroll={() => redraw((n) => n + 1)} data-testid="satellite" data-state={sat.state} aria-label="ORION-3 imaging satellite">
       <h2>
         <span>ORION-3</span>
-        <span className="where">{head}</span>
+        <span className="where">
+          {head} · {zulu(now)}
+        </span>
       </h2>
       <p className="sr-only" data-testid="satellite-status">
         {tied ? 'ORION-3 · tied up' : satelliteStatus(s)}
@@ -122,6 +125,10 @@ export function OrionPanel() {
           </div>
         </dl>
       </div>
+
+      {/* The AO's weather, three and three under the satellite it limits (ILI-1249); on a fold
+          or phone it's the slim line along the bottom. */}
+      {tier === 'wide' && <EnvWidget />}
 
       {/* The image area: always here, always the same size (ILI-1229). */}
       <div className="o-frame">

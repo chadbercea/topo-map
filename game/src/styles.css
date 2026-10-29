@@ -56,7 +56,7 @@ html, body {
 .satcom h2 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .satcom h2 .status { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
-.slot-orion { grid-area: orion; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--gutter); } /* the whole right side: Environment over ORION-3 (ILI-1219, ILI-1218) */
+.slot-orion { grid-area: orion; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--gutter); } /* the whole right side: ORION-3, Environment inside it (ILI-1219, ILI-1249) */
 .slot-orion > .orion { flex: 1; }
 /* Along the bottom (ILI-1226): TEAM. Environment went up over ORION-3 (ILI-1218). */
 .slot-bottom { grid-area: bottom; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gutter); align-items: stretch; }
@@ -671,26 +671,20 @@ html, body {
 .mission .need[data-tone='threat'] { border-color: #e5484d; color: #e5484d; }
 .mission .need[data-tone='support'] { border-color: var(--accent); color: var(--accent); }
 
-/* ENVIRONMENT (ILI-1218): a war-room readout over ORION-3. Corner brackets, a faint grid behind
-   the tiles, each tile an icon, a label and a big monospace value. */
-.env-hud { position: relative; display: grid; gap: 8px; padding: 10px 12px 12px; background:
-  repeating-linear-gradient(0deg, rgba(53, 208, 165, 0.05) 0 1px, transparent 1px 16px),
-  repeating-linear-gradient(90deg, rgba(53, 208, 165, 0.05) 0 1px, transparent 1px 16px), var(--panel); }
-.env-hud::before, .env-hud::after { content: ''; position: absolute; width: 12px; height: 12px; border: 2px solid var(--accent); pointer-events: none; }
-.env-hud::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
-.env-hud::after { right: -1px; bottom: -1px; border-left: none; border-top: none; }
-.env-hud h2 { display: flex; justify-content: space-between; align-items: baseline; margin: 0; }
-.env-hud .env-stamp { color: var(--dim); font-weight: 400; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
-.env-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
-.env-tile { display: grid; align-content: start; gap: 3px; min-width: 0; padding: 6px 8px; border: 1px solid rgba(53, 208, 165, 0.2); background: rgba(11, 15, 13, 0.6); }
-.env-tile dt { display: flex; align-items: center; gap: 5px; color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
-.env-tile dd { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+/* ENVIRONMENT (ILI-1218, ILI-1249): a six-stack inside ORION-3 under the satellite, three and
+   three; each tile an icon and a monospace value, the label on hover. Cloud warns amber as it
+   nears what would blind ORION-3, red once it does. */
+.env-stack { flex: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0; }
+.env-tile { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 6px; border: 1px solid rgba(53, 208, 165, 0.2); background: rgba(11, 15, 13, 0.6); }
+.env-tile dt { display: flex; }
+.env-tile dd { margin: 0; min-width: 0; color: var(--ink); font-size: 11px; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .env-icon { width: 14px; height: 14px; flex: none; fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 600ms ease-out; }
-.env-meter { display: block; height: 3px; margin-top: 2px; background: rgba(53, 208, 165, 0.15); }
-.env-meter > span { display: block; height: 100%; background: var(--accent); }
-.env-tile[data-key='cloud'] .env-meter > span { background: #8fb8ff; }
-.env-hud[data-wx='Night'] .env-tile[data-key='light'] .env-icon { stroke: #8fb8ff; }
-.env-hud[data-wx='Day'] .env-tile[data-key='light'] .env-icon { stroke: #f2c14e; }
+.env-stack[data-wx='Night'] .env-tile[data-key='light'] .env-icon { stroke: #8fb8ff; }
+.env-stack[data-wx='Day'] .env-tile[data-key='light'] .env-icon { stroke: #f2c14e; }
+.env-tile[data-warn='amber'] { border-color: #f2c14e; }
+.env-tile[data-warn='amber'] :is(dd, .env-icon) { color: #f2c14e; stroke: #f2c14e; }
+.env-tile[data-warn='red'] { border-color: #e5484d; }
+.env-tile[data-warn='red'] :is(dd, .env-icon) { color: #e5484d; stroke: #e5484d; }
 @media (prefers-reduced-motion: reduce) { .env-icon { transition: none; } }
 /* Slim, on a fold or phone: one line of icons and values. */
 .env.slim .wx { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0; }
