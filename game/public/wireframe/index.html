@@ -261,7 +261,7 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 </header>
 
 <section id="environment">
-  <div class="sect-head"><p class="eyebrow">ILI-1249 · Environment placement · 2026-10-29 · right column, ~70% scale</p><h2>Where ENVIRONMENT sits next to ORION-3</h2><p>Your demo note (04:38–05:22): ENVIRONMENT is "perfect", but the open question is whether it should sit under ORION-3, or become "a tiny six-stack widget, three and three, immediately underneath the satellite" so the whole panel is ORION-3's. One fact matters here: cloud already gates imagery in the sim (<code>imageryOk</code>: cloud ≥ 80% blinds ORION-3), so the weather is really the satellite's business.</p></div>
+  <div class="sect-head"><p class="eyebrow">ILI-1249 · Environment placement · 2026-10-29 · right column, ~70% scale</p><h2>Where ENVIRONMENT sits next to ORION-3</h2><p>Your demo note (04:38–05:22): ENVIRONMENT is "perfect", but the open question is whether it should sit under ORION-3, or become "a tiny six-stack widget, three and three, immediately underneath the satellite" so the whole panel is ORION-3's. One fact matters here: the sim already defines when cloud blinds ORION-3 (<code>imageryOk</code>: 80% or more). It isn't wired up yet, and Black Box's cloud tops out at 60%, but the weather is the satellite's business.</p></div>
   <div class="col-grid">
     <div class="mp-opt">
       <div class="opt-head"><p class="eyebrow">Today</p><h3>ENVIRONMENT on top</h3></div>
@@ -280,14 +280,14 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
       <div class="mp-why"><ul class="plus"><li>ORION-3 leads the column. A one-line swap.</li><li>ENVIRONMENT stays exactly as you like it.</li></ul><ul class="minus"><li>The picture sits between the satellite and the cloud that blinds it.</li><li>The buttons end up mid-column, not at its foot.</li></ul></div>
     </div>
     <div class="mp-opt">
-      <div class="opt-head"><p class="eyebrow">Option B</p><h3>Six-stack under the satellite</h3><span class="tag pick">my pick</span></div>
+      <div class="opt-head"><p class="eyebrow">Option B</p><h3>Six-stack under the satellite</h3><span class="tag pick">picked · built</span></div>
       <div class="col">
         <div class="pn orion"><b>ORION-3 <span>over G5 · 0556Z</span></b><div class="sat">3D satellite · status</div><div class="mini"><i>☁ High</i><i>◉ 6 km</i><i>↘ NW 10</i><i>🌡 9°C</i><i>◐ First</i><i>☁ 60%</i></div><div class="pic">picture</div><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
       </div>
       <div class="mp-why"><ul class="plus"><li>The whole column is ORION-3, as you said.</li><li>The weather sits next to the satellite it limits. When cloud nears 80%, its tile lights up before the picture goes blind.</li><li>The picture gets the height the ENVIRONMENT panel used to take.</li></ul><ul class="minus"><li>The tiles shrink to an icon and a value. The labels go into tooltips, and the visibility and cloud meters go.</li><li>The AO · Zulu stamp moves into ORION-3's header.</li></ul></div>
     </div>
   </div>
-  <div class="opts"><div class="lean"><b>My pick: B, the six-stack</b><p>Cloud is the one reading that changes what you can do, because it can blind ORION-3. Putting the weather under the satellite makes that link visible, and the column becomes one thing to read top to bottom: satellite, its sky, the picture, the shot. A is the safe swap if you'd rather keep ENVIRONMENT whole.</p></div></div>
+  <div class="opts"><div class="lean"><b>My pick: B, the six-stack</b><p>Cloud is the one reading that can change what you can do, because it's what would blind ORION-3. Putting the weather under the satellite makes that link visible, and the column becomes one thing to read top to bottom: satellite, its sky, the picture, the shot. A is the safe swap if you'd rather keep ENVIRONMENT whole.</p></div></div>
 </section>
 
 <section id="mission-panel">
