@@ -28,8 +28,8 @@ for (const [name, width, height] of SIZES) {
     const rail = await box(tabs);
     const map = await box(page.getByTestId('map-area'));
     expect(map.x + map.width).toBeLessThanOrEqual(rail.x);
-    await page.getByTestId('tab-intel').click();
-    await expect(page.getByTestId('intel-stream')).toBeVisible();
+    await page.getByTestId('tab-satcom').click();
+    await expect(page.getByTestId('satcom')).toBeVisible();
     await expect(page.getByTestId('team-panel')).toBeHidden();
 
     // ALPHA's flag is at its marker in the open map, not parked at the map's foot.
@@ -47,7 +47,7 @@ for (const [name, width, height] of SIZES) {
     const act = page.getByTestId('action-panel');
     await expect(card).toHaveAttribute('data-side', 'rail');
     await expect(act).toBeVisible();
-    await expect(page.getByTestId('intel-stream')).toBeHidden();
+    await expect(page.getByTestId('satcom')).toBeHidden();
     const c = await box(card);
     const a = await box(act);
     expect(Math.abs(c.x - rail.x)).toBeLessThan(1);
@@ -58,7 +58,7 @@ for (const [name, width, height] of SIZES) {
 
     await card.getByRole('button', { name: 'Close' }).click();
     await expect(act).toHaveCount(0);
-    await expect(page.getByTestId('intel-stream')).toBeVisible();
+    await expect(page.getByTestId('satcom')).toBeVisible();
   });
 }
 

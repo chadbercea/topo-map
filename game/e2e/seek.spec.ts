@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { boardCell, freeze, photo, squarePoint, start, tapAt } from './helpers';
+import { boardCell, freeze, photo, squarePoint, start, tapAt, openEvent, hasEvent } from './helpers';
 
 // Image E3 so the checkpoint is found, then open its target menu.
 async function targetE3(page: Page) {
@@ -8,7 +8,7 @@ async function targetE3(page: Page) {
   await freeze(page);
   await page.evaluate(() => window.game.respond(window.game.get().team.holdFor!, 'blind'));
   await photo(page, 'E3');
-  await page.getByTestId('new-event').filter({ hasText: /E3/ }).click();
+  await openEvent(page, 'contact', 'E3');
   await expect(page.getByTestId('event-card')).toContainText('A fortified checkpoint');
   await expect(page.getByTestId('target-menu')).toBeVisible();
 }
@@ -45,7 +45,7 @@ test('drone, a fresh look, then the sniper finishes it', async ({ page, isMobile
   await tapAt(page, isMobile, await e3Cell(page, 5)); // 2x2 over 5, 6, 9, 10
   // Over at once: no after-action panel. REAPER-1's report is in the stream.
   await expect(page.getByTestId('minigame')).toHaveCount(0);
-  await expect(page.getByTestId('intel-items')).toContainText('E3: 4 down, 1 still in there.');
+  await expect(page.getByTestId('comms-feed')).toContainText('E3: 4 down, 1 still in there.');
   await expect(page.getByTestId('resources')).toContainText('$6,000'); // confirmed kills pay
 
   // The survivor ran for cover: look again to see where, then open it from its marker.
@@ -55,8 +55,8 @@ test('drone, a fresh look, then the sniper finishes it', async ({ page, isMobile
   await page.getByTestId('fire-sniper').click();
   await tapAt(page, isMobile, await e3Cell(page, cell)); // the last fighter, where the look shows it
   await expect(page.getByTestId('minigame')).toHaveCount(0);
-  await expect(page.getByTestId('intel-items')).toContainText('E3: target destroyed.');
-  await expect(page.getByTestId('intel-items')).toContainText(/KILL SITE\s*E3/); // ALPHA can search it
+  await expect(page.getByTestId('comms-feed')).toContainText('E3: target destroyed.');
+  await expect.poll(() => hasEvent(page, 'site', 'E3')).toBe(true); // ALPHA can search it
 });
 
 test('a drone strike is loud: the enemy hears it, though no operator made it (ILI-1222)', async ({ page, isMobile }) => {

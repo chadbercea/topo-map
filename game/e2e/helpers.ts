@@ -97,7 +97,7 @@ export async function openAsk(page: Page) {
       if (await answer.isVisible()) return answer.click();
       // In the stream behind another tab: open it, unless the action panel covers the dock and
       // its tabs (it raises the ask itself, a moment later).
-      const tab = page.getByTestId('tab-intel');
+      const tab = page.getByTestId('tab-satcom');
       if (await tab.isVisible()) {
         await tab.click();
         return answer.click();
@@ -114,3 +114,15 @@ export async function openAsk(page: Page) {
 
 // HQ's answer takes the link's time to reach ALPHA (ILI-1209, LINK_MS): wait it out on a frozen clock.
 export const linked = (page: Page) => fastForward(page, 2_500);
+
+// Open the task (map event) of a kind on a square, as tapping its marker does (ILI-1225: no
+// intel stream to open it from).
+export const openEvent = (page: Page, kind: string, square: string) =>
+  page.evaluate(([k, sq]) => {
+    const e = window.game.get().events.find((x) => x.kind === k && x.square === sq && x.status !== 'resolved')!;
+    window.game.openEvent(e.id);
+  }, [kind, square] as const);
+
+// A task (map event) of a kind on a square exists.
+export const hasEvent = (page: Page, kind: string, square: string) =>
+  page.evaluate(([k, sq]) => window.game.get().events.some((x) => x.kind === k && x.square === sq), [kind, square] as const);

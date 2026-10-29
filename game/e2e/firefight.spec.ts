@@ -20,7 +20,7 @@ test('walking blind into the hidden checkpoint is an ambush; the team panel goes
   const log = await page.evaluate(() => window.game.get().comms.messages.map((m) => m.text));
   expect(log).toContain('Ambush in E3! Returning fire.');
   await expect(panel).toHaveAttribute('data-fight', 'true'); // the team panel goes red
-  await expect(page.getByTestId('intel-items')).toContainText('Ambush in E3');
+  await expect(page.getByTestId('comms-feed')).toContainText('Ambush in E3');
 
   await page.evaluate(() => {
     const done = () => window.game.get().comms.messages.some((m) => m.text === 'Patched up. Moving.');

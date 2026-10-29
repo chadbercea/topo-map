@@ -5,15 +5,15 @@ test('panels leave a clear space between them (where a strike closes in)', async
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 'x', kind: 'contact', square: 'A1', title: 'Test' }));
-  await expect(page.getByTestId('new-event')).toHaveCount(1); // inline in the stream (a phone's dock may be on another tab)
+  await expect.poll(() => page.evaluate(() => window.game.get().events.length)).toBe(1);
   await page.waitForTimeout(300); // let the map area refit
   const map = (await page.getByTestId('map-area').boundingBox())!;
   expect(map.width).toBeGreaterThan(200);
   expect(map.height).toBeGreaterThan(150);
   // The status widget floats in the map's corner on purpose (ILI-1216); the rest stay clear.
-  for (const id of ['mission-strip', 'team-panel', 'satcom', 'intel-stream']) {
+  for (const id of ['mission-strip', 'team-panel', 'satcom']) {
     const p = await page.getByTestId(id).boundingBox();
-    if (!p) continue; // on a phone the dock shows one of stream, team and satcom at a time
+    if (!p) continue; // on a phone the dock shows one of team and satcom at a time
     const overlaps = p.x < map.x + map.width && p.x + p.width > map.x && p.y < map.y + map.height && p.y + p.height > map.y;
     expect(overlaps, `${id} overlaps the map`).toBe(false);
   }
@@ -26,24 +26,24 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
 
-test('the war room: intel then comms down the left, the team bottom right, ORION-3 a line in the header', async ({ page, isMobile }) => {
+test('the war room: COMMS down the left, the team bottom right, ORION-3 a line in the header (ILI-1225)', async ({ page, isMobile }) => {
   await start(page);
   if (isMobile) {
-    // One dock, three tabs.
-    await expect(page.getByTestId('tab-orion')).toHaveCount(0);
-    for (const [tab, id] of [['intel', 'intel-stream'], ['satcom', 'satcom'], ['team', 'team-panel']] as const) {
+    // One dock, two tabs: no INTEL (ILI-1225).
+    await expect(page.getByTestId('tab-intel')).toHaveCount(0);
+    for (const [tab, id] of [['satcom', 'satcom'], ['team', 'team-panel']] as const) {
       await page.getByTestId(`tab-${tab}`).click();
       await expect(page.getByTestId(id)).toBeVisible();
     }
     return;
   }
   const view = page.viewportSize()!;
-  const stream = (await page.getByTestId('intel-stream').boundingBox())!;
+  await expect(page.getByTestId('intel-stream')).toHaveCount(0);
   const comms = (await page.getByTestId('satcom').boundingBox())!;
   const team = (await page.getByTestId('team-panel').boundingBox())!;
-  expect(stream.x).toBeLessThan(40);
   expect(comms.x).toBeLessThan(40);
-  expect(comms.y).toBeGreaterThan(stream.y + stream.height - 1); // under the stream
+  expect(comms.y).toBeLessThan(40); // the full left side
+  expect(comms.y + comms.height).toBeGreaterThan(view.height - 40);
   expect(team.x).toBeGreaterThan(view.width * 0.4);
   expect(team.x + team.width).toBeGreaterThan(view.width - 40);
   expect(team.y + team.height).toBeGreaterThan(view.height - 40);

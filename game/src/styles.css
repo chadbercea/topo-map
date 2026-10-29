@@ -39,26 +39,24 @@ html, body {
     max(var(--gutter), env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
   display: grid;
   gap: 8px var(--gutter);
-  /* The war room (ILI-1186): the bar on top, the intel stream down the left, the map in the
+  /* The war room (ILI-1186): the bar on top, COMMS down the left (ILI-1225), the map in the
      rest. Along the bottom: the comms log, what needs an answer on the map, and the team
      panel in the bottom-right corner. */
   grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(0, 420px);
   grid-template-rows: minmax(0, 1fr) auto auto;
   grid-template-areas:
-    'stream map map'
+    'satcom map map'
     'satcom band team'
     'satcom strip team';
 }
 
-/* RELAY-7, the comms satellite (ILI-1195, ILI-1199), logs under the intel stream: its name on
+/* RELAY-7, the comms satellite (ILI-1195, ILI-1199), down the left: its name on
    the left of its header, its status on the right. */
-.satcom { height: 230px; }
 .satcom h2 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .satcom h2 .status { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
-.slot-stream { grid-area: stream; min-height: 0; display: grid; }
 .slot-team { grid-area: team; align-self: end; min-width: 0; }
-.slot-satcom { grid-area: satcom; align-self: end; min-width: 0; }
+.slot-satcom { grid-area: satcom; min-width: 0; min-height: 0; display: grid; } /* COMMS runs the left side (ILI-1225) */
 .dock-tabs { display: none; }
 
 .slot-widget { grid-area: map; justify-self: end; align-self: start; width: min(380px, 100%); min-width: 0; position: relative; z-index: 1; }
@@ -479,7 +477,17 @@ html, body {
 
 /* Satcom (ILI-1186), bottom right: short texts with the team, and any call waiting on HQ
    pinned under them with its answers. */
-.satcom { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; gap: 6px; }
+.satcom { display: flex; flex-direction: column; gap: 6px; min-height: 0; background: rgba(11, 15, 13, 0.92); }
+.satcom .thread { flex: 1; }
+/* HQ's report lines in COMMS (ILI-1225): dimmer than ALPHA, the routine ones quieter still. */
+.satcom .thread li.report { color: var(--dim); }
+.satcom .thread li.report b { color: #8fd1ff; }
+.satcom .thread li[data-kind='sigint'] b { color: #8fb8ff; }
+.satcom .thread li[data-kind='strike'] b { color: #f2a14e; }
+.satcom .thread li[data-kind='alert'], .satcom .thread li[data-kind='alert'] b { color: #e5484d; }
+.satcom .thread li[data-quiet] { opacity: 0.5; }
+.satcom .thread li[data-kind='note'] { font-style: italic; }
+.satcom .thread button.text { all: unset; cursor: pointer; text-decoration: underline dotted var(--dim); text-underline-offset: 3px; }
 .satcom .thread { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 4px; overflow-y: auto; min-height: 0; font-size: 12px; }
 .satcom .thread li { color: var(--ink); line-height: 1.4; }
 .satcom .thread li.out { color: var(--dim); }
@@ -503,7 +511,7 @@ html, body {
 .ask { --comms: #ff8a2a; position: fixed; z-index: 6; transform: translateY(-100%); pointer-events: auto; animation: ask-in 160ms ease-out; }
 @keyframes ask-in { from { opacity: 0; } }
 .ask[data-open='true'] { z-index: 8; } /* opened, it sits over the square card */
-/* ALPHA's ask, raised in the intel stream when its flag is out of sight (ILI-1203). */
+/* ALPHA's ask, raised in COMMS when its flag is out of sight (ILI-1203, ILI-1225). */
 .incoming-alert { display: grid; gap: 4px; padding: 8px 10px; border: 1px solid #ff8a2a; border-left-width: 3px; background: rgba(255, 138, 42, 0.12); animation: alert-in 160ms ease-out; }
 .incoming-alert .who { color: #ff8a2a; font-size: 10px; letter-spacing: 0.12em; }
 .incoming-alert[data-brief='true'] { grid-template-columns: minmax(0, 1fr) auto; align-items: center; padding: 4px 10px; }
@@ -587,41 +595,6 @@ html, body {
 .tag { font: inherit; font-size: 10px; letter-spacing: 0.1em; color: #f2c14e; background: none; border: 1px solid rgba(242, 193, 78, 0.5); padding: 1px 6px; min-height: 22px; cursor: pointer; }
 .satcom > .actions .tag { font-size: 12px; min-height: 36px; padding: 0 12px; }
 
-/* The intel stream (ILI-1186), down the left: the whole theater's feed, newest first. */
-.stream { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 6px; min-height: 0; background: rgba(11, 15, 13, 0.92); }
-.stream h2 { display: flex; justify-content: space-between; }
-.stream .count { color: var(--dim); font-weight: 400; }
-.stream .items { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; display: grid; align-content: start; gap: 8px; }
-.stream .items li { display: grid; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid rgba(53, 208, 165, 0.12); }
-.stream .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 0.08em; }
-.stream .meta .t { color: var(--dim); font-variant-numeric: tabular-nums; }
-.stream .meta .src { color: var(--accent); }
-.stream .text { all: unset; color: var(--ink); font-size: 12px; line-height: 1.4; }
-.stream button.text { cursor: pointer; text-decoration: underline dotted var(--dim); text-underline-offset: 3px; }
-.stream .empty { color: var(--dim); border: none; }
-/* By kind (ILI-1197): each source reads differently; routine items sit quiet, and the
-   whole feed is quiet until the first event. Events are cards to open. */
-.stream .items li { transition: opacity 400ms ease-out; }
-.stream .items li[data-quiet='true'] { opacity: 0.45; }
-.stream .items li[data-kind='note'] .text { font-style: italic; color: var(--dim); }
-.stream .items li[data-kind='imagery'] .src { color: #8fd1ff; }
-.stream .items li[data-kind='sigint'] .src { color: #8fb8ff; }
-.stream .items li[data-kind='strike'] .src { color: #f2a14e; }
-.stream .items li[data-kind='hq'] .src { color: var(--accent); }
-.stream .items li[data-kind='alert'] { border-left: 2px solid #e5484d; padding-left: 8px; }
-.stream .items li[data-kind='alert'] .src, .stream .items li[data-kind='alert'] .text { color: #e5484d; }
-.stream .items li[data-kind='event'] { --kind: var(--accent); border: 1px solid var(--kind); padding: 6px 8px; background: rgba(11, 15, 13, 0.6); animation: alert-in 160ms ease-out; }
-.stream .items li[data-event='contact'] { --kind: #e5484d; }
-.stream .items li[data-event='signal'] { --kind: #8fb8ff; }
-.stream .items li[data-event='request'] { --kind: #f2c14e; }
-.stream .items li[data-event='site'] { --kind: #b8c4bf; }
-.stream .items li[data-kind='event'] .src { color: var(--kind); font-weight: 600; }
-.stream .items li[data-kind='event'][data-open='true'] { background: rgba(53, 208, 165, 0.08); }
-.stream .meta .sq { color: var(--ink); }
-.stream .meta .state { margin-left: auto; font-size: 9px; letter-spacing: 0.12em; color: var(--kind, var(--dim)); }
-.stream .items li[data-kind='event'] button.text { text-decoration: none; font-size: 13px; }
-.stream .items li[data-kind='event'] .go { color: var(--kind); font-size: 11px; letter-spacing: 0.08em; }
-.stream button.text:disabled { cursor: default; }
 
 @keyframes blink { 50% { opacity: 0.2; } }
 
@@ -700,13 +673,13 @@ html, body {
       'dock';
   }
   /* Stream, team and satcom share one docked panel; the tabs pick which. */
-  .slot-stream, .slot-team, .slot-satcom { grid-area: dock; align-self: stretch; }
-  .hud:not([data-tab='intel']) .slot-stream, .hud:not([data-tab='team']) .slot-team, .hud:not([data-tab='satcom']) .slot-satcom { display: none; }
-  .stream, .team, .satcom { height: var(--sheet, 30dvh); max-height: var(--sheet, 30dvh); transition: height 160ms ease-out, max-height 160ms ease-out; }
+  .slot-team, .slot-satcom { grid-area: dock; align-self: stretch; }
+  .hud:not([data-tab='team']) .slot-team, .hud:not([data-tab='satcom']) .slot-satcom { display: none; }
+  .team, .satcom { height: var(--sheet, 30dvh); max-height: var(--sheet, 30dvh); transition: height 160ms ease-out, max-height 160ms ease-out; }
   .dock-tabs { grid-area: tabs; display: flex; }
   /* The bottom sheet (ILI-1214): peek shows just the tabs, half the panel, full most of it. */
   .hud[data-sheet='full'] { --sheet: 62dvh; }
-  .hud[data-sheet='peek'] :is(.slot-stream, .slot-team, .slot-satcom) { display: none; }
+  .hud[data-sheet='peek'] :is(.slot-team, .slot-satcom) { display: none; }
   .sheet-handle { grid-area: handle; pointer-events: auto; justify-self: center; display: grid; place-items: center; width: 96px; height: 22px; margin-bottom: -4px; padding: 0; background: none; border: none; cursor: grab; touch-action: none; }
   .sheet-handle span { width: 44px; height: 4px; border-radius: 2px; background: var(--line); }
   .sheet-handle:active span { background: var(--accent); }
@@ -760,7 +733,7 @@ html, body {
   .dock-tabs button, .recentre, .status-widget .pause, .square-card button, .action-panel button, .satcom > .actions button, .ask .flag, .incoming-alert button { min-height: 44px; }
   .square-card .x { min-width: 44px; }
 }
-@media (prefers-reduced-motion: reduce) { .stream, .team, .satcom { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .team, .satcom { transition: none; } }
 
 /* The panels' tabs, at the compact and medium tiers (ILI-1213). */
 .dock-tabs { gap: 4px; pointer-events: auto; }
@@ -787,9 +760,9 @@ html, body {
   .slot-band { grid-area: map; align-self: end; pointer-events: none; }
   .slot-band > * > * { pointer-events: auto; }
   .team .readout { align-content: start; }
-  .slot-stream, .slot-team, .slot-satcom { grid-area: dock; align-self: stretch; min-height: 0; display: grid; }
-  .hud:not([data-tab='intel']) .slot-stream, .hud:not([data-tab='team']) .slot-team, .hud:not([data-tab='satcom']) .slot-satcom { display: none; }
-  .stream, .team, .satcom { height: auto; min-height: 0; }
+  .slot-team, .slot-satcom { grid-area: dock; align-self: stretch; min-height: 0; display: grid; }
+  .hud:not([data-tab='team']) .slot-team, .hud:not([data-tab='satcom']) .slot-satcom { display: none; }
+  .team, .satcom { height: auto; min-height: 0; }
   .dock-tabs { grid-area: tabs; display: flex; }
 
   /* The status widget in the map's top-right corner, left of the rail (ILI-1216). */
@@ -810,8 +783,8 @@ html, body {
 }
 /* While a square holds the rail (medium) or its actions cover the dock (compact), the panels
    underneath step out of the way: nothing ghosts through. */
-.hud[data-cover='rail'] :is(.slot-stream, .slot-team, .slot-satcom, .dock-tabs),
-.hud[data-cover='dock'] :is(.slot-stream, .slot-team, .slot-satcom, .dock-tabs) { visibility: hidden; }
+.hud[data-cover='rail'] :is(.slot-team, .slot-satcom, .dock-tabs),
+.hud[data-cover='dock'] :is(.slot-team, .slot-satcom, .dock-tabs) { visibility: hidden; }
 
 /* HQ's answer on its way up the link (ILI-1209): it blinks until ALPHA reads it back. */
 .satcom .thread .sending { animation: sending 0.8s steps(2, jump-none) infinite; }
