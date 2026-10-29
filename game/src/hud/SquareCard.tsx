@@ -172,13 +172,18 @@ function alongside(card: Placed, area: Area, cardHeight: number, height: number,
   const far = cardRight ? card.left + card.width + gap : card.left - gap - ACTIONS;
   const across = sq && (cardRight ? sq.x - 10 - ACTIONS : sq.x + sq.w + 10);
   const tops = [card.top, ...others.map((o) => o.y + o.h + 8), hi].map(clampTop);
+  const edges = [area.x + area.width - 8 - ACTIONS, area.x + 8].filter(fits); // the open map's far edges (ILI-1227)
   const spots = [
     ...(fits(far) ? tops.map((y) => ({ x: far, y, w: ACTIONS, h, side: 'far' })) : []),
     ...(across !== null && fits(across) ? tops.map((y) => ({ x: across, y, w: ACTIONS, h, side: 'across' })) : []),
     { x: card.left, y: card.top + cardHeight + gap, w: card.width, h, side: 'below' },
+    ...edges.flatMap((x) => tops.map((y) => ({ x, y, w: ACTIONS, h, side: 'edge' }))),
   ];
   const cardBox = { x: card.left, y: card.top, w: card.width, h: cardHeight };
-  const at = pick(spots, [...others, cardBox, sq, alphaBox(team)]);
+  // Spots that fit inside the open map first: one running off its foot would scroll its strikes
+  // out of reach (ILI-1227).
+  const fitsIn = (c: { y: number; h: number }) => c.y + c.h <= area.y + area.height - 8;
+  const at = pick([...spots.filter(fitsIn), ...spots.filter((c) => !fitsIn(c))], [...others, cardBox, sq, alphaBox(team)]);
   return { left: at.x, top: at.y, width: at.w, maxHeight: Math.max(120, area.y + area.height - 8 - at.y), side: at.side };
 }
 
@@ -213,7 +218,13 @@ function beside(square: string, area: Area, height: number, team: { x: number; y
   const left = { x: sq.x - 10 - WIDTH, side: 'left' };
   const fits = (x: number) => x >= area.x + 8 && x + WIDTH <= area.x + area.width - 8;
   const alphaRight = !!alpha && alpha.x + alpha.w / 2 > sq.x + sq.w / 2;
-  const sides = (alphaRight ? [left, right] : [right, left]).filter((c) => fits(c.x));
+  // Then the open map's far edges (ILI-1227): with the camera centred on ALPHA, beside the
+  // square can be right on top of it.
+  const edges = [
+    { x: area.x + area.width - 8 - WIDTH, side: 'right' },
+    { x: area.x + 8, side: 'left' },
+  ];
+  const sides = [...(alphaRight ? [left, right] : [right, left]), ...edges].filter((c) => fits(c.x));
   if (!sides.length) sides.push({ x: Math.max(area.x + 8, Math.min(sq.x - 10 - WIDTH, area.x + area.width - 8 - WIDTH)), side: 'left' });
   const spots = sides.flatMap((c) => tops.map((y) => ({ x: c.x, y, w: WIDTH, h, side: c.side })));
   const at = pick(spots, [...others, alpha, sq]);

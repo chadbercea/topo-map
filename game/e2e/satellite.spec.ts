@@ -27,9 +27,11 @@ test('pick a square, scan it, look on station: the larger square and the find on
   await expect(sat).toHaveAttribute('data-state', 'onStation');
   const picture = page.getByTestId('satellite-inset');
   await expect(picture).toBeVisible();
-  const map = (await page.getByTestId('map-area').boundingBox())!;
+  // On screen, and clear of ORION-3's panel: it may float in the open map under it (ILI-1227).
   const box = (await card.boundingBox())!;
-  expect(box.x + box.width).toBeLessThanOrEqual(map.x + map.width);
+  const orion = await page.getByTestId('satellite').boundingBox(); // behind a tab on a phone
+  expect(box.x + box.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+  if (orion) expect(box.y >= orion.y + orion.height || box.x + box.width <= orion.x || box.x >= orion.x + orion.width).toBe(true);
   await expect(card.getByTestId('capture-modes').getByRole('button')).toHaveCount(3);
   await page.getByTestId('capture-burst').click();
   await expect(sat).toHaveAttribute('data-state', 'capturing');

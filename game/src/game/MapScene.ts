@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser';
 import { bus, EV, getMapRect, setProjector, type InsetRect, type SceneStatus } from './events';
-import { centreOn, clampCenter, fitCamera, followCenter, PAN } from './fit';
+import { centreOn, clampCenter, fitCamera, PAN } from './fit';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
 import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
@@ -133,6 +133,7 @@ export class MapScene extends Phaser.Scene {
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT,F', false) as Record<string, Phaser.Input.Keyboard.Key>;
     this.keys.F.on('down', () => !typing() && this.recentre());
     bus.on(EV.recentre, this.recentre, this);
+    bus.on(EV.overlays, this.measureDock, this);
     // Touch and mouse (ILI-1214): drag pans, a tap (released where it went down) selects, two
     // fingers pinch-zoom, and so does the wheel.
     this.input.addPointer(1);
@@ -157,6 +158,7 @@ export class MapScene extends Phaser.Scene {
       bus.off(EV.mapRect, this.layout, this);
       bus.off(EV.inset, this.placeInset, this);
       bus.off(EV.recentre, this.recentre, this);
+      bus.off(EV.overlays, this.measureDock, this);
       this.unsubscribe?.();
     });
 
@@ -439,17 +441,18 @@ export class MapScene extends Phaser.Scene {
     return this.cameras.main.zoom;
   }
 
-  // Follow ALPHA when it needs to (fit.ts): pick a new centre when it nears the edge of the
-  // open map, and ease there over about half a second. A strike's close-up doesn't follow.
+  // Keep ALPHA, the team HQ has selected, centred in the open map (ILI-1227): ease after it as
+  // it walks, over about a sixth of a second, until HQ pans by hand. A strike's close-up
+  // doesn't follow.
   private camCenter: { x: number; y: number } | null = null;
   private camTarget: { x: number; y: number } | null = null;
   private follow(delta: number) {
     if (this.focused || this.panned || !this.camCenter || !this.camTarget) return;
     const { width, height } = this.scale;
     const r = getMapRect();
-    const area = r ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR } : { x: 0, y: 0, w: width, h: height };
+    const area = this.openArea(r, width, height);
     const cam = this.cameras.main;
-    this.camTarget = followCenter(this.camTarget, game.get().team.position, area, { w: width, h: height }, cam.zoom, this.cover(r, height));
+    this.camTarget = centreOn(game.get().team.position, area, { w: width, h: height }, cam.zoom, this.cover(r, height), PAN);
     const dx = this.camTarget.x - this.camCenter.x;
     const dy = this.camTarget.y - this.camCenter.y;
     if (!dx && !dy) return;
@@ -486,9 +489,23 @@ export class MapScene extends Phaser.Scene {
     }
     const { width, height } = this.scale;
     const r = getMapRect();
-    const area = r ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR } : { x: 0, y: 0, w: width, h: height };
-    this.camTarget = centreOn(game.get().team.position, area, { w: width, h: height }, this.cameras.main.zoom, this.cover(r, height));
+    const area = this.openArea(r, width, height);
+    this.camTarget = centreOn(game.get().team.position, area, { w: width, h: height }, this.cameras.main.zoom, this.cover(r, height), PAN);
     if (this.panned) bus.emit(EV.panned, (this.panned = false));
+  }
+
+  // Where ALPHA is centred, in device px: the open map, below a square card docked across its
+  // top on a phone (ILI-1227), so the card never sits on ALPHA.
+  private dockBottom = 0;
+  private measureDock() {
+    const card = document.querySelector('.square-card[data-side="dock"]');
+    this.dockBottom = card ? card.getBoundingClientRect().bottom : 0;
+  }
+  private openArea(r: ReturnType<typeof getMapRect>, width: number, height: number) {
+    const area = r ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR } : { x: 0, y: 0, w: width, h: height };
+    const top = this.dockBottom * DPR;
+    if (top <= area.y || top >= area.y + area.h - 24 * DPR) return area; // room for ALPHA, at least
+    return { ...area, y: top, h: area.y + area.h - top };
   }
 
   // The open part of the screen the grid covers, in device px (ILI-1186): below the mission
@@ -524,13 +541,11 @@ export class MapScene extends Phaser.Scene {
     if (this.focused) {
       cam.centerOn(view.x + view.w / 2 - (sx - width / 2) / zoom, view.y + view.h / 2 - (sy - height / 2) / zoom);
     } else {
-      // The whole map: keep where the camera was (or start on ALPHA if it needs to), within
-      // the grid at this zoom.
+      // The whole map: keep where the camera was, or start centred on ALPHA (ILI-1227).
       const screen = { w: width, h: height };
       const z = cam.zoom; // the fit, times any pinch
       const start = this.camCenter ?? clampCenter({ x: WORLD_W / 2, y: WORLD_H / 2 }, screen, z, cover);
-      const bounds = this.panned ? PAN : undefined; // a hand-panned view keeps its room
-      this.camCenter = clampCenter(this.camCenter ? start : followCenter(start, game.get().team.position, area, screen, z, cover), screen, z, cover, bounds);
+      this.camCenter = this.camCenter ? clampCenter(start, screen, z, cover, PAN) : centreOn(game.get().team.position, area, screen, z, cover, PAN);
       this.camTarget = this.camCenter;
       cam.centerOn(this.camCenter.x, this.camCenter.y);
     }

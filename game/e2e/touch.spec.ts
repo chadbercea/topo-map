@@ -41,7 +41,7 @@ test('drag pans the map without picking a square; a tap still picks one', async 
   const after = await camera(page);
   expect(after.scrollX).toBeLessThan(before.scrollX); // dragged right: the map came along
   await expect(page.getByTestId('square-card')).toHaveCount(0);
-  await expect(page.getByTestId('recentre')).toBeVisible();
+  await expect(page.getByTestId('recentre')).toBeAttached(); // in TEAM's title line (ILI-1227)
 
   if (isMobile) await page.touchscreen.tap(m.x, m.y);
   else await page.mouse.click(m.x, m.y);
@@ -63,6 +63,7 @@ test('pinch (or the wheel) zooms in, and recentring zooms back out', async ({ pa
   }
   await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(fit * 1.3);
   await expect.poll(async () => (await camera(page)).zoom).toBeLessThanOrEqual(fit * 3 + 1e-6);
+  if (isMobile) await page.getByTestId('tab-team').click(); // Recentre is in TEAM (ILI-1227)
   await page.getByTestId('recentre').click();
   await expect.poll(async () => (await camera(page)).zoom).toBeCloseTo(fit, 5);
 });

@@ -43,19 +43,9 @@ export function clampCenter(c: Point, screen: Size, zoom: number, cover?: Cover,
 // detailed terrain is still drawn.
 export const PAN: Rect = { x: -2 * CELL, y: -2 * CELL, w: WORLD_W + 4 * CELL, h: WORLD_H + 4 * CELL };
 
-// The centre that puts ALPHA in the middle of the open map.
-export function centreOn(alpha: Point, area: Rect, screen: Size, zoom: number, cover?: Cover): Point {
+// The centre that puts ALPHA in the middle of the open map. The camera follows it there all
+// the time (ILI-1227), within bounds (the grid by default; the hand-pan room near its edges).
+export function centreOn(alpha: Point, area: Rect, screen: Size, zoom: number, cover?: Cover, bounds?: Rect): Point {
   const want = { x: alpha.x - (area.x + area.w / 2 - screen.w / 2) / zoom, y: alpha.y - (area.y + area.h / 2 - screen.h / 2) / zoom };
-  return clampCenter(want, screen, zoom, cover);
-}
-
-// Follow ALPHA only when it needs to (ILI-1181): while ALPHA is well inside the open map
-// (the space between the panels, less an edge band) the camera stays put; once it drifts
-// into that band or out of view, the camera re-centres it in the open map.
-export function followCenter(center: Point, alpha: Point, area: Rect, screen: Size, zoom: number, cover?: Cover): Point {
-  const band = Math.max(32, Math.min(area.w, area.h) * 0.15);
-  const sx = (alpha.x - center.x) * zoom + screen.w / 2;
-  const sy = (alpha.y - center.y) * zoom + screen.h / 2;
-  const inside = sx >= area.x + band && sx <= area.x + area.w - band && sy >= area.y + band && sy <= area.y + area.h - band;
-  return inside ? center : centreOn(alpha, area, screen, zoom, cover);
+  return clampCenter(want, screen, zoom, cover, bounds);
 }
