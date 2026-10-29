@@ -20,14 +20,14 @@ test('no briefing: the game opens live, ALPHA on the ground and the clock runnin
   // Only this mission's intel: the analysts' notes on the crash to start with.
   await expect(page.getByTestId('comms-feed')).toContainText('downed recon drone');
   await expect(page.getByTestId('comms-feed')).not.toContainText('COPPER VEIL');
-  // The clock is running on its own; a game minute is 2.5 s of sim at 24x, so once it's seen
-  // ticking, drive it the rest of the way rather than wait on CI's slow frames.
+  // The clock is running on its own; once it's seen ticking, drive it past a second rather
+  // than wait on CI's slow frames.
   await expect.poll(() => tick(page), { timeout: 15_000 }).toBeGreaterThan(0);
   await fastForward(page, 3_000);
-  await expect(page.getByTestId('clock')).not.toHaveText('4:00');
+  await expect(page.getByTestId('clock')).not.toHaveText('10:00');
 });
 
-test('restart starts the mission over, live, at 4:00', async ({ page, isMobile }) => {
+test('restart starts the mission over, live, at 10:00', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 2_000); // well into the mission: 20+ ticks

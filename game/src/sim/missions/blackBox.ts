@@ -134,17 +134,17 @@ export const BLACK_BOX: MissionDef = registerMission({
       when: (s) => s.contacts.some((c) => c.id === 'convoy' && c.status === 'cleared') && squareAt(s.team.position.x, s.team.position.y) === 'B1' && !s.team.fight,
       then: (s) => say({ ...s, resources: { ...s.resources, budget: s.resources.budget + LOOT } }, s.team.callsign, 'convoy-loot', `Convoy's ours. Loading the haul: ${LOOT_TEXT} in salvage.`),
     },
-    // The contract window, called out as it closes.
+    // The contract window, called out as it closes, in the clock's real minutes (ILI-1251).
     {
-      id: 'three-minutes',
+      id: 'five-minutes',
       when: (s) => s.timer.remainingMs <= 300_000 && s.mission.phase !== 'complete',
-      then: (s) => say(s, 'HQ', 'warn-3min', 'Two hours on the contract window.'),
+      then: (s) => say(s, 'HQ', 'warn-5min', 'Five minutes on the contract window.'),
     },
     {
       id: 'one-minute',
-      when: (s) => s.timer.remainingMs <= 100_000 && s.mission.phase !== 'complete',
+      when: (s) => s.timer.remainingMs <= 60_000 && s.mission.phase !== 'complete',
       then: (s) =>
-        say(s, 'HQ', 'warn-1min', s.mission.blackBox ? 'Forty minutes. Get them to exfil.' : 'Forty minutes, and no black box. This is slipping.'),
+        say(s, 'HQ', 'warn-1min', s.mission.blackBox ? 'One minute. Get them to exfil.' : 'One minute, and no black box. This is slipping.'),
     },
   ],
 });
