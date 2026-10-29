@@ -14,7 +14,7 @@ import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
 import { orionSquare, satellitePoint } from '../sim/satellite';
 import { eyesOn, freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
-import { CROSS_MS, droneArrived, droneAt } from '../sim/drone';
+import { CROSS_MS, DRONE_CALLSIGN, droneArrived, droneAt } from '../sim/drone';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
@@ -68,6 +68,7 @@ export class MapScene extends Phaser.Scene {
   private fightGfx!: Phaser.GameObjects.Graphics;
   private modeGfx!: Phaser.GameObjects.Graphics;
   private droneGfx!: Phaser.GameObjects.Graphics;
+  private droneLabel!: Phaser.GameObjects.Text;
   private boardGfx!: Phaser.GameObjects.Graphics; // a strike's board: ORION-3's picture only (ILI-1250)
   private intelGfx!: Phaser.GameObjects.Graphics; // what ORION-3 and ALPHA have seen
   private satGfx!: Phaser.GameObjects.Graphics; // ORION-3's reticle
@@ -100,6 +101,10 @@ export class MapScene extends Phaser.Scene {
     this.modeGfx = this.add.graphics();
     this.boardGfx = this.add.graphics();
     this.droneGfx = this.add.graphics();
+    this.droneLabel = this.add
+      .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color: '#e5484d', stroke: '#0b0f0d', strokeThickness: 3 * DPR })
+      .setOrigin(0.5, 0)
+      .setVisible(false);
     this.teamGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
@@ -116,7 +121,7 @@ export class MapScene extends Phaser.Scene {
     // ORION-3's inset: a second camera on the square it's looking at. Taps go to the map.
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
-    this.inset.ignore([...this.labels, this.teamLabel]); // the caption names the square
+    this.inset.ignore([...this.labels, this.teamLabel, this.droneLabel]); // the caption names the square
     this.cameras.main.ignore(this.boardGfx); // a strike plays out in ORION-3's picture, not on the map (ILI-1250)
     // ?debug: tests read the live camera to turn world points into screen taps.
     if (new URLSearchParams(location.search).has('debug'))
@@ -200,7 +205,7 @@ export class MapScene extends Phaser.Scene {
   private drawDrone() {
     const g = this.droneGfx.clear();
     const { drone: d, elapsedMs: now } = game.get();
-    if (!d || !droneArrived(d, now)) return;
+    if (!d || !droneArrived(d, now)) return void this.droneLabel.setVisible(false);
     const px = DPR / this.zoom;
     for (const k of d.kills ?? []) {
       if (k.atMs > now) continue;
@@ -208,17 +213,15 @@ export class MapScene extends Phaser.Scene {
       g.lineStyle(3.5 * px, 0x0b0f0d, 0.8).lineBetween(k.x - r, k.y - r, k.x + r, k.y + r).lineBetween(k.x - r, k.y + r, k.x + r, k.y - r);
       g.lineStyle(2 * px, 0xe5484d, 1).lineBetween(k.x - r, k.y - r, k.x + r, k.y + r).lineBetween(k.x - r, k.y + r, k.x + r, k.y - r);
     }
-    if (now >= d.arriveMs + CROSS_MS) return;
-    // REAPER-1, top down, nose east: a body, long wings, a tail.
+    if (now >= d.arriveMs + CROSS_MS) return void this.droneLabel.setVisible(false);
+    // REAPER-1: a triangle, nose east, with its callsign under it, as in its panel.
     const sq = parseSquare(d.square)!;
     const x = sq.col * CELL + droneAt(d, now) * CELL;
     const y = (sq.row + 0.5) * CELL;
     const s = 7 * px;
-    g.lineStyle(1.5 * px, 0xcfe8dc, 1);
-    g.lineBetween(x - s * 1.4, y, x + s * 1.2, y); // body
-    g.lineBetween(x + s * 0.1, y - s * 1.8, x + s * 0.1, y + s * 1.8); // wings
-    g.lineBetween(x - s * 1.4, y - s * 0.6, x - s * 1.4, y + s * 0.6); // tail
-    g.fillStyle(0xcfe8dc, 1).fillCircle(x + s * 1.2, y, 1.5 * px);
+    g.fillStyle(0xe5484d, 1).fillTriangle(x + s, y, x - s, y - s * 0.8, x - s, y + s * 0.8);
+    g.lineStyle(1.5 * px, 0x0b0f0d, 0.9).strokeTriangle(x + s, y, x - s, y - s * 0.8, x - s, y + s * 0.8);
+    this.droneLabel.setText(DRONE_CALLSIGN).setScale(1 / this.zoom).setPosition(x, y + s * 1.3).setVisible(true);
   }
 
   // Mini game mode: seek and destroy draws its board; the signal pulses where it comes from.

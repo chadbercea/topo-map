@@ -1,5 +1,5 @@
 import { useGame } from '../sim/store';
-import { droneArrived, droneGone, FLIGHT_MS, LINGER_MS } from '../sim/drone';
+import { DRONE_CALLSIGN, droneArrived, droneGone, FLIGHT_MS, LINGER_MS } from '../sim/drone';
 import type { DroneState } from './droneScene'; // a type only: the module itself loads lazily
 import { WireAvatar } from './OrionAvatar';
 
@@ -22,7 +22,7 @@ export function DronePanel() {
   return (
     <section className="panel drone" data-testid="drone-panel" data-state={state} data-leaving={leaving || undefined} role="status" aria-label="Drone strike">
       <h2>
-        <span>REAPER-1</span>
+        <span>{DRONE_CALLSIGN}</span>
         <span className="where">drone strike · {d.square}</span>
       </h2>
       <WireAvatar state={state} fallback={<DroneMark />} load={loadDrone} className="d-model" />

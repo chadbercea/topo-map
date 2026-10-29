@@ -12,6 +12,7 @@ import { CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
 // mini game and no aiming: HQ picks the square and watches. Kills HQ has eyes on are
 // confirmed and pay; the rest are found later. One use a mission, and loud.
 
+export const DRONE_CALLSIGN = 'REAPER-1'; // in its panel, and under it on the map
 export const FLIGHT_MS = 10_000; // launch to target
 export const CROSS_MS = 2_000; // over the square, west to east
 export const LINGER_MS = 3_000; // "All targets neutralized" stays up, then the panel goes
@@ -61,7 +62,7 @@ function plan(s: GameState, d: DroneRun): Kill[] {
 
 const report = (s: GameState, d: DroneRun, text: string): Message => ({
   id: `drone-${d.launchedMs}`,
-  from: 'REAPER-1',
+  from: DRONE_CALLSIGN,
   text,
   atMs: s.elapsedMs,
   status: 'new',
