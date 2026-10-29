@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, start, openAsk, linked } from './helpers';
+import { fastForward, freeze, start, openAsk, linked } from './helpers';
 
 test('running low, ALPHA asks for a resupply; the bird flies in and refills them', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
+  await freeze(page); // mission time moves only by tick: a slow renderer can't run the bird in early
   await page.evaluate(() => {
     const s = window.game.get();
     const operators = s.team.operators.map((o) => ({ ...o, ammo: 10 }));
