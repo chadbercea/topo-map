@@ -57,9 +57,9 @@ html, body {
 .satcom h2 .status { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
 .slot-orion { grid-area: orion; min-width: 0; min-height: 0; display: grid; } /* the whole right side (ILI-1219) */
-/* Along the bottom (ILI-1226): Environment and Logistics, small, then TEAM. */
-.slot-bottom { grid-area: bottom; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: var(--gutter); align-items: stretch; }
-.slot-small { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--gutter); }
+/* Along the bottom (ILI-1226): Environment, small, then TEAM (Logistics went, ILI-1231). */
+.slot-bottom { grid-area: bottom; min-width: 0; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr); gap: var(--gutter); align-items: stretch; }
+.slot-small { min-width: 0; display: grid; }
 .slot-team { min-width: 0; }
 .slot-satcom { grid-area: satcom; min-width: 0; min-height: 0; display: grid; } /* COMMS runs the left side (ILI-1225) */
 .dock-tabs { display: none; }
@@ -267,9 +267,6 @@ html, body {
   cursor: pointer;
 }
 .square-actions button:disabled { opacity: 0.45; cursor: default; }
-/* Logistics (ILI-1226): budget, support inbound. */
-.assets .resources { color: var(--ink); }
-.assets .inbound { color: var(--accent); }
 
 .views button {
   font: inherit;

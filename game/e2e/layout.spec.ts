@@ -64,5 +64,5 @@ test('layout A: mission and COMMS down the left, ORION-3 down the right, small w
   expect(team.x).toBeGreaterThan(small.x + small.width - 1);
   expect(team.x + team.width).toBeLessThanOrEqual(orion.x);
   await expect(page.getByTestId('weather')).toBeVisible();
-  await expect(page.getByTestId('resources')).toContainText('Budget');
+  await expect(page.getByTestId('resources')).toHaveCount(0); // no Logistics panel (ILI-1231)
 });
