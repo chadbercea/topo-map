@@ -1,12 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
-import { squareAt } from '../map/grid';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, lookSquare } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
 import { ground, weather } from '../sim/conditions';
 import { gameSpan, zulu } from '../sim/gameTime';
-import { RESUPPLY_COST } from '../sim/support';
 import { EVENT_LABEL } from '../sim/stream';
 import { useTier } from './tier';
 import { alphaBox, obstacles, pick, squareBox } from './overlays';
@@ -14,11 +12,11 @@ import type { GameState } from '../sim/state';
 
 const ACTIONS = 300; // the action panel's width
 
-// The action panel (ILI-1211, ILI-1228): what HQ can do about the square it picked (a strike
-// on each contact, ALPHA's attack, listening to or jamming a signal, a resupply drop), shown only
-// when there's something to act on. It floats beside the square, clear of ALPHA and the other
-// panels; on a phone it sits in ORION-3's sheet, under the square. What HQ knows of the square, and Scan,
-// are in ORION-3's panel (ILI-1228): there is no square card any more.
+// The action panel (ILI-1211, ILI-1228): what HQ can do about the square it picked (listening to
+// or jamming a signal, a request, a kill site's note), shown only when there's something to act
+// on. Strikes are in ORION-3's panel (ILI-1230); resupply is only a reply to ALPHA's ask
+// (ILI-1232). It floats beside the square, clear of ALPHA and the other panels; on a phone it
+// sits in ORION-3's sheet. What HQ knows of the square, and Scan, are in ORION-3's panel too.
 export function SquareCard() {
   const s = useGame((x) => x);
   const square = lookSquare(s);
@@ -78,10 +76,10 @@ type Placed = { left: number; top: number; width: number; maxHeight: number; sid
 // A contact HQ can hit: its strikes are in ORION-3's panel (ILI-1230).
 const strikeable = (e: GameState['events'][number]) => e.kind === 'contact' && e.id.startsWith('contact-');
 
-// Anything else in this square HQ can act on: an unresolved event that isn't a strike, or ALPHA
-// standing here.
+// Anything else in this square HQ can act on: an unresolved event that isn't a strike. (Resupply
+// is only ever a reply to ALPHA's ask, ILI-1232.)
 export function hasActions(s: GameState, square: string) {
-  return s.events.some((e) => e.square === square && e.status !== 'resolved' && !strikeable(e)) || squareAt(s.team.position.x, s.team.position.y) === square;
+  return s.events.some((e) => e.square === square && e.status !== 'resolved' && !strikeable(e));
 }
 
 // Beside the square, on the side away from ALPHA when both have room (so ALPHA's flag stays
@@ -187,12 +185,10 @@ export function Card({ s, square }: { s: GameState; square: string }) {
 }
 
 // What HQ can do about the square (ILI-1211): one block per thing going on there, with its
-// options, and a resupply drop when ALPHA is here.
+// options.
 export function Actions({ s, square }: { s: GameState; square: string }) {
-  const now = s.elapsedMs;
   // Strikes are ORION-3's now (ILI-1230): the rest stays here.
   const events = s.events.filter((e) => e.square === square && e.status !== 'resolved' && !strikeable(e));
-  const alphaHere = squareAt(s.team.position.x, s.team.position.y) === square;
   return (
     <>
       <header className="ap-head">
@@ -221,14 +217,6 @@ export function Actions({ s, square }: { s: GameState; square: string }) {
           )}
         </div>
       ))}
-      {alphaHere && (
-        <div className="sc-row support" data-testid="support">
-          <button onClick={game.sendResupply} disabled={s.resources.budget < RESUPPLY_COST || s.inbound.length > 0} data-testid="send-resupply">
-            Resupply drop · ${RESUPPLY_COST.toLocaleString()}
-          </button>
-          {s.inbound.length > 0 && <span className="secs">bird inbound · {gameSpan(s.inbound[0].arrivesMs - now)}</span>}
-        </div>
-      )}
     </>
   );
 }
