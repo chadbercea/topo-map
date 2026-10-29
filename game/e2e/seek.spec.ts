@@ -46,7 +46,7 @@ test('drone, a fresh look, then the sniper finishes it', async ({ page, isMobile
   // Over at once: no after-action panel. REAPER-1's report is in the stream.
   await expect(page.getByTestId('minigame')).toHaveCount(0);
   await expect(page.getByTestId('comms-feed')).toContainText('E3: 4 down, 1 still in there.');
-  await expect(page.getByTestId('resources')).toContainText('$6,000'); // confirmed kills pay
+  await expect.poll(() => page.evaluate(() => window.game.get().resources.budget)).toBe(6_000); // confirmed kills pay
 
   // The survivor ran for cover: look again to see where, then open it from its marker.
   await photo(page, 'E3');

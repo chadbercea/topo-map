@@ -6,7 +6,6 @@ import { MiniGamePanel } from './MiniGamePanel';
 import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
-import { Assets } from './Assets';
 import { EnvWidget, MissionPanel } from './MissionBar';
 import { OrionPanel } from './OrionPanel';
 import { CommsPanel } from './CommsPanel';
@@ -27,8 +26,8 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 // The war room, layout A (ILI-1186, ILI-1226): HQ sits down to a live, multi-panel view of the
 // theater. Top left MISSION · BLACK BOX, the clock and the mission in one panel; under it COMMS,
 // HQ's one feed (ILI-1225). The map fills the middle, the mini game floating at its foot. Down
-// the whole right side ORION-3 (ILI-1219). Along the bottom the small widgets, Environment and
-// Logistics, then TEAM. A square HQ picks, on the map or named in COMMS, shows in ORION-3's
+// the whole right side ORION-3 (ILI-1219). Along the bottom Environment, small, then TEAM
+// (Logistics went, ILI-1231). A square HQ picks, on the map or named in COMMS, shows in ORION-3's
 // panel, its details and Scan (ILI-1228), and what HQ can call in on it floats beside it (the
 // action panel). When ALPHA needs something its ask pops up beside its marker (AskWindow). On
 // a fold or tablet the mission floats over the map's corner and COMMS, ORION-3 and TEAM share a
@@ -87,7 +86,6 @@ export function Hud() {
       <div className="slot-bottom">
         <div className="slot-small" data-testid="small-widgets">
           <EnvWidget />
-          <Assets />
         </div>
         <div className="slot-team">
           <TeamPanel />
