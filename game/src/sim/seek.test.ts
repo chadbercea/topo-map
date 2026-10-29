@@ -34,7 +34,6 @@ describe('ordnance', () => {
   it('the drone is one use; the sniper comes back after its cooldown', () => {
     const store = createStore(found());
     store.fire('t', 'drone');
-    store.abortMiniGame();
     expect(weaponBlocked(store.get(), 'drone')).toBe('Used');
     store.fire('t', 'sniper');
     store.abortMiniGame();
@@ -81,28 +80,6 @@ describe('strike', () => {
     expect(s.imagery.E3.seen[0].units).toEqual([6, 9, 10]); // the kill is confirmed
     store.tapMiniGame('E3', 6); // still cycling: ignored
     expect(store.get().minigame!.roundsLeft).toBe(7);
-  });
-
-  it('drone: one 2x2 blast; here it catches all four and the target is destroyed', () => {
-    const store = createStore(found());
-    store.fire('t', 'drone');
-    store.tapMiniGame('E3', 5); // covers 5, 6, 9, 10
-    const s = store.get();
-    expect(s.minigame).toBeNull(); // over at once: no after-action panel
-    expect(s.contacts[0].status).toBe('cleared');
-    expect(s.events[0].status).toBe('resolved');
-    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'REAPER-1', text: 'E3: target destroyed. 4 down. +$6,000.' });
-  });
-
-  it('a blind drone strike still kills, but nobody saw it: no pay, and the picture is not updated', () => {
-    const store = createStore(found(null));
-    const budget = store.get().resources.budget;
-    store.fire('t', 'drone');
-    expect(store.get().minigame!.eyes).toBeNull();
-    store.tapMiniGame('E3', 0); // covers 0, 1, 4, 5
-    expect(store.get().contacts[0].units).toHaveLength(3);
-    expect(store.get().resources.budget).toBe(budget);
-    expect(store.get().comms.messages.at(-1)?.text).toBe('E3: 1 down, 3 still in there. Unconfirmed: no eyes on it.');
   });
 
   it('heli: a gun run strafes the whole row', () => {

@@ -1,3 +1,4 @@
+import { CROSS_MS, FLIGHT_MS } from './drone';
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH, SEARCH_MS } from './sites';
@@ -18,7 +19,7 @@ describe('kill cash', () => {
   it('every confirmed kill from ordnance pays', () => {
     const store = createStore(withContact());
     store.fire('t', 'drone');
-    store.tapMiniGame('E3', 5);
+    store.set(run(store.get(), FLIGHT_MS + CROSS_MS + 200)); // REAPER-1 clears the square
     expect(store.get().resources.budget).toBe(4 * CASH_PER_STRIKE_KILL);
   });
 
@@ -34,14 +35,14 @@ describe('kill sites', () => {
   it('a destroyed contact leaves a kill site on the map', () => {
     const store = createStore(withContact());
     store.fire('t', 'drone');
-    store.tapMiniGame('E3', 5);
+    store.set(run(store.get(), FLIGHT_MS + CROSS_MS + 200)); // REAPER-1 clears the square
     expect(store.get().events.find((e) => e.kind === 'site')).toMatchObject({ square: 'E3', status: 'new' });
   });
 
   it('reaching it, ALPHA offers to search; searching costs time and the documents pay', () => {
     const store = createStore(withContact());
     store.fire('t', 'drone');
-    store.tapMiniGame('E3', 5);
+    store.set(run(store.get(), FLIGHT_MS + CROSS_MS + 200)); // REAPER-1 clears the square
     let s = store.get();
     for (let i = 0; i < 3000 && !s.team.holdFor?.startsWith('site-call'); i++) s = run(s, 100);
     expect(s.comms.messages.find((m) => m.id === s.team.holdFor)?.text).toMatch(/^At the kill site in E3/);
@@ -59,7 +60,7 @@ describe('kill sites', () => {
   it('keep moving skips the search', () => {
     const store = createStore(withContact());
     store.fire('t', 'drone');
-    store.tapMiniGame('E3', 5);
+    store.set(run(store.get(), FLIGHT_MS + CROSS_MS + 200)); // REAPER-1 clears the square
     let s = store.get();
     for (let i = 0; i < 3000 && !s.team.holdFor?.startsWith('site-call'); i++) s = run(s, 100);
     const st = createStore(s);

@@ -14,6 +14,7 @@ import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
 import { orionSquare, satellitePoint } from '../sim/satellite';
 import { eyesOn, freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
+import { CROSS_MS, droneArrived, droneAt } from '../sim/drone';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
@@ -66,6 +67,7 @@ export class MapScene extends Phaser.Scene {
   private markerGfx!: Phaser.GameObjects.Graphics;
   private fightGfx!: Phaser.GameObjects.Graphics;
   private modeGfx!: Phaser.GameObjects.Graphics;
+  private droneGfx!: Phaser.GameObjects.Graphics;
   private boardGfx!: Phaser.GameObjects.Graphics; // a strike's board: ORION-3's picture only (ILI-1250)
   private intelGfx!: Phaser.GameObjects.Graphics; // what ORION-3 and ALPHA have seen
   private satGfx!: Phaser.GameObjects.Graphics; // ORION-3's reticle
@@ -97,6 +99,7 @@ export class MapScene extends Phaser.Scene {
     this.fightGfx = this.add.graphics();
     this.modeGfx = this.add.graphics();
     this.boardGfx = this.add.graphics();
+    this.droneGfx = this.add.graphics();
     this.teamGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
@@ -189,6 +192,33 @@ export class MapScene extends Phaser.Scene {
     this.drawPlans();
     this.drawSatellite(_time);
     this.drawMiniGame(_time);
+    this.drawDrone();
+  }
+
+  // The drone strike (ILI-1252): a tiny drone crosses the square west to east, and each fighter
+  // it passes becomes a red X, which stays as the aftermath.
+  private drawDrone() {
+    const g = this.droneGfx.clear();
+    const { drone: d, elapsedMs: now } = game.get();
+    if (!d || !droneArrived(d, now)) return;
+    const px = DPR / this.zoom;
+    for (const k of d.kills ?? []) {
+      if (k.atMs > now) continue;
+      const r = 5 * px;
+      g.lineStyle(3.5 * px, 0x0b0f0d, 0.8).lineBetween(k.x - r, k.y - r, k.x + r, k.y + r).lineBetween(k.x - r, k.y + r, k.x + r, k.y - r);
+      g.lineStyle(2 * px, 0xe5484d, 1).lineBetween(k.x - r, k.y - r, k.x + r, k.y + r).lineBetween(k.x - r, k.y + r, k.x + r, k.y - r);
+    }
+    if (now >= d.arriveMs + CROSS_MS) return;
+    // REAPER-1, top down, nose east: a body, long wings, a tail.
+    const sq = parseSquare(d.square)!;
+    const x = sq.col * CELL + droneAt(d, now) * CELL;
+    const y = (sq.row + 0.5) * CELL;
+    const s = 7 * px;
+    g.lineStyle(1.5 * px, 0xcfe8dc, 1);
+    g.lineBetween(x - s * 1.4, y, x + s * 1.2, y); // body
+    g.lineBetween(x + s * 0.1, y - s * 1.8, x + s * 0.1, y + s * 1.8); // wings
+    g.lineBetween(x - s * 1.4, y - s * 0.6, x - s * 1.4, y + s * 0.6); // tail
+    g.fillStyle(0xcfe8dc, 1).fillCircle(x + s * 1.2, y, 1.5 * px);
   }
 
   // Mini game mode: seek and destroy draws its board; the signal pulses where it comes from.

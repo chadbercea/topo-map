@@ -3,8 +3,8 @@ import type { Contact } from './contacts';
 import { eyesOn } from './imagery';
 import { gameSpan } from './gameTime';
 
-// Ordnance for strikes (GDD, reworked in ILI-1168): the drone strike is one use, a 2x2
-// blast, and can fire blind; the sniper keeps working but slowly, one round at a time, at
+// Ordnance for strikes (GDD, reworked in ILI-1168): the drone strike is one use, clears the
+// whole square (ILI-1252, drone.ts), and can fire blind; the sniper keeps working but slowly, one round at a time, at
 // fighters HQ can see; the helicopter gun run strafes a row, also needing eyes, and
 // unlocks through upgrades. Each goes on cooldown after a run.
 
@@ -15,7 +15,7 @@ export type WeaponState = { unlocked: boolean; uses: number | null; readyAtMs: n
 export type Ordnance = Record<Weapon, WeaponState>;
 
 export const WEAPON = {
-  drone: { name: 'Drone strike', cooldownMs: 0, runMs: 8_000, rounds: 1, cycleMs: 0 },
+  drone: { name: 'Drone strike', cooldownMs: 0, runMs: 15_000, rounds: 1, cycleMs: 0 },
   sniper: { name: 'Sniper', cooldownMs: 30_000, runMs: 15_000, rounds: 8, cycleMs: 1_200 },
   heli: { name: 'Helicopter gun run', cooldownMs: 60_000, runMs: 10_000, rounds: 3, cycleMs: 600 },
 } satisfies Record<Weapon, { name: string; cooldownMs: number; runMs: number; rounds: number; cycleMs: number }>;
