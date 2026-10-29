@@ -77,9 +77,11 @@ type Placed = { left: number; top: number; width: number; maxHeight: number; sid
 const strikeable = (e: GameState['events'][number]) => e.kind === 'contact' && e.id.startsWith('contact-');
 
 // Anything else in this square HQ can act on: an unresolved event that isn't a strike. (Resupply
-// is only ever a reply to ALPHA's ask, ILI-1232.)
+// is only ever a reply to ALPHA's ask, ILI-1232. A kill site has nothing to do until ALPHA
+// reaches it and asks, so it gets no card: the X marks are the aftermath, ILI-1252.)
+const actionable = (square: string) => (e: GameState['events'][number]) => e.square === square && e.status !== 'resolved' && !strikeable(e) && e.kind !== 'site';
 export function hasActions(s: GameState, square: string) {
-  return s.events.some((e) => e.square === square && e.status !== 'resolved' && !strikeable(e));
+  return s.events.some(actionable(square));
 }
 
 // Beside the square, on the side away from ALPHA when both have room (so ALPHA's flag stays
@@ -188,7 +190,7 @@ export function Card({ s, square }: { s: GameState; square: string }) {
 // options.
 export function Actions({ s, square }: { s: GameState; square: string }) {
   // Strikes are ORION-3's now (ILI-1230): the rest stays here.
-  const events = s.events.filter((e) => e.square === square && e.status !== 'resolved' && !strikeable(e));
+  const events = s.events.filter(actionable(square));
   return (
     <>
       <header className="ap-head">
@@ -210,8 +212,6 @@ export function Actions({ s, square }: { s: GameState; square: string }) {
                 Jam
               </button>
             </div>
-          ) : e.kind === 'site' ? (
-            <p className="note">ALPHA can search it for documents when it gets there.</p>
           ) : (
             <Call s={s} eventId={e.id} />
           )}

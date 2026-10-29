@@ -400,7 +400,7 @@ export class MapScene extends Phaser.Scene {
     const board = minigame?.kind === 'seekDestroy' && minigame.status === 'active' ? minigame.square : null;
     const px = (DPR * 1) / this.zoom;
     for (const e of events) {
-      if (e.status === 'resolved' || e.square === board) continue; // its board is open
+      if (e.status === 'resolved' || e.square === board || e.kind === 'site') continue; // its board is open; a kill site's X marks are enough (ILI-1252)
       const { x, y } = this.markerPos(e.square);
       const color = EVENT_COLOR[e.kind];
       const sq = parseSquare(e.square)!;
@@ -432,7 +432,7 @@ export class MapScene extends Phaser.Scene {
     const hit = ((MARKER_R + 6) * DPR) / this.zoom; // a little bigger than drawn, for thumbs
     return game
       .get()
-      .events.find((e) => e.status !== 'resolved' && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit);
+      .events.find((e) => e.status !== 'resolved' && e.kind !== 'site' && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit);
   }
 
   // The larger square (ILI-1203): ORION-3's picture of the square it's tasked to (or last
