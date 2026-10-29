@@ -38,6 +38,15 @@ export function OrionPanel() {
     if (opened?.kind === 'contact') setStrikeFor(opened.square);
   }, [opened?.id, opened?.kind, opened?.square]);
   const striking = strikes.length > 0 && strikeFor === picked;
+  const rowRef = useRef<HTMLDivElement>(null);
+  // Where the strike panel goes, measured once the page has laid out (the phone's tab may have
+  // only just switched to this panel), and again whenever that moves.
+  const [spot, setSpot] = useState<React.CSSProperties>({ visibility: 'hidden' });
+  useLayoutEffect(() => {
+    if (!striking) return;
+    const next = strikeSpot(rowRef.current, phone);
+    if (JSON.stringify(next) !== JSON.stringify(spot)) setSpot(next);
+  });
   const tier = useTier();
   const phone = tier === 'compact';
   // The larger square while ORION-3 is on it, or a picked square it has imagery of; else the
@@ -105,7 +114,7 @@ export function OrionPanel() {
 
       {/* ORION-3's buttons, always here under the picture (ILI-1230): each lit when it can be used.
           Strike leads the row when the square has a contact HQ can hit. */}
-      <div className="o-buttons" data-testid="orion-buttons">
+      <div ref={rowRef} className="o-buttons" data-testid="orion-buttons">
         {strikes.length > 0 && (
           <button className="o-strike" aria-expanded={striking} onClick={() => setStrikeFor(striking ? null : picked)} data-testid="strike-toggle">
             Strike<small>{strikes.length > 1 ? `${strikes.length} contacts` : 'menu'}</small>
@@ -125,20 +134,6 @@ export function OrionPanel() {
         </div>
       </div>
 
-      {striking && (
-        // The strike menu (ILI-1230): every way to hit each contact in the square.
-        <div className="o-strikes" data-testid="strike-menu">
-          {strikes.map((e) => (
-            <div key={e.id} className="sc-event event-card" data-kind="contact" data-testid="event-card">
-              <h3>
-                CONTACT · {e.square}
-              </h3>
-              <p className="title">{e.title}</p>
-              <TargetMenu contactId={e.id.slice('contact-'.length)} />
-            </div>
-          ))}
-        </div>
-      )}
 
       {!tied && sat.state === 'slewing' && (
         // Repositioning: the countdown decays to nothing, then the options appear.
@@ -191,8 +186,41 @@ export function OrionPanel() {
           <dd>{last ? `${last.square} · ${last.mode} ${zulu(last.atMs)} · ${freshness(last, now)}` : 'none yet'}</dd>
         </dl>
       )}
+
+      {striking && picked && (
+        // The strike menu (ILI-1230, ILI-1233): a panel of its own, out of ORION-3's flow, so nothing
+        // here moves when it opens. Every way to hit each contact in the square.
+        <section className="strike-panel" data-testid="strike-menu" data-overlay="strike" style={spot} role="dialog" aria-label={`Strike ${picked}`}>
+          <header className="ap-head">
+            Strike <b>{picked}</b>
+            <button className="x" onClick={() => setStrikeFor(null)} aria-label="Close strikes">
+              ×
+            </button>
+          </header>
+          {strikes.map((e) => (
+            <div key={e.id} className="sc-event event-card" data-kind="contact" data-testid="event-card">
+              <h3>CONTACT · {e.square}</h3>
+              <p className="title">{e.title}</p>
+              <TargetMenu contactId={e.id.slice('contact-'.length)} />
+            </div>
+          ))}
+        </section>
+      )}
     </section>
   );
+}
+
+// The strike panel's spot (ILI-1233): beside ORION-3's panel, its foot level with the buttons,
+// rising over the map; on a phone (or wherever there's no room beside it) above the panel, the
+// width of the screen.
+const STRIKE_W = 320;
+function strikeSpot(row: HTMLElement | null, phone: boolean): React.CSSProperties {
+  const panel = row?.closest('.orion')?.getBoundingClientRect();
+  if (!row || !panel?.height) return { visibility: 'hidden' }; // ORION-3 behind another tab
+  const r = row.getBoundingClientRect();
+  const left = panel.left - STRIKE_W - 12;
+  if (!phone && left >= 8) return { left, bottom: innerHeight - r.bottom, width: STRIKE_W, maxHeight: r.bottom - 16 };
+  return { left: 8, width: innerWidth - 16, bottom: innerHeight - panel.top + 8, maxHeight: panel.top - 16 };
 }
 
 // Where the Three.js satellite goes (ILI-1196): for now a still mark, ORION-3 in outline.
