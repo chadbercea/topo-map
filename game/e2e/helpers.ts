@@ -68,11 +68,6 @@ export async function worldToScreen(page: Page, wx: number, wy: number) {
   return { x: sx / c.dpr, y: sy / c.dpr };
 }
 
-// Cell i (0-15, row by row) of a seek-and-destroy board, with the camera closed in on it.
-export function boardCell(page: Page, col: number, row: number, i: number) {
-  return worldToScreen(page, col * CELL + ((i % 4) + 0.5) * (CELL / 4), row * CELL + (Math.floor(i / 4) + 0.5) * (CELL / 4));
-}
-
 export const squarePoint = (page: Page, col: number, row: number, dx = 0, dy = 0) =>
   worldToScreen(page, (col + 0.5 + dx) * CELL, (row + 0.5 + dy) * CELL);
 

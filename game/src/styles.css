@@ -135,8 +135,8 @@ html, body {
 .target-menu .options button small { color: var(--dim); font-size: 10px; }
 .target-menu .options button:disabled { opacity: 0.45; cursor: default; border-color: var(--line); }
 
-/* Mini game companion panel: in the band under the map, so it never covers a square the
-   player has to tap. */
+/* Mini game companion panel: the signal's in the band under the map, a strike's in ORION-3's
+   panel under its board (ILI-1250). */
 .minigame {
   display: grid;
   gap: 6px;
@@ -712,6 +712,10 @@ html, body {
 .orion .o-targets { position: absolute; top: 0; bottom: 0; left: 50%; aspect-ratio: 1; transform: translateX(-50%); }
 .orion .o-picture .o-target { position: absolute; width: 24px; height: 24px; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 1px solid transparent; border-radius: 50%; background: none; cursor: crosshair; }
 .orion .o-picture .o-target:hover, .orion .o-picture .o-target:focus-visible { border-color: #e5484d; background: rgba(229, 72, 77, 0.18); }
+.orion .o-picture .o-cell { position: absolute; min-height: 0; padding: 0; border: 1px solid transparent; background: none; cursor: crosshair; }
+.orion .o-picture .o-cell:hover, .orion .o-picture .o-cell:focus-visible { border-color: #e5484d; background: rgba(229, 72, 77, 0.12); }
+.orion .minigame { border: 0; animation: none; }
+.orion .o-buttons[hidden] { display: none; }
 /* The placeholder (ILI-1229): where the Three.js satellite goes (ILI-1196). Painted, unlike the
    picture, which is a clear window onto Phaser's inset. */
 .orion .o-placeholder { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; text-align: center; background:
