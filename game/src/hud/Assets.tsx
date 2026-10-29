@@ -1,12 +1,13 @@
 import { useGame } from '../sim/store';
 import { gameSpan } from '../sim/gameTime';
 
-// HQ's assets by the map's tools (ILI-1187, out of the header): the budget and support on its
-// way. Noise is per operator, on the team panel (ILI-1222). ORION-3 has its own panel (ILI-1195).
+// Logistics (ILI-1226): a small widget along the bottom, with the budget and support on its
+// way. Noise is per operator, on the team panel (ILI-1222). ILI-1224 fills it out.
 export function Assets() {
   const s = useGame((x) => x);
   return (
-    <div className="panel assets">
+    <section className="panel small-widget assets" aria-label="Logistics">
+      <h2>LOGISTICS</h2>
       <p className="resources" data-testid="resources">
         Budget ${s.resources.budget.toLocaleString('en-US')}
       </p>
@@ -15,6 +16,6 @@ export function Assets() {
           resupply bird inbound · {gameSpan(i.arrivesMs - s.elapsedMs)}
         </p>
       ))}
-    </div>
+    </section>
   );
 }

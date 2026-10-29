@@ -3,7 +3,7 @@ import { CELL, parseSquare } from '../map/grid';
 
 // What floats over the map (ILI-1215), so each piece can place itself clear of the rest:
 // the status widget, the band (assets, a mini game), the square card and its action panel,
-// ALPHA's flag. Each carries data-overlay with its name. Placement tries spots in order and
+// ALPHA's flag, and ORION-3's panel down the right (ILI-1226). Each carries data-overlay with its name. Placement tries spots in order and
 // takes the first clear of what's already there, ALPHA's formation and the square being
 // worked; only when none is clear does it take the least-covered one.
 export type Box = { x: number; y: number; w: number; h: number };
