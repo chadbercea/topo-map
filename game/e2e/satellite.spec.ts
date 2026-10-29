@@ -15,7 +15,9 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   await expect(card).toHaveAttribute('data-square', 'E3');
   await expect(page.getByTestId('square-status')).toHaveText('no imagery');
   await expect(page.getByTestId('square-facts')).toContainText(/Elevation\s*\d+–\d+ m/);
+  // The image area holds its place: the placeholder (later the Three.js satellite, ILI-1229).
   await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
+  await expect(sat.getByTestId('orion-placeholder')).toContainText('No imagery of E3 · Scan');
   await expect(page.getByTestId('look-here')).toHaveText(/Scan · \d+ min/);
   await page.getByTestId('look-here').click();
 
@@ -24,6 +26,7 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   const moving = page.getByTestId('orion-repositioning');
   await expect(moving).toBeVisible();
   await expect(moving).toContainText(/Repositioning to E3 · \d+ min/);
+  await expect(sat.getByTestId('orion-placeholder')).toContainText('On its way to E3');
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
   await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+ min away/); // the square, in the same panel (ILI-1228)
@@ -32,6 +35,7 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   // On station the panel opens up: the larger square, and the ways to look.
   await expect(sat).toHaveAttribute('data-state', 'onStation');
   await expect(moving).toHaveCount(0);
+  await expect(sat.getByTestId('orion-placeholder')).toHaveCount(0);
   const picture = sat.getByTestId('satellite-inset');
   await expect(picture).toBeVisible();
   await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveCount(3);
@@ -42,8 +46,7 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
 
   // What it saw stays in the panel; the find is on the card, the strikes beside it.
   await expect(sat.getByTestId('satellite-result')).toContainText('Burst: 5 fighters, unaware');
-  // The picture stays up; a phone's small sheet gives the square and its strikes the room.
-  await expect(sat.getByTestId('satellite-inset')).toHaveCount(isMobile ? 0 : 1);
+  await expect(sat.getByTestId('satellite-inset')).toHaveCount(1); // the picture stays up
   await expect(page.getByTestId('comms-feed')).toContainText('E3 imaged (burst): 5 fighters, unaware');
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
