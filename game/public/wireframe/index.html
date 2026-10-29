@@ -229,16 +229,66 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .audit { counter-reset: a; margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
 .audit li { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font-size: 15px; }
 .audit li strong { font-family: var(--display); font-size: 17px; display: block; }
+
+/* Environment placement options (ILI-1249): the right column at ~70% of 400 × 868. */
+.col-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; align-items: start; }
+.col { width: 280px; max-width: 100%; aspect-ratio: 400 / 868; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 6px; background: var(--paper); padding: 6px; display: flex; flex-direction: column; gap: 6px; font: 11px/1.3 var(--mono); }
+.col .pn { border-radius: 4px; padding: 6px 8px; display: grid; gap: 4px; align-content: start; }
+.col .pn b { font: 700 12px var(--display); letter-spacing: .08em; text-transform: uppercase; display: flex; justify-content: space-between; }
+.col .pn b span { font: 10px var(--mono); color: var(--dim); letter-spacing: 0; text-transform: none; }
+.col .env { background: var(--box); }
+.col .env .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.col .env .tiles i { font-style: normal; border: 1px solid var(--line); border-radius: 3px; padding: 3px 4px; background: var(--paper); }
+.col .env .tiles i small { display: block; color: var(--dim); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
+.col .orion { border: 2px solid var(--hq); flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.col .orion > b { color: var(--hq); }
+.col .sat { border: 1px solid var(--line); border-radius: 3px; height: 74px; display: grid; place-items: center; color: var(--dim); background: repeating-linear-gradient(45deg, var(--box) 0 6px, transparent 6px 12px); }
+.col .pic { flex: 1; border: 1px solid var(--line); border-radius: 3px; display: grid; place-items: center; color: var(--dim); background: repeating-linear-gradient(45deg, var(--box) 0 8px, transparent 8px 16px); min-height: 60px; }
+.col .btns { display: flex; gap: 4px; }
+.col .btns em { font-style: normal; font-size: 10px; padding: 2px 6px; border: 1px solid var(--ink); border-radius: 3px; }
+.col .mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
+.col .mini i { font-style: normal; font-size: 10px; text-align: center; border: 1px solid var(--line); border-radius: 3px; padding: 2px 0; }
+.col .mini i.hot { border-color: var(--accent); color: var(--accent); }
 </style>
 </head>
 <body>
 
 <main>
 <header>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 5 · ILI-1245 mission panel added 2026-10-29</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 5 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
+
+<section id="environment">
+  <div class="sect-head"><p class="eyebrow">ILI-1249 · Environment placement · 2026-10-29 · right column, ~70% scale</p><h2>Where ENVIRONMENT sits next to ORION-3</h2><p>Your demo note (04:38–05:22): ENVIRONMENT is "perfect", but the open question is whether it should sit under ORION-3, or become "a tiny six-stack widget, three and three, immediately underneath the satellite" so the whole panel is ORION-3's. One fact matters here: the sim already defines when cloud blinds ORION-3 (<code>imageryOk</code>: 80% or more). It isn't wired up yet, and Black Box's cloud tops out at 60%, but the weather is the satellite's business.</p></div>
+  <div class="col-grid">
+    <div class="mp-opt">
+      <div class="opt-head"><p class="eyebrow">Today</p><h3>ENVIRONMENT on top</h3></div>
+      <div class="col">
+        <div class="pn env"><b>Environment <span>AO · 0556Z</span></b><div class="tiles"><i><small>Sky</small>High cloud</i><i><small>Vis</small>6 km</i><i><small>Wind</small>NW 10</i><i><small>Temp</small>9°C</i><i><small>Light</small>First</i><i><small>Cloud</small>60%</i></div></div>
+        <div class="pn orion"><b>ORION-3 <span>over G5</span></b><div class="sat">3D satellite · status</div><div class="pic">picture</div><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
+      </div>
+      <div class="mp-why"><ul class="minus"><li>The first thing in the column is the weather, not the satellite you play with.</li></ul></div>
+    </div>
+    <div class="mp-opt">
+      <div class="opt-head"><p class="eyebrow">Option A</p><h3>ENVIRONMENT under ORION-3</h3></div>
+      <div class="col">
+        <div class="pn orion"><b>ORION-3 <span>over G5</span></b><div class="sat">3D satellite · status</div><div class="pic">picture</div><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
+        <div class="pn env"><b>Environment <span>AO · 0556Z</span></b><div class="tiles"><i><small>Sky</small>High cloud</i><i><small>Vis</small>6 km</i><i><small>Wind</small>NW 10</i><i><small>Temp</small>9°C</i><i><small>Light</small>First</i><i><small>Cloud</small>60%</i></div></div>
+      </div>
+      <div class="mp-why"><ul class="plus"><li>ORION-3 leads the column. A one-line swap.</li><li>ENVIRONMENT stays exactly as you like it.</li></ul><ul class="minus"><li>The picture sits between the satellite and the cloud that blinds it.</li><li>The buttons end up mid-column, not at its foot.</li></ul></div>
+    </div>
+    <div class="mp-opt">
+      <div class="opt-head"><p class="eyebrow">Option B</p><h3>Six-stack under the satellite</h3><span class="tag pick">picked · built</span></div>
+      <div class="col">
+        <div class="pn orion"><b>ORION-3 <span>over G5 · 0556Z</span></b><div class="sat">3D satellite · status</div><div class="mini"><i>☁ High</i><i>◉ 6 km</i><i>↘ NW 10</i><i>🌡 9°C</i><i>◐ First</i><i>☁ 60%</i></div><div class="pic">picture</div><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
+      </div>
+      <div class="mp-why"><ul class="plus"><li>The whole column is ORION-3, as you said.</li><li>The weather sits next to the satellite it limits. When cloud nears 80%, its tile lights up before the picture goes blind.</li><li>The picture gets the height the ENVIRONMENT panel used to take.</li></ul><ul class="minus"><li>The tiles shrink to an icon and a value. The labels go into tooltips, and the visibility and cloud meters go.</li><li>The AO · Zulu stamp moves into ORION-3's header.</li></ul></div>
+    </div>
+  </div>
+  <div class="opts"><div class="lean"><b>My pick: B, the six-stack</b><p>Cloud is the one reading that can change what you can do, because it's what would blind ORION-3. Putting the weather under the satellite makes that link visible, and the column becomes one thing to read top to bottom: satellite, its sky, the picture, the shot. A is the safe swap if you'd rather keep ENVIRONMENT whole.</p></div></div>
+</section>
 
 <section id="mission-panel">
   <div class="sect-head"><p class="eyebrow">ILI-1245 · Mission panel · 2026-10-29 · to scale, 320 px</p><h2>The countdown drives the game. The panel around it doesn't say so yet.</h2><p>Your demo note (00:30–01:17): "The contract window is the key driver. The countdown, the timer … I don't think we have nailed the information architecture or the hierarchy of information." The audit first, then three ways to fix it.</p></div>
