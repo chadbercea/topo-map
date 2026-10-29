@@ -53,7 +53,7 @@ export function CommsPanel() {
           {RELAY} ↔ {callsign} · link good
         </span>
       </h2>
-      {/* The link itself, always on screen (ILI-1236): ALPHA's terminal and RELAY-7's signal. */}
+      {/* The link itself, always on screen (ILI-1236): ALPHA's SATCOM backpack and RELAY-7's signal. */}
       <CommsStrip />
       {hidden && <IncomingAlert as="div" testId="answer-alpha" />}
       <ol className="thread" ref={log} role="log" aria-live="polite" data-testid="comms-feed">

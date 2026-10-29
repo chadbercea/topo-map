@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // The HUD's little Three.js wireframes (ILI-1196, ILI-1236): ORION-3 and the team's SATCOM
-// terminal. Each is a model in edge lines of one material, on a transparent background, turning
+// backpack (ILI-1246). Each is a model in edge lines of one material, on a transparent background, turning
 // slowly at a low frame rate; its state sets the colour and the speed. Loaded only through the
 // avatars' dynamic imports, so Three.js stays out of the main bundle.
 

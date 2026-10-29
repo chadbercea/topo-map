@@ -9,7 +9,7 @@ import type { LinkState } from './terminalScene'; // a type only: the scene load
 
 const TRAFFIC: Record<LinkState, string> = { idle: 'idle', incoming: 'incoming', sending: 'sending', tied: 'on hold' };
 
-// COMMS's strip (ILI-1236), the sibling of ORION-3's (ILI-1235): ALPHA's manpack SATCOM terminal
+// COMMS's strip (ILI-1236), the sibling of ORION-3's (ILI-1235): ALPHA's SATCOM backpack (ILI-1246)
 // in 3D on the left, and on the right the RELAY-7 link's signal trace and a little telemetry. All
 // of it read off the game: a call coming in, HQ's answer up the link, the readback landing.
 export function CommsStrip() {
@@ -207,17 +207,24 @@ function LinkTrace({ traffic, calls, flying }: { traffic: LinkState; calls: numb
   );
 }
 
-// The terminal in outline, still: shown until the Three.js one loads, or without WebGL.
+// The SATCOM backpack in outline, still (ILI-1246): shown until the Three.js one loads, or without WebGL.
 function TerminalMark() {
   return (
     <svg className="c-mark" viewBox="0 0 100 70" aria-hidden>
-      <rect x="22" y="40" width="50" height="26" />
-      <line x1="28" y1="47" x2="46" y2="47" />
-      <line x1="28" y1="54" x2="46" y2="54" />
-      <line x1="26" y1="40" x2="24" y2="4" />
-      <line x1="62" y1="40" x2="62" y2="26" />
-      <path d="M50 12 Q66 34 84 20" />
-      <line x1="67" y1="23" x2="72" y2="10" />
+      <rect x="36" y="30" width="28" height="38" />
+      <rect x="35" y="27" width="30" height="4" />
+      <rect x="40" y="46" width="20" height="18" />
+      <line x1="40" y1="51" x2="60" y2="51" />
+      <line x1="40" y1="56" x2="60" y2="56" />
+      <rect x="32" y="42" width="4" height="18" />
+      <rect x="64" y="42" width="4" height="18" />
+      <path d="M36 27 L39 8 L61 8 L64 27" />
+      <line x1="46" y1="9" x2="45" y2="26" />
+      <line x1="54" y1="9" x2="55" y2="26" />
+      <line x1="38" y1="17" x2="62" y2="17" />
+      <line x1="33" y1="43" x2="27" y2="4" />
+      <path d="M68 46 Q73 50 69 54 Q73 58 70 62" />
+      <rect x="68" y="62" width="4" height="7" />
     </svg>
   );
 }
