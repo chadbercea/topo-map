@@ -66,6 +66,7 @@ export class MapScene extends Phaser.Scene {
   private markerGfx!: Phaser.GameObjects.Graphics;
   private fightGfx!: Phaser.GameObjects.Graphics;
   private modeGfx!: Phaser.GameObjects.Graphics;
+  private boardGfx!: Phaser.GameObjects.Graphics; // a strike's board: ORION-3's picture only (ILI-1250)
   private intelGfx!: Phaser.GameObjects.Graphics; // what ORION-3 and ALPHA have seen
   private satGfx!: Phaser.GameObjects.Graphics; // ORION-3's reticle
   private modeLabels: Phaser.GameObjects.Text[] = [];
@@ -95,6 +96,7 @@ export class MapScene extends Phaser.Scene {
     this.markerGfx = this.add.graphics();
     this.fightGfx = this.add.graphics();
     this.modeGfx = this.add.graphics();
+    this.boardGfx = this.add.graphics();
     this.teamGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
@@ -112,6 +114,7 @@ export class MapScene extends Phaser.Scene {
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
     this.inset.ignore([...this.labels, this.teamLabel]); // the caption names the square
+    this.cameras.main.ignore(this.boardGfx); // a strike plays out in ORION-3's picture, not on the map (ILI-1250)
     // ?debug: tests read the live camera to turn world points into screen taps.
     if (new URLSearchParams(location.search).has('debug'))
       Object.assign(window, {
@@ -144,12 +147,6 @@ export class MapScene extends Phaser.Scene {
     this.unsubscribe = game.subscribe(() => {
       this.drawSelection();
       this.applyView();
-      // Close in on a seek-and-destroy board, and back out when it's over.
-      const focused = this.focusSquare();
-      if (focused !== this.focused) {
-        this.focused = focused;
-        this.layout();
-      }
       this.placeInset();
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -197,10 +194,11 @@ export class MapScene extends Phaser.Scene {
   // Mini game mode: seek and destroy draws its board; the signal pulses where it comes from.
   private drawMiniGame(time: number) {
     const g = this.modeGfx.clear();
+    this.boardGfx.clear();
     const m = game.get().minigame;
     this.modeLabels.forEach((l) => l.setVisible(false));
     if (!m) return;
-    if (m.kind === 'seekDestroy') return this.drawBoard(g, m);
+    if (m.kind === 'seekDestroy') return this.drawBoard(this.boardGfx, m);
     if (m.kind === 'signal') {
       // Roughly where the signal comes from: the square and its neighbours, pulsing.
       const sq = parseSquare(m.square)!;
@@ -211,7 +209,7 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
-  // Strike: the target square with the fighters HQ can see in it. Live eyes follow them;
+  // Strike: the target square with the fighters HQ can see in it, in ORION-3's picture. Live eyes follow them;
   // an older look shows where they were, fading with its age. Misses ring, kills cross out.
   private drawBoard(g: Phaser.GameObjects.Graphics, m: NonNullable<ReturnType<typeof game.get>['minigame']>) {
     const sq = parseSquare(m.square)!;
@@ -220,7 +218,7 @@ export class MapScene extends Phaser.Scene {
     const cell = CELL / BOARD;
     for (let c = 0; c < COLS; c++)
       for (let r = 0; r < ROWS; r++) if (c !== sq.col || r !== sq.row) g.fillStyle(0x0b0f0d, 0.65).fillRect(c * CELL, r * CELL, CELL, CELL);
-    const px = DPR / this.zoom;
+    const px = DPR / this.inset.zoom; // drawn for ORION-3's picture
     g.lineStyle(1 * px, 0xe5484d, 0.5);
     for (let i = 1; i < BOARD; i++) {
       g.lineBetween(x0 + i * cell, y0, x0 + i * cell, y0 + CELL);
@@ -407,14 +405,6 @@ export class MapScene extends Phaser.Scene {
       .events.find((e) => e.status !== 'resolved' && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit);
   }
 
-  // The part of the world in view: all of it, or a seek-and-destroy square with a margin.
-  private focused: string | null = null;
-  // Close in on a seek-and-destroy board, so its cells are big enough to tap.
-  private focusSquare() {
-    const { minigame: m } = game.get();
-    return m?.kind === 'seekDestroy' && m.status === 'active' ? m.square : null;
-  }
-
   // The larger square (ILI-1203): ORION-3's picture of the square it's tasked to (or last
   // looked at), drawn into the ORION-3 panel's picture frame (ILI-1219); the map doesn't move.
   private inset!: Phaser.Cameras.Scene2D.Camera;
@@ -430,25 +420,16 @@ export class MapScene extends Phaser.Scene {
     this.inset.centerOn((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL);
   }
 
-  private focus() {
-    const id = this.focusSquare();
-    const sq = id ? parseSquare(id) : null;
-    if (!sq) return { x: 0, y: 0, w: WORLD_W, h: WORLD_H };
-    const pad = CELL * 0.25;
-    return { x: sq.col * CELL - pad, y: sq.row * CELL - pad, w: CELL + pad * 2, h: CELL + pad * 2 };
-  }
-
   private get zoom() {
     return this.cameras.main.zoom;
   }
 
   // Keep ALPHA, the team HQ has selected, centred in the open map (ILI-1227): ease after it as
-  // it walks, over about a sixth of a second, until HQ pans by hand. A strike's close-up
-  // doesn't follow.
+  // it walks, over about a sixth of a second, until HQ pans by hand.
   private camCenter: { x: number; y: number } | null = null;
   private camTarget: { x: number; y: number } | null = null;
   private follow(delta: number) {
-    if (this.focused || this.panned || !this.camCenter || !this.camTarget) return;
+    if (this.panned || !this.camCenter || !this.camTarget) return;
     const { width, height } = this.scale;
     const r = getMapRect();
     const area = this.openArea(r, width, height);
@@ -468,7 +449,7 @@ export class MapScene extends Phaser.Scene {
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private panned = false;
   private pan(delta: number) {
-    if (this.focused || !this.camCenter || typing()) return;
+    if (!this.camCenter || typing()) return;
     const k = this.keys;
     const dx = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0);
     const dy = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0);
@@ -513,34 +494,25 @@ export class MapScene extends Phaser.Scene {
   }
 
   // Zoom first, then draw: the grid fills the viewport (fit.ts), and lines, labels and the
-  // terrain bake are drawn for that zoom. During a strike the camera closes in on the
-  // target square, so its board's cells are big enough to tap on a phone.
+  // terrain bake are drawn for that zoom.
   private layout() {
     const { width, height } = this.scale;
     const r = getMapRect();
     const area = r
       ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR }
       : { x: 0, y: 0, w: width, h: height };
-    const view = this.focus();
     const cam = this.cameras.main;
     const cover = this.cover(r, height);
-    const { zoom, sx, sy } = fitCamera({ w: width, h: height }, area, view, MARGIN, cover);
-    // The terrain bakes at the whole-map zoom; closing in on a board reuses it (re-baking the
-    // whole theater on every zoom would stutter on a phone).
-    this.baseZoom = fitCamera({ w: width, h: height }, area, { x: 0, y: 0, w: WORLD_W, h: WORLD_H }, MARGIN, cover).zoom;
-    this.fitZoom = zoom;
-    cam.setZoom(this.focused ? zoom : zoom * this.userZoom);
-    if (this.focused) {
-      cam.centerOn(view.x + view.w / 2 - (sx - width / 2) / zoom, view.y + view.h / 2 - (sy - height / 2) / zoom);
-    } else {
-      // The whole map: keep where the camera was, or start centred on ALPHA (ILI-1227).
-      const screen = { w: width, h: height };
-      const z = cam.zoom; // the fit, times any pinch
-      const start = this.camCenter ?? clampCenter({ x: WORLD_W / 2, y: WORLD_H / 2 }, screen, z, cover);
-      this.camCenter = this.camCenter ? clampCenter(start, screen, z, cover, PAN) : centreOn(game.get().team.position, area, screen, z, cover, PAN);
-      this.camTarget = this.camCenter;
-      cam.centerOn(this.camCenter.x, this.camCenter.y);
-    }
+    const { zoom } = fitCamera({ w: width, h: height }, area, { x: 0, y: 0, w: WORLD_W, h: WORLD_H }, MARGIN, cover);
+    this.baseZoom = this.fitZoom = zoom;
+    cam.setZoom(zoom * this.userZoom);
+    // Keep where the camera was, or start centred on ALPHA (ILI-1227).
+    const screen = { w: width, h: height };
+    const z = cam.zoom; // the fit, times any pinch
+    const start = this.camCenter ?? clampCenter({ x: WORLD_W / 2, y: WORLD_H / 2 }, screen, z, cover);
+    this.camCenter = this.camCenter ? clampCenter(start, screen, z, cover, PAN) : centreOn(game.get().team.position, area, screen, z, cover, PAN);
+    this.camTarget = this.camCenter;
+    cam.centerOn(this.camCenter.x, this.camCenter.y);
     bus.emit(EV.camera);
     this.drawTerrain();
     this.drawGrid();
@@ -821,21 +793,13 @@ export class MapScene extends Phaser.Scene {
     if (moved || this.teamLabel.scale !== 1 / this.zoom) this.teamLabel.setScale(1 / this.zoom).setPosition(position.x + 16 * u, position.y - 22 * u);
   }
 
-  // A finger (or the mouse) down on the map: a running mini game takes it as a tap at once;
-  // otherwise it may become a drag or a pinch, and only a release without either is a tap.
+  // A finger (or the mouse) down on the map: it may become a drag or a pinch, and only a release
+  // without either is a tap.
   private drag: { id: number; x: number; y: number; from: { x: number; y: number }; moved: boolean } | null = null;
   private pinch: { d: number; zoom: number } | null = null;
   private onDown(p: Phaser.Input.Pointer) {
     this.track(p);
     if (game.get().phase !== 'running') return;
-    // A running mini game owns the map's taps.
-    if (game.get().minigame?.status === 'active') {
-      const sq = squareAt(p.worldX, p.worldY);
-      // The cell on a seek-and-destroy board, 0-15 row by row.
-      const cell = Math.floor(((p.worldY % CELL) / CELL) * BOARD) * BOARD + Math.floor(((p.worldX % CELL) / CELL) * BOARD);
-      if (sq) game.tapMiniGame(sq, cell);
-      return;
-    }
     const [a, b] = this.fingers();
     if (a && b) {
       // A second finger: pinch, and the first finger's touch is no longer a tap.
@@ -855,7 +819,7 @@ export class MapScene extends Phaser.Scene {
       return;
     }
     const drag = this.drag;
-    if (!drag || drag.id !== p.id || !p.isDown || this.focused) return;
+    if (!drag || drag.id !== p.id || !p.isDown) return;
     const dx = p.x - drag.x;
     const dy = p.y - drag.y;
     if (!drag.moved && Math.hypot(dx, dy) < DRAG_PX * DPR) return;
@@ -876,7 +840,7 @@ export class MapScene extends Phaser.Scene {
     }
     const drag = this.drag;
     this.drag = null;
-    if (!drag || drag.id !== p.id || drag.moved || game.get().phase !== 'running' || game.get().minigame?.status === 'active') return;
+    if (!drag || drag.id !== p.id || drag.moved || game.get().phase !== 'running' || game.get().minigame?.kind === 'signal') return;
     // A fighter HQ can see opens its strikes (ILI-1250).
     const target = this.targetAt(p.worldX, p.worldY);
     if (target) return game.openEvent(`contact-${target}`);
@@ -902,12 +866,12 @@ export class MapScene extends Phaser.Scene {
   }
 
   // Zoom by a factor about a screen point (device px), keeping the ground under it still:
-  // between the whole-map fit and MAX_ZOOM times it. Not during a strike's close-up.
+  // between the whole-map fit and MAX_ZOOM times it.
   private userZoom = 1;
   private fitZoom = 1;
   private relayout?: Phaser.Time.TimerEvent;
   private zoomAt(factor: number, sx: number, sy: number) {
-    if (this.focused || !this.camCenter) return;
+    if (!this.camCenter) return;
     const next = Phaser.Math.Clamp(this.userZoom * factor, 1, MAX_ZOOM);
     if (next === this.userZoom) return;
     const cam = this.cameras.main;

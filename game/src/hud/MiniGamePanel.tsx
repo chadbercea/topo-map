@@ -16,13 +16,14 @@ import { WEAPON } from '../sim/ordnance';
 import { SignalControls } from './SignalControls';
 import { game, useGame } from '../sim/store';
 
-// Companion panel for the mini game on the map: what to do, the countdown and progress. No
-// after-action panel (ILI-1204): when it's over it's gone, and the result is a report in the
-// stream and comms.
-export function MiniGamePanel() {
+// Companion panel for a mini game: what to do, the countdown and progress. No after-action
+// panel (ILI-1204): when it's over it's gone, and the result is a report in the stream and
+// comms. A strike's is in ORION-3's panel, under its picture (ILI-1250); the signal's floats
+// over the map.
+export function MiniGamePanel({ strike = false }: { strike?: boolean }) {
   const m = useGame((s) => s.minigame);
   const left = useGame(timeLeft);
-  if (!m || m.status !== 'active') return null;
+  if (!m || m.status !== 'active' || (m.kind === 'seekDestroy') !== strike) return null;
   const def = MINIGAMES[m.kind];
   const seek = m.kind === 'seekDestroy';
   const title = seek ? `${WEAPON[m.weapon!].name.toUpperCase()} · ${m.square}` : `${def.title.toUpperCase()} · ${m.square}`;
