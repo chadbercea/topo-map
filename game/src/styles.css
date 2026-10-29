@@ -547,6 +547,26 @@ html, body {
 @keyframes ping { from { transform: scale(1); opacity: 0.9; } to { transform: scale(4.5); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ping::before, .ping::after { animation: none; opacity: 0.8; } }
 .satcom .thread li[data-waiting='true'] { color: #f2c14e; }
+/* COMMS's strip (ILI-1236), ORION-3's sibling: ALPHA's SATCOM terminal in 3D, RELAY-7's signal
+   trace and a little telemetry. Fixed height, so the thread takes the rest and the replies stay on screen. */
+.satcom .c-strip { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-rows: minmax(0, 1fr); align-items: stretch; gap: 10px; height: 112px; background: radial-gradient(circle at 25% 55%, rgba(53, 208, 165, 0.09), transparent 65%), var(--panel); }
+.satcom .c-strip[data-state='incoming'] { background: radial-gradient(circle at 25% 55%, rgba(53, 208, 165, 0.16), transparent 65%), var(--panel); }
+.satcom .c-strip[data-state='sending'] { background: radial-gradient(circle at 25% 55%, rgba(242, 193, 78, 0.1), transparent 65%), var(--panel); }
+.satcom .c-terminal { position: relative; display: grid; place-items: center; min-width: 0; height: 100%; }
+.satcom .c-terminal > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.satcom .c-mark { width: 70%; max-height: 90%; fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.7; }
+.satcom .c-strip[data-state='sending'] .c-mark { stroke: #f2c14e; }
+.satcom .c-strip[data-state='tied'] .c-mark { stroke: var(--dim); }
+.satcom .c-link { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 4px; min-width: 0; padding: 4px 0; }
+.satcom .c-scope { position: relative; min-height: 0; border-bottom: 1px solid rgba(53, 208, 165, 0.12); }
+.satcom .c-trace { position: absolute; inset: 0; width: 100%; height: 100%; }
+.satcom .c-telemetry { display: grid; gap: 2px; margin: 0; }
+.satcom .c-telemetry > div { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 1px 0; border-bottom: 1px solid rgba(53, 208, 165, 0.12); }
+.satcom .c-telemetry dt { color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
+.satcom .c-telemetry dd { margin: 0; color: var(--ink); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.satcom .c-strip[data-state='incoming'] .c-telemetry dd { color: var(--accent); }
+.satcom .c-strip[data-state='sending'] .c-telemetry dd { color: #f2c14e; }
+.satcom .c-strip[data-state='tied'] .c-telemetry dd { color: var(--dim); }
 .satcom .thread .awaiting { color: #f2c14e; font-size: 10px; }
 .comms {
   display: grid;
@@ -825,6 +845,8 @@ html, body {
   .orion .o-placeholder { gap: 4px; padding: 6px; }
   .orion .o-satpanel { height: 72px; gap: 6px; } /* small: the sheet is short */
   .orion .o-telemetry dd { font-size: 11px; }
+  .satcom .c-strip { height: 68px; gap: 6px; } /* small: the sheet is short (ILI-1236); the header has the link */
+  .satcom .c-telemetry .c-relay, .satcom .c-telemetry .c-latency { display: none; }
     .square-card .facts { font-size: 10px; }
   .comms .actions button { min-height: 32px; padding: 0 8px; font-size: 10px; }
   /* The action panel on a phone: tight, so every strike shows under the card. */
