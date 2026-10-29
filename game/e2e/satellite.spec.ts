@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start, untilOnStation, openAsk, linked, hasEvent, photo } from './helpers';
 
-test('pick a square, Scan: ORION-3 repositions, then on station the larger square and the captures are in its panel (ILI-1219)', async ({ page, isMobile }) => {
+test('pick a square, Reposition: ORION-3 moves, then on station the shots take its place (ILI-1219, ILI-1250)', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -10,15 +10,17 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
   // E3 is off screen on a phone (the camera stays on ALPHA); map.spec covers tapping squares.
   await page.evaluate(() => window.game.selectSquare('E3'));
-  // Picking a square pins its card: what HQ knows of it, and Scan. No picture anywhere yet.
+  // Picking a square pins its card: what HQ knows of it, and Reposition. No picture anywhere yet.
   const card = page.getByTestId('square-card');
   await expect(card).toHaveAttribute('data-square', 'E3');
   await expect(page.getByTestId('square-status')).toHaveText('no imagery');
   await expect(page.getByTestId('square-facts')).toContainText(/Elevation\s*\d+–\d+ m/);
   // The image area holds its place: the placeholder (later the Three.js satellite, ILI-1229).
   await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
-  await expect(sat.getByTestId('orion-placeholder')).toContainText('No imagery of E3 · Scan');
-  await expect(page.getByTestId('look-here')).toHaveText(/^Scan\s*\d+ min$/);
+  await expect(sat.getByTestId('orion-placeholder')).toContainText('No imagery of E3 · Reposition');
+  // Not over E3 yet: one big Reposition, and no shots to take (ILI-1250).
+  await expect(page.getByTestId('look-here')).toHaveText(/^Reposition\s*to E3 · \d+ min$/);
+  await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
   await page.getByTestId('look-here').click();
 
   // ORION-3 repositions, in its own panel: a countdown that runs down, and nothing to press
@@ -27,9 +29,10 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   await expect(moving).toBeVisible();
   await expect(moving).toContainText(/Repositioning to E3 · \d+ min/);
   await expect(sat.getByTestId('orion-placeholder')).toContainText('On its way to E3');
-  // ORION-3's buttons keep their place under the picture, unlit while it moves (ILI-1230).
-  for (const m of ['photo', 'burst', 'video']) await expect(sat.getByTestId(`capture-${m}`)).toBeDisabled();
+  // The button row keeps its place under the picture: Reposition, unlit while it moves.
+  await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
   await expect(sat.getByTestId('look-here')).toBeDisabled();
+  await expect(sat.getByTestId('look-here')).toContainText('Repositioning to E3');
   await expect(sat.getByRole('button', { name: 'Cancel' })).toHaveCount(0); // no Cancel
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
   await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+ min away/); // the square, in the same panel (ILI-1228)
@@ -42,6 +45,7 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   const picture = sat.getByTestId('satellite-inset');
   await expect(picture).toBeVisible();
   await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveCount(3);
+  await expect(sat.getByTestId('look-here')).toHaveCount(0); // the shots took its place
   await sat.getByTestId('capture-burst').click();
   await expect(sat).toHaveAttribute('data-state', 'capturing');
   await expect(picture).toHaveAttribute('data-state', 'capturing');
@@ -102,4 +106,20 @@ test('Strike shows only when the square has a contact, and opens the strike menu
   await expect(sat.getByTestId('strike-menu').getByTestId('fire-drone')).toBeVisible();
   await sat.getByTestId('strike-toggle').click();
   await expect(sat.getByTestId('strike-menu')).toHaveCount(0);
+});
+
+test('over a square it has already shot, no Reposition and no Rescan: the shots are there (ILI-1250)', async ({ page }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  const sat = page.getByTestId('satellite');
+  await photo(page, 'E3');
+  await page.evaluate(() => window.game.selectSquare('E3'));
+  await expect(sat.getByTestId('look-here')).toHaveCount(0);
+  await sat.getByTestId('capture-photo').click();
+  await expect(sat.getByTestId('satellite-result')).toContainText('Photo:');
+  // A different square: back to Reposition.
+  await page.evaluate(() => window.game.selectSquare('F4'));
+  await expect(sat.getByTestId('look-here')).toHaveText(/^Reposition\s*to F4/);
+  await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
 });
