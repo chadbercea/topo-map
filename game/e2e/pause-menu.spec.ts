@@ -16,10 +16,10 @@ test('no briefing: the game opens live, ALPHA on the ground and the clock runnin
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
   if (isMobile) await page.getByTestId('tab-team').click();
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
-  if (isMobile) await page.getByTestId('tab-intel').click();
+  if (isMobile) await page.getByTestId('tab-satcom').click();
   // Only this mission's intel: the analysts' notes on the crash to start with.
-  await expect(page.getByTestId('intel-items')).toContainText('downed recon drone');
-  await expect(page.getByTestId('intel-items')).not.toContainText('COPPER VEIL');
+  await expect(page.getByTestId('comms-feed')).toContainText('downed recon drone');
+  await expect(page.getByTestId('comms-feed')).not.toContainText('COPPER VEIL');
   await expect.poll(() => page.getByTestId('clock').textContent(), { timeout: 10_000 }).not.toBe('4:00');
 });
 

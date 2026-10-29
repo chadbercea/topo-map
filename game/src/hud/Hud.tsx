@@ -13,7 +13,7 @@ import { Recentre } from './Recentre';
 import { MissionStrip, StatusWidget } from './MissionBar';
 import { CommsPanel } from './CommsPanel';
 import { AskWindow } from './AskWindow';
-import { IntelStream, useAskHidden } from './IntelStream';
+import { useAskHidden } from './CommsPanel';
 import { TeamPanel } from './TeamPanel';
 import { PauseMenu } from './PauseMenu';
 import { WrapUp } from './WrapUp';
@@ -22,24 +22,24 @@ const debug = new URLSearchParams(location.search).has('debug');
 // Tests and debugging drive the game directly through window.game when ?debug is on.
 if (debug) Object.assign(window, { game });
 
-type Tab = 'intel' | 'satcom' | 'team';
+type Tab = 'satcom' | 'team';
 type Sheet = 'peek' | 'half' | 'full';
 const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 
 // The war room (ILI-1186): HQ sits down to a live, multi-panel view of the theater. The clock,
 // weather and ORION-3 sit in a widget in the map's top-right corner, and the mission's status
-// runs along the map's foot (ILI-1216); down the left the intel stream, with the comms log under it
-// (ILI-1199); the map fills the rest. Along the bottom: the mini game and HQ's assets, then
+// runs along the map's foot (ILI-1216); down the left COMMS, HQ's one feed since the intel
+// stream went (ILI-1199, ILI-1225); the map fills the rest. Along the bottom: the mini game and HQ's assets, then
 // the team panel in the bottom-right corner. ORION-3, the imaging satellite, has no panel
 // (ILI-1202): its status is a line in the header. Any square HQ works, picked on the map or
-// opened from the stream, gets one card beside it (SquareCard, ILI-1203): its details, the
+// named in COMMS, gets one card beside it (SquareCard, ILI-1203): its details, the
 // scan, ORION-3's larger picture, and the strikes and support to call in there. When ALPHA needs something its ask pops up beside its marker
-// (AskWindow). On a phone the stream, comms and team share one docked panel with tabs; on a
+// (AskWindow). On a phone COMMS and the team share one docked panel with tabs; on a
 // fold or tablet they share a rail down the right, and an open square takes it over (ILI-1213).
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
-  const askHidden = useAskHidden(); // ALPHA's ask is raised in the stream: light its tab
+  const askHidden = useAskHidden(); // ALPHA's ask is raised in COMMS: light its tab
   const tier = useTier();
   const flip = useBandFlip();
   // What a docked square covers: the whole rail (medium), or the dock under its actions (compact).
@@ -50,13 +50,14 @@ export function Hud() {
   });
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
   // on the map itself (ILI-1201), so the dock stays where it is.
-  // New events run inline in the intel stream (ILI-1197): a new one brings it forward.
+  // A new event marks its square on the map, and its report lands in COMMS (ILI-1225): that
+  // brings COMMS forward.
   const fresh = useGame((s) => s.events.filter((e) => e.status === 'new').length);
   // On a phone the dock is a bottom sheet (ILI-1214): peek (just the tabs), half or full.
   const [sheet, setSheet] = useState<Sheet>('half');
   useEffect(() => {
     if (fresh) {
-      setTab('intel');
+      setTab('satcom');
       setSheet((h) => (h === 'peek' ? 'half' : h)); // news opens a peeking sheet
     }
   }, [fresh]);
@@ -73,9 +74,6 @@ export function Hud() {
       </div>
       <div className="slot-strip">
         <MissionStrip />
-      </div>
-      <div className="slot-stream">
-        <IntelStream />
       </div>
       <MapArea />
       <SquareCard />
@@ -96,8 +94,8 @@ export function Hud() {
       </div>
       {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
       <nav className="dock-tabs" aria-label="Panels">
-        {(['intel', 'satcom', 'team'] as const).map((t) => (
-          <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'intel' && askHidden && tab !== 'intel'}>
+        {(['satcom', 'team'] as const).map((t) => (
+          <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'satcom' && askHidden && tab !== 'satcom'}>
             {t === 'satcom' ? 'COMMS' : t.toUpperCase()}
           </button>
         ))}

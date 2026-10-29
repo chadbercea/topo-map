@@ -11,7 +11,7 @@ export function MapArea() {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = ref.current!;
-    const stream = document.querySelector('.slot-stream');
+    const stream = document.querySelector('.slot-satcom'); // the left column (COMMS, ILI-1225)
     const team = document.querySelector('.slot-team');
     const tabs = document.querySelector('.dock-tabs');
     const widget = document.querySelector('.slot-widget');

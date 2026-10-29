@@ -9,7 +9,7 @@ import { gameSpan, zulu } from '../sim/gameTime';
 import { RESUPPLY_COST } from '../sim/support';
 import { EVENT_LABEL } from '../sim/stream';
 import { TargetMenu } from './TargetMenu';
-import { IncomingAlert, useAskHidden } from './IntelStream';
+import { IncomingAlert, useAskHidden } from './CommsPanel';
 import { useTier } from './tier';
 import { alphaBox, obstacles, pick, squareBox } from './overlays';
 import type { GameState } from '../sim/state';
@@ -39,7 +39,7 @@ export function SquareCard() {
   const picRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
   const [actHeight, setActHeight] = useState(0);
-  const askHidden = useAskHidden(); // docked, the action panel covers the stream, and its raised ask with it
+  const askHidden = useAskHidden(); // docked, the action panel covers COMMS, and its raised ask with it
   const tier = useTier();
   const sent = useRef('');
   const placedKey = useRef('');

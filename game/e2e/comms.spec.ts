@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, untilOnStation, openAsk, linked } from './helpers';
+import { fastForward, freeze, start, untilOnStation, openAsk, linked, hasEvent } from './helpers';
 
 test('ALPHA holds short of unimaged ground and asks; Move in blind sends it on', async ({ page, isMobile }) => {
   await start(page, '?debug');
@@ -80,7 +80,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await linked(page);
   await untilOnStation(page);
   await page.getByTestId('capture-photo').click();
-  await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/);
+  await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
 
   // Now it holds short of the contact.
   await page.evaluate(() => {
@@ -102,10 +102,10 @@ test('news the map does not show lands in the stream as an alert, and the header
     window.game.set({ ...window.game.get(), noise: 70 });
     window.game.tick(100);
   });
-  await expect(page.getByTestId('intel-items')).toContainText('know a PMC is in the area');
+  await expect(page.getByTestId('comms-feed')).toContainText('know a PMC is in the area');
   await expect(page.getByTestId('blockers')).toContainText('Enemy alerted');
-  if (isMobile) await page.getByTestId('tab-intel').click();
-  await expect(page.getByTestId('intel-items')).toContainText('Enemy radio net just lit up');
+  if (isMobile) await page.getByTestId('tab-satcom').click();
+  await expect(page.getByTestId('comms-feed')).toContainText('Enemy radio net just lit up');
 });
 
 test('when the square card opens where ALPHA\u2019s flag was, the flag moves clear of it (ILI-1215)', async ({ page, isMobile }) => {

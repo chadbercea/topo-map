@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, untilOnStation, openAsk, linked } from './helpers';
+import { fastForward, freeze, start, untilOnStation, openAsk, linked, hasEvent } from './helpers';
 
 test('pick a square, scan it, look on station: the larger square and the find on the card, the strikes beside it', async ({ page }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
@@ -37,9 +37,9 @@ test('pick a square, scan it, look on station: the larger square and the find on
   await fastForward(page, 6_100);
 
   // The find, and what HQ can call in on it, right there.
-  await expect(page.getByTestId('intel-items')).toContainText('E3 imaged (burst): 5 fighters, unaware'); // the contact's block on the card says what's there
+  await expect(page.getByTestId('comms-feed')).toContainText('E3 imaged (burst): 5 fighters, unaware'); // the contact's block on the card says what's there
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
-  await expect(page.getByTestId('intel-items')).toContainText(/CONTACT\s*E3/); // inline in the stream too
+  await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true); // inline in the stream too
   // What to do about it is the action panel beside the card (ILI-1211), every strike in view.
   const act = page.getByTestId('action-panel');
   await expect(card.getByTestId('event-card')).toHaveCount(0);

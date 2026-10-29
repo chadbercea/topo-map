@@ -39,7 +39,7 @@ export const EVENT_LABEL: Record<EventKind, string> = { contact: 'CONTACT', sign
 
 // What kind of intel a message is, and whether it's routine. ORION-3 moving and settling is
 // routine; what it saw isn't.
-function classify(m: Message): { kind: IntelKind; quiet: boolean } {
+export function classify(m: Message): { kind: IntelKind; quiet: boolean } {
   if (m.alert) return { kind: 'alert', quiet: false };
   if (m.from === 'ORION-3') return { kind: 'imagery', quiet: m.id.startsWith('slew-') || m.id.startsWith('station-') };
   if (m.from === 'SIGINT') return { kind: 'sigint', quiet: false };
