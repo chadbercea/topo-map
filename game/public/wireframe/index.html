@@ -69,6 +69,8 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .frame { border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); padding: 6px; display: grid; gap: 6px; font: 11px/1.3 var(--mono); }
 .wide-wrap { overflow-x: auto; }
 .frame.wide { min-width: 760px; aspect-ratio: 16 / 10; grid-template-columns: 22% 1fr 21%; grid-template-rows: 1.1fr 1fr; grid-template-areas: 'intel map hq' 'comms map team'; }
+.frame.wide4 { min-width: 760px; aspect-ratio: 16 / 10; grid-template-columns: 22% 1fr 27%; grid-template-rows: auto 1fr auto; grid-template-areas: 'mission map orion' 'comms map orion' 'bottom bottom orion'; }
+.frame .bottom { grid-area: bottom; display: grid; grid-template-columns: 1fr 1fr 2.2fr; gap: 6px; }
 .frame.medium { aspect-ratio: 9 / 10; grid-template-columns: 1fr 34%; grid-template-rows: 1fr auto; grid-template-areas: 'map rail' 'strip rail'; max-width: 520px; }
 .frame.compact { aspect-ratio: 390 / 844; max-width: 260px; grid-template-rows: auto 1fr auto auto; grid-template-areas: 'top' 'map' 'next' 'sheet'; }
 .b { background: var(--box); border-radius: 4px; padding: 6px 7px; display: grid; gap: 3px; align-content: start; min-width: 0; overflow: hidden; }
@@ -95,6 +97,25 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .legend .l2::before { border: 1.5px dashed var(--ink); }
 .legend .l3::before { border: 1.5px solid var(--accent); }
 
+/* ORION-3 panel mock */
+.orion-states { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.o3 { background: var(--paper); border: 1.5px solid var(--hq); border-radius: 6px; padding: 10px 12px; display: grid; gap: 8px; align-content: start; font: 12px/1.35 var(--mono); }
+.o3 .hd { display: flex; justify-content: space-between; gap: 8px; }
+.o3 .hd b { font: 700 13px var(--display); letter-spacing: .08em; color: var(--hq); }
+.o3 .step { font: 600 11px var(--mono); letter-spacing: .1em; color: var(--dim); text-transform: uppercase; }
+.o3 .pic { aspect-ratio: 1; border: 1px solid var(--line); border-radius: 3px; background: repeating-linear-gradient(45deg, var(--box) 0 8px, transparent 8px 16px); display: grid; place-items: center; color: var(--dim); font-size: 11px; text-align: center; padding: 8px; }
+.o3 .pic.dim { aspect-ratio: 3 / 1; }
+.o3 .decay { height: 8px; border-radius: 4px; background: var(--box); overflow: hidden; }
+.o3 .decay i { display: block; height: 100%; width: 38%; background: var(--hq); }
+.o3 .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.o3 .btns em { font-style: normal; padding: 4px 8px; border: 1px solid var(--ink); border-radius: 3px; font-size: 11px; }
+.o3 .btns em.ghost { border-color: var(--line); color: var(--dim); }
+.o3 p { color: var(--dim); font-size: 11px; }
+.b.big { border: 1.5px solid var(--hq); }
+.b .pic-mini { flex: 1; min-height: 40px; border: 1px solid var(--line); border-radius: 3px; background: repeating-linear-gradient(45deg, var(--paper) 0 6px, transparent 6px 12px); display: grid; place-items: center; color: var(--dim); font-size: 10px; }
+.b .btn-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.b .btn-row em { font-style: normal; font-size: 10px; padding: 1px 5px; border: 1px solid var(--ink); border-radius: 3px; color: var(--ink); }
+
 /* stage */
 .stage td:first-child { font-weight: 600; white-space: nowrap; }
 
@@ -108,32 +129,178 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
   .wf-row { grid-template-columns: 1fr; }
   .tiers { grid-template-columns: 1fr; }
 }
+
+/* Desktop layout options (rev 5) */
+.opts .opt { display: grid; gap: 14px; }
+.opts .opt-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.opts .opt-head .tag { font: 600 12px var(--mono); letter-spacing: .1em; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--line); color: var(--dim); }
+.opts .opt-head .tag.pick { border-color: var(--pick); color: var(--pick); }
+.opts .row { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.opts .wrap { overflow-x: auto; }
+.opts .screen { min-width: 640px; aspect-ratio: 1440 / 900; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); padding: 1.1%; display: grid; gap: 1.1%; font: 11px/1.3 var(--mono); position: relative; }
+.opts .p { background: var(--box); border-radius: 4px; padding: 6px 8px; display: grid; gap: 2px; align-content: start; min-width: 0; min-height: 0; overflow: hidden; }
+.opts .p b { font: 700 12px var(--display); letter-spacing: .06em; text-transform: uppercase; }
+.opts .p span { color: var(--dim); }
+.opts .p.mission { border-top: 3px solid var(--ink); }
+.opts .p.small { background: transparent; border: 1px dashed var(--line); }
+.opts .p.orion { border: 2px solid var(--hq); display: flex; flex-direction: column; gap: 6px; }
+.opts .p.orion b { color: var(--hq); }
+.opts .p.orion .pic { flex: 1; min-height: 60px; aspect-ratio: 1; max-width: 100%; align-self: center; width: 100%; border: 1px solid var(--line); border-radius: 3px; background: repeating-linear-gradient(45deg, var(--paper) 0 7px, transparent 7px 14px); display: grid; place-items: center; color: var(--dim); }
+.opts .p.orion .btns { display: flex; gap: 4px; flex-wrap: wrap; }
+.opts .p.orion .btns em { font-style: normal; font-size: 10px; padding: 1px 6px; border: 1px solid var(--ink); border-radius: 3px; color: var(--ink); }
+.opts .map { grid-area: map; position: relative; border: 1px solid var(--line); border-radius: 4px; background-color: var(--paper);
+  background-image: repeating-linear-gradient(0deg, transparent 0 27px, var(--line) 27px 28px), repeating-linear-gradient(90deg, transparent 0 27px, var(--line) 27px 28px); }
+.opts .map .tag { position: absolute; left: 8px; bottom: 6px; font: 700 12px var(--display); letter-spacing: .06em; color: var(--dim); }
+.opts .ov { position: absolute; background: var(--paper); border: 1.5px dashed var(--ink); border-radius: 4px; padding: 4px 6px; display: grid; gap: 1px; }
+.opts .ov b { font: 700 11px var(--display); letter-spacing: .06em; text-transform: uppercase; }
+.opts .ov span { color: var(--dim); font-size: 10px; }
+.opts .ov.call { border: 1.5px solid var(--accent); }
+.opts .ov.call b { color: var(--accent); }
+.opts .ov.mission { border: 1.5px solid var(--ink); border-top-width: 3px; }
+.opts .alpha { position: absolute; width: 22px; height: 14px; }
+.opts .alpha i { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: var(--ink); }
+.opts .bottom { grid-area: bottom; display: grid; gap: 1.1%; min-height: 0; }
+
+/* A: as said */
+.opts .la { grid-template-columns: 22.2fr 45.6fr 27.8fr; grid-template-rows: auto 1fr 26%; grid-template-areas: 'mission map orion' 'comms map orion' 'bottom bottom orion'; }
+.opts .la .bottom { grid-template-columns: 1fr 1fr 2.4fr; }
+/* B: comms full height */
+.opts .lb { grid-template-columns: 22.2fr 45.6fr 27.8fr; grid-template-rows: auto 1fr 26%; grid-template-areas: 'mission map orion' 'comms map orion' 'comms bottom orion'; }
+.opts .lb .bottom { grid-template-columns: 1fr 1fr 2.6fr; }
+/* C: map first */
+.opts .lc { grid-template-columns: 1fr 27.8%; grid-template-rows: 1fr 26%; grid-template-areas: 'map orion' 'bottom orion'; }
+.opts .lc .bottom { grid-template-columns: 2.2fr 0.9fr 0.9fr 2.6fr; }
+
+.opts .facts { display: grid; gap: 10px; font-size: 15px; }
+.opts .nums { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font: 13px var(--mono); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }
+.opts .nums dt { color: var(--dim); }
+.opts .nums dd { margin: 0; font-variant-numeric: tabular-nums; }
+.opts .facts ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.opts .facts .plus li::marker { content: '+  '; color: var(--pick); }
+.opts .facts .minus li::marker { content: '−  '; color: var(--accent); }
+
+.opts .compare { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+.opts table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.opts th, .opts td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.opts th { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); background: var(--box); }
+.opts td { font-variant-numeric: tabular-nums; }
+.opts tr:last-child td { border-bottom: none; }
+.opts .lean { background: var(--paper); border: 1px solid var(--pick); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; }
+.opts .lean b { font-family: var(--display); font-size: 18px; }
+
+@media (max-width: 900px) { .opts .row { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
 <main>
 <header>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 5</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
 
+<section class="opts" id="options">
+  <div class="sect-head"><p class="eyebrow">0 · Desktop layout options · 1440 × 900 · to scale</p><h2>Three ways to lay out what you described</h2><p>All three: clock and Black Box in one panel, INTEL gone, Environment and Logistics along the bottom with TEAM, ORION-3 the big panel down the whole right side. They differ in where COMMS goes.</p></div>
+<section class="opt">
+  <div class="opt-head"><p class="eyebrow">Option A</p><h2>As described</h2><span class="tag">rev 4</span></div>
+  <div class="row">
+    <div class="wrap"><div class="screen la">
+      <div class="p mission" style="grid-area:mission"><b>Black Box · 41:27 ❚❚</b><span>●●○ · next: eyes on E3</span><span>blocker: no imagery F4</span></div>
+      <div class="p" style="grid-area:comms"><b>Comms · RELAY-7</b><span>thread both ways</span><span>HQ report lines</span><span>replies to the open call</span></div>
+      <div class="map"><span class="tag">MAP</span>
+        <div class="ov" style="left:8%;top:10%;width:46%"><b>Square · E3</b><span>ground · contacts · Scan</span></div>
+        <div class="ov" style="left:8%;top:38%;width:40%"><b>Actions</b><span>strike · listen</span></div>
+        <div class="alpha" style="left:66%;top:66%"><i style="left:8px;top:0"></i><i style="left:2px;top:5px"></i><i style="left:14px;top:5px"></i><i style="left:0;top:10px"></i><i style="left:17px;top:10px"></i></div>
+        <div class="ov call" style="left:62%;top:50%;width:32%"><b>Call · ALPHA</b></div>
+      </div>
+      <div class="p orion" style="grid-area:orion"><b>ORION-3 · E3</b><span>on station</span><div class="pic">zoomed view</div><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
+      <div class="bottom"><div class="p small"><b>Environment</b><span>overcast · vis 6</span></div><div class="p small"><b>Logistics</b><span>$12,400</span></div><div class="p"><b>Team</b><span>5 operators</span></div></div>
+    </div></div>
+    <div class="facts">
+      <dl class="nums"><dt>Open map</dt><dd>≈ 656 × 640</dd><dt>ORION-3</dt><dd>≈ 400 × 868</dd><dt>COMMS</dt><dd>≈ 320 × 500</dd><dt>TEAM</dt><dd>≈ 520 × 212</dd></dl>
+      <ul class="plus"><li>Reads left to right: mission, map, ORION-3.</li><li>COMMS sits right under the mission, where calls are read.</li></ul>
+      <ul class="minus"><li>TEAM gets short: 212 px fits 5 rows only just.</li><li>The bottom row runs under COMMS, so COMMS is the shortest it has been.</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="opt">
+  <div class="opt-head"><p class="eyebrow">Option B</p><h2>COMMS runs the full left side</h2><span class="tag pick">my pick</span></div>
+  <div class="row">
+    <div class="wrap"><div class="screen lb">
+      <div class="p mission" style="grid-area:mission"><b>Black Box · 41:27 ❚❚</b><span>●●○ · next: eyes on E3</span><span>blocker: no imagery F4</span></div>
+      <div class="p" style="grid-area:comms"><b>Comms · RELAY-7</b><span>thread both ways</span><span>HQ report lines</span><span>replies to the open call</span><span>…</span><span>…</span></div>
+      <div class="map"><span class="tag">MAP</span>
+        <div class="ov" style="left:8%;top:10%;width:46%"><b>Square · E3</b><span>ground · contacts · Scan</span></div>
+        <div class="ov" style="left:8%;top:38%;width:40%"><b>Actions</b><span>strike · listen</span></div>
+        <div class="alpha" style="left:66%;top:66%"><i style="left:8px;top:0"></i><i style="left:2px;top:5px"></i><i style="left:14px;top:5px"></i><i style="left:0;top:10px"></i><i style="left:17px;top:10px"></i></div>
+        <div class="ov call" style="left:62%;top:50%;width:32%"><b>Call · ALPHA</b></div>
+      </div>
+      <div class="p orion" style="grid-area:orion"><b>ORION-3 · E3</b><span>on station</span><div class="pic">zoomed view</div><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
+      <div class="bottom"><div class="p small"><b>Env</b><span>overcast</span></div><div class="p small"><b>Logistics</b><span>$12,400</span></div><div class="p"><b>Team</b><span>5 operators</span></div></div>
+    </div></div>
+    <div class="facts">
+      <dl class="nums"><dt>Open map</dt><dd>≈ 656 × 640</dd><dt>ORION-3</dt><dd>≈ 400 × 868</dd><dt>COMMS</dt><dd>≈ 320 × 732</dd><dt>TEAM</dt><dd>≈ 350 × 212</dd></dl>
+      <ul class="plus"><li>Three clean columns: mission and its voice, the map, ORION-3.</li><li>COMMS gets real height now that it carries HQ's report lines too.</li><li>The small widgets and TEAM sit under the map, near where things happen.</li></ul>
+      <ul class="minus"><li>The bottom row is narrower: Environment and Logistics shrink to one or two lines each.</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="opt">
+  <div class="opt-head"><p class="eyebrow">Option C</p><h2>Map first: no left column</h2></div>
+  <div class="row">
+    <div class="wrap"><div class="screen lc">
+      <div class="map"><span class="tag">MAP</span>
+        <div class="ov mission" style="left:1.5%;top:2.5%;width:30%"><b>Black Box · 41:27 ❚❚</b><span>●●○ · next: eyes on E3</span></div>
+        <div class="ov" style="left:30%;top:22%;width:30%"><b>Square · E3</b><span>ground · contacts · Scan</span></div>
+        <div class="ov" style="left:30%;top:50%;width:26%"><b>Actions</b><span>strike · listen</span></div>
+        <div class="alpha" style="left:72%;top:66%"><i style="left:8px;top:0"></i><i style="left:2px;top:5px"></i><i style="left:14px;top:5px"></i><i style="left:0;top:10px"></i><i style="left:17px;top:10px"></i></div>
+        <div class="ov call" style="left:70%;top:50%;width:22%"><b>Call · ALPHA</b></div>
+      </div>
+      <div class="p orion" style="grid-area:orion"><b>ORION-3 · E3</b><span>on station</span><div class="pic">zoomed view</div><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
+      <div class="bottom"><div class="p"><b>Comms</b><span>last lines · replies</span></div><div class="p small"><b>Env</b><span>overcast</span></div><div class="p small"><b>Logistics</b><span>$12,400</span></div><div class="p"><b>Team</b><span>5 operators</span></div></div>
+    </div></div>
+    <div class="facts">
+      <dl class="nums"><dt>Open map</dt><dd>≈ 992 × 640</dd><dt>ORION-3</dt><dd>≈ 400 × 868</dd><dt>COMMS</dt><dd>≈ 315 × 212</dd><dt>TEAM</dt><dd>≈ 370 × 212</dd></dl>
+      <ul class="plus"><li>The most map by far: half again as wide.</li><li>Everything HQ has sits in one row under it.</li></ul>
+      <ul class="minus"><li>COMMS shrinks to a few lines: long threads scroll.</li><li>MISSION · BLACK BOX floats on the map, so it's one more thing the panels must keep clear of.</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="opt">
+  <div class="opt-head"><p class="eyebrow">Side by side</p><h2>What each one gives</h2></div>
+  <div class="compare"><table>
+    <thead><tr><th></th><th>A · as described</th><th>B · COMMS full left</th><th>C · map first</th></tr></thead>
+    <tbody>
+      <tr><td>Open map</td><td>656 × 640</td><td>656 × 640</td><td>992 × 640</td></tr>
+      <tr><td>ORION-3</td><td>400 × 868</td><td>400 × 868</td><td>400 × 868</td></tr>
+      <tr><td>COMMS</td><td>320 × 500</td><td>320 × 732</td><td>315 × 212</td></tr>
+      <tr><td>TEAM</td><td>520 × 212</td><td>350 × 212</td><td>370 × 212</td></tr>
+      <tr><td>Mission panel</td><td>docked, top left</td><td>docked, top left</td><td>floats on the map</td></tr>
+    </tbody>
+  </table></div>
+  <div class="lean"><b>My pick: B</b><p>With INTEL gone, COMMS becomes HQ's one feed (ALPHA's voice plus report lines), so it earns the full height. The map stays the same size as A. If the map matters more than the feed, C is the one to try.</p></div>
+</section>
+</section>
+
 <section>
   <div class="sect-head">
     <p class="eyebrow">1 · Organizing idea</p>
-    <h2>Left is what comes in. Right is what HQ has. The map is where.</h2>
-    <p>Every panel answers one question. The intel and comms columns carry what arrives: news and ALPHA's voice. The right column carries HQ's own instruments: the clock, both satellites, the environment, money, and the team. The map in the middle holds only things tied to a place: ALPHA, its call flag, and the square being worked.</p>
+    <h2>The mission and its voice on the left. ORION-3 on the right. The map is where.</h2>
+    <p>Every panel answers one question. Top left, the mission and its clock in one panel; under it COMMS, ALPHA's voice. The whole right side is ORION-3, the big imaging panel where scans happen. Along the bottom, the small widgets and the team: Environment, Logistics, TEAM. The intel stream goes (question 1). The map in the middle holds only things tied to a place: ALPHA, its call flag, and the square being worked.</p>
   </div>
   <div class="groups">
-    <div class="group"><h3>MISSION</h3><p class="q">How long, and what's left to do?</p><ul><li>Contract window clock, pause</li><li>Phase pips, objective, next, blockers</li><li>Win conditions</li></ul></div>
-    <div class="group"><h3>INTEL</h3><p class="q">What's new out there?</p><ul><li>Reports, newest first</li><li>Tasks to open: strike, listen, search</li></ul></div>
+    <div class="group"><h3>MISSION · BLACK BOX</h3><p class="q">How long, and what's left to do? One panel.</p><ul><li>Contract window: clock, pause</li><li>Phase pips, objective, next, blockers</li><li>Win conditions</li></ul></div>
+    <div class="group"><h3>ENVIRONMENT · small</h3><p class="q">What's the weather doing to us?</p><ul><li>Sky, visibility, wind, temperature, light</li></ul></div>
+    <div class="group"><h3>LOGISTICS · small</h3><p class="q">What can HQ afford, what's on the way?</p><ul><li>Budget, resupply inbound</li></ul></div>
+    <div class="group" style="opacity:.6"><h3><s>INTEL</s></h3><p class="q">Gone (question 1).</p><ul><li>Tasks: on the map and the square card</li><li>Reports: COMMS and ORION-3</li></ul></div>
     <div class="group"><h3>COMMS · RELAY-7</h3><p class="q">What did ALPHA say, and what did we answer?</p><ul><li>Thread both ways</li><li>Replies to the open call</li><li>Sending → readback</li></ul></div>
-    <div class="group"><h3>TEAM · ALPHA</h3><p class="q">Are they alright?</p><ul><li>Condition, what ALPHA is doing</li><li>Operators: heartbeat, status, noise, ammo, meds</li></ul></div>
-    <div class="group"><h3>ORION-3</h3><p class="q">What is the eye in the sky doing?</p><ul><li>Aimed at, state, ETA or time left</li><li>Last picture</li><li>Tied up by a strike</li></ul></div>
-    <div class="group"><h3>ENVIRONMENT</h3><p class="q">What's the weather doing to us?</p><ul><li>Table: sky, visibility, wind, temperature, light</li></ul></div>
-    <div class="group"><h3>LOGISTICS</h3><p class="q">What can HQ afford, and what's on the way?</p><ul><li>Budget</li><li>Resupply inbound and its ETA</li></ul></div>
-    <div class="group"><h3>SQUARE · G5</h3><p class="q">What do we know about this place?</p><ul><li>Elevation, slope, features</li><li>Imagery, contacts, finds, Scan</li></ul></div>
+    <div class="group"><h3>TEAM</h3><p class="q">Are they alright?</p><ul><li>What ALPHA is doing, ALERTED</li><li>Operators: heartbeat, status, noise, ammo, meds</li></ul></div>
+    <div class="group"><h3>ORION-3 · big panel</h3><p class="q">Where the scan happens, start to finish.</p><ul><li>Repositioning, with a countdown</li><li>On station: capture options</li><li>The zoomed view of the square</li><li>What it saw; tied up by a strike</li></ul></div>
+    <div class="group"><h3>SQUARE · G5</h3><p class="q">What do we know about this place?</p><ul><li>Elevation, slope, features, weather</li><li>Imagery, contacts</li><li>Scan: tasks ORION-3</li></ul></div>
     <div class="group"><h3>ACTIONS</h3><p class="q">What can we do about this place?</p><ul><li>Strike a contact, ALPHA's attack</li><li>Listen or jam, resupply drop</li></ul></div>
   </div>
 </section>
@@ -142,12 +309,12 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
   <div class="sect-head">
     <p class="eyebrow">2 · Hierarchy</p>
     <h2>Three ranks</h2>
-    <p>Primary is always in view and is where the eye goes first. Secondary is always present and read at a glance. Tertiary opens on demand, or sits collapsed to one line.</p>
+    <p>Primary is active play: where the eye goes and the hands work. Secondary is always present and read at a glance. Ambient is important but not play: the small widgets, kept small. Panels take screen space; widgets live inside panels.</p>
   </div>
   <div class="tiers">
-    <div class="tier p1"><p class="rank" style="color:var(--accent)">PRIMARY</p><ul><li>The map, with ALPHA's five dots</li><li>ALPHA's call flag, when one is up</li><li>Contract window clock</li></ul></div>
-    <div class="tier p2"><p class="rank" style="color:var(--hq)">SECONDARY</p><ul><li>COMMS thread and replies</li><li>INTEL stream</li><li>TEAM condition</li><li>MISSION next and objective</li></ul></div>
-    <div class="tier p3"><p class="rank" style="color:var(--dim)">TERTIARY</p><ul><li>SQUARE card and ACTIONS</li><li>ORION-3</li><li>ENVIRONMENT</li><li>LOGISTICS</li><li>Win conditions, blockers</li></ul></div>
+    <div class="tier p1"><p class="rank" style="color:var(--accent)">PRIMARY · active play</p><ul><li>The map, with ALPHA's five dots</li><li>ALPHA's call flag, when one is up</li><li>ORION-3: the scan, the zoomed view, the capture</li><li>SQUARE card and ACTIONS, when a square is worked</li></ul></div>
+    <div class="tier p2"><p class="rank" style="color:var(--hq)">SECONDARY</p><ul><li>MISSION · BLACK BOX: clock, phases, next</li><li>COMMS thread and replies</li><li>TEAM</li></ul></div>
+    <div class="tier p3"><p class="rank" style="color:var(--dim)">AMBIENT · small widgets</p><ul><li>Environment</li><li>Logistics</li><li>Win conditions</li></ul></div>
   </div>
 </section>
 
@@ -161,34 +328,41 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
   <h3>Wide (desktop, 1200 px and up)</h3>
   <div class="wf-row">
     <div class="wide-wrap">
-      <div class="frame wide">
-        <div class="b" style="grid-area:intel"><b>Intel</b><span>reports, newest first</span><span>tasks open from here</span></div>
-        <div class="b" style="grid-area:comms"><b>Comms · RELAY-7</b><span>thread both ways</span><span>replies to the open call</span><span>HQ › ALPHA · sending</span></div>
+      <div class="frame wide4">
+        <div class="b hq" style="grid-area:mission"><b>Black Box · 41:27 ❚❚</b><span>phases ●●○ · next: get eyes on E3</span><span>blockers: no imagery at F4</span></div>
+        <div class="b" style="grid-area:comms"><b>Comms · RELAY-7</b><span>thread both ways, HQ's report lines in it</span><span>replies to the open call</span><span>HQ › ALPHA · sending</span></div>
         <div class="map">
           <span class="tag">MAP · AO</span>
-          <div class="ov" style="left:30%;top:22%;width:24%"><b>Square · G5</b><span>elev, slope, features</span><span>imagery · contacts · Scan</span></div>
-          <div class="ov" style="left:56%;top:22%;width:20%"><b>Actions</b><span>strike · listen · resupply</span></div>
-          <div class="alpha" style="left:46%;top:62%"><i style="left:8px;top:0"></i><i style="left:2px;top:5px"></i><i style="left:14px;top:5px"></i><i style="left:0;top:10px"></i><i style="left:17px;top:10px"></i></div>
-          <div class="ov call" style="left:52%;top:52%;width:16%"><b>Call · ALPHA</b><span>tap for replies</span></div>
-          <div class="ov" style="left:10px;right:10px;bottom:8px"><b>Mission · Black Box</b><span>phases ●●○ · next: get eyes on E3 · blockers</span></div>
+          <div class="ov" style="left:34%;top:22%;width:30%"><b>Square · E3</b><span>elev, slope, features</span><span>contacts · Scan → ORION-3</span></div>
+          <div class="ov" style="left:34%;top:52%;width:26%"><b>Actions</b><span>strike · listen · resupply</span></div>
+          <div class="alpha" style="left:70%;top:66%"><i style="left:8px;top:0"></i><i style="left:2px;top:5px"></i><i style="left:14px;top:5px"></i><i style="left:0;top:10px"></i><i style="left:17px;top:10px"></i></div>
+          <div class="ov call" style="left:74%;top:56%;width:22%"><b>Call · ALPHA</b><span>tap for replies</span></div>
         </div>
-        <div class="stack">
-          <div class="b hq"><b>Contract window</b><span style="font-size:18px;color:var(--ink)">41:27</span><span>pause</span></div>
-          <div class="b hq"><b>ORION-3</b><span>on station · G5 · 0:42</span></div>
-          <div class="b hq"><b>Environment</b><span>overcast · vis 6 km · wind NW 18</span></div>
-          <div class="b hq"><b>Logistics</b><span>$12,400 · resupply 2:10</span></div>
+        <div class="b hq big" style="grid-area:orion;display:flex;flex-direction:column"><b>ORION-3 · E3</b><span>on station · pick a capture</span><div class="pic-mini" style="min-height:160px">zoomed view of E3</div><div class="btn-row"><em>Photo</em><em>Burst</em><em>Video</em></div><span>last look F4 · photo 0531Z</span></div>
+        <div class="bottom">
+          <div class="b hq"><b>Environment</b><span>overcast · vis 6 km</span><span>NW 18 · 8°C · day</span></div>
+          <div class="b hq"><b>Logistics</b><span>$12,400</span><span>resupply 2:10</span></div>
+          <div class="b"><b>Team</b><span>ALPHA: holding short of E3</span><span>5 operators: heartbeat, status, noise, ammo, meds</span></div>
         </div>
-        <div class="b" style="grid-area:team"><b>Team · ALPHA</b><span>condition</span><span>5 operators: heartbeat, status, noise, ammo, meds</span></div>
       </div>
     </div>
     <div class="notes">
       <ul>
-        <li>The top-right widget becomes the head of a right-hand <b>HQ column</b>: the clock, then ORION-3, Environment and Logistics as one-line tiles that open into their tables. That settles ILI-1218 (weather), ILI-1219 (ORION-3) and the budget together.</li>
-        <li>Nothing floats in the map's top-right corner any more, which leaves fewer collisions.</li>
-        <li>The band at the map's foot holds Mission; Recentre stays a lone map button.</li>
-        <li>The Square card loses nothing it doesn't already show. The ground line leaves the widget (ILI-1220).</li>
+        <li><b>MISSION · BLACK BOX</b> top left: the contract window and the mission in one panel (clock, pause, phases, next, blockers).</li>
+        <li><b>COMMS</b> under it, taking what INTEL carried that still matters: HQ's report lines sit in the thread.</li>
+        <li><b>ORION-3 owns the whole right side</b>: the biggest panel, where the scan happens (states below).</li>
+        <li>Along the bottom: <b>Environment</b> and <b>Logistics</b> (small) and <b>TEAM</b>.</li>
+        <li>The map's corners are free; the square card keeps the ground and contacts, its Scan tasks ORION-3.</li>
       </ul>
     </div>
+  </div>
+
+  <h3>The ORION-3 panel, start to finish</h3>
+  <div class="orion-states">
+    <div class="o3"><div class="hd"><b>ORION-3</b><span>over G5</span></div><p class="step">1 · Idle</p><div class="pic dim">last look: F4 · photo 0531Z · stale</div><p>Tap a square, then Scan, to task it.</p></div>
+    <div class="o3"><div class="hd"><b>ORION-3</b><span>→ E3</span></div><p class="step">2 · Repositioning</p><div class="decay"><i></i></div><p style="color:var(--ink)">Repositioning · 3 min 40 s</p><p>The countdown runs down while it swings over (the satellite's move plays on the map). Nothing to press but Cancel.</p><div class="btns"><em class="ghost">Cancel</em></div></div>
+    <div class="o3"><div class="hd"><b>ORION-3</b><span>E3 · on station</span></div><p class="step">3 · On station</p><div class="pic">zoomed view of E3, the larger square</div><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div><p>The options appear only once it's there.</p></div>
+    <div class="o3"><div class="hd"><b>ORION-3</b><span>E3 · burst</span></div><p class="step">4 · Capturing → result</p><div class="pic">E3 with what it saw marked</div><p style="color:var(--ink)">Burst: 5 fighters, unaware</p><p>The find lands in INTEL; strikes open in ACTIONS beside the square.</p></div>
   </div>
 
   <h3>Medium (Fold and tablet, 700 to 1199 px, either way up)</h3>
@@ -196,20 +370,20 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
     <div class="frame medium">
       <div class="map">
         <span class="tag">MAP</span>
-        <div class="ov" style="right:6px;top:6px;width:30%"><b>Contract window</b><span style="font-size:15px;color:var(--ink)">41:27</span></div>
+        <div class="ov" style="left:6px;top:6px;width:44%"><b>Black Box · 41:27 ❚❚</b><span>●●○ · next: get eyes on E3</span></div>
         <div class="alpha" style="left:40%;top:55%"><i style="left:8px;top:0"></i><i style="left:2px;top:5px"></i><i style="left:14px;top:5px"></i><i style="left:0;top:10px"></i><i style="left:17px;top:10px"></i></div>
         <div class="ov call" style="left:47%;top:44%;width:28%"><b>Call · ALPHA</b><span>tap for replies</span></div>
       </div>
-      <div class="b" style="grid-area:strip"><b>Mission</b><span>next · objective</span></div>
+      <div class="b" style="grid-area:strip"><b>ENV · LOG</b><span>overcast · vis 6 km · $12,400 · resupply 2:10</span></div>
       <div class="rail">
-        <div class="tabs"><em>INTEL</em><em class="on">COMMS</em><em>TEAM</em><em>HQ</em></div>
-        <div class="b"><b>Comms · RELAY-7</b><span>thread</span><span>replies</span><span style="margin-top:8px">— opening a square swaps the rail to SQUARE + ACTIONS, × gives it back —</span></div>
+        <div class="tabs"><em>COMMS</em><em class="on">ORION-3</em><em>TEAM</em></div>
+        <div class="b big" style="display:flex;flex-direction:column"><b>ORION-3 · E3</b><span>on station</span><div class="pic-mini" style="min-height:120px">zoomed view of E3</div><div class="btn-row"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
       </div>
     </div>
     <div class="notes">
       <ul>
-        <li>The rail gains a fourth tab, <b>HQ</b>, holding the ORION-3, Environment and Logistics tiles stacked.</li>
-        <li>The map keeps only a small clock in its corner. The rest of the widget goes to the HQ tab.</li>
+        <li>Three tabs: COMMS, <b>ORION-3</b> (the big panel; tasking a scan brings it forward) and TEAM. INTEL is gone.</li>
+        <li>MISSION · BLACK BOX floats top left on the map; Environment and Logistics are one slim line at the map's foot.</li>
         <li>Everything else works as shipped in ILI-1213: the square takes over the rail.</li>
       </ul>
     </div>
@@ -225,13 +399,14 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
         <div class="ov call" style="left:50%;top:46%;width:44%"><b>Call</b><span>tap</span></div>
       </div>
       <div class="b" style="grid-area:next"><span>next: get eyes on E3</span></div>
-      <div class="b" style="grid-area:sheet"><div class="tabs"><em>INTEL</em><em>COMMS</em><em class="on">TEAM</em><em>HQ</em></div><span>bottom sheet: peek · half · full</span></div>
+      <div class="b" style="grid-area:sheet"><div class="tabs"><em>COMMS</em><em class="on">ORION-3</em><em>TEAM</em></div><span>bottom sheet: peek · half · full</span></div>
     </div>
     <div class="notes">
       <ul>
         <li>A single top line holds the clock, the mission name and its phase pips. It replaces both the widget and the separate assets row.</li>
         <li>One "next" line sits above the sheet. The full mission detail goes in a tap-through.</li>
-        <li>The sheet gets the same four tabs as the Fold rail. HQ is where weather, ORION-3 and budget go, so none of them is hidden any more.</li>
+        <li>The sheet gets the Fold's three tabs; a scan opens the sheet on ORION-3.</li>
+        <li>Tapping the top line opens Environment and Logistics, so neither is hidden any more.</li>
       </ul>
     </div>
   </div>
@@ -245,15 +420,15 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
   <div class="scroll"><table>
     <thead><tr><th>Item</th><th>Today</th><th>Proposed</th></tr></thead>
     <tbody>
-      <tr><td class="name">Clock, pause</td><td>Status widget, top right of map</td><td>HQ column head (wide), map corner (Fold), top line (phone)</td></tr>
-      <tr><td class="name">Weather</td><td>One line in status widget; hidden on phone</td><td class="moved">Environment tile → table</td></tr>
-      <tr><td class="name">ORION-3 status</td><td>"SAT" line in status widget; picture only in square card</td><td class="moved">ORION-3 panel</td></tr>
+      <tr><td class="name">Clock, pause</td><td>Status widget, top right of map</td><td class="moved">MISSION · BLACK BOX panel, top left</td></tr>
+      <tr><td class="name">Weather</td><td>One line in status widget; hidden on phone</td><td class="moved">Environment widget, along the bottom</td></tr>
+      <tr><td class="name">ORION-3 status</td><td>"SAT" line in status widget; scan, picture and capture in the square card</td><td class="moved">ORION-3 big panel: repositioning countdown, capture options, zoomed view</td></tr>
       <tr><td class="name">Ground under view</td><td>Line in status widget, repeats square card</td><td class="moved">Square card only</td></tr>
-      <tr><td class="name">Mission, phases, objective, next, win, blockers</td><td>Mission strip, foot of map</td><td>Same; phone shows "next" only</td></tr>
-      <tr><td class="name">Intel stream</td><td>Left column / INTEL tab</td><td>Same</td></tr>
+      <tr><td class="name">Mission, phases, objective, next, win, blockers</td><td>Mission strip, foot of map</td><td class="moved">MISSION · BLACK BOX panel with the clock; phone shows "next" only</td></tr>
+      <tr><td class="name">Intel stream</td><td>Left column / INTEL tab</td><td class="moved">Removed: tasks on the map and square card, reports in COMMS and ORION-3 (question 1)</td></tr>
       <tr><td class="name">Comms thread, replies</td><td>COMMS SAT panel under intel / COMMS tab</td><td>Same, named COMMS</td></tr>
-      <tr><td class="name">Team, operators</td><td>Bottom right / TEAM tab</td><td>Same</td></tr>
-      <tr><td class="name">Budget</td><td>Assets, next to Recentre in the band</td><td class="moved">Logistics tile</td></tr>
+      <tr><td class="name">Team, operators</td><td>Bottom right / TEAM tab</td><td>Along the bottom, right of the small widgets</td></tr>
+      <tr><td class="name">Budget</td><td>Assets, next to Recentre in the band</td><td class="moved">Logistics widget, along the bottom</td></tr>
       <tr><td class="name">Noise, ALERTED</td><td>Assets, in the band</td><td class="moved">Each operator's row, next to their status; ALERTED stays team-wide</td></tr>
       <tr><td class="name">Resupply inbound</td><td>Assets, in the band</td><td class="moved">Logistics tile, plus the bird on the map</td></tr>
       <tr><td class="name">Recentre</td><td>Band, beside assets</td><td>Map button on its own</td></tr>
@@ -277,7 +452,7 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
       <tr><td>Call comes in</td><td>Call flag on the map</td><td>Opens it</td><td>Flag and ping on ALPHA; COMMS lights</td></tr>
       <tr><td>HQ replies</td><td>COMMS or the flag</td><td>Picks a reply</td><td>"sending", then ALPHA's readback</td></tr>
       <tr><td>Intel lands</td><td>INTEL</td><td>Opens the task</td><td>Square card and actions open on the map</td></tr>
-      <tr><td>Working a square</td><td>Square card</td><td>Scan, then picks an action</td><td>ORION-3 swings over; picture fills the card</td></tr>
+      <tr><td>Working a square</td><td>Square card, then ORION-3</td><td>Scan, waits out the countdown, picks a capture</td><td>ORION-3's panel counts down while it repositions, then shows the zoomed view and Photo / Burst / Video</td></tr>
       <tr><td>Strike, listen, search</td><td>Mini game panel and the map</td><td>Plays it</td><td>Calls wait; ORION-3 tied up; result lands in INTEL and COMMS</td></tr>
       <tr><td>Resupply</td><td>Actions or a reply</td><td>Sends it</td><td>Budget drops; inbound ETA in Logistics</td></tr>
       <tr><td>Window closing</td><td>Clock</td><td>Pushes to finish</td><td>Clock turns amber, then red</td></tr>
@@ -324,11 +499,11 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
     <h2>Open questions</h2>
   </div>
   <ol class="qs">
-    <li><strong>A right-hand HQ column on desktop?</strong>It holds the clock, ORION-3, Environment and Logistics, with Team under it. The other option keeps the top-right widget floating and gives each new panel its own floating box.<p class="lean">My lean: the column. It clears the map's corner and puts all of HQ's own things in one place.</p></li>
-    <li><strong>Where does noise live? Decided.</strong>On each operator's row in the Team panel, next to their status: how much noise each one is making. ALERTED stays a team-wide state.</li>
-    <li><strong>What do we call the things in INTEL that HQ can act on?</strong>The candidates are task, event and lead.<p class="lean">My lean: task. A report is read and a task is worked.</p></li>
-    <li><strong>Phone top line:</strong>is the clock plus the mission name and its phase pips enough, with everything else one tap away?</li>
-    <li><strong>Mission strip on desktop:</strong>keep it across the map's foot, or fold it into the HQ column under the clock?</li>
+    <li><strong>Where does INTEL's work go when the panel is cut?</strong>Its jobs today: tasks to open (contact, signal, kill site), ORION-3's and HUMINT/SIGINT report lines, and raising ALPHA's ask when its flag is out of sight.<p class="lean">My lean: tasks live on the map (markers open the square card, as now); report lines join the COMMS thread as HQ lines; ORION-3's finds also show in its panel; a hidden ask raises in COMMS.</p></li>
+    <li><strong>The HQ column: decided, then reshaped.</strong>ORION-3 now takes the whole right side; the small widgets moved to the bottom with TEAM.</li>
+    <li><strong>Noise: decided.</strong>On each operator's row next to their status; ALERTED team-wide in TEAM's title.</li>
+    <li><strong>What do we call the things on the map HQ can act on?</strong>Task, event or lead.<p class="lean">My lean: task.</p></li>
+    <li><strong>Phone top line:</strong>the clock, Black Box and its phase pips, tap for Environment and Logistics. Enough?</li>
   </ol>
 </section>
 </main>
