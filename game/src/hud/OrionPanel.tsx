@@ -89,6 +89,8 @@ export function OrionPanel() {
 
   const head = tied ? 'tied up' : sat.state === 'idle' ? `over ${sat.aim}` : sat.state === 'slewing' ? `→ ${sat.aim}` : `${sat.aim} · ${sat.state === 'onStation' ? 'on station' : CAPTURE[sat.mode!].label.toLowerCase()}`;
   const travel = Math.max(1, sat.arriveMs - sat.startMs);
+  const avatar = tied ? 'tied' : sat.state === 'slewing' ? 'slewing' : 'idle';
+  const status = tied ? 'Tied up' : sat.state === 'idle' ? 'Standby' : sat.state === 'slewing' ? 'Repositioning' : sat.state === 'onStation' ? 'On station' : CAPTURE[sat.mode!].label;
   const left = Math.max(0, sat.arriveMs - now);
 
   return (
@@ -101,13 +103,32 @@ export function OrionPanel() {
         {tied ? 'ORION-3 · tied up' : satelliteStatus(s)}
       </p>
 
+      {/* ORION-3 itself, always on screen above the picture (ILI-1235): the 3D satellite and its
+          telemetry. */}
+      <div className="o-satpanel" data-testid="orion-avatar" data-state={avatar}>
+        <OrionAvatar state={avatar} fallback={<SatelliteMark />} />
+        <dl className="o-telemetry">
+          <div>
+            <dt>Status</dt>
+            <dd>{status}</dd>
+          </div>
+          <div>
+            <dt>{sat.state === 'slewing' ? 'Heading' : 'Over'}</dt>
+            <dd>{sat.aim}</dd>
+          </div>
+          <div>
+            <dt>{sat.state === 'slewing' ? 'ETA' : sat.state === 'capturing' ? 'Left' : 'Last look'}</dt>
+            <dd>{sat.state === 'slewing' ? gameSpan(left) : sat.state === 'capturing' ? gameSpan(sat.captureUntilMs - now) : last ? zulu(last.atMs) : '—'}</dd>
+          </div>
+        </dl>
+      </div>
+
       {/* The image area: always here, always the same size (ILI-1229). */}
       <div className="o-frame">
         {showPicture ? (
           <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`ORION-3's picture of ${square}`} />
         ) : (
           <div className="o-placeholder" data-testid="orion-placeholder" data-state={tied ? 'tied' : sat.state}>
-            <OrionAvatar state={tied ? 'tied' : sat.state === 'slewing' ? 'slewing' : 'idle'} fallback={<SatelliteMark />} />
             <span className="o-caption">{caption}</span>
           </div>
         )}

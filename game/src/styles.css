@@ -689,13 +689,28 @@ html, body {
 .orion .o-picture { position: absolute; inset: 0; }
 /* The placeholder (ILI-1229): where the Three.js satellite goes (ILI-1196). Painted, unlike the
    picture, which is a clear window onto Phaser's inset. */
-.orion .o-placeholder { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; text-align: center; background: radial-gradient(circle at 50% 45%, rgba(53, 208, 165, 0.07), transparent 60%), var(--bg); }
+.orion .o-placeholder { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; text-align: center; background:
+  linear-gradient(rgba(53, 208, 165, 0.12), rgba(53, 208, 165, 0.12)) 50% 0 / 1px 100% no-repeat,
+  linear-gradient(rgba(53, 208, 165, 0.12), rgba(53, 208, 165, 0.12)) 0 50% / 100% 1px no-repeat,
+  repeating-linear-gradient(0deg, rgba(53, 208, 165, 0.05) 0 1px, transparent 1px 24px),
+  repeating-linear-gradient(90deg, rgba(53, 208, 165, 0.05) 0 1px, transparent 1px 24px), var(--bg); } /* the grid ground, crosshair through the middle (ILI-1235) */
+.orion .o-placeholder .o-caption { padding: 4px 10px; background: var(--bg); border: 1px solid var(--line); }
 .orion .o-sat { width: min(55%, 180px); fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.7; }
-.orion .o-placeholder[data-state='slewing'] .o-sat { stroke: #f2c14e; }
-.orion .o-placeholder[data-state='tied'] .o-sat { stroke: var(--dim); }
+.orion .o-satpanel[data-state='slewing'] .o-sat { stroke: #f2c14e; }
+.orion .o-satpanel[data-state='tied'] .o-sat { stroke: var(--dim); }
 /* The Three.js ORION-3 (ILI-1196): a box the canvas fills, wing-span wide. The SVG mark sits in it
    until Three.js loads. */
-.orion .o-sat-3d { position: relative; display: grid; place-items: center; width: min(88%, 300px); aspect-ratio: 3 / 2; }
+.orion .o-sat-3d { position: relative; display: grid; place-items: center; width: 100%; height: 100%; }
+/* ORION-3 itself (ILI-1235): the 3D satellite, always on screen above the picture, its telemetry
+   beside it. */
+.orion .o-satpanel { flex: none; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: center; gap: 10px; height: 124px; background: radial-gradient(circle at 30% 50%, rgba(53, 208, 165, 0.09), transparent 65%), var(--panel); }
+.orion .o-satpanel[data-state='slewing'] { background: radial-gradient(circle at 30% 50%, rgba(242, 193, 78, 0.1), transparent 65%), var(--panel); }
+.orion .o-telemetry { display: grid; gap: 4px; margin: 0; }
+.orion .o-telemetry > div { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 2px 0; border-bottom: 1px solid rgba(53, 208, 165, 0.12); }
+.orion .o-telemetry dt { color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
+.orion .o-telemetry dd { margin: 0; color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+.orion .o-satpanel[data-state='slewing'] .o-telemetry dd { color: #f2c14e; }
+.orion .o-satpanel[data-state='tied'] .o-telemetry dd { color: var(--dim); }
 .orion .o-sat-3d > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .orion .o-sat-3d > .o-sat { width: 70%; }
 .orion .o-caption { color: var(--dim); font-size: 12px; }
@@ -808,7 +823,8 @@ html, body {
   .square-card > .sc-body { flex-direction: row; }
   .orion .o-frame { aspect-ratio: auto; height: 120px; } /* fixed, and small: the sheet is short */
   .orion .o-placeholder { gap: 4px; padding: 6px; }
-  .orion .o-sat-3d { width: auto; height: 76px; } /* ILI-1196: fits the band over the caption */
+  .orion .o-satpanel { height: 72px; gap: 6px; } /* small: the sheet is short */
+  .orion .o-telemetry dd { font-size: 11px; }
     .square-card .facts { font-size: 10px; }
   .comms .actions button { min-height: 32px; padding: 0 8px; font-size: 10px; }
   /* The action panel on a phone: tight, so every strike shows under the card. */
