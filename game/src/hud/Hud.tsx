@@ -82,7 +82,6 @@ export function Hud() {
         </div>
       </div>
       <div className="slot-orion" data-overlay="orion">
-        {tier === 'wide' && <EnvWidget />}
         <OrionPanel />
       </div>
       <div className="slot-bottom">

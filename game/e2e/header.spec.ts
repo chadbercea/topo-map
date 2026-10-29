@@ -19,7 +19,8 @@ test('the mission panel: the deadline, the race, what to do, what needs HQ (ILI-
   await expect(page.getByTestId('clock')).toHaveText(/^9:4[0-5]$/);
 
   if (isMobile) return; // the ground and weather wait for a wider screen
-  await expect(page.getByTestId('weather')).toContainText('High cloud');
+  await expect(page.getByTestId('conditions')).toContainText('High cloud');
+  await expect(page.getByTestId('cloud-tile')).not.toHaveAttribute('data-warn', /./); // 60%: clear enough
   // A square's ground is on its card, not in the widget (ILI-1220).
   await expect(page.getByTestId('ground')).toHaveCount(0);
   await page.evaluate(() => window.game.selectSquare('E2'));
