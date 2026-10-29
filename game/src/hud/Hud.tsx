@@ -29,7 +29,7 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 // HQ's one feed (ILI-1225). The map fills the middle, the mini game floating at its foot. Down
 // the whole right side ENVIRONMENT, a HUD readout (ILI-1218), over ORION-3 (ILI-1219). Along
 // the bottom TEAM. A square HQ picks, on the map or named in COMMS, shows in ORION-3's
-// panel, its details and Scan (ILI-1228), and what HQ can call in on it floats beside it (the
+// panel, its details and Reposition (ILI-1228, ILI-1250), and what HQ can call in on it floats beside it (the
 // action panel). When ALPHA needs something its ask pops up beside its marker (AskWindow). On
 // a fold or tablet the mission floats over the map's corner and COMMS, ORION-3 and TEAM share a
 // rail down the right behind tabs (ILI-1213); on a phone the mission is the line on top and the
@@ -54,7 +54,7 @@ export function Hud() {
     }
   }, [fresh]);
   // Tasking ORION-3 brings its panel forward on a fold or phone (ILI-1219).
-  // So does picking a square: its details and Scan are there (ILI-1228).
+  // So does picking a square: its details and Reposition are there (ILI-1228).
   // Keyed on what changed, so a strike ending with a square still picked brings it back too.
   const tasked = useGame((s) => (lookSquare(s) ? `${lookSquare(s)}|${s.satellite.state}|${!!s.minigame}` : ''));
   useEffect(() => {

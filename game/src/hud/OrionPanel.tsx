@@ -13,8 +13,8 @@ import { EnvWidget } from './EnvWidget';
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
 
 // ORION-3, the imaging satellite (ILI-1219): the big panel down the right, where the whole scan
-// happens. A square HQ picks on the map shows here, its details and Scan (ILI-1228; there's no
-// floating card); Scan tasks ORION-3, and it repositions with a countdown that
+// happens. A square HQ picks on the map shows here, its details and Reposition (ILI-1228; there's no
+// floating card); Reposition tasks ORION-3 (ILI-1250), and it moves with a countdown that
 // runs down to nothing, then, on station, the larger square opens up with the ways to look
 // (photo, burst, video); a capture runs its time, and what it saw stays in the picture. The
 // picture has a fixed place at the panel's top (ILI-1229): with no square to show it holds a
@@ -59,7 +59,7 @@ export function OrionPanel() {
     : sat.state === 'slewing'
       ? `On its way to ${sat.aim}`
       : picked
-        ? `No imagery of ${picked} · Scan`
+        ? `No imagery of ${picked} · Reposition`
         : `Over ${sat.aim} · tap a square to task it`;
   const last = Object.values(s.imagery)
     .filter((x) => x.mode !== 'eyes')
@@ -93,6 +93,11 @@ export function OrionPanel() {
   const avatar = tied ? 'tied' : sat.state === 'slewing' ? 'slewing' : 'idle';
   const status = tied ? 'Tied up' : sat.state === 'idle' ? 'Standby' : sat.state === 'slewing' ? 'Repositioning' : sat.state === 'onStation' ? 'On station' : CAPTURE[sat.mode!].label;
   const left = Math.max(0, sat.arriveMs - now);
+  // Reposition, then shoot (ILI-1250): a scan *is* the photo, burst or video, so there's no Scan
+  // step. Until ORION-3 is over the square HQ is working, its one button is a big Reposition;
+  // once it's there, Photo, Burst and Video take its place.
+  const away = picked ? slewMs(s, picked) : 0;
+  const inPosition = live || sat.state === 'capturing' || (sat.state === 'idle' && !!picked && away === 0);
 
   return (
     <section ref={panelRef} className="panel orion" onScroll={() => redraw((n) => n + 1)} data-testid="satellite" data-state={sat.state} aria-label="ORION-3 imaging satellite">
@@ -149,18 +154,21 @@ export function OrionPanel() {
             Strike<small>{strikes.length > 1 ? `${strikes.length} contacts` : 'menu'}</small>
           </button>
         )}
-        <button className="o-scan" disabled={!picked || tied || sat.state !== 'idle' || satelliteBusy(s)} onClick={() => picked && game.lookAt(picked)} data-testid="look-here">
-          {picked && s.imagery[picked] ? 'Rescan' : 'Scan'}
-          <small>{picked ? (slewMs(s, picked) ? gameSpan(slewMs(s, picked)) : 'now') : 'pick a square'}</small>
-        </button>
-        <div className="modes" data-testid="capture-modes">
-          {MODES.map((m) => (
-            <button key={m} disabled={tied || sat.state !== 'onStation'} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what}>
-              {CAPTURE[m].label}
-              <small>{CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
-            </button>
-          ))}
-        </div>
+        {inPosition && !tied ? (
+          <div className="modes" data-testid="capture-modes">
+            {MODES.map((m) => (
+              <button key={m} disabled={sat.state === 'capturing'} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what}>
+                {CAPTURE[m].label}
+                <small>{CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button className="o-reposition" disabled={!picked || tied || sat.state !== 'idle' || satelliteBusy(s)} onClick={() => picked && game.lookAt(picked)} data-testid="look-here">
+            {sat.state === 'slewing' && !tied ? `Repositioning to ${sat.aim}` : 'Reposition'}
+            <small>{tied ? 'tied up by the strike' : sat.state === 'slewing' ? gameSpan(left) : picked ? `to ${picked} · ${gameSpan(away)}` : 'pick a square'}</small>
+          </button>
+        )}
       </div>
 
 

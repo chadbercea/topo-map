@@ -16,7 +16,7 @@ const ACTIONS = 300; // the action panel's width
 // or jamming a signal, a request, a kill site's note), shown only when there's something to act
 // on. Strikes are in ORION-3's panel (ILI-1230); resupply is only a reply to ALPHA's ask
 // (ILI-1232). It floats beside the square, clear of ALPHA and the other panels; on a phone it
-// sits in ORION-3's sheet. What HQ knows of the square, and Scan, are in ORION-3's panel too.
+// sits in ORION-3's sheet. What HQ knows of the square, and Reposition, are in ORION-3's panel too.
 export function SquareCard() {
   const s = useGame((x) => x);
   const square = lookSquare(s);
@@ -118,7 +118,7 @@ const SLACK = 32; // px a measured height may shrink by before the panel moves f
 const settle = (was: number, now: number) => (now > was || was - now > SLACK ? now : was);
 
 
-// A square's details and Scan (ILI-1203, ILI-1220), shown in ORION-3's panel (ILI-1228).
+// A square's details and Reposition (ILI-1203, ILI-1220, ILI-1250), shown in ORION-3's panel (ILI-1228).
 export function Card({ s, square }: { s: GameState; square: string }) {
   const sat = s.satellite;
   const now = s.elapsedMs;

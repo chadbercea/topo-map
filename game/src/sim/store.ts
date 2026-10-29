@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { dismiss, respond, send } from './comms';
-import { cancelLook, capture, closeLook, lookAt, type CaptureMode } from './satellite';
+import { cancelLook, capture, closeLook, lookAt, lookSquare, slewMs, type CaptureMode } from './satellite';
 import { abortMiniGame, startSeek, tapMiniGame } from './minigame';
 import { weaponBlocked, type Weapon } from './ordnance';
 import { applyEffect } from './contacts';
@@ -17,6 +17,14 @@ const closeSquare = (s: GameState): GameState =>
   s.map.selected || s.openEvent || s.satellite.result
     ? { ...closeLook(s), map: { ...s.map, selected: null }, openEvent: null }
     : s;
+
+// Task ORION-3 to a square. Looking at a square ALPHA is asking about answers its call
+// (ILI-1177). ORION-3 is HQ's own: it moves now, with no wait on the link.
+function task(s: GameState, square: string): GameState {
+  const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.square === square && m.status === 'new');
+  if (call?.responses?.some((r) => r.id === 'send')) return respond(s, call.id, 'send');
+  return lookAt(s, square);
+}
 
 export function createStore(initial: GameState = initialState()) {
   let state = initial;
@@ -79,14 +87,14 @@ export function createStore(initial: GameState = initialState()) {
       if (call?.responses?.some((r) => r.id === 'attack')) return set(send(state, call.id, 'attack')); // an order: it goes up the link
       set({ ...applyEffect(state, 'attack', c.square), openEvent: null });
     },
-    // Looking at a square ALPHA is asking about answers its call (ILI-1177). ORION-3 is HQ's own:
-    // it moves now, with no wait on the link.
-    lookAt: (square: string) => {
-      const call = state.comms.messages.find((m) => m.id === state.team.holdFor && m.square === square && m.status === 'new');
-      if (call?.responses?.some((r) => r.id === 'send')) return set(respond(state, call.id, 'send'));
-      set(lookAt(state, square));
+    lookAt: (square: string) => set(task(state, square)),
+    // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first
+    // (ILI-1250).
+    capture: (mode: CaptureMode) => {
+      const square = lookSquare(state);
+      const there = state.satellite.state === 'idle' && square && slewMs(state, square) === 0;
+      set(capture(there ? task(state, square) : state, mode));
     },
-    capture: (mode: CaptureMode) => set(capture(state, mode)),
     cancelLook: () => set(cancelLook(state)),
     closeLook: () => set(closeLook(state)),
     sendResupply: () => set(sendResupply(state)),
