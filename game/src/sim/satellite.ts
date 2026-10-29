@@ -76,17 +76,13 @@ export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing'
 // opened), else the one ORION-3 is working, else its last look until HQ closes it. Nothing
 // while a mini game is up.
 // The square ORION-3's panel shows (ILI-1219): where it's tasked; idle, the square HQ picked
-// (ILI-1228), else its last look. Nothing while a strike has it tied up.
+// (ILI-1228) or just looked at. Nothing when none is (the placeholder, ILI-1229), or while a
+// strike has it tied up.
 export function orionSquare(s: GameState): SquareId | null {
   const sat = s.satellite;
   if (s.minigame) return null;
   if (sat.state !== 'idle') return sat.aim;
-  if (s.map.selected) return s.map.selected;
-  if (sat.result) return sat.result.square;
-  const last = Object.values(s.imagery)
-    .filter((x) => x.mode !== 'eyes')
-    .sort((a, b) => b.atMs - a.atMs)[0];
-  return last?.square ?? null;
+  return s.map.selected ?? sat.result?.square ?? null;
 }
 
 export function lookSquare(s: GameState): SquareId | null {

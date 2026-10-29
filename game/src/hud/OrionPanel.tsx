@@ -13,8 +13,10 @@ const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
 // happens. A square HQ picks on the map shows here, its details and Scan (ILI-1228; there's no
 // floating card); Scan tasks ORION-3, and it repositions with a countdown that
 // runs down to nothing, then, on station, the larger square opens up with the ways to look
-// (photo, burst, video); a capture runs its time, and what it saw stays in the picture. Idle,
-// it shows its last look. A strike ties it up. Phaser draws the picture into the frame.
+// (photo, burst, video); a capture runs its time, and what it saw stays in the picture. The
+// picture has a fixed place at the panel's top (ILI-1229): with no square to show it holds a
+// placeholder, where the Three.js satellite goes (ILI-1196). A strike ties it up. Phaser
+// draws the picture into the frame.
 export function OrionPanel() {
   const s = useGame((x) => x);
   const sat = s.satellite;
@@ -28,9 +30,19 @@ export function OrionPanel() {
   const picked = lookSquare(s); // the square HQ is working
   const tier = useTier();
   const phone = tier === 'compact';
-  // The larger square while ORION-3 is on it; idle, its last look too, but not in a phone's
-  // small sheet, where the square and what to do about it come first.
-  const showPicture = !tied && (live || (sat.state === 'idle' && !!snap && !phone));
+  // The larger square while ORION-3 is on it, or a picked square it has imagery of; else the
+  // placeholder (ILI-1229).
+  const showPicture = !tied && (live || (sat.state === 'idle' && !!picked && !!snap));
+  const caption = tied
+    ? 'Tied up by the strike'
+    : sat.state === 'slewing'
+      ? `On its way to ${sat.aim}`
+      : picked
+        ? `No imagery of ${picked} · Scan`
+        : `Over ${sat.aim} · tap a square to task it`;
+  const last = Object.values(s.imagery)
+    .filter((x) => x.mode !== 'eyes')
+    .sort((a, b) => b.atMs - a.atMs)[0];
 
   // The picture frame: Phaser's inset camera draws ORION-3's view of the square into it.
   const picRef = useRef<HTMLDivElement>(null);
@@ -69,7 +81,17 @@ export function OrionPanel() {
         {tied ? 'ORION-3 · tied up' : satelliteStatus(s)}
       </p>
 
-      {tied && <p className="o-note">Tied up by the strike. Back when it's done.</p>}
+      {/* The image area: always here, always the same size (ILI-1229). */}
+      <div className="o-frame">
+        {showPicture ? (
+          <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`ORION-3's picture of ${square}`} />
+        ) : (
+          <div className="o-placeholder" data-testid="orion-placeholder" data-state={tied ? 'tied' : sat.state}>
+            <SatelliteMark />
+            <span className="o-caption">{caption}</span>
+          </div>
+        )}
+      </div>
 
       {!tied && sat.state === 'slewing' && (
         // Repositioning: the countdown decays to nothing, then the options appear.
@@ -86,12 +108,6 @@ export function OrionPanel() {
         </div>
       )}
 
-      {showPicture ? (
-        <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`ORION-3's picture of ${square}`} />
-      ) : (
-        !tied &&
-        sat.state !== 'slewing' && <div className="o-picture o-empty">{square ? `No imagery of ${square} · Scan` : 'No look yet. Tap a square, then Scan.'}</div>
-      )}
 
       {!tied && sat.state === 'onStation' && (
         <div className="o-row">
@@ -143,9 +159,27 @@ export function OrionPanel() {
             </>
           )}
           <dt>Last look</dt>
-          <dd>{snap && square ? `${square} · ${snap.mode} ${zulu(snap.atMs)} · ${freshness(snap, now)}` : 'none yet'}</dd>
+          <dd>{last ? `${last.square} · ${last.mode} ${zulu(last.atMs)} · ${freshness(last, now)}` : 'none yet'}</dd>
         </dl>
       )}
     </section>
+  );
+}
+
+// Where the Three.js satellite goes (ILI-1196): for now a still mark, ORION-3 in outline.
+function SatelliteMark() {
+  return (
+    <svg className="o-sat" viewBox="0 0 120 60" aria-hidden>
+      <rect x="4" y="22" width="34" height="16" />
+      <line x1="15" y1="22" x2="15" y2="38" />
+      <line x1="26" y1="22" x2="26" y2="38" />
+      <line x1="38" y1="30" x2="48" y2="30" />
+      <rect x="48" y="20" width="24" height="20" />
+      <line x1="72" y1="30" x2="82" y2="30" />
+      <rect x="82" y="22" width="34" height="16" />
+      <line x1="94" y1="22" x2="94" y2="38" />
+      <line x1="105" y1="22" x2="105" y2="38" />
+      <path d="M54 40 L60 50 L66 40" />
+    </svg>
   );
 }
