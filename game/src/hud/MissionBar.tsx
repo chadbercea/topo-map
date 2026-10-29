@@ -1,7 +1,6 @@
 import { game, useGame } from '../sim/store';
 import { blockers, nextUp, phasePips, winChecks } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
-import { weather } from '../sim/conditions';
 import { gameClock, gameSpan, zulu } from '../sim/gameTime';
 
 export const clock = (ms: number) => gameClock(ms);
@@ -70,19 +69,6 @@ export function MissionPanel() {
           </li>
         ))}
       </ul>
-    </section>
-  );
-}
-
-// Environment (ILI-1226): a small widget along the bottom. ILI-1218 makes it a table.
-export function EnvWidget() {
-  const wx = weather(useGame((x) => x)); // weather() builds a new object: select the state, not it
-  return (
-    <section className="panel small-widget env" data-testid="conditions" aria-label="Environment">
-      <h2>ENVIRONMENT</h2>
-      <p className="wx" data-testid="weather">
-        {wx.sky} · vis {wx.visibilityKm} km · wind {wx.wind.from} {wx.wind.kmh} km/h · {wx.tempC}°C · {wx.light}
-      </p>
     </section>
   );
 }
