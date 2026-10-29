@@ -22,7 +22,7 @@ test('tapping a grid square selects it and opens its zoomed view; tapping again 
 });
 
 test('the camera follows ALPHA where the grid runs off the open map, keeping it clear of the panels', async ({ page }) => {
-  test.setTimeout(60_000); // the walk is thousands of ticks; a loaded CI runner took 31 s on desktop
+  test.setTimeout(90_000); // the walk is thousands of ticks (more since ILI-1251 slowed it); a loaded CI runner took 31 s on desktop before that
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);

@@ -28,7 +28,7 @@ describe('step', () => {
   });
 
   it('ends the mission when the timer runs out, then stops', () => {
-    let s = { ...initialState(), timer: { remainingMs: 150, totalMs: 360_000 } };
+    let s = { ...initialState(), timer: { remainingMs: 150, totalMs: 600_000 } };
     s = step(s, 100);
     expect(s.phase).toBe('running');
     s = step(s, 100);

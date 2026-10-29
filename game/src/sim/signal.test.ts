@@ -6,13 +6,13 @@ import { run } from './testkit';
 
 // At 0:50 enemy traffic comes up near C2, where the patrol is hiding.
 const atTraffic = () => {
-  const store = createStore({ ...run(initialState(), 50_000), comms: initialState().comms });
+  const store = createStore({ ...run(initialState(), 83_000), comms: initialState().comms });
   return store;
 };
 
 describe('signal intercept', () => {
   it('enemy traffic comes up on the map and HQ flags it', () => {
-    const s = run(initialState(), 50_000);
+    const s = run(initialState(), 83_000);
     expect(s.events.find((e) => e.kind === 'signal')).toMatchObject({ square: 'C2', status: 'new' });
     expect(s.comms.messages.find((m) => m.id === 'hq-traffic-c2')?.text).toMatch(/enemy radio traffic near C2/);
   });

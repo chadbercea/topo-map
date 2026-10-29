@@ -28,8 +28,8 @@ export type Snapshot = {
   live: boolean;
 };
 
-export const FRESH_MS = 20_000;
-export const GHOST_MS = 60_000;
+export const FRESH_MS = 33_000;
+export const GHOST_MS = 100_000;
 export type Freshness = 'live' | 'fresh' | 'ghost' | 'stale';
 
 export const freshness = (snap: Snapshot, now: number): Freshness =>

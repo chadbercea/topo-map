@@ -5,9 +5,9 @@ import { createStore } from './store';
 import { step } from './systems';
 import { run } from './testkit';
 
-const atTraffic = () => createStore(run(initialState(), 50_000));
+const atTraffic = () => createStore(run(initialState(), 83_000));
 const patrolSquare = (s: GameState) => s.contacts.find((c) => c.id === 'patrol')!.square;
-// Jump to half a minute before ms (when it would set off), then to ms.
+// Jump to PATROL_WALK_MS before ms (when it would set off), then to ms.
 const at = (s: GameState, ms: number) => step({ ...step({ ...s, elapsedMs: ms - PATROL_WALK_MS - 100 }, 100), elapsedMs: ms - 100 }, 100);
 
 describe('jamming', () => {
@@ -20,7 +20,7 @@ describe('jamming', () => {
     expect(s.comms.messages.find((m) => m.id === 'jam-traffic-c2')?.text).toMatch(/won't hear what they're planning/);
   });
 
-  it('slows the patrol: it reaches the crash site at 4:00, not 2:30', () => {
+  it('slows the patrol: it reaches the crash site at 6:40, not 4:10', () => {
     const store = atTraffic();
     store.jam('traffic-c2');
     expect(patrolSquare(at(store.get(), PATROL_MOVES_MS))).toBe('C2');

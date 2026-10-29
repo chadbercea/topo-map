@@ -4,19 +4,19 @@ import { squareAt } from '../../map/grid';
 import { registerMission, say, type MissionDef } from '../script';
 import type { GameState } from '../state';
 
-export const PATROL_MOVES_MS = 150_000;
-export const PATROL_JAMMED_MS = 240_000; // jamming its net slows it down
-export const PATROL_WALK_MS = 30_000; // it's on the move this long before it gets there
+export const PATROL_MOVES_MS = 250_000;
+export const PATROL_JAMMED_MS = 400_000; // jamming its net slows it down
+export const PATROL_WALK_MS = 50_000; // it's on the move this long before it gets there
 export const LOOT = 8_000; // the convoy's haul, if ALPHA takes it
 const LOOT_TEXT = `$${LOOT.toLocaleString('en-US')}`;
 const ALT_TEXT = 'the alternate exfil at A2'; // the call's wording for altExfil's end
 
 // Operation Black Box, the MVP mission (GDD): infil at A, recover the downed drone's black
-// box at B, exfil at C. Four hours of game time on the contract window (six real minutes).
+// box at B, exfil at C. Four hours of game time on the contract window (ten real minutes).
 export const BLACK_BOX: MissionDef = registerMission({
   id: 'black-box',
   name: 'Operation Black Box',
-  durationMs: 6 * 60 * 1000,
+  durationMs: 10 * 60 * 1000,
   route: ['G5', 'F4', 'E3', 'D3', 'C2', 'B1'],
   // If the salvage convoy sits on B1, the long way out: west past it to A2 (~3.5 km all told).
   altExfil: ['B2', 'A2'],
@@ -26,15 +26,15 @@ export const BLACK_BOX: MissionDef = registerMission({
     // through. It's meant to be softened with seek and destroy.
     makeContact('checkpoint', 'E3', 'a fortified checkpoint', 1.6, [1, 5, 6, 9, 10]),
     // The enemy patrol hunting the drone too (GDD event 2): it moves on the crash site at
-    // 2:30 unless it's dealt with first. Intercepting its radio gives the plan away.
+    // 4:10 unless it's dealt with first. Intercepting its radio gives the plan away.
     makeContact('patrol', 'C2', 'a foot patrol', 0.7, [1, 7, 12], 'MOVING TO D3 FOR THE DRONE', 'D3'),
     makeContact('post', 'C3', 'an observation post', 0.5, [10, 11]),
   ],
 
   schedule: [
-    { atMs: 3_000, id: 'insert', from: 'team', radio: 'Boots on the ground at G5.' },
+    { atMs: 5_000, id: 'insert', from: 'team', radio: 'Boots on the ground at G5.' },
     {
-      atMs: 50_000,
+      atMs: 83_000,
       id: 'hq-traffic-c2',
       event: { id: 'traffic-c2', kind: 'signal', square: 'C2', title: 'Enemy radio traffic' },
       radio: 'Picking up enemy radio traffic near C2. Listen in?',
@@ -137,12 +137,12 @@ export const BLACK_BOX: MissionDef = registerMission({
     // The contract window, called out as it closes.
     {
       id: 'three-minutes',
-      when: (s) => s.timer.remainingMs <= 180_000 && s.mission.phase !== 'complete',
+      when: (s) => s.timer.remainingMs <= 300_000 && s.mission.phase !== 'complete',
       then: (s) => say(s, 'HQ', 'warn-3min', 'Two hours on the contract window.'),
     },
     {
       id: 'one-minute',
-      when: (s) => s.timer.remainingMs <= 60_000 && s.mission.phase !== 'complete',
+      when: (s) => s.timer.remainingMs <= 100_000 && s.mission.phase !== 'complete',
       then: (s) =>
         say(s, 'HQ', 'warn-1min', s.mission.blackBox ? 'Forty minutes. Get them to exfil.' : 'Forty minutes, and no black box. This is slipping.'),
     },

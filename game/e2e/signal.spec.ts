@@ -6,7 +6,7 @@ test('intercept: follow their wave with the slider until the message is through'
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
-  await fastForward(page, 50_000);
+  await fastForward(page, 83_000);
   await openEvent(page, 'signal', 'C2');
   await page.getByRole('button', { name: 'Listen' }).click();
 
@@ -42,7 +42,7 @@ test('intercept: follow their wave with the slider until the message is through'
 test('jam instead: the traffic is gone, and HQ says what it costs', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
-  await fastForward(page, 50_000);
+  await fastForward(page, 83_000);
   await openEvent(page, 'signal', 'C2');
   await page.getByRole('button', { name: 'Jam', exact: true }).click();
   await expect(page.getByTestId('event-card')).toHaveCount(0);

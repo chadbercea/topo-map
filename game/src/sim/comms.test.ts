@@ -8,7 +8,7 @@ const ids = (s: GameState) => s.comms.messages.map((m) => m.id);
 
 describe('comms', () => {
   it('routine chatter from the script goes to the radio log, not the comms card', () => {
-    const s = run(walking(), 3_000);
+    const s = run(walking(), 5_000);
     const insert = s.comms.messages.find((m) => m.id === 'insert')!;
     expect(insert).toMatchObject({ from: 'ALPHA', holds: false });
     expect(kindOf(insert)).toBe('log');
@@ -16,7 +16,7 @@ describe('comms', () => {
   });
 
   it('routine chatter marks itself read after a while', () => {
-    const s = run(walking(), 3_000 + CHATTER_MS);
+    const s = run(walking(), 5_000 + CHATTER_MS);
     expect(s.comms.messages.find((m) => m.id === 'insert')?.status).toBe('read');
   });
 
@@ -47,7 +47,7 @@ describe('comms', () => {
   it('a new call reopens a minimized comms card; a log line does not', () => {
     const store = createStore(run(walking(), 500));
     store.setCommsMinimized(true);
-    store.set(run(store.get(), 3_000)); // the insert line at 3 s is log only
+    store.set(run(store.get(), 5_000)); // the insert line at 5 s is log only
     expect(store.get().comms.minimized).toBe(true);
     const fresh = createStore(run(initialState(), 100)); // holding short of F4: a call
     fresh.setCommsMinimized(true);

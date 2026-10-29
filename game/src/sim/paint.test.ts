@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { makeContact } from './contacts';
+import { makeContact, OBSERVE_MS } from './contacts';
 import type { GameState } from './state';
 import { createStore } from './store';
 import { answer, run, walking, untilHold } from './testkit';
@@ -15,7 +15,7 @@ describe('target painting', () => {
     const store = createStore(untilHold(facing()));
     answer(store, 'contact-call-cp', 'observe');
     expect(store.get().contacts[0].painted).toBe(true);
-    store.set(run(store.get(), 9_000));
+    store.set(run(store.get(), OBSERVE_MS + 1_000));
     expect(store.get().comms.messages.find((m) => m.id === 'contact-call-cp-contact-observed')?.text).toMatch(/Target's painted for you/);
   });
 

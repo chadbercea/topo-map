@@ -8,7 +8,7 @@ import './styles.css';
 
 // Phaser and React each own one layer. The game is created once, outside React,
 // so StrictMode's double mount never spins up a second canvas.
-// ?minutes=8 tunes the mission length (GDD: start with six minutes and tune by feel).
+// ?minutes=8 tunes the mission length (GDD: tune by feel; ten minutes by default since ILI-1251).
 const minutes = Number(new URLSearchParams(location.search).get('minutes'));
 if (minutes > 0) game.setMissionLength(minutes);
 

@@ -65,7 +65,7 @@ export function moveContact(s: GameState, id: string, square: SquareId): GameSta
 // How hard it fights: its strength, scaled by the fighters it has left.
 export const effectiveStrength = (c: Contact) => c.strength * (c.units.length / c.total);
 
-export const OBSERVE_MS = 8_000;
+export const OBSERVE_MS = 13_000;
 
 const live = (c: Contact) => c.status === 'hidden' || c.status === 'revealed';
 export const contactIn = (s: GameState, sq: SquareId) => s.contacts.find((c) => c.square === sq && live(c));
@@ -230,7 +230,7 @@ export function neighbours(sq: SquareId): SquareId[] {
 // Fighters don't stand still (ILI-1168): every DRIFT_MS one fighter in each group moves to
 // a cell next to it, so an old look slowly stops matching. Chance comes from the tick, not
 // the mission's dice, so fights replay the same.
-export const DRIFT_MS = 20_000;
+export const DRIFT_MS = 33_000;
 const CELLS = 4;
 const roll = (seed: number) => nextRandom(seed >>> 0)[0];
 

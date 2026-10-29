@@ -24,13 +24,13 @@ export type Intel = {
 
 export type Stream = { items: Intel[] };
 
-// What the analysts had before HQ sat down (game time runs 40x: a real second back is
-// two-thirds of a game minute).
+// What the analysts had before HQ sat down (game time runs 24x: a real second back is
+// two-fifths of a game minute).
 export const initialStream = (): Stream => ({
   items: [
-    { id: 'intel-drone', atMs: -45_000, kind: 'note', source: 'IMINT', quiet: true, text: 'Last telemetry from the downed recon drone puts it in hill country, east of the town.' },
-    { id: 'intel-chatter', atMs: -30_000, kind: 'note', source: 'SIGINT', quiet: true, text: 'Enemy net chatter mentions "the bird" near the town. Location unresolved.' },
-    { id: 'intel-herder', atMs: -15_000, kind: 'note', source: 'HUMINT', quiet: true, text: 'Herder reports armed men walking the ridge above the crash site. Numbers unknown.' },
+    { id: 'intel-drone', atMs: -75_000, kind: 'note', source: 'IMINT', quiet: true, text: 'Last telemetry from the downed recon drone puts it in hill country, east of the town.' },
+    { id: 'intel-chatter', atMs: -50_000, kind: 'note', source: 'SIGINT', quiet: true, text: 'Enemy net chatter mentions "the bird" near the town. Location unresolved.' },
+    { id: 'intel-herder', atMs: -25_000, kind: 'note', source: 'HUMINT', quiet: true, text: 'Herder reports armed men walking the ridge above the crash site. Numbers unknown.' },
   ],
 });
 

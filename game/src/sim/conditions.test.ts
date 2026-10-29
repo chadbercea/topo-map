@@ -6,7 +6,7 @@ import { blockers, winChecks } from './progress';
 describe('header readouts (ILI-1187)', () => {
   it('the weather clears through the morning, and imagery could be blinded by cloud later', () => {
     const dawn = weather(initialState());
-    const late = weather({ ...initialState(), elapsedMs: 6 * 60_000 }); // 4 h of game time
+    const late = weather({ ...initialState(), elapsedMs: 10 * 60_000 }); // 4 h of game time
     expect(dawn).toMatchObject({ sky: 'High cloud', light: 'Night' });
     expect(late.sky).toBe('Clear');
     expect(late.visibilityKm).toBeGreaterThan(dawn.visibilityKm);

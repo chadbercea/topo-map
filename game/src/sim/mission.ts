@@ -17,7 +17,7 @@ export type Mission = {
   recoverUntilMs: number | null;
 };
 
-export const RECOVER_MS = 20_000;
+export const RECOVER_MS = 33_000;
 
 export const initialMission = (route: SquareId[]): Mission => ({
   name: 'Operation Black Box',

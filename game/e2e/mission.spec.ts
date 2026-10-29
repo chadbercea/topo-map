@@ -17,7 +17,7 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
   });
   await expect(page.getByTestId('objective')).toContainText('Exfil at B1 with the black box');
   await page.evaluate(() => {
-    for (let i = 0; i < 6000 && window.game.get().phase !== 'ended'; i++) window.game.tick(100);
+    for (let i = 0; i < 7000 && window.game.get().phase !== 'ended'; i++) window.game.tick(100);
   });
   const wrap = page.getByTestId('wrapup');
   await expect(wrap).toHaveAttribute('data-outcome', 'win');
@@ -35,7 +35,7 @@ test('running out of time fails the mission; the wrap-up offers a retry', async 
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
     const s = window.game.get();
-    window.game.set({ ...s, timer: { remainingMs: 500, totalMs: 360_000 } });
+    window.game.set({ ...s, timer: { remainingMs: 500, totalMs: 600_000 } });
     for (let i = 0; i < 10; i++) window.game.tick(100);
   });
   const wrap = page.getByTestId('wrapup');
@@ -62,7 +62,7 @@ test('a salvage convoy cuts the exfil; moving exfil sends ALPHA wide to A2', asy
   await linked(page);
   await expect(page.getByTestId('objective')).toContainText('Exfil at A2');
   await page.evaluate(() => {
-    for (let i = 0; i < 6000 && window.game.get().phase !== 'ended'; i++) window.game.tick(100);
+    for (let i = 0; i < 7000 && window.game.get().phase !== 'ended'; i++) window.game.tick(100);
   });
   await expect(page.getByTestId('wrapup')).toHaveAttribute('data-outcome', 'win');
 });

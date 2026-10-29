@@ -27,7 +27,7 @@ test('running low, ALPHA asks for a resupply; the bird flies in and refills them
   // No Logistics panel (ILI-1231): the bird and the bill are in the game's state.
   await expect.poll(() => page.evaluate(() => window.game.get().inbound.length)).toBe(1);
   expect(await page.evaluate(() => window.game.get().resources.budget)).toBe(2_000);
-  await fastForward(page, 20_500);
+  await fastForward(page, 33_500);
   await expect.poll(() => page.evaluate(() => window.game.get().inbound.length)).toBe(0);
   const ammo = await page.evaluate(() => window.game.get().team.operators.every((o) => o.ammo > 100));
   expect(ammo).toBe(true);
@@ -55,7 +55,7 @@ test('combat ineffective: ALPHA asks for a resupply bird, and replacements arriv
   await page.getByTestId('responses').getByRole('button', { name: /Send resupply/ }).click();
   await linked(page);
   await expect.poll(() => page.evaluate(() => window.game.get().inbound.length)).toBe(1);
-  await fastForward(page, 20_500);
+  await fastForward(page, 33_500);
   // Replacements are standing: no one down (each row shows its own status, ILI-1223).
   await expect(page.getByTestId('readout').locator('li[data-condition="down"]')).toHaveCount(0);
 });

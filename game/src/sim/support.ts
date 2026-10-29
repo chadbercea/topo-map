@@ -11,7 +11,7 @@ import type { System } from './systems';
 // budget. It reloads everyone standing and brings replacements for anyone down. The team
 // asks when it's running low, and stops and asks when it's combat ineffective.
 
-export const RESUPPLY_FLIGHT_MS = 20_000;
+export const RESUPPLY_FLIGHT_MS = 33_000;
 export const LOW = 0.35; // average share of ammo or meds left that counts as low
 
 export type Inbound = { kind: 'resupply'; arrivesMs: number };
