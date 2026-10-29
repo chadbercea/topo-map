@@ -1,4 +1,5 @@
 import { CELL, parseSquare, squareAt, type SquareId } from '../map/grid';
+import { BOARD } from './minigame';
 import type { Contact } from './contacts';
 import type { GameState } from './state';
 import type { System } from './systems';
@@ -117,4 +118,24 @@ export function confirmKills(s: GameState, contactId: string, cells: number[]): 
       ? { ...snap, seen: snap.seen.map((x) => (x.contactId === contactId ? { ...x, units: x.units.filter((u) => !cells.includes(u)) } : x)) }
       : snap;
   return { ...s, imagery };
+}
+
+// Where one fighter of a look stands: the middle of its cell in the 4x4 grid over the square.
+export const unitSpot = (o: { x: number; y: number }, u: number) => ({
+  x: o.x + ((u % BOARD) + 0.5) * (CELL / BOARD),
+  y: o.y + (Math.floor(u / BOARD) + 0.5) * (CELL / BOARD),
+});
+
+// The fighters HQ can see and hit, where the map draws them (live looks follow them): a tap on
+// one opens its strikes (ILI-1250).
+export function targets(s: GameState) {
+  const out: { contactId: string; x: number; y: number }[] = [];
+  for (const snap of Object.values(s.imagery))
+    for (const seen of snap.seen) {
+      const c = s.contacts.find((x) => x.id === seen.contactId);
+      if (!c || c.status !== 'revealed' || !s.events.some((e) => e.id === `contact-${c.id}` && e.status !== 'resolved')) continue;
+      const o = snap.live ? groupOrigin(c, s.elapsedMs) : seen;
+      for (const u of snap.live ? c.units : seen.units) out.push({ contactId: c.id, ...unitSpot(o, u) });
+    }
+  return out;
 }

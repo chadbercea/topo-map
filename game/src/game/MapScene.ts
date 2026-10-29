@@ -13,7 +13,7 @@ import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
 import { orionSquare, satellitePoint } from '../sim/satellite';
-import { eyesOn, freshness, groupOrigin } from '../sim/imagery';
+import { eyesOn, freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
@@ -258,7 +258,6 @@ export class MapScene extends Phaser.Scene {
     const { imagery, contacts, elapsedMs: now, minigame } = game.get();
     const board = minigame?.kind === 'seekDestroy' && minigame.status === 'active' ? minigame.contactId : null;
     const px = DPR / this.zoom;
-    const cell = CELL / BOARD;
     for (const snap of Object.values(imagery)) {
       const age = freshness(snap, now);
       const alpha = age === 'live' || age === 'fresh' ? 1 : age === 'ghost' ? 0.45 : 0.18;
@@ -271,13 +270,12 @@ export class MapScene extends Phaser.Scene {
         let cx = 0;
         let cy = 0;
         for (const u of units) {
-          const x = o.x + (u % BOARD + 0.5) * cell;
-          const y = o.y + (Math.floor(u / BOARD) + 0.5) * cell;
+          const { x, y } = unitSpot(o, u);
           cx += x / units.length;
           cy += y / units.length;
           g.fillStyle(0x0b0f0d, alpha * 0.8).fillCircle(x, y, 7 * px);
           g.fillStyle(0xe5484d, alpha).fillCircle(x, y, 5 * px);
-          if (age === 'ghost') g.lineStyle(1 * px, 0xe5484d, 0.35).strokeCircle(x, y, cell * 0.45);
+          if (age === 'ghost') g.lineStyle(1 * px, 0xe5484d, 0.35).strokeCircle(x, y, (CELL / BOARD) * 0.45);
         }
         const to = seen.to && squareCenter(seen.to);
         if (to && units.length && age !== 'stale') {
@@ -395,6 +393,11 @@ export class MapScene extends Phaser.Scene {
       g.lineStyle((2 * DPR) / this.zoom, color, 1).strokeCircle(x, y, r);
       g.fillStyle(color, e.id === openEvent ? 1 : 0.7).fillCircle(x, y, r * 0.45);
     }
+  }
+
+  private targetAt(x: number, y: number) {
+    const hit = ((7 + 6) * DPR) / this.zoom; // the dot, and a margin for thumbs
+    return targets(game.get()).find((t) => Math.hypot(t.x - x, t.y - y) <= hit)?.contactId;
   }
 
   private eventAt(x: number, y: number) {
@@ -874,6 +877,9 @@ export class MapScene extends Phaser.Scene {
     const drag = this.drag;
     this.drag = null;
     if (!drag || drag.id !== p.id || drag.moved || game.get().phase !== 'running' || game.get().minigame?.status === 'active') return;
+    // A fighter HQ can see opens its strikes (ILI-1250).
+    const target = this.targetAt(p.worldX, p.worldY);
+    if (target) return game.openEvent(`contact-${target}`);
     const event = this.eventAt(p.worldX, p.worldY);
     if (event) return game.openEvent(event.id);
     const id = squareAt(p.worldX, p.worldY);

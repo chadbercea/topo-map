@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, slewMs, type CaptureMode } from '../sim/satellite';
-import { freshness } from '../sim/imagery';
+import { freshness, targets } from '../sim/imagery';
+import { CELL, squareAt, squareCenter } from '../map/grid';
 import { gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
 import { Actions, Card, hasActions } from './SquareCard';
@@ -31,15 +32,11 @@ export function OrionPanel() {
 
   const result = sat.state === 'idle' ? sat.result : null;
   const picked = lookSquare(s); // the square HQ is working
-  // Contacts in it HQ can hit (ILI-1230): the Strike button and its menu. Opening a contact's
-  // task from the map opens the menu with it.
+  // Contacts in it HQ can hit (ILI-1230). A tap on one of their fighters, here or on the map, or
+  // on a contact's marker, opens their strikes (ILI-1250): there's no Strike button.
   const strikes = picked && !tied ? s.events.filter((e) => e.square === picked && e.kind === 'contact' && e.id.startsWith('contact-') && e.status !== 'resolved') : [];
-  const [strikeFor, setStrikeFor] = useState<string | null>(null);
   const opened = s.events.find((e) => e.id === s.openEvent);
-  useEffect(() => {
-    if (opened?.kind === 'contact') setStrikeFor(opened.square);
-  }, [opened?.id, opened?.kind, opened?.square]);
-  const striking = strikes.length > 0 && strikeFor === picked;
+  const striking = strikes.length > 0 && opened?.kind === 'contact' && opened.square === picked;
   const rowRef = useRef<HTMLDivElement>(null);
   // Where the strike panel goes, measured once the page has laid out (the phone's tab may have
   // only just switched to this panel), and again whenever that moves.
@@ -138,7 +135,28 @@ export function OrionPanel() {
       {/* The image area: always here, always the same size (ILI-1229). */}
       <div className="o-frame">
         {showPicture ? (
-          <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`ORION-3's picture of ${square}`} />
+          <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`ORION-3's picture of ${square}`}>
+            {/* The fighters it shows, each a tap away from its strikes (ILI-1250). Phaser draws the
+                dots; these sit on them, in the square's width at the picture's middle. */}
+            <div className="o-targets">
+              {square &&
+                targets(s)
+                  .filter((t) => squareAt(t.x, t.y) === square)
+                  .map((t, i) => {
+                    const o = squareCenter(square)!;
+                    return (
+                      <button
+                        key={i}
+                        className="o-target"
+                        style={{ left: `${50 + ((t.x - o.x) / CELL) * 100}%`, top: `${50 + ((t.y - o.y) / CELL) * 100}%` }}
+                        onClick={() => game.openEvent(`contact-${t.contactId}`)}
+                        aria-label={`Strike the fighters in ${square}`}
+                        data-testid="target-pin"
+                      />
+                    );
+                  })}
+            </div>
+          </div>
         ) : (
           <div className="o-placeholder" data-testid="orion-placeholder" data-state={tied ? 'tied' : sat.state}>
             <span className="o-caption">{caption}</span>
@@ -146,14 +164,8 @@ export function OrionPanel() {
         )}
       </div>
 
-      {/* ORION-3's buttons, always here under the picture (ILI-1230): each lit when it can be used.
-          Strike leads the row when the square has a contact HQ can hit. */}
+      {/* ORION-3's buttons, always here under the picture (ILI-1230): each lit when it can be used. */}
       <div ref={rowRef} className="o-buttons" data-testid="orion-buttons">
-        {strikes.length > 0 && (
-          <button className="o-strike" aria-expanded={striking} onClick={() => setStrikeFor(striking ? null : picked)} data-testid="strike-toggle">
-            Strike<small>{strikes.length > 1 ? `${strikes.length} contacts` : 'menu'}</small>
-          </button>
-        )}
         {inPosition && !tied ? (
           <div className="modes" data-testid="capture-modes">
             {MODES.map((m) => (
@@ -230,7 +242,7 @@ export function OrionPanel() {
         <section className="strike-panel" data-testid="strike-menu" data-overlay="strike" style={spot} role="dialog" aria-label={`Strike ${picked}`}>
           <header className="ap-head">
             Strike <b>{picked}</b>
-            <button className="x" onClick={() => setStrikeFor(null)} aria-label="Close strikes">
+            <button className="x" onClick={() => game.dropEvent()} aria-label="Close strikes">
               ×
             </button>
           </header>
@@ -254,9 +266,11 @@ const STRIKE_W = 320;
 function strikeSpot(row: HTMLElement | null, phone: boolean): React.CSSProperties {
   const panel = row?.closest('.orion')?.getBoundingClientRect();
   if (!row || !panel?.height) return { visibility: 'hidden' }; // ORION-3 behind another tab
-  const r = row.getBoundingClientRect();
+  // Level with the buttons, or the panel's visible foot when they're scrolled out of view (a
+  // tap on a fighter in the picture leaves them below it on a short screen).
+  const foot = Math.min(row.getBoundingClientRect().bottom, panel.bottom, innerHeight - 8);
   const left = panel.left - STRIKE_W - 12;
-  if (!phone && left >= 8) return { left, bottom: innerHeight - r.bottom, width: STRIKE_W, maxHeight: r.bottom - 16 };
+  if (!phone && left >= 8) return { left, bottom: innerHeight - foot, width: STRIKE_W, maxHeight: foot - 16 };
   return { left: 8, width: innerWidth - 16, bottom: innerHeight - panel.top + 8, maxHeight: panel.top - 16 };
 }
 

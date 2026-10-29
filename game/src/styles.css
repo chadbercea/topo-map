@@ -707,6 +707,11 @@ html, body {
 .orion[data-state='slewing'] h2 .where, .orion[data-state='onStation'] h2 .where { color: #f2c14e; }
 .orion .o-frame { flex: none; position: relative; width: 100%; aspect-ratio: 1; outline: 1px solid var(--line); outline-offset: -1px; }
 .orion .o-picture { position: absolute; inset: 0; }
+/* The fighters in the picture (ILI-1250): the square is the picture's height, centred; a ring
+   on hover over the dot Phaser draws. */
+.orion .o-targets { position: absolute; top: 0; bottom: 0; left: 50%; aspect-ratio: 1; transform: translateX(-50%); }
+.orion .o-picture .o-target { position: absolute; width: 24px; height: 24px; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 1px solid transparent; border-radius: 50%; background: none; cursor: crosshair; }
+.orion .o-picture .o-target:hover, .orion .o-picture .o-target:focus-visible { border-color: #e5484d; background: rgba(229, 72, 77, 0.18); }
 /* The placeholder (ILI-1229): where the Three.js satellite goes (ILI-1196). Painted, unlike the
    picture, which is a clear window onto Phaser's inset. */
 .orion .o-placeholder { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; padding: 16px; text-align: center; background:
@@ -753,8 +758,6 @@ html, body {
 /* Not over the square yet (ILI-1250): one big Reposition fills the row; the shots come after. */
 .orion .o-buttons .o-reposition { flex: 1; min-height: 40px; font-size: 13px; letter-spacing: 0.14em; border-color: var(--accent); color: var(--accent); }
 .orion .o-buttons .o-reposition:disabled { border-color: var(--line); color: var(--dim); }
-.orion .o-strike { border-color: #e5484d; color: #e5484d; }
-.orion .o-strike[aria-expanded='true'], .orion .o-strike:hover:not(:disabled) { color: #0b0f0d; background: #e5484d; }
 /* The strike panel (ILI-1233): a tertiary panel the Strike button produces, floating beside
    ORION-3 (above it on a phone), so nothing in ORION-3 moves. */
 .strike-panel { position: fixed; z-index: 8; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow-y: auto; pointer-events: auto; background: rgba(11, 15, 13, 0.97); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid #e5484d; animation: ask-in 160ms ease-out; }
