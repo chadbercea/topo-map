@@ -19,7 +19,7 @@ The direction has changed a lot, and the repo keeps the history. I started with 
 
 ## Playing Operation Black Box
 
-A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5), recovers its black box at the crash site **B** (D3), and exfils at **C** (B1). The AO is 4 × 2.5 km in 500 m squares, and you have four hours of game time (ten real minutes; the clock runs at 24×).
+A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5), recovers its black box at the crash site **B** (D3), and exfils at **C** (B1). The AO is 4 × 2.5 km in 500 m squares, and the contract window is ten real minutes on the clock (four hours in the theater: the Zulu stamps and the team's pace run at 24×).
 
 - **Sitting down.** There's no briefing. You're HQ's intel cell, and the game opens live in the war room with ALPHA already on the ground: the mission's intel stream down the left, the map, the comms log under the stream, and the team and ORION-3 panels in the bottom-right corner. The clock is running.
 - **The header.** Your anchor: the mission and its phases, the win conditions (black box, everyone alive, exfil), the objective and the next thing to do, what's blocking you, the weather and the ground of the square you're looking at, and the contract window counting down with its closing time. ORION-3, the budget and noise sit by the map's tools.

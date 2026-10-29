@@ -27,7 +27,7 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
   await wrap.getByRole('button', { name: 'Play again' }).click();
   await expect(wrap).toHaveCount(0);
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3'); // a new mission, live
-  await expect(page.getByTestId('clock')).toHaveText('4:00');
+  await expect(page.getByTestId('clock')).toHaveText('10:00');
 });
 
 test('running out of time fails the mission; the wrap-up offers a retry', async ({ page }) => {

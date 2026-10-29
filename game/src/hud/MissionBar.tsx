@@ -1,9 +1,14 @@
 import { game, useGame } from '../sim/store';
 import { blockers, nextUp, phasePips, winChecks } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
-import { gameClock, gameSpan, zulu } from '../sim/gameTime';
+import { gameSpan, zulu } from '../sim/gameTime';
 
-export const clock = (ms: number) => gameClock(ms);
+// The contract window counts down real minutes, M:SS, rounding up (ILI-1251): ten minutes reads
+// 10:00. The stamps beside it (Closes, Now) stay in the theater's game time.
+export const clock = (ms: number) => {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
 
 // MISSION · BLACK BOX (ILI-1226, layout A): the contract window and the mission in one panel,
 // top left, a war-room readout like ENVIRONMENT (ILI-1234). The contract window first: its clock
@@ -16,7 +21,7 @@ export function MissionPanel() {
   const { timer, phase, tick } = s;
   const now = s.elapsedMs;
   const remaining = timer.remainingMs;
-  const warn = remaining <= 100_000 ? 'red' : remaining <= 300_000 ? 'amber' : undefined;
+  const warn = remaining <= 60_000 ? 'red' : remaining <= 300_000 ? 'amber' : undefined;
   const next = nextUp(s);
   const blocks = blockers(s);
 
