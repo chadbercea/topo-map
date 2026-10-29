@@ -55,13 +55,6 @@ export const TREE: Record<string, CallNode> = {
       { id: 'divert', label: 'Move exfil', effect: 'divert', reply: 'Copy, swinging wide to the alternate exfil.' },
     ],
   },
-  site: {
-    text: ({ square }) => `At the kill site in ${square}. Want us to search it? It'll cost us time.`,
-    responses: [
-      { id: 'search', label: 'Search it', effect: 'search', reply: 'Searching. Give us fifteen.' },
-      { id: 'pass', label: 'Move on', effect: 'pass', reply: 'Moving on.' },
-    ],
-  },
   // The team running low or combat ineffective (support.ts): one resupply bird covers both.
   resupply: {
     text: ({ label }) => `${label}. We need a resupply bird.`,

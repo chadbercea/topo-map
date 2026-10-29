@@ -31,7 +31,7 @@ describe('message kinds (ILI-1171)', () => {
       if (s.satellite.state === 'onStation') store.capture('photo');
       if (s.satellite.result) store.closeLook();
       const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.status === 'new');
-      if (call?.responses) store.respond(call.id, call.node === 'unimaged' ? 'send' : call.node === 'site' ? 'search' : 'attack');
+      if (call?.responses) store.respond(call.id, call.node === 'unimaged' ? 'send' : 'attack');
     }
     const all = store.get().comms.messages;
     const cards = all.filter((m) => kindOf(m) === 'call');

@@ -1,15 +1,14 @@
 import { squareAt } from '../map/grid';
-import { treeCall } from './responses';
+import type { Message } from './comms';
 import type { Contact } from './contacts';
 import type { GameState } from './state';
 import type { System } from './systems';
 
-// Confirmed kills earn cash (GDD), and a destroyed contact leaves a kill site. When ALPHA
-// reaches one it offers to search it: documents worth cash, at a cost against the clock.
+// Confirmed kills earn cash (GDD), and a destroyed contact leaves a kill site. ALPHA sweeps
+// it for documents worth cash as it passes through.
 
 export const CASH_PER_STRIKE_KILL = 1_500;
 export const CASH_PER_TEAM_KILL = 1_000;
-export const SEARCH_MS = 25_000;
 export const SEARCH_CASH = 1_000;
 
 export const earn = (s: GameState, amount: number): GameState => ({ ...s, resources: { ...s.resources, budget: s.resources.budget + amount } });
@@ -20,35 +19,30 @@ export function markSite(s: GameState, c: Contact): GameState {
   return { ...s, events: [...s.events, { id, kind: 'site', square: c.square, title: 'Kill site', atMs: s.elapsedMs, status: 'new' }] };
 }
 
-// ALPHA standing on an unsearched kill site, with nothing else going on, asks to search it.
+// ALPHA sweeps a kill site on its own as it passes through (ILI-1252): no ask and no stop, it's
+// the team's business, not a support call. What it finds is intel for the feed.
 export const siteSystem: System = (s) => {
   const { team } = s;
-  if (team.holdFor || team.fight || team.treating || s.elapsedMs < team.holdUntilMs) return s;
+  if (team.fight) return s;
   const here = squareAt(team.position.x, team.position.y);
   const site = s.events.find((e) => e.kind === 'site' && e.square === here && e.status !== 'resolved');
   if (!site) return s;
-  const id = `site-call-${site.id}`;
-  if (s.comms.messages.some((m) => m.id === id)) return s;
-  const call = treeCall(s, id, 'site', site.square, site.id);
-  return {
-    ...s,
-    team: { ...team, holdFor: id, activity: `At the kill site in ${site.square}` },
-    comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, call] },
-  };
-};
-
-// Searching: the team digs through the site for a while; the documents pay.
-export function search(s: GameState, square: string): GameState {
-  const site = s.events.find((e) => e.kind === 'site' && e.square === square && e.status !== 'resolved');
-  if (!site) return s;
   const next = earn(s, SEARCH_CASH);
+  const found: Message = {
+    id: `search-${site.id}`,
+    from: team.callsign,
+    text: `Swept the kill site in ${site.square} on the way through: documents, maps, a phone. +$${SEARCH_CASH.toLocaleString('en-US')}.`,
+    atMs: s.elapsedMs,
+    status: 'new',
+    holds: false,
+  };
   return {
     ...next,
-    team: { ...next.team, holdUntilMs: s.elapsedMs + SEARCH_MS, activity: `Searching ${square}` },
     stats: { ...next.stats, searched: next.stats.searched + 1 },
     events: next.events.map((e) => (e === site ? { ...e, status: 'resolved' as const } : e)),
+    comms: { ...next.comms, messages: [...next.comms.messages, found] },
   };
-}
+};
 
 export function pass(s: GameState, square: string): GameState {
   return { ...s, events: s.events.map((e) => (e.kind === 'site' && e.square === square ? { ...e, status: 'resolved' as const } : e)) };
