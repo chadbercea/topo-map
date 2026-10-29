@@ -2,13 +2,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { squareAt } from '../map/grid';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, lookSquare, satelliteBusy, slewMs } from '../sim/satellite';
+import { CAPTURE, lookSquare } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
 import { ground, weather } from '../sim/conditions';
 import { gameSpan, zulu } from '../sim/gameTime';
 import { RESUPPLY_COST } from '../sim/support';
 import { EVENT_LABEL } from '../sim/stream';
-import { TargetMenu } from './TargetMenu';
 import { useTier } from './tier';
 import { alphaBox, obstacles, pick, squareBox } from './overlays';
 import type { GameState } from '../sim/state';
@@ -76,9 +75,13 @@ type Area = NonNullable<ReturnType<typeof getMapRect>>;
 
 type Placed = { left: number; top: number; width: number; maxHeight: number; side: string };
 
-// Anything in this square HQ can act on: an unresolved event, or ALPHA standing here.
+// A contact HQ can hit: its strikes are in ORION-3's panel (ILI-1230).
+const strikeable = (e: GameState['events'][number]) => e.kind === 'contact' && e.id.startsWith('contact-');
+
+// Anything else in this square HQ can act on: an unresolved event that isn't a strike, or ALPHA
+// standing here.
 export function hasActions(s: GameState, square: string) {
-  return s.events.some((e) => e.square === square && e.status !== 'resolved') || squareAt(s.team.position.x, s.team.position.y) === square;
+  return s.events.some((e) => e.square === square && e.status !== 'resolved' && !strikeable(e)) || squareAt(s.team.position.x, s.team.position.y) === square;
 }
 
 // Beside the square, on the side away from ALPHA when both have room (so ALPHA's flag stays
@@ -149,12 +152,6 @@ export function Card({ s, square }: { s: GameState; square: string }) {
         <span className="sc-status" data-testid="square-status">
           {status}
         </span>
-        {!working && snap && (
-          // Already imaged: a look again is a small header button. The picture is ORION-3's (ILI-1219).
-          <button className="rescan" disabled={satelliteBusy(s)} onClick={() => game.lookAt(square)} data-testid="look-here">
-            Rescan · {slewMs(s, square) ? gameSpan(slewMs(s, square)) : 'now'}
-          </button>
-        )}
         <button className="x" onClick={close} aria-label="Close">
           ×
         </button>
@@ -184,14 +181,6 @@ export function Card({ s, square }: { s: GameState; square: string }) {
         </dl>
       </div>
 
-      {/* ORION-3 */}
-      {!working && !snap && (
-        <div className="sc-row square-actions" data-testid="square-actions">
-          <button disabled={satelliteBusy(s)} onClick={() => game.lookAt(square)} data-testid="look-here">
-            Scan · {slewMs(s, square) ? gameSpan(slewMs(s, square)) : 'now'}
-          </button>
-        </div>
-      )}
 
     </>
   );
@@ -201,7 +190,8 @@ export function Card({ s, square }: { s: GameState; square: string }) {
 // options, and a resupply drop when ALPHA is here.
 export function Actions({ s, square }: { s: GameState; square: string }) {
   const now = s.elapsedMs;
-  const events = s.events.filter((e) => e.square === square && e.status !== 'resolved');
+  // Strikes are ORION-3's now (ILI-1230): the rest stays here.
+  const events = s.events.filter((e) => e.square === square && e.status !== 'resolved' && !strikeable(e));
   const alphaHere = squareAt(s.team.position.x, s.team.position.y) === square;
   return (
     <>
@@ -215,9 +205,7 @@ export function Actions({ s, square }: { s: GameState; square: string }) {
             {EVENT_LABEL[e.kind]} · {e.square}
           </h3>
           <p className="title">{e.title}</p>
-          {e.kind === 'contact' && e.id.startsWith('contact-') ? (
-            <TargetMenu contactId={e.id.slice('contact-'.length)} />
-          ) : e.kind === 'signal' ? (
+          {e.kind === 'signal' ? (
             <div className="signal-options">
               <button className="intercept" onClick={() => game.intercept(e.id)}>
                 Listen

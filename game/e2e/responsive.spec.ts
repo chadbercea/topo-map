@@ -47,18 +47,17 @@ for (const [name, width, height] of SIZES) {
     });
     await expect(page.locator('.hud')).toHaveAttribute('data-tab', 'orion');
     const card = page.getByTestId('square-card');
-    const act = page.getByTestId('action-panel');
     await expect(card).toHaveAttribute('data-square', 'E3');
-    await expect(act).toBeVisible();
     const c = await box(card);
-    const a = await box(act);
     expect(c.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
-    expect(a.x + a.width).toBeLessThanOrEqual(rail.x + 1); // over the map
-    expect(inside(a, width, height)).toBe(true);
-    await expect(act.getByTestId('fire-sniper')).toBeVisible();
+    // Its strikes are in the same panel, behind Strike (ILI-1230).
+    await page.getByTestId('strike-toggle').click();
+    const menu = page.getByTestId('strike-menu');
+    await menu.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
+    await expect(menu.getByTestId('fire-sniper')).toBeVisible();
+    expect(inside(await box(menu.getByTestId('fire-sniper')), width, height)).toBe(true);
 
     await card.getByRole('button', { name: 'Close' }).click();
-    await expect(act).toHaveCount(0);
     await expect(card).toHaveCount(0);
     await expect(page.getByTestId('satellite')).toBeVisible();
   });

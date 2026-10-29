@@ -15,7 +15,7 @@ async function workE3(page: Page) {
     for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
     g.capture('photo');
   });
-  await expect(page.getByTestId('action-panel')).toBeVisible();
+  await expect(page.getByTestId('strike-toggle')).toBeVisible(); // the checkpoint's found: Strike (ILI-1230)
   await page.waitForTimeout(1200); // the camera, the card and the flag settle
 }
 
