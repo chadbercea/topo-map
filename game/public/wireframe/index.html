@@ -189,16 +189,140 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .opts .lean b { font-family: var(--display); font-size: 18px; }
 
 @media (max-width: 900px) { .opts .row { grid-template-columns: 1fr; } }
+
+/* Mission panel options (ILI-1245): each mock is the panel at its real 320 px width. */
+.mp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; align-items: start; }
+.mp-opt { display: grid; gap: 10px; align-content: start; }
+.mp-opt .opt-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.mp-opt .opt-head .tag { font: 600 12px var(--mono); letter-spacing: .1em; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--line); color: var(--dim); }
+.mp-opt .opt-head .tag.pick { border-color: var(--ok); color: var(--ok); }
+.mp { width: 100%; max-width: 320px; box-sizing: border-box; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; padding: 10px 12px; display: grid; gap: 7px; font: 12px/1.35 var(--mono); }
+.mp .hd { display: flex; justify-content: space-between; gap: 8px; font: 700 13px var(--display); letter-spacing: .1em; }
+.mp .hd span { font: 11px var(--mono); color: var(--dim); letter-spacing: .04em; }
+.mp .clk { display: flex; align-items: center; gap: 10px; }
+.mp .clk .lbl { font: 600 10px var(--mono); letter-spacing: .12em; color: var(--dim); text-transform: uppercase; display: block; }
+.mp .clk .t { font: 600 44px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.mp .clk .t.huge { font-size: 64px; }
+.mp .clk .ps { margin-left: auto; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 3px; display: grid; place-items: center; color: var(--dim); }
+.mp .bar { height: 8px; border-radius: 4px; background: var(--box); overflow: hidden; }
+.mp .bar i { display: block; height: 100%; width: 93%; background: var(--ink); }
+.mp .row2 { display: flex; justify-content: space-between; gap: 8px; color: var(--dim); }
+.mp .obj { font-weight: 600; }
+.mp .obj::before { content: '◆ '; color: var(--accent); }
+.mp .need { border: 1.5px solid var(--accent); color: var(--accent); border-radius: 3px; padding: 2px 6px; justify-self: start; }
+.mp .need.red { border-color: #c0392b; color: #c0392b; }
+.mp .dim { color: var(--dim); }
+.mp .cut { color: var(--dim); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+/* the race: time left drains on top, ALPHA's progress A → B → C underneath, on one scale */
+.race { position: relative; height: 44px; }
+.race .time, .race .route { position: absolute; left: 0; right: 0; height: 6px; border-radius: 3px; background: var(--box); overflow: hidden; }
+.race .time { top: 0; }
+.race .time i { display: block; height: 100%; width: 93%; background: var(--ink); }
+.race .route { top: 16px; }
+.race .route i { display: block; height: 100%; width: 22%; background: var(--accent); }
+.race .wp { position: absolute; top: 12px; transform: translateX(-50%); font: 600 10px var(--mono); }
+.race .wp::before { content: ''; display: block; width: 2px; height: 14px; margin: 0 auto 1px; background: var(--ink); }
+.mp-why { font-size: 14px; display: grid; gap: 5px; }
+.mp-why ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.mp-why .plus li::marker { content: '+  '; color: var(--ok); }
+.mp-why .minus li::marker { content: '−  '; color: var(--accent); }
+.audit { counter-reset: a; margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.audit li { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font-size: 15px; }
+.audit li strong { font-family: var(--display); font-size: 17px; display: block; }
 </style>
 </head>
 <body>
 
 <main>
 <header>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 5</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 5 · ILI-1245 mission panel added 2026-10-29</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
+
+<section id="mission-panel">
+  <div class="sect-head"><p class="eyebrow">ILI-1245 · Mission panel · 2026-10-29 · to scale, 320 px</p><h2>The countdown drives the game. The panel around it doesn't say so yet.</h2><p>Your demo note (00:30–01:17): "The contract window is the key driver. The countdown, the timer … I don't think we have nailed the information architecture or the hierarchy of information." The audit first, then three ways to fix it.</p></div>
+
+  <div class="mp-grid">
+    <div class="mp-opt">
+      <div class="opt-head"><p class="eyebrow">Today</p><h3>Nine rows, one panel</h3></div>
+      <div class="mp">
+        <div class="hd">BLACK BOX <span>OPS · 0556Z</span></div>
+        <div class="clk"><div><span class="lbl">◷ Contract window</span><span class="t">9:19</span></div><span class="ps">❚❚</span></div>
+        <div class="bar"><i></i></div>
+        <div class="row2"><span>CLOSES 0940Z</span><span>NOW 0556Z</span></div>
+        <div class="dim">A infil G5 — B crash site D3 — C exfil B1</div>
+        <div class="obj">Recover the black box at D3</div>
+        <div>Next: Reach the crash site at D3</div>
+        <div class="need">ALPHA waiting on your call</div>
+        <div class="need red">No imagery ahead at F4</div>
+        <div class="dim">□ Black box ■ 5/5 alive □ Exfil B1</div>
+      </div>
+    </div>
+    <div class="mp-why">
+      <p class="eyebrow">What the audit found</p>
+      <ol class="audit">
+        <li><strong>Two clocks, two units, side by side.</strong>The countdown reads real minutes (9:19) since ILI-1251. Right under it, Closes 0940Z minus Now 0556Z is 3 h 44 m of game time. Both are "time left", and they don't agree.</li>
+        <li><strong>"Now" three times.</strong>OPS · 0556Z in the title, NOW 0556Z under the clock, and AO · 0556Z on ENVIRONMENT.</li>
+        <li><strong>D3 four times.</strong>Pip B "crash site D3", the objective "Recover the black box at D3", Next "Reach the crash site at D3", and the win check "Black box".</li>
+        <li><strong>The blockers repeat other panels.</strong>"ALPHA waiting on your call" is already the orange flag on the map and the buttons in COMMS. "No imagery ahead at F4" is ALPHA's own line in COMMS.</li>
+        <li><strong>Nothing answers "will I make it?"</strong>The clock says how much time is left and the pips say which leg ALPHA is on. Nothing puts the two on one scale, and that's what a player under a deadline is really asking.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="mp-grid">
+    <div class="mp-opt">
+      <div class="opt-head"><p class="eyebrow">Option A</p><h3>Trim in place</h3></div>
+      <div class="mp">
+        <div class="hd">BLACK BOX</div>
+        <div class="clk"><div><span class="lbl">◷ Contract window</span><span class="t huge">9:19</span></div><span class="ps">❚❚</span></div>
+        <div class="bar"><i></i></div>
+        <div class="dim">● A — ○ B crash site D3 — ○ C exfil B1</div>
+        <div class="obj">Recover the black box at D3</div>
+        <div class="need">ALPHA waiting on your call</div>
+      </div>
+      <div class="mp-why">
+        <ul class="plus"><li>Same panel, half the rows. The clock gets bigger.</li><li>One unit of time on the panel: real minutes.</li><li>Only one "needs you" line: the most urgent.</li></ul>
+        <ul class="minus"><li>Cut: Closes/Now, the OPS stamp, Next, the win checks.</li><li>Still doesn't answer "will I make it?"</li></ul>
+      </div>
+    </div>
+
+    <div class="mp-opt">
+      <div class="opt-head"><p class="eyebrow">Option B</p><h3>The race</h3><span class="tag pick">my pick</span></div>
+      <div class="mp">
+        <div class="hd">BLACK BOX</div>
+        <div class="clk"><div><span class="lbl">◷ Contract window</span><span class="t huge">9:19</span></div><span class="ps">❚❚</span></div>
+        <div class="race">
+          <div class="time"><i></i></div>
+          <div class="route"><i></i></div>
+          <span class="wp" style="left:2%">A</span><span class="wp" style="left:45%">B</span><span class="wp" style="left:97%">C</span>
+        </div>
+        <div class="obj">Recover the black box at D3</div>
+        <div class="need">ALPHA waiting on your call</div>
+      </div>
+      <div class="mp-why">
+        <ul class="plus"><li>Two bars on one scale. Time left drains on top, and ALPHA's route fills in underneath with A, B and C marked. If the top bar is shorter than the road left, you're losing.</li><li>The pressure is visible without doing sums, and it gets louder as the gap closes.</li><li>Same rows as A, so it's no taller.</li></ul>
+        <ul class="minus"><li>The route bar is new math, but cheap: the sim already knows ALPHA's route and the square it's heading for.</li><li>A new visual idea, so it may take a round of tuning.</li></ul>
+      </div>
+    </div>
+
+    <div class="mp-opt">
+      <div class="opt-head"><p class="eyebrow">Option C</p><h3>Clock alone</h3></div>
+      <div class="mp">
+        <div class="hd">CONTRACT WINDOW</div>
+        <div class="clk"><span class="t huge">9:19</span><span class="ps">❚❚</span></div>
+        <div class="bar"><i></i></div>
+      </div>
+      <div class="mp-why">
+        <ul class="plus"><li>The countdown is the panel, a widget like ENVIRONMENT.</li><li>The smallest panel, and it can't be missed.</li></ul>
+        <ul class="minus"><li>The objective and the leg ALPHA is on need a new home, probably TEAM's header ("Holding short of F4" is already there). TEAM is getting its own design session (ILI-1248), so this one waits on that.</li><li>The mission name stops being a heading anywhere on screen.</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="opts"><div class="lean"><b>My pick: B, the race</b><p>The countdown alone tells you there's pressure. The race shows <em>how much</em>: whether ALPHA is ahead or behind. That's the hook. It keeps A's cuts (one unit of time, one "needs you" line, the D3 repeats gone) and adds the one thing no panel shows today. If B feels like too much at once, A ships first and B adds the second bar on top of it.</p></div></div>
+</section>
 
 <section class="opts" id="options">
   <div class="sect-head"><p class="eyebrow">0 · Desktop layout options · 1440 × 900 · to scale</p><h2>Three ways to lay out what you described</h2><p>All three: clock and Black Box in one panel, INTEL gone, Environment and Logistics along the bottom with TEAM, ORION-3 the big panel down the whole right side. They differ in where COMMS goes.</p></div>
