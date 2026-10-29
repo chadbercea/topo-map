@@ -56,9 +56,10 @@ html, body {
 .satcom h2 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .satcom h2 .status { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
-.slot-orion { grid-area: orion; min-width: 0; min-height: 0; display: grid; } /* the whole right side (ILI-1219) */
-/* Along the bottom (ILI-1226): Environment, small, then TEAM (Logistics went, ILI-1231). */
-.slot-bottom { grid-area: bottom; min-width: 0; display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr); gap: var(--gutter); align-items: stretch; }
+.slot-orion { grid-area: orion; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--gutter); } /* the whole right side: Environment over ORION-3 (ILI-1219, ILI-1218) */
+.slot-orion > .orion { flex: 1; }
+/* Along the bottom (ILI-1226): TEAM. Environment went up over ORION-3 (ILI-1218). */
+.slot-bottom { grid-area: bottom; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gutter); align-items: stretch; }
 .slot-small { min-width: 0; display: grid; }
 .slot-team { min-width: 0; }
 .slot-satcom { grid-area: satcom; min-width: 0; min-height: 0; display: grid; } /* COMMS runs the left side (ILI-1225) */
@@ -187,33 +188,33 @@ html, body {
 .square-card .facts { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; margin: 0; padding: 6px 10px; font-size: 11px; flex: 1; }
 .square-card .facts dt { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 9px; line-height: 15px; }
 .square-card .facts dd { margin: 0; color: var(--ink); line-height: 15px; }
-:is(.square-card, .action-panel, .orion) .sc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--line); }
-:is(.square-card, .action-panel, .orion) .sc-row .bar { flex: 1; height: 6px; }
-:is(.square-card, .action-panel, .orion) .secs { color: var(--ink); font-size: 11px; margin: 0; flex-basis: 100%; }
-:is(.square-card, .action-panel, .orion) .sc-row .bar + .secs, :is(.square-card, .action-panel, .orion) .sc-row .bar + button { flex-basis: auto; }
+:is(.square-card, .action-panel, .orion, .strike-panel) .sc-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--line); }
+:is(.square-card, .action-panel, .orion, .strike-panel) .sc-row .bar { flex: 1; height: 6px; }
+:is(.square-card, .action-panel, .orion, .strike-panel) .secs { color: var(--ink); font-size: 11px; margin: 0; flex-basis: 100%; }
+:is(.square-card, .action-panel, .orion, .strike-panel) .sc-row .bar + .secs, :is(.square-card, .action-panel, .orion, .strike-panel) .sc-row .bar + button { flex-basis: auto; }
 :is(.square-card, .orion) .modes { display: flex; gap: 6px; flex: 1; }
-:is(.square-card, .action-panel, .orion) button { font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: none; border: 1px solid var(--accent); min-height: 32px; padding: 0 12px; cursor: pointer; }
+:is(.square-card, .action-panel, .orion, .strike-panel) button { font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: none; border: 1px solid var(--accent); min-height: 32px; padding: 0 12px; cursor: pointer; }
 :is(.square-card, .orion) .modes button { flex: 1; padding: 3px 6px; display: grid; justify-items: center; gap: 1px; }
 :is(.square-card, .orion) .modes small { color: var(--dim); text-transform: none; letter-spacing: 0; font-size: 10px; }
 :is(.square-card, .orion) .modes button:hover small { color: inherit; }
-:is(.square-card, .action-panel, .orion) button:hover:not(:disabled) { color: #0b0f0d; background: var(--accent); }
-:is(.square-card, .action-panel, .orion) button:disabled { opacity: 0.45; cursor: default; }
-:is(.square-card, .action-panel, .orion) button.quiet { color: var(--dim); border-color: transparent; }
-:is(.square-card, .action-panel, .orion) .sc-event { padding: 6px 10px 8px; border-top: 1px solid var(--line); border-left: 3px solid var(--kind, var(--accent)); }
-:is(.square-card, .action-panel, .orion) .sc-event h3 { margin: 0; font-size: 10px; letter-spacing: 0.12em; color: var(--kind, var(--accent)); }
-:is(.square-card, .action-panel, .orion) .sc-event .title { font-size: 12px; margin: 0; }
-:is(.square-card, .action-panel, .orion) .sc-event .note { font-size: 11px; margin: 0; }
-:is(.square-card, .action-panel, .orion) .target-menu .options { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 4px; }
-:is(.square-card, .action-panel, .orion) .target-menu .options button { justify-self: stretch; min-height: 40px; padding: 4px 6px; font-size: 10px; line-height: 1.2; text-transform: none; letter-spacing: 0; border-color: #e5484d; }
-:is(.square-card, .action-panel, .orion) .target-menu .options button:hover:not(:disabled) { color: var(--ink); background: rgba(229, 72, 77, 0.18); }
-:is(.square-card, .action-panel, .orion) .signal-options button.intercept { color: #0b0f0d; background: #8fb8ff; border-color: #8fb8ff; }
-:is(.square-card, .action-panel, .orion) .signal-options button.jam { color: #8fb8ff; border-color: #8fb8ff; }
+:is(.square-card, .action-panel, .orion, .strike-panel) button:hover:not(:disabled) { color: #0b0f0d; background: var(--accent); }
+:is(.square-card, .action-panel, .orion, .strike-panel) button:disabled { opacity: 0.45; cursor: default; }
+:is(.square-card, .action-panel, .orion, .strike-panel) button.quiet { color: var(--dim); border-color: transparent; }
+:is(.square-card, .action-panel, .orion, .strike-panel) .sc-event { padding: 6px 10px 8px; border-top: 1px solid var(--line); border-left: 3px solid var(--kind, var(--accent)); }
+:is(.square-card, .action-panel, .orion, .strike-panel) .sc-event h3 { margin: 0; font-size: 10px; letter-spacing: 0.12em; color: var(--kind, var(--accent)); }
+:is(.square-card, .action-panel, .orion, .strike-panel) .sc-event .title { font-size: 12px; margin: 0; }
+:is(.square-card, .action-panel, .orion, .strike-panel) .sc-event .note { font-size: 11px; margin: 0; }
+:is(.square-card, .action-panel, .orion, .strike-panel) .target-menu .options { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 4px; }
+:is(.square-card, .action-panel, .orion, .strike-panel) .target-menu .options button { justify-self: stretch; min-height: 40px; padding: 4px 6px; font-size: 10px; line-height: 1.2; text-transform: none; letter-spacing: 0; border-color: #e5484d; }
+:is(.square-card, .action-panel, .orion, .strike-panel) .target-menu .options button:hover:not(:disabled) { color: var(--ink); background: rgba(229, 72, 77, 0.18); }
+:is(.square-card, .action-panel, .orion, .strike-panel) .signal-options button.intercept { color: #0b0f0d; background: #8fb8ff; border-color: #8fb8ff; }
+:is(.square-card, .action-panel, .orion, .strike-panel) .signal-options button.jam { color: #8fb8ff; border-color: #8fb8ff; }
 @media (prefers-reduced-motion: reduce) { .square-card { animation: none; } }
 /* The action panel (ILI-1211): what HQ can do about the square, docked to the square card. */
 /* Not quite opaque, blurred like the other panels: Chrome mis-composites a fully opaque fixed
    layer over the WebGL map (a white block, flipped, on the software renderer). */
 .action-panel { position: fixed; z-index: 7; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow-y: auto; pointer-events: auto; background: rgba(11, 15, 13, 0.97); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid #e5484d; animation: ask-in 160ms ease-out; }
-.action-panel .ap-head { padding: 7px 10px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--line); }
+:is(.action-panel, .strike-panel) .ap-head { padding: 7px 10px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--line); }
 .action-panel .ap-head b { color: var(--ink); font-weight: 600; }
 .action-panel > .sc-event:first-of-type, .action-panel .ap-head + .sc-row { border-top: none; }
 .action-panel .target-menu .options { grid-template-columns: 1fr 1fr; gap: 6px; }
@@ -622,7 +623,33 @@ html, body {
 .mission .win { list-style: none; margin: 0; padding: 4px 0 0; display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 10px; color: var(--dim); border-top: 1px solid var(--line); }
 .mission .win li[data-done='true'] { color: var(--accent); }
 
-/* The small widgets (ILI-1226): Environment and Logistics, glanced at, not played. */
+/* ENVIRONMENT (ILI-1218): a war-room readout over ORION-3. Corner brackets, a faint grid behind
+   the tiles, each tile an icon, a label and a big monospace value. */
+.env-hud { position: relative; display: grid; gap: 8px; padding: 10px 12px 12px; background:
+  repeating-linear-gradient(0deg, rgba(53, 208, 165, 0.05) 0 1px, transparent 1px 16px),
+  repeating-linear-gradient(90deg, rgba(53, 208, 165, 0.05) 0 1px, transparent 1px 16px), var(--panel); }
+.env-hud::before, .env-hud::after { content: ''; position: absolute; width: 12px; height: 12px; border: 2px solid var(--accent); pointer-events: none; }
+.env-hud::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.env-hud::after { right: -1px; bottom: -1px; border-left: none; border-top: none; }
+.env-hud h2 { display: flex; justify-content: space-between; align-items: baseline; margin: 0; }
+.env-hud .env-stamp { color: var(--dim); font-weight: 400; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
+.env-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.env-tile { display: grid; align-content: start; gap: 3px; min-width: 0; padding: 6px 8px; border: 1px solid rgba(53, 208, 165, 0.2); background: rgba(11, 15, 13, 0.6); }
+.env-tile dt { display: flex; align-items: center; gap: 5px; color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
+.env-tile dd { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.env-icon { width: 14px; height: 14px; flex: none; fill: none; stroke: var(--accent); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 600ms ease-out; }
+.env-meter { display: block; height: 3px; margin-top: 2px; background: rgba(53, 208, 165, 0.15); }
+.env-meter > span { display: block; height: 100%; background: var(--accent); }
+.env-tile[data-key='cloud'] .env-meter > span { background: #8fb8ff; }
+.env-hud[data-wx='Night'] .env-tile[data-key='light'] .env-icon { stroke: #8fb8ff; }
+.env-hud[data-wx='Day'] .env-tile[data-key='light'] .env-icon { stroke: #f2c14e; }
+@media (prefers-reduced-motion: reduce) { .env-icon { transition: none; } }
+/* Slim, on a fold or phone: one line of icons and values. */
+.env.slim .wx { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0; }
+.env.slim .env-bit { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.env.slim .env-icon { width: 12px; height: 12px; }
+
+/* The small widgets (ILI-1226): Environment, slim, on a fold or phone. */
 .small-widget { display: grid; align-content: start; gap: 4px; font-size: 11px; min-width: 0; }
 .small-widget h2 { margin: 0; }
 .small-widget p { margin: 0; color: var(--ink); }
@@ -656,13 +683,20 @@ html, body {
 /* ORION-3's buttons (ILI-1230): a fixed row under the picture, each lit when it can be used;
    Strike leads it, red, when the square has a contact to hit. */
 .orion .o-buttons { display: flex; gap: 6px; align-items: stretch; }
-.orion .o-buttons button { display: grid; justify-items: center; align-content: center; gap: 1px; padding: 3px 8px; }
+.orion .o-buttons button { display: grid; justify-items: center; align-content: center; gap: 1px; padding: 3px 6px; min-width: 0; overflow: hidden; } /* they shrink to fit a fold's rail */
+.orion .o-buttons .modes button { flex: 1 1 0; }
 .orion .o-buttons small { color: var(--dim); text-transform: none; letter-spacing: 0; font-size: 10px; }
 .orion .o-buttons button:hover:not(:disabled) small { color: inherit; }
 .orion .o-buttons .modes { flex: 1; min-width: 0; }
 .orion .o-strike { border-color: #e5484d; color: #e5484d; }
 .orion .o-strike[aria-expanded='true'], .orion .o-strike:hover:not(:disabled) { color: #0b0f0d; background: #e5484d; }
-.orion .o-strikes { display: grid; gap: 0; padding: 0; border-top: 1px solid #e5484d; }
+/* The strike panel (ILI-1233): a tertiary panel the Strike button produces, floating beside
+   ORION-3 (above it on a phone), so nothing in ORION-3 moves. */
+.strike-panel { position: fixed; z-index: 8; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow-y: auto; pointer-events: auto; background: rgba(11, 15, 13, 0.97); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid #e5484d; animation: ask-in 160ms ease-out; }
+.strike-panel .ap-head { display: flex; align-items: center; gap: 6px; }
+.strike-panel .ap-head .x { margin-left: auto; font: inherit; font-size: 16px; line-height: 1; color: var(--dim); background: none; border: 1px solid transparent; min-width: 32px; min-height: 28px; padding: 0; cursor: pointer; }
+.strike-panel .ap-head .x:hover { color: var(--ink); border-color: var(--line); background: none; }
+@media (prefers-reduced-motion: reduce) { .strike-panel { animation: none; } }
 .orion .o-row .bar { flex: 1 1 100%; height: 6px; }
 .orion .o-facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0; font-size: 11px; }
 .orion .o-facts dt { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; font-size: 9px; line-height: 16px; }

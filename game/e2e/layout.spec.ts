@@ -26,7 +26,7 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText(/Holding short of F4|Holding for HQ/); // first call: imagery for F4
 });
 
-test('layout A: mission and COMMS down the left, ORION-3 down the right, small widgets and TEAM along the bottom (ILI-1226)', async ({ page, isMobile }) => {
+test('layout A: mission and COMMS down the left, ENVIRONMENT over ORION-3 down the right, TEAM along the bottom (ILI-1226, ILI-1218)', async ({ page, isMobile }) => {
   await start(page);
   if (isMobile) {
     // One dock, three tabs: COMMS, ORION-3, TEAM; no INTEL (ILI-1225).
@@ -42,7 +42,7 @@ test('layout A: mission and COMMS down the left, ORION-3 down the right, small w
   const mission = await box('mission-strip');
   const comms = await box('satcom');
   const orion = await box('satellite');
-  const small = await box('small-widgets');
+  const env = await box('conditions');
   const team = await box('team-panel');
   const map = await box('map-area');
   // Top left the mission, the clock in it; COMMS under it.
@@ -55,14 +55,16 @@ test('layout A: mission and COMMS down the left, ORION-3 down the right, small w
   expect(orion.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
   expect(orion.x + orion.width).toBeGreaterThan(view.width - 40);
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
-  // Along the bottom: the small widgets, then TEAM, under COMMS and the map.
-  for (const b of [small, team]) {
-    expect(b.y).toBeGreaterThan(comms.y + comms.height - 1);
-    expect(b.y + b.height).toBeGreaterThan(view.height - 40);
-  }
-  expect(small.x).toBeLessThan(40);
-  expect(team.x).toBeGreaterThan(small.x + small.width - 1);
+  // ENVIRONMENT tops the right column, over ORION-3: a HUD readout, every reading a tile.
+  expect(env.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
+  expect(env.y).toBeLessThan(orion.y);
+  expect(orion.y).toBeGreaterThan(env.y + env.height - 1);
+  await expect(page.getByTestId('weather').locator('.env-tile')).toHaveCount(6);
+  await expect(page.getByTestId('small-widgets')).toHaveCount(0);
+  // Along the bottom: TEAM, under COMMS and the map.
+  expect(team.y).toBeGreaterThan(comms.y + comms.height - 1);
+  expect(team.y + team.height).toBeGreaterThan(view.height - 40);
+  expect(team.x).toBeLessThan(40);
   expect(team.x + team.width).toBeLessThanOrEqual(orion.x);
-  await expect(page.getByTestId('weather')).toBeVisible();
   await expect(page.getByTestId('resources')).toHaveCount(0); // no Logistics panel (ILI-1231)
 });
