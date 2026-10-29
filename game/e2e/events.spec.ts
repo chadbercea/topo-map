@@ -27,7 +27,7 @@ test('a new event marks its square on the map; tapping the marker opens its squa
     const side = await card.getAttribute('data-side');
     const near = side === 'left' ? box.x + box.width : box.x; // the edge that faces the square
     expect(Math.abs(near - f4.x)).toBeLessThan(140);
-    expect(box.y).toBeLessThan(f4.y + 120);
+    expect(box.y).toBeLessThan(f4.y + 320); // level with it, or below what keeps it off ALPHA
   }
 
   await card.getByRole('button', { name: 'Close' }).click();

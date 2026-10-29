@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { squareAt } from '../map/grid';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, describe, lookSquare, satelliteBusy, slewMs, type CaptureMode } from '../sim/satellite';
+import { CAPTURE, lookSquare, satelliteBusy, slewMs } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
 import { ground, weather } from '../sim/conditions';
 import { gameSpan, zulu } from '../sim/gameTime';
@@ -14,17 +14,14 @@ import { useTier } from './tier';
 import { alphaBox, obstacles, pick, squareBox } from './overlays';
 import type { GameState } from '../sim/state';
 
-const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
 const WIDTH = 340;
-const PICTURE = 272; // the larger square: one square tall, CSS px (ILI-1206: twice the first cut)
-const THUMB = 128; // on a phone, beside the facts
 const ACTIONS = 300; // the action panel's width
 
 // The square card (ILI-1203): the one place HQ works a square from. Tap a square on the map,
 // or open an event in the intel stream, and a card pins beside it: what HQ knows of the
-// ground, the weather over it, its imagery and what's been found there, and Scan. ORION-3
-// swings over (the countdown is in the header); on station the card opens up to the larger
-// square, the satellite's picture of it, with how to look underneath. The card is recon only
+// ground, the weather over it, its imagery and what's been found there, and Scan, which tasks
+// ORION-3: the scan itself (the countdown, the capture, the larger square) happens in ORION-3's
+// panel (ILI-1219). The card is recon only
 // (ILI-1211): what HQ can do about the square (a strike on each contact, ALPHA's attack,
 // listening to or jamming a signal, a resupply drop) is its own action panel, docked beside
 // the card, shown only when there's something to act on. One card at a time; tapping another
@@ -36,12 +33,10 @@ export function SquareCard() {
   const square = lookSquare(s);
   const cardRef = useRef<HTMLElement>(null);
   const actRef = useRef<HTMLElement>(null);
-  const picRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
   const [actHeight, setActHeight] = useState(0);
   const askHidden = useAskHidden(); // docked, the action panel covers COMMS, and its raised ask with it
   const tier = useTier();
-  const sent = useRef('');
   const placedKey = useRef('');
   const [, redraw] = useState(0);
   useEffect(() => {
@@ -53,7 +48,6 @@ export function SquareCard() {
       bus.off(EV.mapRect, again);
     };
   }, []);
-  // Phaser draws ORION-3's picture of the square into the card's picture frame.
   useLayoutEffect(() => {
     const el = cardRef.current;
     // Their natural heights, not as clamped: where they go sets how tall they may be, and
@@ -63,11 +57,6 @@ export function SquareCard() {
     if (el && settle(height, el.scrollHeight) !== height) setHeight(el.scrollHeight);
     const act = actRef.current;
     if (act && settle(actHeight, act.scrollHeight) !== actHeight) setActHeight(act.scrollHeight);
-    const pic = picRef.current?.getBoundingClientRect();
-    const frame = pic ? { x: Math.round(pic.x), y: Math.round(pic.y), width: Math.round(pic.width), height: Math.round(pic.height) } : null;
-    const key = JSON.stringify(frame);
-    if (key !== sent.current) bus.emit(EV.inset, frame);
-    sent.current = key;
     // Where the card and its actions ended up, for anything that must stay clear of them.
     const r = (e: HTMLElement | null) => e && [e.offsetLeft, e.offsetTop, e.offsetWidth, e.offsetHeight].join();
     const placed = `${r(cardRef.current)}|${r(actRef.current)}`;
@@ -76,7 +65,6 @@ export function SquareCard() {
   });
   useEffect(
     () => () => {
-      bus.emit(EV.inset, null);
       bus.emit(EV.overlays);
     },
     [],
@@ -84,27 +72,25 @@ export function SquareCard() {
 
   const area = getMapRect();
   if (!square || !area) return null;
+  // On a fold or phone ORION-3's scan has the rail or sheet to itself while it works (ILI-1219):
+  // the card steps aside and comes back with what it found.
+  if (tier !== 'wide' && s.satellite.state !== 'idle' && !s.minigame) return null;
   const acting = hasActions(s, square);
   const rail = tier === 'medium' ? railRect() : null;
   let at: Placed;
   let side: Docked | null = null;
-  let pic: { width?: number; height: number };
   if (rail) {
     // The rail: the card on top, the actions under it; the card gives up room to them.
     const room = acting ? rail.height - Math.min(actHeight || 200, rail.height / 2) - 8 : rail.height;
     at = { left: rail.x, top: rail.y, width: rail.width, maxHeight: room, side: 'rail' };
     const below = rail.y + Math.min(height, room) + 8;
     if (acting) side = { left: rail.x, top: below, bottom: undefined, width: rail.width, maxHeight: rail.y + rail.height - below, side: 'rail' };
-    pic = { height: Math.min(PICTURE, Math.round(rail.height * 0.42)) };
   } else if (tier === 'compact') {
     at = docked(area);
     if (acting) side = footed(at.top + height);
-    pic = { width: THUMB, height: THUMB };
   } else {
-    const room = floatArea(area);
-    at = beside(square, room, height, s.team.position);
-    if (acting) side = alongside(at, room, height, actHeight, square, s.team.position);
-    pic = { height: PICTURE };
+    at = beside(square, area, height, s.team.position);
+    if (acting) side = alongside(at, area, height, actHeight, square, s.team.position);
   }
   return (
     <>
@@ -119,7 +105,7 @@ export function SquareCard() {
         role="dialog"
         aria-label={`Square ${square}`}
       >
-        <Card s={s} square={square} picRef={picRef} pic={pic} />
+        <Card s={s} square={square} />
       </section>
       {side && (
         <section
@@ -142,15 +128,6 @@ export function SquareCard() {
 
 type Area = NonNullable<ReturnType<typeof getMapRect>>;
 
-// On a wide screen the map runs on under ORION-3's column wherever its panel doesn't reach
-// (ILI-1226). The card and its actions may float there, clear of ORION-3's panel as of any
-// other panel.
-function floatArea(area: Area): Area {
-  const hud = document.querySelector('.hud');
-  if (!hud) return area;
-  const right = hud.getBoundingClientRect().right - parseFloat(getComputedStyle(hud).paddingRight);
-  return { ...area, width: Math.max(area.width, right - area.x) };
-}
 type Placed = { left: number; top: number; width: number; maxHeight: number; side: string };
 type Docked = { left: number; top?: number; bottom?: number; width: number; maxHeight: number; side: string };
 
@@ -248,7 +225,7 @@ function docked(area: Area): Placed {
   return { left: area.x + 8, top: area.y + 8, width: area.width - 16, maxHeight: Math.round(area.height * 0.85), side: 'dock' };
 }
 
-function Card({ s, square, picRef, pic }: { s: GameState; square: string; picRef: React.RefObject<HTMLDivElement | null>; pic: { width?: number; height: number } }) {
+function Card({ s, square }: { s: GameState; square: string }) {
   const sat = s.satellite;
   const now = s.elapsedMs;
   const working = sat.aim === square && sat.state !== 'idle'; // ORION-3 is on this square
@@ -258,7 +235,6 @@ function Card({ s, square, picRef, pic }: { s: GameState; square: string; picRef
   const snap = s.imagery[square];
   const seen = snap ? freshness(snap, now) : null;
   const found = s.contacts.filter((c) => c.square === square && c.status === 'revealed');
-  const showPicture = working ? sat.state === 'onStation' || sat.state === 'capturing' : !!snap;
   const status = working
     ? sat.state === 'slewing'
       ? `ORION-3 ${gameSpan(sat.arriveMs - now)} away`
@@ -281,7 +257,7 @@ function Card({ s, square, picRef, pic }: { s: GameState; square: string; picRef
           {status}
         </span>
         {!working && snap && (
-          // Already imaged: the picture's the point, so a look again is a small header button.
+          // Already imaged: a look again is a small header button. The picture is ORION-3's (ILI-1219).
           <button className="rescan" disabled={satelliteBusy(s)} onClick={() => game.lookAt(square)} data-testid="look-here">
             Rescan · {slewMs(s, square) ? gameSpan(slewMs(s, square)) : 'now'}
           </button>
@@ -292,16 +268,6 @@ function Card({ s, square, picRef, pic }: { s: GameState; square: string; picRef
       </header>
 
       <div className="sc-body">
-        {showPicture && (
-          <div
-            ref={picRef}
-            className="sc-picture"
-            data-testid="satellite-inset"
-            data-state={working ? sat.state : 'imaged'}
-            style={pic}
-            aria-label={`ORION-3's picture of ${square}`}
-          />
-        )}
         {/* The one home for a square's details (ILI-1220): the clock widget no longer repeats them. */}
         <dl className="facts" data-testid="square-facts">
           <dt>Elevation</dt>
@@ -321,12 +287,6 @@ function Card({ s, square, picRef, pic }: { s: GameState; square: string; picRef
           <dt>Contacts</dt>
           <dd data-testid="square-contacts">
             {found.length ? `${found.length} · ${found.map((c) => c.label).join(', ')}` : snap ? 'none seen' : 'not looked at yet'}
-            {result && ( // what this look saw
-              <span className="result" data-testid="satellite-result">
-                {' '}
-                · {CAPTURE[result.mode].label}: {describe(result)}
-              </span>
-            )}
           </dd>
         </dl>
       </div>
@@ -337,39 +297,6 @@ function Card({ s, square, picRef, pic }: { s: GameState; square: string; picRef
           <button disabled={satelliteBusy(s)} onClick={() => game.lookAt(square)} data-testid="look-here">
             Scan · {slewMs(s, square) ? gameSpan(slewMs(s, square)) : 'now'}
           </button>
-        </div>
-      )}
-      {working && sat.state === 'slewing' && (
-        <div className="sc-row">
-          <span className="bar" role="progressbar" aria-label="ORION-3 moving into position">
-            <span style={{ width: `${Math.min(100, ((now - sat.startMs) / Math.max(1, sat.arriveMs - sat.startMs)) * 100)}%` }} />
-          </span>
-          <button className="quiet" onClick={game.cancelLook}>
-            Cancel
-          </button>
-        </div>
-      )}
-      {working && sat.state === 'onStation' && (
-        <div className="sc-row">
-          <div className="modes" data-testid="capture-modes">
-            {MODES.map((m) => (
-              <button key={m} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what}>
-                {CAPTURE[m].label}
-                <small>{CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
-              </button>
-            ))}
-          </div>
-          <button className="quiet" onClick={game.cancelLook}>
-            Cancel
-          </button>
-        </div>
-      )}
-      {working && sat.state === 'capturing' && (
-        <div className="sc-row">
-          <span className="bar" role="timer" aria-label="Capture time left">
-            <span style={{ width: `${((sat.captureUntilMs - now) / CAPTURE[sat.mode!].ms) * 100}%` }} />
-          </span>
-          <span className="secs">{sat.mode === 'video' ? 'live: watch them move' : 'three frames'}</span>
         </div>
       )}
 

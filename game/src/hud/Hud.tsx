@@ -7,7 +7,8 @@ import { hasActions, SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
 import { Assets } from './Assets';
-import { EnvWidget, MissionPanel, OrionPanel } from './MissionBar';
+import { EnvWidget, MissionPanel } from './MissionBar';
+import { OrionPanel } from './OrionPanel';
 import { CommsPanel } from './CommsPanel';
 import { AskWindow } from './AskWindow';
 import { useAskHidden } from './CommsPanel';
@@ -39,9 +40,10 @@ export function Hud() {
   const askHidden = useAskHidden(); // ALPHA's ask is raised in COMMS: light its tab
   const tier = useTier();
   // What a docked square covers: the whole rail (medium), or the dock under its actions (compact).
+  // While ORION-3 works the card steps aside there (ILI-1219), so nothing is covered.
   const cover = useGame((s) => {
     const sq = lookSquare(s);
-    if (!sq || tier === 'wide') return undefined;
+    if (!sq || tier === 'wide' || (s.satellite.state !== 'idle' && !s.minigame)) return undefined;
     return tier === 'medium' ? 'rail' : hasActions(s, sq) ? 'dock' : undefined;
   });
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
@@ -57,6 +59,14 @@ export function Hud() {
       setSheet((h) => (h === 'peek' ? 'half' : h)); // news opens a peeking sheet
     }
   }, [fresh]);
+  // Tasking ORION-3 brings its panel forward on a fold or phone (ILI-1219).
+  const tasked = useGame((s) => s.satellite.state !== 'idle');
+  useEffect(() => {
+    if (tasked) {
+      setTab('orion');
+      setSheet((h) => (h === 'peek' ? 'half' : h));
+    }
+  }, [tasked]);
   const pick = (t: Tab) => {
     // A tab always shows its panel: a folded sheet opens. Folding is the handle's job.
     setSheet((h) => (h === 'peek' ? 'half' : h));

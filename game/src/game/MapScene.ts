@@ -12,7 +12,7 @@ import { hillshade } from '../map/relief';
 import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
-import { lookSquare, satellitePoint } from '../sim/satellite';
+import { orionSquare, satellitePoint } from '../sim/satellite';
 import { eyesOn, freshness, groupOrigin } from '../sim/imagery';
 
 const TEAL = 0x35d0a5;
@@ -414,13 +414,13 @@ export class MapScene extends Phaser.Scene {
     return m?.kind === 'seekDestroy' && m.status === 'active' ? m.square : null;
   }
 
-  // The larger square (ILI-1203): ORION-3's picture of the square HQ is working, drawn into
-  // the square card's picture frame; the main map doesn't move.
+  // The larger square (ILI-1203): ORION-3's picture of the square it's tasked to (or last
+  // looked at), drawn into the ORION-3 panel's picture frame (ILI-1219); the map doesn't move.
   private inset!: Phaser.Cameras.Scene2D.Camera;
   private insetFrame: InsetRect = null;
   private placeInset(frame: InsetRect = this.insetFrame) {
     this.insetFrame = frame;
-    const id = lookSquare(game.get());
+    const id = orionSquare(game.get());
     const sq = id ? parseSquare(id) : null;
     if (!sq || !frame) return void this.inset.setVisible(false);
     const h = Math.round(frame.height * DPR);
