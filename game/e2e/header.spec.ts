@@ -13,8 +13,8 @@ test('the status widget and the mission strip: deadline, progress, what to do, w
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await expect(page.getByTestId('blockers')).toContainText('ALPHA waiting on your call');
   await expect(page.getByTestId('blockers')).toContainText('No imagery ahead at F4');
-  await fastForward(page, 3_000);
-  await expect(page.getByTestId('clock')).toHaveText(/^3:5\d$/);
+  await fastForward(page, 15_000); // 6 game minutes at 24x
+  await expect(page.getByTestId('clock')).toHaveText(/^3:5[0-4]$/);
 
   if (isMobile) return; // the ground, weather and win conditions wait for a wider screen
   await expect(page.getByTestId('win-checks')).toContainText('5/5 alive');

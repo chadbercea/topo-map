@@ -7,7 +7,7 @@ import type { System } from './systems';
 // leg follows the ground (paths.ts, ILI-1191): roads, stream banks, the easy way up. Climbing
 // slows it.
 
-export const BASE_SPEED = 12; // world units per second on flat ground (a square in ~17 s, ~2.6 km/h in game time)
+export const BASE_SPEED = 7.2; // world units per second on flat ground (a square in ~28 s, ~2.6 km/h in game time)
 const PROBE = 10; // world units ahead used to measure the slope
 const CLIMB_PENALTY = 4; // a 25% uphill grade halves speed
 

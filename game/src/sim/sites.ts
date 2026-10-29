@@ -9,7 +9,7 @@ import type { System } from './systems';
 
 export const CASH_PER_STRIKE_KILL = 1_500;
 export const CASH_PER_TEAM_KILL = 1_000;
-export const SEARCH_MS = 15_000;
+export const SEARCH_MS = 25_000;
 export const SEARCH_CASH = 1_000;
 
 export const earn = (s: GameState, amount: number): GameState => ({ ...s, resources: { ...s.resources, budget: s.resources.budget + amount } });

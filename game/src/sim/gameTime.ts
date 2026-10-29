@@ -1,8 +1,8 @@
 // Game time (ILI-1190): the sim runs in real milliseconds, but the player reads hours and
-// minutes at the scale of a foot patrol. 40× turns the six-minute contract window into four
-// hours, and the team's pace (a 500 m square in ~17 s) into ~2.6 km/h.
+// minutes at the scale of a foot patrol. 24× turns the ten-minute contract window into four
+// hours, and the team's pace (a 500 m square in ~28 s) into ~2.6 km/h.
 
-export const TIME_SCALE = 40;
+export const TIME_SCALE = 24;
 
 const minutes = (ms: number, round: (n: number) => number) => Math.max(0, round((ms * TIME_SCALE) / 60_000));
 

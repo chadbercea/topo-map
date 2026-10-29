@@ -19,7 +19,7 @@ The direction has changed a lot, and the repo keeps the history. I started with 
 
 ## Playing Operation Black Box
 
-A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5), recovers its black box at the crash site **B** (D3), and exfils at **C** (B1). The AO is 4 × 2.5 km in 500 m squares, and you have four hours of game time (six real minutes; the clock runs at 40×).
+A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5), recovers its black box at the crash site **B** (D3), and exfils at **C** (B1). The AO is 4 × 2.5 km in 500 m squares, and you have four hours of game time (ten real minutes; the clock runs at 24×).
 
 - **Sitting down.** There's no briefing. You're HQ's intel cell, and the game opens live in the war room with ALPHA already on the ground: the mission's intel stream down the left, the map, the comms log under the stream, and the team and ORION-3 panels in the bottom-right corner. The clock is running.
 - **The header.** Your anchor: the mission and its phases, the win conditions (black box, everyone alive, exfil), the objective and the next thing to do, what's blocking you, the weather and the ground of the square you're looking at, and the contract window counting down with its closing time. ORION-3, the budget and noise sit by the map's tools.
@@ -38,7 +38,7 @@ A drone went down in fictional hill country. Team ALPHA infiltrates at **A** (G5
 - **The exfil.** Once the black box is out, an enemy salvage convoy pulls onto the exfil at B1 with loot off the wreck, and ALPHA asks: **hit the convoy** for the haul ($8,000 if ALPHA takes it), or **move exfil** west to A2, the long way round (about 3.5 km all told).
 - **The wrap-up.** A win needs the black box at exfil with nobody down. It shows what your intel achieved, what new intel you found, and the payout.
 
-Pause with Esc, P or the ❚❚ button. `?minutes=8` changes the mission length in real minutes, for tuning.
+Pause with Esc, P or the ❚❚ button. `?minutes=8` changes the mission length in real minutes (default 10), for tuning.
 
 ## How it's built
 

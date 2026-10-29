@@ -10,7 +10,7 @@ const press = async (page: Page, name: string, isMobile: boolean) => {
 };
 
 test('no briefing: the game opens live, ALPHA on the ground and the clock running', async ({ page, isMobile }) => {
-  await page.goto('');
+  await page.goto('?debug');
   await expect(page.getByTestId('briefing')).toHaveCount(0);
   await expect(page.getByTestId('sitrep')).toHaveCount(0);
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
@@ -20,7 +20,11 @@ test('no briefing: the game opens live, ALPHA on the ground and the clock runnin
   // Only this mission's intel: the analysts' notes on the crash to start with.
   await expect(page.getByTestId('comms-feed')).toContainText('downed recon drone');
   await expect(page.getByTestId('comms-feed')).not.toContainText('COPPER VEIL');
-  await expect.poll(() => page.getByTestId('clock').textContent(), { timeout: 10_000 }).not.toBe('4:00');
+  // The clock is running on its own; a game minute is 2.5 s of sim at 24x, so once it's seen
+  // ticking, drive it the rest of the way rather than wait on CI's slow frames.
+  await expect.poll(() => tick(page), { timeout: 15_000 }).toBeGreaterThan(0);
+  await fastForward(page, 3_000);
+  await expect(page.getByTestId('clock')).not.toHaveText('4:00');
 });
 
 test('restart starts the mission over, live, at 4:00', async ({ page, isMobile }) => {

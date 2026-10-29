@@ -76,9 +76,9 @@ export type GameState = {
 // The mission being played; see missions/. Its route runs A (infil), B (the crash site), C (exfil).
 export const MISSION: MissionDef = BLACK_BOX;
 export const ROUTE: SquareId[] = MISSION.route;
-export const MISSION_MS = MISSION.durationMs; // GDD: start with six minutes and tune by feel
+export const MISSION_MS = MISSION.durationMs; // GDD started at six minutes; ten since ILI-1251
 
-// missionMs: the mission's length, the script's six minutes unless tuned (?minutes=). This is
+// missionMs: the mission's length, the script's ten minutes unless tuned (?minutes=). This is
 // how the game opens: live, ALPHA on the ground, the clock running.
 export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS): GameState {
   const operators = roster();

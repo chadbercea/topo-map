@@ -29,7 +29,7 @@ describe('wrap-up', () => {
   });
 
   it('time running out before exfil is a failure: no contract', () => {
-    const s = run({ ...initialState(), timer: { remainingMs: 1_000, totalMs: 360_000 } }, 1_100);
+    const s = run({ ...initialState(), timer: { remainingMs: 1_000, totalMs: 600_000 } }, 1_100);
     expect(s.phase).toBe('ended');
     const w = wrapUp(s);
     expect(w.outcome).toBe('failed');
@@ -51,8 +51,8 @@ describe('wrap-up', () => {
     expect(w.budget).toBe(CONTRACT + 4_500);
   });
 
-  it('the six-minute clock is the limit', () => {
-    expect(MISSION_MS).toBe(360_000);
+  it('the ten-minute clock is the limit', () => {
+    expect(MISSION_MS).toBe(600_000);
   });
 });
 

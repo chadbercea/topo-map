@@ -16,7 +16,7 @@ export function MissionPanel() {
   const { timer, phase, tick } = s;
   const now = s.elapsedMs;
   const remaining = timer.remainingMs;
-  const warn = remaining <= 60_000 ? 'red' : remaining <= 180_000 ? 'amber' : undefined;
+  const warn = remaining <= 100_000 ? 'red' : remaining <= 300_000 ? 'amber' : undefined;
   const next = nextUp(s);
   const blocks = blockers(s);
 
