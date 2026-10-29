@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, untilOnStation, openAsk, linked, hasEvent } from './helpers';
+import { fastForward, freeze, start, untilOnStation, openAsk, linked, hasEvent, photo } from './helpers';
 
 test('pick a square, Scan: ORION-3 repositions, then on station the larger square and the captures are in its panel (ILI-1219)', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
@@ -18,7 +18,7 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   // The image area holds its place: the placeholder (later the Three.js satellite, ILI-1229).
   await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
   await expect(sat.getByTestId('orion-placeholder')).toContainText('No imagery of E3 · Scan');
-  await expect(page.getByTestId('look-here')).toHaveText(/Scan · \d+ min/);
+  await expect(page.getByTestId('look-here')).toHaveText(/^Scan\s*\d+ min$/);
   await page.getByTestId('look-here').click();
 
   // ORION-3 repositions, in its own panel: a countdown that runs down, and nothing to press
@@ -27,7 +27,10 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   await expect(moving).toBeVisible();
   await expect(moving).toContainText(/Repositioning to E3 · \d+ min/);
   await expect(sat.getByTestId('orion-placeholder')).toContainText('On its way to E3');
-  await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
+  // ORION-3's buttons keep their place under the picture, unlit while it moves (ILI-1230).
+  for (const m of ['photo', 'burst', 'video']) await expect(sat.getByTestId(`capture-${m}`)).toBeDisabled();
+  await expect(sat.getByTestId('look-here')).toBeDisabled();
+  await expect(sat.getByRole('button', { name: 'Cancel' })).toHaveCount(0); // no Cancel
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
   await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+ min away/); // the square, in the same panel (ILI-1228)
   await untilOnStation(page);
@@ -50,7 +53,10 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   await expect(page.getByTestId('comms-feed')).toContainText('E3 imaged (burst): 5 fighters, unaware');
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
-  const act = page.getByTestId('action-panel');
+  // The strikes are ORION-3's too (ILI-1230): Strike leads its row now there's a contact.
+  await expect(page.getByTestId('action-panel')).toHaveCount(0); // nothing else to do here
+  await sat.getByTestId('strike-toggle').click();
+  const act = sat.getByTestId('strike-menu');
   await expect(card.getByTestId('event-card')).toHaveCount(0);
   await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
   if (isMobile) {
@@ -81,11 +87,19 @@ test('ALPHA asks for imagery: Look at it, then a photo on station lets it move',
   await expect(page.getByTestId('team-panel')).toContainText('Moving to F4');
 });
 
-test('Cancel calls it off while it moves', async ({ page }) => {
+test('Strike shows only when the square has a contact, and opens the strike menu (ILI-1230)', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
-  await page.evaluate(() => window.game.lookAt('A1'));
-  await page.getByTestId('satellite').getByRole('button', { name: 'Cancel' }).click(); // in ORION-3's panel (ILI-1219)
-  await expect(page.getByTestId('satellite')).toHaveAttribute('data-state', 'idle'); // it goes back to idle
+  const sat = page.getByTestId('satellite');
+  await page.evaluate(() => window.game.selectSquare('F4'));
+  await expect(sat.getByTestId('look-here')).toBeEnabled();
+  await expect(sat.getByTestId('strike-toggle')).toHaveCount(0); // nothing to hit in F4
+  await photo(page, 'E3'); // finds the checkpoint
+  await page.evaluate(() => window.game.selectSquare('E3'));
+  await expect(sat.getByTestId('strike-menu')).toHaveCount(0);
+  await sat.getByTestId('strike-toggle').click();
+  await expect(sat.getByTestId('strike-menu').getByTestId('fire-drone')).toBeVisible();
+  await sat.getByTestId('strike-toggle').click();
+  await expect(sat.getByTestId('strike-menu')).toHaveCount(0);
 });

@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, describe, lookSquare, orionSquare, satelliteStatus, type CaptureMode } from '../sim/satellite';
+import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, slewMs, type CaptureMode } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
 import { gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
 import { Actions, Card, hasActions } from './SquareCard';
+import { TargetMenu } from './TargetMenu';
 import { useTier } from './tier';
 
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
@@ -28,6 +29,15 @@ export function OrionPanel() {
 
   const result = sat.state === 'idle' ? sat.result : null;
   const picked = lookSquare(s); // the square HQ is working
+  // Contacts in it HQ can hit (ILI-1230): the Strike button and its menu. Opening a contact's
+  // task from the map opens the menu with it.
+  const strikes = picked && !tied ? s.events.filter((e) => e.square === picked && e.kind === 'contact' && e.id.startsWith('contact-') && e.status !== 'resolved') : [];
+  const [strikeFor, setStrikeFor] = useState<string | null>(null);
+  const opened = s.events.find((e) => e.id === s.openEvent);
+  useEffect(() => {
+    if (opened?.kind === 'contact') setStrikeFor(opened.square);
+  }, [opened?.id, opened?.kind, opened?.square]);
+  const striking = strikes.length > 0 && strikeFor === picked;
   const tier = useTier();
   const phone = tier === 'compact';
   // The larger square while ORION-3 is on it, or a picked square it has imagery of; else the
@@ -93,6 +103,43 @@ export function OrionPanel() {
         )}
       </div>
 
+      {/* ORION-3's buttons, always here under the picture (ILI-1230): each lit when it can be used.
+          Strike leads the row when the square has a contact HQ can hit. */}
+      <div className="o-buttons" data-testid="orion-buttons">
+        {strikes.length > 0 && (
+          <button className="o-strike" aria-expanded={striking} onClick={() => setStrikeFor(striking ? null : picked)} data-testid="strike-toggle">
+            Strike<small>{strikes.length > 1 ? `${strikes.length} contacts` : 'menu'}</small>
+          </button>
+        )}
+        <button className="o-scan" disabled={!picked || tied || sat.state !== 'idle' || satelliteBusy(s)} onClick={() => picked && game.lookAt(picked)} data-testid="look-here">
+          {picked && s.imagery[picked] ? 'Rescan' : 'Scan'}
+          <small>{picked ? (slewMs(s, picked) ? gameSpan(slewMs(s, picked)) : 'now') : 'pick a square'}</small>
+        </button>
+        <div className="modes" data-testid="capture-modes">
+          {MODES.map((m) => (
+            <button key={m} disabled={tied || sat.state !== 'onStation'} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what}>
+              {CAPTURE[m].label}
+              <small>{CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {striking && (
+        // The strike menu (ILI-1230): every way to hit each contact in the square.
+        <div className="o-strikes" data-testid="strike-menu">
+          {strikes.map((e) => (
+            <div key={e.id} className="sc-event event-card" data-kind="contact" data-testid="event-card">
+              <h3>
+                CONTACT · {e.square}
+              </h3>
+              <p className="title">{e.title}</p>
+              <TargetMenu contactId={e.id.slice('contact-'.length)} />
+            </div>
+          ))}
+        </div>
+      )}
+
       {!tied && sat.state === 'slewing' && (
         // Repositioning: the countdown decays to nothing, then the options appear.
         <div className="o-move" data-testid="orion-repositioning">
@@ -102,28 +149,10 @@ export function OrionPanel() {
           <p className="o-line">
             Repositioning to {sat.aim} · <b>{gameSpan(left)}</b>
           </p>
-          <button className="quiet" onClick={game.cancelLook}>
-            Cancel
-          </button>
         </div>
       )}
 
 
-      {!tied && sat.state === 'onStation' && (
-        <div className="o-row">
-          <div className="modes" data-testid="capture-modes">
-            {MODES.map((m) => (
-              <button key={m} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what}>
-                {CAPTURE[m].label}
-                <small>{CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
-              </button>
-            ))}
-          </div>
-          <button className="quiet" onClick={game.cancelLook}>
-            Cancel
-          </button>
-        </div>
-      )}
 
       {!tied && sat.state === 'capturing' && (
         <div className="o-row">
