@@ -63,6 +63,7 @@ test('drone strike: its panel counts down to target, then it clears the square, 
   await expect(log).toContainText('All targets neutralized');
   await expect(page.getByTestId('comms-feed')).toContainText('E3: all targets neutralized. 5 down.');
   await expect.poll(() => hasEvent(page, 'site', 'E3')).toBe(true); // ALPHA can search it
+  await expect(page.getByTestId('action-panel')).toHaveCount(0); // but no card for it: the X marks are the aftermath
   // Then the panel goes.
   await tick(3_500);
   await expect(panel).toHaveCount(0);
