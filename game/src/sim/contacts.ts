@@ -3,7 +3,7 @@ import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
 import { treeCall } from './responses';
-import { pass, search } from './sites';
+import { pass } from './sites';
 import { isMissionPoint } from './mission';
 import { sendResupply } from './support';
 import { nextRandom } from './firefight';
@@ -142,7 +142,7 @@ function holdOn(s: GameState, c: { node: string; id: string; square: SquareId; l
 }
 
 // The effects HQ's answers have on a contact or an unimaged square.
-export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'search' | 'pass' | 'resupply' | 'divert';
+export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'pass' | 'resupply' | 'divert';
 
 export function applyEffect(s: GameState, effect: Effect, square: SquareId): GameState {
   const decide = (d: Decision) => ({ ...s.team, decisions: { ...s.team.decisions, [square]: d } });
@@ -166,8 +166,6 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
     }
     case 'avoid':
       return detour(s, square);
-    case 'search':
-      return search(s, square);
     case 'pass':
       return pass(s, square);
     case 'resupply':
