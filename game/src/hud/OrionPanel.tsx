@@ -6,6 +6,7 @@ import { gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
 import { Actions, Card, hasActions } from './SquareCard';
 import { TargetMenu } from './TargetMenu';
+import { OrionAvatar } from './OrionAvatar';
 import { useTier } from './tier';
 
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
@@ -106,7 +107,7 @@ export function OrionPanel() {
           <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`ORION-3's picture of ${square}`} />
         ) : (
           <div className="o-placeholder" data-testid="orion-placeholder" data-state={tied ? 'tied' : sat.state}>
-            <SatelliteMark />
+            <OrionAvatar state={tied ? 'tied' : sat.state === 'slewing' ? 'slewing' : 'idle'} fallback={<SatelliteMark />} />
             <span className="o-caption">{caption}</span>
           </div>
         )}
@@ -223,7 +224,7 @@ function strikeSpot(row: HTMLElement | null, phone: boolean): React.CSSPropertie
   return { left: 8, width: innerWidth - 16, bottom: innerHeight - panel.top + 8, maxHeight: panel.top - 16 };
 }
 
-// Where the Three.js satellite goes (ILI-1196): for now a still mark, ORION-3 in outline.
+// ORION-3 in outline, still: shown until the Three.js satellite loads, or without WebGL (ILI-1196).
 function SatelliteMark() {
   return (
     <svg className="o-sat" viewBox="0 0 120 60" aria-hidden>

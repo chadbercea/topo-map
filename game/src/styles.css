@@ -671,6 +671,11 @@ html, body {
 .orion .o-sat { width: min(55%, 180px); fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.7; }
 .orion .o-placeholder[data-state='slewing'] .o-sat { stroke: #f2c14e; }
 .orion .o-placeholder[data-state='tied'] .o-sat { stroke: var(--dim); }
+/* The Three.js ORION-3 (ILI-1196): a box the canvas fills, wing-span wide. The SVG mark sits in it
+   until Three.js loads. */
+.orion .o-sat-3d { position: relative; display: grid; place-items: center; width: min(88%, 300px); aspect-ratio: 3 / 2; }
+.orion .o-sat-3d > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.orion .o-sat-3d > .o-sat { width: 70%; }
 .orion .o-caption { color: var(--dim); font-size: 12px; }
 .orion .o-picture[data-state='capturing'] { outline: 1px solid var(--line); outline-offset: -1px; animation: sat-pulse 1s ease-in-out infinite alternate; }
 .orion .o-move { display: grid; gap: 8px; }
@@ -777,6 +782,8 @@ html, body {
   .hud[data-playing='true'] .minigame .instructions { display: none; }
   .square-card > .sc-body { flex-direction: row; }
   .orion .o-frame { aspect-ratio: auto; height: 120px; } /* fixed, and small: the sheet is short */
+  .orion .o-placeholder { gap: 4px; padding: 6px; }
+  .orion .o-sat-3d { width: auto; height: 76px; } /* ILI-1196: fits the band over the caption */
     .square-card .facts { font-size: 10px; }
   .comms .actions button { min-height: 32px; padding: 0 8px; font-size: 10px; }
   /* The action panel on a phone: tight, so every strike shows under the card. */
