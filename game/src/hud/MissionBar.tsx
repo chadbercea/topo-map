@@ -6,10 +6,11 @@ import { gameClock, gameSpan, zulu } from '../sim/gameTime';
 export const clock = (ms: number) => gameClock(ms);
 
 // MISSION · BLACK BOX (ILI-1226, layout A): the contract window and the mission in one panel,
-// top left. The clock and pause beside the mission's name, then its phases, what to do
-// (objective, next), what's in the way (blockers) and the win conditions. On a fold it floats
-// over the map's top-left corner; on a phone it's the line on top. A square's ground is on its
-// card (ILI-1220); the weather and HQ's money are small widgets along the bottom.
+// top left, a war-room readout like ENVIRONMENT (ILI-1234). The contract window first: its clock
+// big, pause beside it, a bar running down with the time left (amber, then red, as the clock
+// goes), and when it closes and what time it is now. Then the mission's phases as a track, what
+// to do (objective, next), what's in the way (blockers) and the win conditions. On a fold it
+// floats over the map's top-left corner; on a phone it's the panel on top, one tight block.
 export function MissionPanel() {
   const s = useGame((x) => x);
   const { timer, phase, tick } = s;
@@ -19,13 +20,24 @@ export function MissionPanel() {
   const next = nextUp(s);
   const blocks = blockers(s);
 
+  const left = Math.max(0, Math.min(1, remaining / Math.max(1, timer.totalMs)));
+
   return (
-    <section className="panel mission" data-testid="mission-strip" data-phase={phase} data-overlay="widget">
+    <section className="panel mission" data-testid="mission-strip" data-phase={phase} data-warn={warn} data-overlay="widget">
+      <h2 className="m-title">
+        <span>{s.mission.name.replace('Operation ', '').toUpperCase()}</span>
+        <span className="m-stamp">OPS · {zulu(now)}</span>
+      </h2>
       <div className="m-head" data-testid="mission-timer" data-phase={phase}>
-        <h2>{s.mission.name.replace('Operation ', '').toUpperCase()}</h2>
-        <span className="clock" data-testid="clock" data-warn={warn}>
-          {clock(remaining)}
-        </span>
+        <div className="m-readout">
+          <span className="m-label">
+            <ClockIcon />
+            Contract window
+          </span>
+          <span className="clock" data-testid="clock" data-warn={warn}>
+            {clock(remaining)}
+          </span>
+        </div>
         <button className="pause" onClick={game.pause} disabled={phase !== 'running'} aria-label="Pause" data-testid="pause-toggle">
           ❚❚
         </button>
@@ -33,7 +45,19 @@ export function MissionPanel() {
           {tick}
         </span>
       </div>
-      <p className="when">{`Contract window · closes ${zulu(timer.totalMs)} · now ${zulu(now)}`}</p>
+      <span className="m-decay" role="progressbar" aria-label="Contract window left" aria-valuenow={Math.round(left * 100)} aria-valuemin={0} aria-valuemax={100}>
+        <span style={{ width: `${left * 100}%` }} />
+      </span>
+      <dl className="m-times">
+        <div>
+          <dt>Closes</dt>
+          <dd>{zulu(timer.totalMs)}</dd>
+        </div>
+        <div>
+          <dt>Now</dt>
+          <dd>{zulu(now)}</dd>
+        </div>
+      </dl>
       <ol className="pips" data-testid="phase-pips">
         {phasePips(s).map((p) => (
           <li key={p.key} data-state={p.state} title={p.label}>
@@ -72,3 +96,11 @@ export function MissionPanel() {
     </section>
   );
 }
+
+// A clock face, in the readout's line style (like ENVIRONMENT's icons).
+const ClockIcon = () => (
+  <svg className="env-icon" viewBox="0 0 16 16" aria-hidden>
+    <circle cx="8" cy="8" r="6" />
+    <path d="M8 4.5V8l2.5 1.5" />
+  </svg>
+);
