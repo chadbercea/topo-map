@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, untilOnStation, openAsk, linked, hasEvent, photo } from './helpers';
+import { fastForward, freeze, start, untilOnStation, openAsk, linked, hasEvent, photo, worldToScreen } from './helpers';
 
 test('pick a square, Reposition: ORION-3 moves, then on station the shots take its place (ILI-1219, ILI-1250)', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
@@ -57,9 +57,9 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(page.getByTestId('comms-feed')).toContainText('E3 imaged (burst): 5 fighters, unaware');
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
-  // The strikes are ORION-3's too (ILI-1230): Strike leads its row now there's a contact.
+  // The strikes are ORION-3's too (ILI-1230): a tap on a fighter in its picture opens them (ILI-1250).
   await expect(page.getByTestId('action-panel')).toHaveCount(0); // nothing else to do here
-  await sat.getByTestId('strike-toggle').click();
+  await sat.getByTestId('target-pin').first().click();
   const act = sat.getByTestId('strike-menu');
   await expect(card.getByTestId('event-card')).toHaveCount(0);
   await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
@@ -91,21 +91,41 @@ test('ALPHA asks for imagery: Look at it, then a photo on station lets it move',
   await expect(page.getByTestId('team-panel')).toContainText('Moving to F4');
 });
 
-test('Strike shows only when the square has a contact, and opens the strike menu (ILI-1230)', async ({ page }) => {
+test('a fighter in ORION-3\u2019s picture opens its strikes; there\u2019s no Strike button (ILI-1250)', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   const sat = page.getByTestId('satellite');
   await page.evaluate(() => window.game.selectSquare('F4'));
   await expect(sat.getByTestId('look-here')).toBeEnabled();
-  await expect(sat.getByTestId('strike-toggle')).toHaveCount(0); // nothing to hit in F4
   await photo(page, 'E3'); // finds the checkpoint
   await page.evaluate(() => window.game.selectSquare('E3'));
   await expect(sat.getByTestId('strike-menu')).toHaveCount(0);
-  await sat.getByTestId('strike-toggle').click();
+  await expect(sat.getByTestId('strike-toggle')).toHaveCount(0);
+  const pins = sat.getByTestId('target-pin');
+  await expect(pins).toHaveCount(5); // one per fighter it saw
+  await pins.first().click();
   await expect(sat.getByTestId('strike-menu').getByTestId('fire-drone')).toBeVisible();
-  await sat.getByTestId('strike-toggle').click();
+  await sat.getByTestId('strike-menu').getByRole('button', { name: 'Close strikes' }).click();
   await expect(sat.getByTestId('strike-menu')).toHaveCount(0);
+  await expect(page.getByTestId('square-card')).toHaveAttribute('data-square', 'E3'); // the square stays picked
+});
+
+test('a fighter on the map opens its strikes too (ILI-1250)', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'a phone taps them in ORION-3\u2019s picture');
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  await photo(page, 'E3');
+  await page.evaluate(() => window.game.closeSquare());
+  const spot = await page.evaluate(() => {
+    const seen = window.game.get().imagery.E3!.seen[0];
+    const u = seen.units[0];
+    return { x: seen.x + ((u % 4) + 0.5) * 50, y: seen.y + (Math.floor(u / 4) + 0.5) * 50 };
+  });
+  const p = await worldToScreen(page, spot.x, spot.y);
+  await page.mouse.click(p.x, p.y);
+  await expect(page.getByTestId('strike-menu').getByTestId('fire-sniper')).toBeVisible();
 });
 
 test('over a square it has already shot, no Reposition and no Rescan: the shots are there (ILI-1250)', async ({ page }) => {

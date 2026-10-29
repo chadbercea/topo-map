@@ -50,8 +50,8 @@ for (const [name, width, height] of SIZES) {
     await expect(card).toHaveAttribute('data-square', 'E3');
     const c = await box(card);
     expect(c.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
-    // Its strikes are in the same panel, behind Strike (ILI-1230).
-    await page.getByTestId('strike-toggle').click();
+    // Its strikes open from a fighter in ORION-3's picture (ILI-1250).
+    await page.getByTestId('target-pin').first().click();
     const menu = page.getByTestId('strike-menu');
     await menu.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
     await expect(menu.getByTestId('fire-sniper')).toBeVisible();

@@ -72,6 +72,8 @@ export function createStore(initial: GameState = initialState()) {
       });
     },
     closeEvent: () => set(closeSquare(state)),
+    // Close an event's panel (its strikes, ILI-1250) and leave its square picked.
+    dropEvent: () => state.openEvent && set({ ...state, openEvent: null }),
     confirmCall: (id: string) => set(send(state, id, null)),
     respond: (id: string, responseId: string) => set(send(state, id, responseId)),
     tapMiniGame: (square: string, cell?: number) => state.phase === 'running' && set(tapMiniGame(state, square, cell)),
