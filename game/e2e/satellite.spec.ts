@@ -20,14 +20,13 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
   await page.getByTestId('look-here').click();
 
   // ORION-3 repositions, in its own panel: a countdown that runs down, and nothing to press
-  // but Cancel. On a fold or phone its tab comes forward and the card steps aside.
+  // but Cancel. On a fold or phone its tab comes forward.
   const moving = page.getByTestId('orion-repositioning');
   await expect(moving).toBeVisible();
   await expect(moving).toContainText(/Repositioning to E3 · \d+ min/);
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
-  if (isMobile) await expect(card).toHaveCount(0);
-  else await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+ min away/);
+  await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+ min away/); // the square, in the same panel (ILI-1228)
   await untilOnStation(page);
 
   // On station the panel opens up: the larger square, and the ways to look.
@@ -43,15 +42,22 @@ test('pick a square, Scan: ORION-3 repositions, then on station the larger squar
 
   // What it saw stays in the panel; the find is on the card, the strikes beside it.
   await expect(sat.getByTestId('satellite-result')).toContainText('Burst: 5 fighters, unaware');
-  await expect(sat.getByTestId('satellite-inset')).toBeAttached(); // the picture stays up
+  // The picture stays up; a phone's small sheet gives the square and its strikes the room.
+  await expect(sat.getByTestId('satellite-inset')).toHaveCount(isMobile ? 0 : 1);
   await expect(page.getByTestId('comms-feed')).toContainText('E3 imaged (burst): 5 fighters, unaware');
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
   const act = page.getByTestId('action-panel');
   await expect(card.getByTestId('event-card')).toHaveCount(0);
   await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
-  await expect(act.getByTestId('fire-sniper')).toBeInViewport({ ratio: 1 });
-  await expect(act.getByTestId('send-team')).toBeInViewport({ ratio: 1 });
+  if (isMobile) {
+    // A phone: in ORION-3's sheet, under the square, a scroll (or a pull on the grip) away.
+    await act.getByTestId('send-team').scrollIntoViewIfNeeded();
+    await expect(act.getByTestId('fire-sniper')).toBeVisible();
+  } else {
+    await expect(act.getByTestId('fire-sniper')).toBeInViewport({ ratio: 1 });
+    await expect(act.getByTestId('send-team')).toBeInViewport({ ratio: 1 });
+  }
   await card.getByRole('button', { name: 'Close' }).click();
   await expect(card).toHaveCount(0); // closed: the look is filed
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');

@@ -133,7 +133,6 @@ export class MapScene extends Phaser.Scene {
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT,F', false) as Record<string, Phaser.Input.Keyboard.Key>;
     this.keys.F.on('down', () => !typing() && this.recentre());
     bus.on(EV.recentre, this.recentre, this);
-    bus.on(EV.overlays, this.measureDock, this);
     // Touch and mouse (ILI-1214): drag pans, a tap (released where it went down) selects, two
     // fingers pinch-zoom, and so does the wheel.
     this.input.addPointer(1);
@@ -158,7 +157,6 @@ export class MapScene extends Phaser.Scene {
       bus.off(EV.mapRect, this.layout, this);
       bus.off(EV.inset, this.placeInset, this);
       bus.off(EV.recentre, this.recentre, this);
-      bus.off(EV.overlays, this.measureDock, this);
       this.unsubscribe?.();
     });
 
@@ -494,18 +492,9 @@ export class MapScene extends Phaser.Scene {
     if (this.panned) bus.emit(EV.panned, (this.panned = false));
   }
 
-  // Where ALPHA is centred, in device px: the open map, below a square card docked across its
-  // top on a phone (ILI-1227), so the card never sits on ALPHA.
-  private dockBottom = 0;
-  private measureDock() {
-    const card = document.querySelector('.square-card[data-side="dock"]');
-    this.dockBottom = card ? card.getBoundingClientRect().bottom : 0;
-  }
+  // Where ALPHA is centred, in device px: the open map.
   private openArea(r: ReturnType<typeof getMapRect>, width: number, height: number) {
-    const area = r ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR } : { x: 0, y: 0, w: width, h: height };
-    const top = this.dockBottom * DPR;
-    if (top <= area.y || top >= area.y + area.h - 24 * DPR) return area; // room for ALPHA, at least
-    return { ...area, y: top, h: area.y + area.h - top };
+    return r ? { x: r.x * DPR, y: r.y * DPR, w: r.width * DPR, h: r.height * DPR } : { x: 0, y: 0, w: width, h: height };
   }
 
   // The open part of the screen the grid covers, in device px (ILI-1186): below the mission

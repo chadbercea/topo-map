@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { squarePoint, start, tapAt } from './helpers';
 
-test('a new event marks its square on the map; tapping the marker opens its square card beside it (ILI-1225)', async ({ page, isMobile }) => {
+test('a new event marks its square on the map; tapping the marker picks it: its details in ORION-3, its actions beside it (ILI-1228)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'F4', title: 'Test contact' }));
@@ -15,24 +15,25 @@ test('a new event marks its square on the map; tapping the marker opens its squa
   // Marker sits in the square's top-right quarter (F4 = col 5, row 3: next to ALPHA, in view).
   await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25, -0.25));
   const card = page.getByTestId('square-card');
-  await expect(card).toBeVisible(); // recon on the card; what to do about it beside it (ILI-1211)
-  await expect(page.getByTestId('action-panel').getByTestId('event-card')).toContainText('Test contact');
+  const act = page.getByTestId('action-panel');
+  await expect(page.getByTestId('satellite').getByTestId('square-card')).toBeVisible(); // in ORION-3's panel
+  await expect(act.getByTestId('event-card')).toContainText('Test contact');
   await expect.poll(status).toBe('seen'); // seen, so no longer flagged
-  await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the event opens its square's card
+  await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the event picks its square
 
   if (!isMobile) {
-    // Beside its square: the card's near edge is within a square's width of F4.
-    const box = (await card.boundingBox())!;
+    // The actions float beside the square: their near edge within a square's width of F4.
+    const box = (await act.boundingBox())!;
     const f4 = await squarePoint(page, 5, 3);
-    const side = await card.getAttribute('data-side');
+    const side = await act.getAttribute('data-side');
     const near = side === 'left' ? box.x + box.width : box.x; // the edge that faces the square
-    expect(Math.abs(near - f4.x)).toBeLessThan(140);
+    expect(Math.abs(near - f4.x)).toBeLessThan(160);
     expect(box.y).toBeLessThan(f4.y + 320); // level with it, or below what keeps it off ALPHA
   }
 
   await card.getByRole('button', { name: 'Close' }).click();
   await expect(card).toHaveCount(0);
-  await expect(page.getByTestId('action-panel')).toHaveCount(0); // closing the card closes both
+  await expect(act).toHaveCount(0); // unpicking the square closes its actions
 });
 
 test('a report line that names a square in COMMS opens that square (ILI-1225)', async ({ page, isMobile }) => {
