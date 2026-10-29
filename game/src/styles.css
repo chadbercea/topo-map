@@ -641,40 +641,35 @@ html, body {
 .mission::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
 .mission::after { right: -1px; bottom: -1px; border-left: none; border-top: none; }
 .mission .m-title { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0; }
-.mission .m-stamp { color: var(--dim); font-weight: 400; letter-spacing: 0.08em; font-variant-numeric: tabular-nums; }
 .mission .m-head { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border: 1px solid rgba(53, 208, 165, 0.2); background: rgba(11, 15, 13, 0.6); }
 .mission .m-readout { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .mission .m-label { display: flex; align-items: center; gap: 5px; color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
 .mission .m-label .env-icon { stroke: var(--tone); }
 .mission .clock { font-size: 34px; line-height: 1; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--tone); text-shadow: 0 0 12px color-mix(in srgb, var(--tone) 35%, transparent); }
 .mission .pause { align-self: stretch; }
-.mission .m-decay { display: block; height: 4px; background: color-mix(in srgb, var(--tone) 15%, transparent); }
-.mission .m-decay > span { display: block; height: 100%; background: var(--tone); transition: width 400ms linear; }
-.mission .m-times { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0; }
-.mission .m-times > div { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; padding: 3px 8px; border: 1px solid rgba(53, 208, 165, 0.15); }
-.mission .m-times dt { color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
-.mission .m-times dd { margin: 0; color: var(--ink); font-size: 11px; font-variant-numeric: tabular-nums; }
-@media (prefers-reduced-motion: reduce) { .mission .m-decay > span { transition: none; } }
-.pips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 0; font-size: 10px; color: var(--dim); }
-.pips li { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-/* A track (ILI-1234): each phase joined to the next by a line, done ones lit. */
-.mission .pips li + li::before { content: ''; width: 14px; height: 1px; margin: 0 6px 0 4px; background: var(--line); }
-.mission .pips li[data-state='done'] + li::before, .mission .pips li[data-state='current']::before { background: var(--accent); }
-.pips li[data-state='done'] .pip { background: var(--accent); border-color: var(--accent); color: #0b0f0d; }
-.pips li[data-state='current'] { color: var(--ink); }
-.pips li[data-state='current'] .pip { border-color: #f2c14e; color: #f2c14e; }
+.mission .race { position: relative; display: grid; gap: 4px; padding-bottom: 12px; }
+.mission .race-time, .mission .race-route { display: block; height: 4px; background: color-mix(in srgb, var(--tone) 15%, transparent); }
+.mission .race-time > span { display: block; height: 100%; background: var(--tone); transition: width 400ms linear; }
+.mission .race-route { background: rgba(242, 193, 78, 0.15); }
+.mission .race-route > span { display: block; height: 100%; background: #f2c14e; transition: width 400ms linear; }
+.mission .race[data-behind='true'] .race-route { background: rgba(229, 72, 77, 0.45); box-shadow: 0 0 8px rgba(229, 72, 77, 0.5); }
+.mission .race[data-behind='true'] .race-route > span { background: #e5484d; }
+.mission .race[data-behind='true'] .race-marks li, .mission .race[data-behind='true'] .race-marks li[data-passed='true'] { color: #e5484d; }
+.mission .race[data-behind='true'] .race-marks li::before { background: #e5484d; }
+.mission .race-marks { list-style: none; margin: 0; padding: 0; position: absolute; left: 0; right: 0; top: 8px; height: 0; }
+.mission .race-marks li { position: absolute; transform: translateX(-50%); display: grid; justify-items: center; font-size: 9px; line-height: 1; color: var(--dim); }
+.mission .race-marks li::before { content: ''; width: 1px; height: 7px; margin-bottom: 1px; background: var(--dim); }
+.mission .race-marks li:first-child { transform: none; justify-items: start; }
+.mission .race-marks li:last-child { transform: translateX(-100%); justify-items: end; }
+.mission .race-marks li[data-passed='true'] { color: #f2c14e; }
+.mission .race-marks li[data-passed='true']::before { background: #f2c14e; }
+@media (prefers-reduced-motion: reduce) { .mission .race-time > span, .mission .race-route > span { transition: none; } }
 .mission .objective { margin: 0; color: #f2c14e; font-size: 12px; }
-.mission .next { margin: 0; color: var(--ink); font-size: 11px; }
-.next[data-tone='threat'] { color: #e5484d; }
-.next[data-tone='support'] { color: var(--accent); }
-.mission .blockers { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px 6px; flex-wrap: wrap; font-size: 10px; }
-.blockers li { white-space: nowrap; padding: 0 6px; border: 1px solid var(--line); color: var(--ink); }
-.blockers li[data-tone='decision'] { border-color: #f2c14e; color: #f2c14e; }
-.blockers li[data-tone='threat'] { border-color: #e5484d; color: #e5484d; }
-.blockers li.clear { border-color: transparent; color: var(--dim); padding: 0; }
-.blockers li.more { color: var(--dim); }
-.mission .win { list-style: none; margin: 0; padding: 4px 0 0; display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 10px; color: var(--dim); border-top: 1px solid var(--line); }
-.mission .win li[data-done='true'] { color: var(--accent); }
+.mission .need { margin: 0; justify-self: start; max-width: 100%; padding: 0 6px; font-size: 10px; border: 1px solid var(--line); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mission .need:not([data-tone]) { border-color: transparent; color: var(--dim); padding: 0; }
+.mission .need[data-tone='decision'] { border-color: #f2c14e; color: #f2c14e; }
+.mission .need[data-tone='threat'] { border-color: #e5484d; color: #e5484d; }
+.mission .need[data-tone='support'] { border-color: var(--accent); color: var(--accent); }
 
 /* ENVIRONMENT (ILI-1218): a war-room readout over ORION-3. Corner brackets, a faint grid behind
    the tiles, each tile an icon, a label and a big monospace value. */
@@ -777,9 +772,6 @@ html, body {
 .orion [data-testid='satellite-result'] { color: #f2c14e; }
 @media (prefers-reduced-motion: reduce) { .orion .o-picture { animation: none; } .orion .decay > span { transition: none; } }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-@media (max-width: 1280px) {
-  .pips li:not([data-state='current']) .pip-label { display: none; }
-}
 
 /* Team column (ILI-1172): one size, rows that react; red edge in a fight. */
 
@@ -825,24 +817,19 @@ html, body {
   .band-cards:empty { display: none; }
   .band-cards > * { width: 100%; }
 
-  /* On a phone (ILI-1226): the mission is the panel on top (its name, the clock and pause; the
-     phases and Next; the most pressing blocker), and the small widgets one slim line under it.
-     The objective, the window's times and the win conditions wait for a wider screen. */
+  /* On a phone (ILI-1226, ILI-1245): the mission is the panel on top (its name, the clock and
+     pause; the race; what needs HQ), and the small widgets one slim line under it. The
+     objective waits for a wider screen. */
   .hud { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
   .slot-widget { grid-area: widget; }
-  .mission { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'title head' 'decay decay' 'pips next' 'blk blk'; align-items: center; gap: 3px 10px; padding: 4px 8px 6px; }
+  .mission { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'title head' 'race race' 'need need'; align-items: center; gap: 3px 10px; padding: 4px 8px 6px; }
   .mission .m-title { grid-area: title; }
   .mission .m-head { grid-area: head; padding: 0; border: none; background: none; justify-self: end; }
-  .mission .m-decay { grid-area: decay; height: 3px; }
-  .mission .m-label, .mission .m-stamp, .mission .m-times { display: none; }
-  .mission .pips { grid-area: pips; gap: 4px; flex-wrap: nowrap; }
-  .mission .next { grid-area: next; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .mission .blockers { grid-area: blk; }
-  .mission .objective, .mission .win { display: none; }
+  .mission .race { grid-area: race; }
+  .mission .m-label, .mission .objective { display: none; }
+  .mission .need { grid-area: need; }
   .mission .pause { min-width: 32px; min-height: 28px; }
   .mission .clock { font-size: 20px; }
-  .blockers li:not(:first-child) { display: none; }
-  .pips .pip-label { display: none; }
   .slot-small { grid-area: small; display: flex; flex-wrap: wrap; gap: 2px 12px; }
   .small-widget { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 10px; padding: 3px 8px; border: none; background: none; }
   .small-widget h2 { display: none; }
@@ -911,14 +898,12 @@ html, body {
   .slot-widget { grid-area: map; justify-self: start; align-self: start; width: min(360px, 100%); }
   .mission { padding: 6px 10px; }
   .mission .clock { font-size: 26px; }
-  .mission .m-times, .mission .win { display: none; }
-  .pips .pip-label { display: none; }
   .slot-small { grid-area: small; display: flex; flex-wrap: wrap; gap: 4px 16px; align-self: end; }
   .small-widget { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 6px 10px; }
 }
 /* Short screens (a phone on its side): the header keeps to one row. */
 @media (min-width: 700px) and (max-width: 1199px) and (max-height: 520px) {
-  .mission .blockers, .mission .objective, .mission .pips { display: none; }
+  .mission .need, .mission .objective { display: none; }
   .hud { gap: 6px 10px; }
 }
 

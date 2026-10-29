@@ -95,7 +95,7 @@ test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, a
   await expect.poll(() => page.evaluate(() => window.game.get().team.route)).toContain('E4');
 });
 
-test('news the map does not show lands in the stream as an alert, and the header flags the blocker', async ({ page, isMobile }) => {
+test('news the map does not show lands in the stream as an alert', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => {
@@ -103,7 +103,6 @@ test('news the map does not show lands in the stream as an alert, and the header
     window.game.tick(100);
   });
   await expect(page.getByTestId('comms-feed')).toContainText('know a PMC is in the area');
-  await expect(page.getByTestId('blockers')).toContainText('Enemy alerted');
   if (isMobile) await page.getByTestId('tab-satcom').click();
   await expect(page.getByTestId('comms-feed')).toContainText('Enemy radio net just lit up');
 });

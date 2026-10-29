@@ -1,17 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import { PATROL_MOVES_MS } from './missions/blackBox';
-import { nextUp, phasePips } from './progress';
+import { nextUp, race } from './progress';
 import { initialState } from './state';
 import { run, walking } from './testkit';
 
 describe('mission progression', () => {
-  it('pips walk A, B, C as the phase moves on', () => {
+  it("the race: ALPHA's walk fills from A to C on one scale, B marked between", () => {
     const s = initialState();
-    expect(phasePips(s).map((p) => p.state)).toEqual(['current', 'todo', 'todo']);
-    const at = { ...s, mission: { ...s.mission, phase: 'objective' as const, recoverUntilMs: s.elapsedMs + 20_000 } };
-    expect(phasePips(at).map((p) => p.state)).toEqual(['done', 'current', 'todo']);
-    expect(phasePips(at)[1].detail).toBe('recovering · 8 min');
-    expect(phasePips({ ...s, mission: { ...s.mission, phase: 'complete' } }).every((p) => p.state === 'done')).toBe(true);
+    const start = race(s);
+    expect(start.walked).toBe(0);
+    expect(start.marks.map((m) => m.key)).toEqual(['A', 'B', 'C']);
+    expect(start.marks[1].at).toBeGreaterThan(0);
+    expect(start.marks[1].at).toBeLessThan(1);
+    const early = race(run(walking(), 30_000));
+    expect(early.walked).toBeGreaterThan(0);
+    const later = race(run(walking(), 120_000));
+    expect(later.walked).toBeGreaterThan(early.walked);
+    expect(later.walked).toBeLessThan(1);
+  });
+
+  it('behind when the walk left needs more than the time left', () => {
+    const s = walking();
+    expect(race(s).behind).toBe(false);
+    const late = { ...s, timer: { ...s.timer, remainingMs: race(s).needMs - 1 } };
+    expect(race(late).behind).toBe(true);
   });
 
   it('a decision waiting stays on the call card; Next keeps pointing at the objective', () => {
