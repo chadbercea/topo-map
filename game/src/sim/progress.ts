@@ -1,28 +1,53 @@
 import { missionDef } from './script';
 import type { GameState } from './state';
-import { gameSpan } from './gameTime';
 import { waitingCalls } from './comms';
 import { condition } from './team';
 import { ammoLevel, LOW, medsLevel } from './support';
+import { squareCenter } from '../map/grid';
+import { BASE_SPEED } from './movement';
+import { RECOVER_MS } from './mission';
 
-// Mission progression at a glance (ILI-1173): where the mission is (phase pips), what ALPHA
-// is doing now, and the one thing that presses next. Pure reads of the state, for the HUD.
+// Mission progression at a glance (ILI-1173): how far along the route ALPHA is, what it's
+// doing now, and the one thing that presses next. Pure reads of the state, for the HUD.
 
-export type Pip = { key: string; label: string; state: 'done' | 'current' | 'todo'; detail?: string };
+export type Race = { walked: number; needMs: number; behind: boolean; marks: { key: 'A' | 'B' | 'C'; square: string; at: number }[] };
 
-const ORDER = ['infil', 'objective', 'exfil'] as const;
+// Slopes, detours and holds: how much longer the walk really takes than flat ground at full pace.
+const DRAG = 1.25;
 
-export function phasePips(s: GameState): Pip[] {
-  const { mission } = s;
-  const at = mission.phase === 'complete' ? ORDER.length : ORDER.indexOf(mission.phase);
-  const pips: Pip[] = [
-    { key: 'A', label: `A infil ${mission.a}` },
-    { key: 'B', label: `B crash site ${mission.b}` },
-    { key: 'C', label: `C exfil ${mission.c}` },
-  ].map((p, i) => ({ ...p, state: i < at ? 'done' : i === at ? 'current' : 'todo' }));
-  if (mission.phase === 'objective' && mission.recoverUntilMs !== null)
-    pips[1].detail = `recovering · ${gameSpan(mission.recoverUntilMs - s.elapsedMs)}`;
-  return pips;
+// The race (ILI-1245): ALPHA's progress along its route as a fraction of the whole walk, with
+// A, B and C marked on the same scale, to lay against the contract window's time left. Measured
+// square centre to square centre; the ground's detours are close enough for a bar. Behind when
+// the walk left (plus the recovery, if the box isn't out yet) needs more than the time left.
+export function race(s: GameState): Race {
+  const { route, waypoint, position } = s.team;
+  const pts = route.map((sq) => squareCenter(sq)!);
+  const legs = pts.slice(1).map((p, i) => Math.hypot(p.x - pts[i].x, p.y - pts[i].y));
+  const total = legs.reduce((a, b) => a + b, 0) || 1;
+  const upTo = (i: number) => legs.slice(0, i).reduce((a, b) => a + b, 0);
+  let walked = upTo(route.length - 1);
+  if (waypoint < route.length) {
+    const to = pts[waypoint];
+    const left = Math.min(legs[waypoint - 1] ?? 0, Math.hypot(to.x - position.x, to.y - position.y));
+    walked = upTo(waypoint) - left;
+  }
+  const { a, b, c } = s.mission;
+  const at = (sq: string, fallback: number) => {
+    const i = route.indexOf(sq as (typeof route)[number]);
+    return i < 0 ? fallback : upTo(i) / total;
+  };
+  const recovering = s.mission.blackBox ? 0 : s.mission.recoverUntilMs !== null ? Math.max(0, s.mission.recoverUntilMs - s.elapsedMs) : RECOVER_MS;
+  const needMs = ((total - walked) / BASE_SPEED) * 1000 * DRAG + recovering;
+  return {
+    walked: Math.max(0, Math.min(1, walked / total)),
+    needMs,
+    behind: s.mission.phase !== 'complete' && needMs > s.timer.remainingMs,
+    marks: [
+      { key: 'A', square: a, at: 0 },
+      { key: 'B', square: b, at: at(b, 0.5) },
+      { key: 'C', square: c, at: 1 },
+    ],
+  };
 }
 
 export type Pressing = { tone: 'threat' | 'support' | 'objective'; text: string; atMs?: number };
@@ -66,14 +91,4 @@ export function blockers(s: GameState): Blocker[] {
   if (medsLevel(s) < LOW) out.push({ tone: 'team', text: 'Low on meds' });
   if (s.alerted) out.push({ tone: 'threat', text: 'Enemy alerted to the PMC' });
   return out;
-}
-
-// The win conditions, as the header's checklist: the black box, everyone home, at exfil.
-export function winChecks(s: GameState) {
-  const { mission, team } = s;
-  return [
-    { key: 'box', label: 'Black box', done: !!mission.blackBox },
-    { key: 'team', label: `${team.operators.filter((o) => o.health > 0).length}/${team.operators.length} alive`, done: team.operators.every((o) => o.health > 0) },
-    { key: 'exfil', label: `Exfil ${mission.c}`, done: mission.phase === 'complete' },
-  ];
 }

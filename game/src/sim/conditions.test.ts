@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { initialState } from './state';
 import { ground, imageryOk, weather } from './conditions';
-import { blockers, winChecks } from './progress';
+import { blockers } from './progress';
 
 describe('header readouts (ILI-1187)', () => {
   it('the weather clears through the morning, and imagery could be blinded by cloud later', () => {
@@ -27,11 +27,5 @@ describe('header readouts (ILI-1187)', () => {
     expect(blockers(s).map((b) => b.text)).toContain('No imagery ahead at F4');
     const hurt = { ...s, alerted: true, team: { ...s.team, operators: s.team.operators.map((o, i) => (i === 0 ? { ...o, health: 0 } : o)) } };
     expect(blockers(hurt).map((b) => b.text)).toEqual(expect.arrayContaining(['1 down', 'Enemy alerted to the PMC']));
-  });
-
-  it('win conditions tick off as the mission goes', () => {
-    const s = initialState();
-    expect(winChecks(s).map((w) => w.done)).toEqual([false, true, false]);
-    expect(winChecks({ ...s, mission: { ...s.mission, blackBox: true, phase: 'complete' } }).every((w) => w.done)).toBe(true);
   });
 });

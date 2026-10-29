@@ -1,38 +1,33 @@
 import { game, useGame } from '../sim/store';
-import { blockers, nextUp, phasePips, winChecks } from '../sim/progress';
+import { blockers, nextUp, race } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
-import { gameSpan, zulu } from '../sim/gameTime';
 
 // The contract window counts down real minutes, M:SS, rounding up (ILI-1251): ten minutes reads
-// 10:00. The stamps beside it (Closes, Now) stay in the theater's game time.
+// 10:00.
 export const clock = (ms: number) => {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
-// MISSION · BLACK BOX (ILI-1226, layout A): the contract window and the mission in one panel,
-// top left, a war-room readout like ENVIRONMENT (ILI-1234). The contract window first: its clock
-// big, pause beside it, a bar running down with the time left (amber, then red, as the clock
-// goes), and when it closes and what time it is now. Then the mission's phases as a track, what
-// to do (objective, next), what's in the way (blockers) and the win conditions. On a fold it
-// floats over the map's top-left corner; on a phone it's the panel on top, one tight block.
+// MISSION · BLACK BOX (ILI-1226, layout A; reworked as the race, ILI-1245): the contract window
+// drives the game, so the clock comes first and big, with pause beside it. Under it the race:
+// time left drains on the top bar, ALPHA's walk A → B → C fills the one below on the same
+// scale, so a glance says whether the team will make it. When the walk left needs more than the
+// time left, the route bar goes red. Then the objective, and the one thing that needs HQ most.
+// One unit of time on the panel, real minutes; the Zulu stamps live on ENVIRONMENT.
 export function MissionPanel() {
   const s = useGame((x) => x);
-  const { timer, phase, tick } = s;
-  const now = s.elapsedMs;
+  const { timer, phase, tick, mission } = s;
   const remaining = timer.remainingMs;
   const warn = remaining <= 60_000 ? 'red' : remaining <= 300_000 ? 'amber' : undefined;
-  const next = nextUp(s);
-  const blocks = blockers(s);
-
   const left = Math.max(0, Math.min(1, remaining / Math.max(1, timer.totalMs)));
+  const r = race(s);
+  const need = needsHq(s);
+  const recovering = mission.phase === 'objective' && mission.recoverUntilMs !== null ? ` · ${clock(mission.recoverUntilMs - s.elapsedMs)}` : '';
 
   return (
     <section className="panel mission" data-testid="mission-strip" data-phase={phase} data-warn={warn} data-overlay="widget">
-      <h2 className="m-title">
-        <span>{s.mission.name.replace('Operation ', '').toUpperCase()}</span>
-        <span className="m-stamp">OPS · {zulu(now)}</span>
-      </h2>
+      <h2 className="m-title">{mission.name.replace('Operation ', '').toUpperCase()}</h2>
       <div className="m-head" data-testid="mission-timer" data-phase={phase}>
         <div className="m-readout">
           <span className="m-label">
@@ -50,56 +45,39 @@ export function MissionPanel() {
           {tick}
         </span>
       </div>
-      <span className="m-decay" role="progressbar" aria-label="Contract window left" aria-valuenow={Math.round(left * 100)} aria-valuemin={0} aria-valuemax={100}>
-        <span style={{ width: `${left * 100}%` }} />
-      </span>
-      <dl className="m-times">
-        <div>
-          <dt>Closes</dt>
-          <dd>{zulu(timer.totalMs)}</dd>
-        </div>
-        <div>
-          <dt>Now</dt>
-          <dd>{zulu(now)}</dd>
-        </div>
-      </dl>
-      <ol className="pips" data-testid="phase-pips">
-        {phasePips(s).map((p) => (
-          <li key={p.key} data-state={p.state} title={p.label}>
-            <span className="pip">{p.key}</span>
-            <span className="pip-label">{p.label.slice(2)}</span>
-            {p.detail && <span className="pip-detail">{p.detail}</span>}
-          </li>
-        ))}
-      </ol>
-      <p className="objective" data-testid="objective">
-        ◆ {objectiveText(s.mission)}
-      </p>
-      <p className="next" data-testid="next" data-tone={next.tone}>
-        Next: {next.text}
-        {next.atMs !== undefined && ` · ${gameSpan(next.atMs - now)}`}
-      </p>
-      <ul className="blockers" data-testid="blockers" aria-label="Blockers">
-        {blocks.length ? (
-          blocks.slice(0, 3).map((b) => (
-            <li key={b.text} data-tone={b.tone}>
-              {b.text}
+      <div className="race" data-testid="race" data-behind={r.behind}>
+        <span className="race-time" role="progressbar" aria-label="Contract window left" aria-valuenow={Math.round(left * 100)} aria-valuemin={0} aria-valuemax={100}>
+          <span style={{ width: `${left * 100}%` }} />
+        </span>
+        <span className="race-route" role="progressbar" aria-label={`${s.team.callsign}'s route walked`} aria-valuenow={Math.round(r.walked * 100)} aria-valuemin={0} aria-valuemax={100}>
+          <span style={{ width: `${r.walked * 100}%` }} />
+        </span>
+        <ol className="race-marks">
+          {r.marks.map((m) => (
+            <li key={m.key} style={{ left: `${m.at * 100}%` }} data-passed={r.walked >= m.at} title={`${m.key} · ${m.square}`}>
+              {m.key}
             </li>
-          ))
-        ) : (
-          <li className="clear">Nothing in the way</li>
-        )}
-        {blocks.length > 3 && <li className="more">+{blocks.length - 3}</li>}
-      </ul>
-      <ul className="win" data-testid="win-checks" aria-label="Win conditions">
-        {winChecks(s).map((w) => (
-          <li key={w.key} data-done={w.done}>
-            {w.done ? '■' : '□'} {w.label}
-          </li>
-        ))}
-      </ul>
+          ))}
+        </ol>
+      </div>
+      <p className="objective" data-testid="objective">
+        ◆ {objectiveText(mission)}
+        {recovering}
+      </p>
+      <p className="need" data-testid="needs-hq" data-tone={need?.tone}>
+        {need ? need.text : 'Nothing in the way'}
+      </p>
     </section>
   );
+}
+
+// The one thing that needs HQ most: what's in the way now, else a threat or resupply on its way.
+function needsHq(s: Parameters<typeof blockers>[0]) {
+  const now = blockers(s)[0];
+  if (now) return now;
+  const next = nextUp(s);
+  if (next.tone === 'objective') return undefined;
+  return { tone: next.tone, text: next.atMs === undefined ? next.text : `${next.text} in ${clock(next.atMs - s.elapsedMs)}` };
 }
 
 // A clock face, in the readout's line style (like ENVIRONMENT's icons).
