@@ -3,7 +3,7 @@ import type { GameState } from './state';
 import { waitingCalls } from './comms';
 import { condition } from './team';
 import { ammoLevel, LOW, medsLevel } from './support';
-import { squareCenter } from '../map/grid';
+import { squareCenter, type SquareId } from '../map/grid';
 import { BASE_SPEED } from './movement';
 import { RECOVER_MS } from './mission';
 
@@ -63,12 +63,12 @@ export function nextUp(s: GameState): Pressing {
   const inbound = [...s.inbound].sort((a, b) => a.arrivesMs - b.arrivesMs)[0];
   if (inbound) return { tone: 'support', text: 'Resupply lands', atMs: inbound.arrivesMs };
   const { mission } = s;
-  const text =
-    mission.phase === 'infil' ? `Reach the crash site at ${mission.b}` : mission.phase === 'objective' ? `Hold ${mission.b} while the drive comes out` : `Get to exfil at ${mission.c}`;
+  const text = mission.phase === 'infil' ? `Reach the crash site at ${mission.b}` : mission.phase === 'objective' ? `Hold ${mission.b} while the drive comes out` : `Get to exfil at ${mission.c}`;
   return { tone: 'objective', text };
 }
 
-export type Blocker = { tone: 'decision' | 'threat' | 'team'; text: string };
+// go: where tapping it takes HQ (ILI-1271): the square it's about, or ALPHA's waiting call.
+export type Blocker = { tone: 'decision' | 'threat' | 'team'; text: string; go?: { square?: SquareId; ask?: true } };
 
 // What's stopping progress or pressing right now (ILI-1187), most urgent first: a look ALPHA
 // is waiting on with ORION-3 in place (ILI-1257), a call waiting on HQ, a fight, contacts and unimaged ground on the route ahead, the team's
@@ -77,15 +77,15 @@ export function blockers(s: GameState): Blocker[] {
   const out: Blocker[] = [];
   // ALPHA waiting on a look ORION-3 is in place for (ILI-1257): the shot is the next thing to do.
   const sat = s.satellite;
-  if (sat.callId && sat.state === 'onStation') out.push({ tone: 'decision', text: `ORION-3 on station over ${sat.aim}: take the shot` });
+  if (sat.callId && sat.state === 'onStation') out.push({ tone: 'decision', text: `ORION-3 on station over ${sat.aim}: take the shot`, go: { square: sat.aim } });
   const calls = waitingCalls(s.comms);
-  if (calls.length) out.push({ tone: 'decision', text: `${calls[0].from} waiting on your call${calls.length > 1 ? ` (+${calls.length - 1})` : ''}` });
+  if (calls.length) out.push({ tone: 'decision', text: `${calls[0].from} waiting on your call${calls.length > 1 ? ` (+${calls.length - 1})` : ''}`, go: { ask: true } });
   if (s.team.fight) out.push({ tone: 'threat', text: `${s.team.callsign} in contact` });
   const ahead = s.team.route.slice(s.team.waypoint);
   const contact = ahead.find((sq) => s.contacts.some((c) => c.square === sq && c.status === 'revealed'));
-  if (contact) out.push({ tone: 'threat', text: `Contact on the route at ${contact}` });
+  if (contact) out.push({ tone: 'threat', text: `Contact on the route at ${contact}`, go: { square: contact } });
   const blind = ahead.find((sq) => !s.map.scanned.includes(sq) && !s.imagery[sq]);
-  if (blind) out.push({ tone: 'threat', text: `No imagery ahead at ${blind}` });
+  if (blind) out.push({ tone: 'threat', text: `No imagery ahead at ${blind}`, go: { square: blind } });
   const down = s.team.operators.filter((o) => condition(o) === 'down').length;
   const hurt = s.team.operators.filter((o) => condition(o) === 'caution' || condition(o) === 'danger').length;
   if (down) out.push({ tone: 'team', text: `${down} down` });
