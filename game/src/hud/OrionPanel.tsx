@@ -3,7 +3,7 @@ import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, slewMs, type CaptureMode } from '../sim/satellite';
 import { freshness, targets } from '../sim/imagery';
 import { CELL, squareAt, squareCenter } from '../map/grid';
-import { gameSpan, zulu } from '../sim/gameTime';
+import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
 import { Actions, Card, hasActions } from './SquareCard';
 import { TargetMenu } from './TargetMenu';
@@ -128,7 +128,7 @@ export function OrionPanel() {
           </div>
           <div>
             <dt>{sat.state === 'slewing' ? 'ETA' : sat.state === 'capturing' ? 'Left' : 'Last look'}</dt>
-            <dd>{sat.state === 'slewing' ? gameSpan(left) : sat.state === 'capturing' ? gameSpan(sat.captureUntilMs - now) : last ? zulu(last.atMs) : '—'}</dd>
+            <dd>{sat.state === 'slewing' ? countdown(left) : sat.state === 'capturing' ? gameSpan(sat.captureUntilMs - now) : last ? zulu(last.atMs) : '—'}</dd>
           </div>
         </dl>
       </div>
@@ -173,7 +173,18 @@ export function OrionPanel() {
           </div>
         ) : (
           <div className="o-placeholder" data-testid="orion-placeholder" data-state={tied ? 'tied' : sat.state}>
-            <span className="o-caption">{caption}</span>
+            {!tied && sat.state === 'slewing' ? (
+              // The slew counted down in the frame (ILI-1269): how long to wait, and what's next.
+              <>
+                <small className="o-eta-k">On station over {sat.aim} in</small>
+                <b className="o-eta" data-testid="orion-eta">
+                  {countdown(left)}
+                </b>
+                <small className="o-eta-k">then take the photo</small>
+              </>
+            ) : (
+              <span className="o-caption">{caption}</span>
+            )}
           </div>
         )}
       </div>
@@ -196,7 +207,7 @@ export function OrionPanel() {
         ) : (
           <button className="o-reposition" disabled={!picked || tied || sat.state !== 'idle' || satelliteBusy(s)} onClick={() => picked && game.lookAt(picked)} data-testid="look-here">
             {sat.state === 'slewing' && !tied ? `Repositioning to ${sat.aim}` : 'Reposition'}
-            <small>{tied ? 'tied up by the intercept' : sat.state === 'slewing' ? gameSpan(left) : picked ? `to ${picked} · ${gameSpan(away)}` : 'pick a square'}</small>
+            <small>{tied ? 'tied up by the intercept' : sat.state === 'slewing' ? countdown(left) : picked ? `to ${picked} · ${countdown(away)}` : 'pick a square'}</small>
           </button>
         )}
       </div>
@@ -209,7 +220,7 @@ export function OrionPanel() {
             <span style={{ width: `${(left / travel) * 100}%` }} />
           </span>
           <p className="o-line">
-            Repositioning to {sat.aim} · <b>{gameSpan(left)}</b>
+            Repositioning to {sat.aim} · <b>{countdown(left)}</b>
           </p>
         </div>
       )}

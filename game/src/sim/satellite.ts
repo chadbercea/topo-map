@@ -2,7 +2,7 @@ import { parseSquare, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import { reveal } from './contacts';
 import { awarenessOf, record, snapshot, type Awareness, type CaptureMode } from './imagery';
-import { gameSpan } from './gameTime';
+import { countdown, gameSpan } from './gameTime';
 
 export type { CaptureMode };
 import type { GameState } from './state';
@@ -127,7 +127,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     map: { ...s.map, selected: null },
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
-  return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Moving to ${square}. On station in ${gameSpan(ms)}.` : `On station over ${square}. Ready to shoot.`));
+  return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Moving to ${square}. On station in ${countdown(ms)}.` : `On station over ${square}. Ready to shoot.`));
 }
 
 // On station: take the picture.
@@ -199,7 +199,7 @@ export function satelliteStatus(s: GameState): string {
     case 'idle':
       return `ORION-3 over ${sat.aim}`;
     case 'slewing':
-      return `ORION-3 to ${sat.aim} · ${secs(sat.arriveMs - s.elapsedMs)}`;
+      return `ORION-3 to ${sat.aim} · ${countdown(sat.arriveMs - s.elapsedMs)}`;
     case 'onStation':
       return `ORION-3 on station ${sat.aim}`;
     case 'capturing':
