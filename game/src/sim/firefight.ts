@@ -18,7 +18,7 @@ export type Fight = { contactId: string; eventId: string; square: string; enemy:
 export type Treatment = { patient: string; doneMs: number };
 
 const ENEMY_STRENGTH = 100;
-const ROUNDS_PER_S: Record<Role, number> = { 'Squad lead': 3, Gunner: 6, Medic: 2, Navigator: 3, 'Heavy gunner': 9 };
+const ROUNDS_PER_S: Record<Role, number> = { 'Squad lead': 3, Gunner: 6, Medic: 2, Commo: 3, 'Heavy gunner': 9 };
 const HIT_PER_ROUND = 0.45; // enemy strength removed per round fired
 const ENEMY_DPS = 16; // total health per second the enemy deals at full strength
 const TREAT_MS = 4_000;
