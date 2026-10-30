@@ -143,3 +143,21 @@ test('over a square it has already shot, no Reposition and no Rescan: the shots 
   await expect(sat.getByTestId('look-here')).toHaveText(/^Reposition\s*to F4/);
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
 });
+
+test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMobile }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  await page.evaluate(() => {
+    const g = window.game;
+    g.selectSquare('E3');
+    g.lookAt('E3');
+    for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
+    g.capture('photo');
+    g.tick(3000);
+  });
+  if (isMobile) await page.getByTestId('tab-orion').click();
+  const n = await page.getByTestId('target-pin').count();
+  expect(n).toBeGreaterThan(0);
+  await expect(page.getByTestId('fighters-marked')).toHaveText(`${n} ${n === 1 ? 'fighter' : 'fighters'} marked · tap to strike`);
+});
