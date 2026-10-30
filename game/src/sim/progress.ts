@@ -3,7 +3,7 @@ import type { GameState } from './state';
 import { waitingCalls } from './comms';
 import { condition } from './team';
 import { ammoLevel, LOW, medsLevel } from './support';
-import { squareCenter } from '../map/grid';
+import { squareCenter, type SquareId } from '../map/grid';
 import { BASE_SPEED } from './movement';
 import { RECOVER_MS } from './mission';
 
@@ -73,6 +73,9 @@ export type Blocker = { tone: 'decision' | 'threat' | 'team'; text: string };
 // What's stopping progress or pressing right now (ILI-1187), most urgent first: a look ALPHA
 // is waiting on with ORION-3 in place (ILI-1257), a call waiting on HQ, a fight, contacts and unimaged ground on the route ahead, the team's
 // condition, and the enemy's alert.
+// The next square on ALPHA's way with no imagery: where a look would do the most good (ILI-1272).
+export const nextBlind = (s: GameState): SquareId | undefined => s.team.route.slice(s.team.waypoint).find((sq) => !s.map.scanned.includes(sq) && !s.imagery[sq]);
+
 export function blockers(s: GameState): Blocker[] {
   const out: Blocker[] = [];
   // ALPHA waiting on a look ORION-3 is in place for (ILI-1257): the shot is the next thing to do.
@@ -84,7 +87,7 @@ export function blockers(s: GameState): Blocker[] {
   const ahead = s.team.route.slice(s.team.waypoint);
   const contact = ahead.find((sq) => s.contacts.some((c) => c.square === sq && c.status === 'revealed'));
   if (contact) out.push({ tone: 'threat', text: `Contact on the route at ${contact}` });
-  const blind = ahead.find((sq) => !s.map.scanned.includes(sq) && !s.imagery[sq]);
+  const blind = nextBlind(s);
   if (blind) out.push({ tone: 'threat', text: `No imagery ahead at ${blind}` });
   const down = s.team.operators.filter((o) => condition(o) === 'down').length;
   const hurt = s.team.operators.filter((o) => condition(o) === 'caution' || condition(o) === 'danger').length;

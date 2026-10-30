@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, slewMs, type CaptureMode } from '../sim/satellite';
 import { freshness, targets } from '../sim/imagery';
+import { nextBlind } from '../sim/progress';
 import { CELL, squareAt, squareCenter } from '../map/grid';
 import { gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
@@ -56,13 +57,16 @@ export function OrionPanel() {
   // The larger square while ORION-3 is on it, or a picked square it has imagery of; else the
   // placeholder (ILI-1229).
   const showPicture = !!sniping || (!tied && (live || (sat.state === 'idle' && !!picked && !!snap)));
+  const blind = nextBlind(s);
   const caption = tied
     ? 'Tied up by the intercept'
     : sat.state === 'slewing'
       ? `On its way to ${sat.aim}`
       : picked
         ? `No imagery of ${picked} · Reposition`
-        : `Over ${sat.aim} · tap a square to task it`;
+        : blind
+          ? `Standing by over ${sat.aim} · no imagery of ${blind} ahead` // and it breathes on the map (ILI-1272)
+          : `Standing by over ${sat.aim} · tap a square to task it`;
   const last = Object.values(s.imagery)
     .filter((x) => x.mode !== 'eyes')
     .sort((a, b) => b.atMs - a.atMs)[0];
