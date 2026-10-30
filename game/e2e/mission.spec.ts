@@ -16,10 +16,34 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
     for (let i = 0; i < 6000 && window.game.get().mission.phase !== 'exfil'; i++) window.game.tick(100);
   });
   await expect(page.getByTestId('objective')).toContainText('Exfil at B1 with the black box');
+
+  // In B1 and it's clear: RAVEN-6 confirms and the orange exfil panel counts it in (ILI-1264).
+  await page.evaluate(() => {
+    for (let i = 0; i < 7000 && !window.game.get().exfil; i++) window.game.tick(100);
+  });
+  const exfil = page.getByTestId('exfil-panel');
+  await expect(exfil).toHaveAttribute('data-stage', 'enroute');
+  await expect(exfil).toContainText('Exfil helo en route');
+  await expect(page.getByTestId('exfil-eta')).toHaveText('0:10');
+  // It comes in, ALPHA boards one at a time, it lifts out: the extraction is called good.
+  await page.evaluate(() => {
+    for (let i = 0; i < 2000 && window.game.get().exfil?.boardMs == null; i++) window.game.tick(100);
+    window.game.tick(1000);
+  });
+  await expect(exfil).toHaveAttribute('data-stage', 'boarding');
+  await expect(page.getByTestId('exfil-log')).toContainText('aboard');
+  await page.evaluate(() => {
+    const g = window.game;
+    for (let i = 0; i < 200 && !(g.get().exfil?.liftMs && g.get().elapsedMs > g.get().exfil!.liftMs! + 2_600); i++) g.tick(100);
+  });
+  await expect(exfil).toHaveAttribute('data-stage', 'done');
+  await expect(exfil).toContainText('Successful extraction');
+  await expect(page.getByTestId('wrapup')).toHaveCount(0);
   await page.evaluate(() => {
     for (let i = 0; i < 7000 && window.game.get().phase !== 'ended'; i++) window.game.tick(100);
   });
   const wrap = page.getByTestId('wrapup');
+  await expect(wrap).toContainText('AFTER ACTION REPORT');
   await expect(wrap).toHaveAttribute('data-outcome', 'win');
   await expect(wrap).toContainText('MISSION SUCCESS');
   await expect(wrap).toContainText('Black box recovered. Everyone came home.');

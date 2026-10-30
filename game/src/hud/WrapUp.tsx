@@ -6,7 +6,7 @@ const HEADLINE = { win: 'MISSION SUCCESS', casualties: 'MISSION COMPLETE · CASU
 const money = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(n).toLocaleString('en-US')}`;
 const clock = (ms: number) => gameClock(ms, Math.floor);
 
-// End of mission: outcome, objectives, what HQ's intel did, new intel, payout and budget.
+// End of mission, the After Action Report (ILI-1264): outcome, objectives, what HQ's intel did, new intel, payout and budget.
 export function WrapUp() {
   const ended = useGame((s) => s.phase === 'ended');
   const state = useGame((s) => s);
@@ -14,8 +14,9 @@ export function WrapUp() {
   const w = wrapUp(state);
   return (
     <div className="overlay" data-testid="wrapup" data-outcome={w.outcome}>
-      <section className="panel menu wrapup" role="dialog" aria-label={HEADLINE[w.outcome]}>
-        <h2>{HEADLINE[w.outcome]}</h2>
+      <section className="panel menu wrapup" role="dialog" aria-label={`After Action Report: ${HEADLINE[w.outcome]}`}>
+        <h2>AFTER ACTION REPORT</h2>
+        <p className="outcome">{HEADLINE[w.outcome]}</p>
         <p className="reason">{w.reason}</p>
         <ul className="objectives">
           {w.objectives.map((o) => (

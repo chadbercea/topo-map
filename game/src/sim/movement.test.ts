@@ -46,7 +46,7 @@ describe('team movement', () => {
     expect(reached).toEqual(ROUTE.slice(1).map((_, i) => i + 1));
     expect(seconds).toBeGreaterThan(60); // a walk, not a teleport
     expect(s.team.position).toEqual(squareCenter(ROUTE.at(-1)!));
-    expect(s.team.activity).toBe(`Holding at ${ROUTE.at(-1)}`);
+    expect(s.team.activity).toMatch(/RAVEN-6/); // at exfil with the black box: waiting on the bird (ILI-1264)
     const held = run(s, 5);
     expect(held.team.position).toEqual(s.team.position);
   });

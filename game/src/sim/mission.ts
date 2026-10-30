@@ -2,6 +2,7 @@ import { squareAt, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
+import { callExfil, flyExfil, squareClear } from './exfil';
 
 // The MVP mission (GDD): infiltrate at A, move to B and recover the downed drone's black
 // box hard drive (plus whatever else the team finds), then move to C for exfil.
@@ -66,15 +67,10 @@ export const missionSystem: System = (s, dt) => {
       },
     };
   }
-  // At exfil with the drive: mission complete.
-  if (mission.phase === 'exfil' && here === mission.c && team.waypoint >= team.route.length && quiet) {
-    return {
-      ...s,
-      phase: 'ended',
-      mission: { ...mission, phase: 'complete' },
-      comms: { ...s.comms, messages: [...s.comms.messages, radio(s, 'exfil', `At ${mission.c}. Bird's on the ground. We're out.`)] },
-    };
-  }
+  // In the exfil square with the drive and nobody left in it: the transport's called in, and the
+  // sequence plays out from there (ILI-1264).
+  if (s.exfil) return flyExfil(s);
+  if (mission.phase === 'exfil' && here === mission.c && !team.fight && !team.holdFor && squareClear(s, mission.c)) return callExfil(s);
   return s;
 };
 

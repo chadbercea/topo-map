@@ -396,6 +396,7 @@ html, body {
 .menu button.go:hover, .menu button.go:focus-visible { color: var(--bg); filter: brightness(1.1); }
 
 .wrapup { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--bg); }
+.wrapup .outcome { margin: 0; color: var(--ink); font-size: 12px; letter-spacing: 0.14em; }
 .wrapup .reason { color: var(--ink); font-size: 14px; }
 .wrapup .objectives { margin: 0; }
 .wrapup .objectives li { color: var(--ink); }
@@ -963,6 +964,13 @@ html, body {
 .air .d-log li { animation: alert-in 160ms ease-out; }
 .air .d-log .d-all { margin-top: 4px; color: var(--ink); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .air, .air[data-leaving], .air .d-log li { animation: none; } .air .decay > span { transition: none; } }
+/* The exfil (ILI-1264): an air panel in orange, not a strike's red. */
+.air.exfil { border-color: #ff8a2a; }
+.air.exfil h2, .air.exfil .d-log { color: #ff8a2a; }
+.air.exfil .d-mark { stroke: #ff8a2a; }
+.air.exfil .decay { background: rgba(255, 138, 42, 0.12); border-color: rgba(255, 138, 42, 0.4); }
+.air.exfil .decay > span { background: #ff8a2a; }
+.air.exfil .d-log .d-all { color: var(--accent); }
 
 /* The sniper (ILI-1253): OVERWATCH's crosshairs in ORION-3's picture, gliding to each fighter it
    shoots, and its panel under the picture. */
