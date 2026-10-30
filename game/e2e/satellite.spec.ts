@@ -160,3 +160,21 @@ test("a slew counts down in ORION-3's frame, then the photo (ILI-1269)", async (
   await expect(eta).not.toHaveText(first!);
   await expect(page.getByTestId('orion-placeholder')).toContainText('then take the photo');
 });
+
+test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMobile }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  await page.evaluate(() => {
+    const g = window.game;
+    g.selectSquare('E3');
+    g.lookAt('E3');
+    for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
+    g.capture('photo');
+    g.tick(3000);
+  });
+  if (isMobile) await page.getByTestId('tab-orion').click();
+  const n = await page.getByTestId('target-pin').count();
+  expect(n).toBeGreaterThan(0);
+  await expect(page.getByTestId('fighters-marked')).toHaveText(`${n} ${n === 1 ? 'fighter' : 'fighters'} marked · tap to strike`);
+});

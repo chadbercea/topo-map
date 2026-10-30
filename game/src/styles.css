@@ -736,6 +736,12 @@ html, body {
 .orion .o-targets { position: absolute; top: 0; bottom: 0; left: 50%; aspect-ratio: 1; transform: translateX(-50%); }
 .orion .o-picture .o-target { position: absolute; width: 24px; height: 24px; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 1px solid transparent; border-radius: 50%; background: none; cursor: crosshair; }
 .orion .o-picture .o-target:hover, .orion .o-picture .o-target:focus-visible { border-color: #e5484d; background: rgba(229, 72, 77, 0.18); }
+/* Marked (ILI-1270): each fighter's ring pulses red twice as it comes up, so the picture shows
+   they can be tapped; the count sits along the picture's foot. */
+.orion .o-picture .o-target { animation: marked 700ms ease-out 2; }
+@keyframes marked { 0% { border-color: #e5484d; box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.6); } 100% { border-color: transparent; box-shadow: 0 0 0 10px rgba(229, 72, 77, 0); } }
+.orion .o-marked { position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%); padding: 1px 8px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; color: #e5484d; background: rgba(11, 15, 13, 0.85); border: 1px solid rgba(229, 72, 77, 0.5); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .orion .o-picture .o-target { animation: none; } }
 .orion .minigame { border: 0; animation: none; }
 .orion .o-buttons[hidden] { display: none; }
 /* The placeholder (ILI-1229): where the Three.js satellite goes (ILI-1196). Painted, unlike the

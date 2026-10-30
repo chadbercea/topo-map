@@ -55,6 +55,8 @@ export function OrionPanel() {
   const phone = tier === 'compact';
   // The larger square while ORION-3 is on it, or a picked square it has imagery of; else the
   // placeholder (ILI-1229).
+  // The fighters ORION-3's picture marks, each a tap away from its strikes (ILI-1250, ILI-1270).
+  const marked = square ? targets(s).filter((t) => squareAt(t.x, t.y) === square) : [];
   const showPicture = !!sniping || (!tied && (live || (sat.state === 'idle' && !!picked && !!snap)));
   const caption = tied
     ? 'Tied up by the intercept'
@@ -154,9 +156,7 @@ export function OrionPanel() {
               )}
               {!sniping &&
                 square &&
-                targets(s)
-                  .filter((t) => squareAt(t.x, t.y) === square)
-                  .map((t, i) => {
+                marked.map((t, i) => {
                     const o = squareCenter(square)!;
                     return (
                       <button
@@ -170,6 +170,12 @@ export function OrionPanel() {
                     );
                   })}
             </div>
+            {/* How many it marked, and what to do about them (ILI-1270). */}
+            {!sniping && marked.length > 0 && (
+              <span className="o-marked" data-testid="fighters-marked">
+                {marked.length} {marked.length === 1 ? 'fighter' : 'fighters'} marked · tap to strike
+              </span>
+            )}
           </div>
         ) : (
           <div className="o-placeholder" data-testid="orion-placeholder" data-state={tied ? 'tied' : sat.state}>
