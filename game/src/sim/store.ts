@@ -53,6 +53,9 @@ export function createStore(initial: GameState = initialState()) {
     setMissionLength: (minutes: number) =>
       set(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000))),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
+    // The intro holds the clock until the war room is online, then starts it (ILI-1282).
+    standby: () => state.phase === 'running' && state.elapsedMs === 0 && set({ ...state, phase: 'standby' }),
+    go: () => state.phase === 'standby' && set({ ...state, phase: 'running' }),
     // Tapping a square opens its card (ILI-1203); tapping it again clears it.
     selectSquare: (id: string | null) => {
       const next = id === state.map.selected ? null : id;

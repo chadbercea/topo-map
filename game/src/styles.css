@@ -1115,3 +1115,71 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   100% { clip-path: inset(0); }
 }
 .hud[data-boot] .panel { animation: power-frame 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--on); }
+@media (prefers-reduced-motion: reduce) { .hud[data-boot] .panel, .hud[data-boot] .panel > * { animation: none; } }
+
+/* Menus and the After Action Report power on the same way (ILI-1285). */
+:root:not([data-automated]) .overlay > .panel { --on: 0ms; animation: power-frame 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+:root:not([data-automated]) .overlay > .panel > * { animation: power-content 260ms ease-out both; animation-delay: calc(360ms + var(--i, 0) * 50ms); }
+.overlay > .panel > :nth-child(2) { --i: 1; }
+.overlay > .panel > :nth-child(3) { --i: 2; }
+.overlay > .panel > :nth-child(4) { --i: 3; }
+.overlay > .panel > :nth-child(5) { --i: 4; }
+.overlay > .panel > :nth-child(n + 6) { --i: 5; }
+@media (prefers-reduced-motion: reduce) { .overlay > .panel, .overlay > .panel > * { animation: none !important; } }
+
+/* The way in (ILI-1280): over everything, until the war room is live. */
+.intro { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
+.intro[data-stage='idle'], .intro[data-stage='wipe'], .intro[data-stage='login'] { pointer-events: auto; }
+
+/* Castle House at rest (ILI-1283). */
+.castle { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 70%, rgba(53, 208, 165, 0.07), transparent 60%), var(--bg); overflow: hidden; }
+.castle-scene { position: absolute; inset: 0; }
+.castle-scene canvas { width: 100%; height: 100%; display: block; }
+.castle-mark { position: absolute; left: 0; right: 0; bottom: max(9vh, 56px); display: grid; justify-items: center; gap: 6px; text-align: center; padding: 0 var(--gutter); text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg); }
+.castle-mark h1 { margin: 0; font-size: clamp(22px, 4.2vw, 40px); font-weight: 600; letter-spacing: 0.42em; margin-right: -0.42em; color: var(--ink); }
+.castle-mark p { margin: 0; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); }
+.castle-mark .castle-status { color: var(--accent); letter-spacing: 0.16em; }
+.castle-mark .caret { animation: blink 1s steps(2) infinite; }
+.castle .rook-mark { position: absolute; left: 50%; top: 34%; width: 96px; transform: translate(-50%, -50%); color: var(--accent); }
+.castle-orion { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; background: none; border: none; cursor: pointer; font: inherit; }
+.castle-orion[hidden] { display: none; }
+.castle-ping { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+.castle-ping::before, .castle-ping::after { content: ''; position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #ff8a2a; animation: ping 2s ease-out infinite; }
+.castle-ping::after { animation-delay: 1s; }
+.castle-label { position: absolute; left: 34px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #ff8a2a; background: rgba(11, 15, 13, 0.8); border: 1px solid rgba(255, 138, 42, 0.6); padding: 3px 7px; }
+.castle-orion:hover .castle-label, .castle-orion:focus-visible .castle-label { color: var(--bg); background: #ff8a2a; }
+.castle-orion:focus-visible { outline: none; }
+
+/* The wipe (ILI-1284): a bright bar sweeps across, taking the terminal with it. */
+.castle[data-wiping] { animation: castle-wipe var(--wipe) cubic-bezier(0.6, 0, 0.3, 1) forwards; }
+.castle-wipe { position: absolute; top: 0; bottom: 0; left: 0; width: 3px; background: var(--accent); box-shadow: 0 0 18px 4px rgba(53, 208, 165, 0.6); animation: wipe-bar var(--wipe) cubic-bezier(0.6, 0, 0.3, 1) forwards; }
+@keyframes castle-wipe { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
+@keyframes wipe-bar { from { left: 0; } to { left: 100%; } }
+
+/* The login (ILI-1282). */
+.login { position: absolute; inset: 0; display: grid; place-content: center; justify-items: start; gap: 18px; padding: var(--gutter); background: var(--bg); font-size: 12px; letter-spacing: 0.1em; }
+.login[data-leaving] { animation: login-out 280ms ease-in forwards; }
+@keyframes login-out { to { opacity: 0; } }
+.login .rook-mark.small { width: 22px; color: var(--accent); }
+.login ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; width: min(480px, calc(100vw - 2 * var(--gutter))); }
+.login li { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; opacity: 0; animation: login-line 1ms linear forwards; animation-delay: var(--d); }
+.login li .k { overflow: hidden; color: var(--ink); clip-path: inset(0 100% 0 0); animation: type-on 180ms steps(18) forwards; animation-delay: var(--d); }
+.login li:first-child .k { color: var(--accent); }
+.login li .dots { flex: 1; border-bottom: 1px dotted var(--line); transform: scaleX(0); transform-origin: left; animation: dots 140ms ease-out forwards; animation-delay: calc(var(--d) + 150ms); }
+.login li b { font-weight: 600; color: var(--accent); opacity: 0; animation: login-line 1ms linear forwards; animation-delay: calc(var(--d) + 290ms); }
+@keyframes login-line { to { opacity: 1; } }
+@keyframes type-on { to { clip-path: inset(0 0 0 0); } }
+@keyframes dots { to { transform: scaleX(1); } }
+
+/* The link (ILI-1282): ORION-3 has ALPHA; the next thing is ALPHA's call. */
+.intro-link { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); text-align: center; border-color: var(--accent); padding: 12px 22px; animation: power-frame 380ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.intro-link > * { animation: power-content 240ms ease-out both; animation-delay: 300ms; }
+.intro-link h2 { margin: 0 0 2px; letter-spacing: 0.24em; }
+.intro-link p { color: var(--ink); letter-spacing: 0.14em; text-transform: uppercase; font-size: 11px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .castle[data-wiping], .castle-wipe, .login[data-leaving], .castle-ping::before, .castle-ping::after, .castle-mark .caret, .intro-link, .intro-link > * { animation: none; }
+  .castle-wipe { display: none; }
+  .login li, .login li .k, .login li .dots, .login li b { animation-duration: 1ms; }
+}
+.castle-orion[data-side='left'] .castle-label { left: auto; right: 34px; }

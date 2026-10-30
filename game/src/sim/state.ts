@@ -24,7 +24,8 @@ import { initialStream, type Stream } from './stream';
 
 // The game opens running, in the war room with ALPHA already on the ground (ILI-1194).
 // paused: pause menu open. ended: timer ran out. exited: player left the mission.
-export type Phase = 'running' | 'paused' | 'ended' | 'exited';
+// standby: the HUD is up but the clock hasn't started (the intro and boot, ILI-1280).
+export type Phase = 'standby' | 'running' | 'paused' | 'ended' | 'exited';
 
 export type MapView = 'topo' | 'relief';
 export type Settings = { mapView: MapView; city: boolean };

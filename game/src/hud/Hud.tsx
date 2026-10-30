@@ -17,6 +17,8 @@ import { useAskHidden } from './CommsPanel';
 import { TeamPanel } from './TeamPanel';
 import { CallBox } from './CallBox';
 import { PauseMenu } from './PauseMenu';
+import { Intro } from './Intro';
+import { useIntro } from './intro';
 import { WrapUp } from './WrapUp';
 
 const debug = new URLSearchParams(location.search).has('debug');
@@ -37,22 +39,15 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 // a fold or tablet the mission floats over the map's corner and COMMS, ORION-3 and TEAM share a
 // rail down the right behind tabs (ILI-1213); on a phone the mission is the line on top and the
 // three share a bottom sheet. Picking a square or tasking ORION-3 brings its tab forward.
-// Long enough for the last panel's rows to come in (styles.css, power-on).
-const BOOT_MS = 2_000;
-
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
   const askHidden = useAskHidden(); // ALPHA's flag is out of sight: light TEAM's tab, where its call box is (ILI-1255)
   const tier = useTier();
-  // The panels power on in turn when the HUD first loads (ILI-1281); not for reduced motion, and
-  // not under test automation, which drives the HUD straight away.
-  const [boot, setBoot] = useState(() => !navigator.webdriver && !matchMedia('(prefers-reduced-motion: reduce)').matches);
-  useEffect(() => {
-    if (!boot) return;
-    const t = setTimeout(() => setBoot(false), BOOT_MS);
-    return () => clearTimeout(t);
-  }, [boot]);
+  // The panels power on in turn as the war room comes online (ILI-1281), on the way in and on a
+  // restart (intro.ts).
+  const stage = useIntro();
+  const boot = stage === 'panels' || stage === 'link';
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
   // on the map itself (ILI-1201), so the dock stays where it is.
   // A new event marks its square on the map, and its report lands in COMMS (ILI-1225): that
@@ -126,6 +121,7 @@ export function Hud() {
       <AskWindow />
       {debug && <DebugPanel />}
       <PauseMenu />
+      <Intro />
       <WrapUp />
     </div>
   );

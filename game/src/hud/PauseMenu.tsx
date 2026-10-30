@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { game, useGame } from '../sim/store';
+import { intro } from './intro';
 import { MapViews } from './MapViews';
 
 const TITLES = { paused: 'PAUSED', exited: 'MISSION ABORTED' } as const;
@@ -41,12 +42,12 @@ export function PauseMenu() {
           </button>
         )}
         {phase === 'exited' ? (
-          <button ref={first} onClick={game.restart}>
+          <button ref={first} onClick={intro.reboot}>
             Start mission
           </button>
         ) : (
           <>
-            {phase === 'paused' && <button onClick={game.restart}>Restart</button>}
+            {phase === 'paused' && <button onClick={intro.reboot}>Restart</button>}
             <MapViews />
             <button onClick={game.exit}>Exit</button>
           </>
