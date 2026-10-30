@@ -81,6 +81,7 @@ export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing'
 export function orionSquare(s: GameState): SquareId | null {
   const sat = s.satellite;
   if (s.minigame) return s.minigame.kind === 'seekDestroy' ? s.minigame.square : null; // a strike plays out in its picture (ILI-1250)
+  if (s.sniper && !s.sniper.done) return s.sniper.square; // so does the sniper's run (ILI-1253)
   if (sat.state !== 'idle') return sat.aim;
   return s.map.selected ?? sat.result?.square ?? null;
 }
@@ -88,6 +89,7 @@ export function orionSquare(s: GameState): SquareId | null {
 export function lookSquare(s: GameState): SquareId | null {
   const sat = s.satellite;
   if (s.minigame) return s.minigame.kind === 'seekDestroy' ? s.minigame.square : null; // a strike plays out in its picture (ILI-1250)
+  if (s.sniper && !s.sniper.done) return s.sniper.square; // so does the sniper's run (ILI-1253)
   if (s.map.selected) return s.map.selected;
   if (sat.state !== 'idle') return sat.aim;
   return sat.result?.square ?? null;

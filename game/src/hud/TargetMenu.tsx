@@ -24,7 +24,7 @@ export function TargetMenu({ contactId }: { contactId: string }) {
   const ahead = state.team.route.slice(state.team.waypoint).includes(c.square);
   const status = (w: (typeof WEAPONS)[number]) => {
     const o = state.ordnance[w];
-    return weaponBlocked(state, w, c) ?? (o.uses === null ? 'Ready' : `${o.uses} use${o.uses === 1 ? '' : 's'}`);
+    return weaponBlocked(state, w, c) ?? (o.uses === null ? 'Ready' : `${o.uses} ${w === 'sniper' ? 'round' : 'use'}${o.uses === 1 ? '' : 's'}`);
   };
   return (
     <div className="target-menu" data-testid="target-menu">

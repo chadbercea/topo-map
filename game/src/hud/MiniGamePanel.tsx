@@ -1,8 +1,8 @@
 import { MINIGAMES, timeLeft } from '../sim/minigame';
 import type { Weapon } from '../sim/ordnance';
 
-const AIM: Record<Exclude<Weapon, 'drone'>, string> = {
-  sniper: 'Tap a fighter you can see. One round, one fighter.',
+// The heli's is the only board left: the drone and sniper do it themselves (ILI-1252, ILI-1253).
+const AIM: Partial<Record<Weapon, string>> = {
   heli: 'Tap a row to strafe it end to end.',
 };
 const EYES = {
@@ -29,7 +29,7 @@ export function MiniGamePanel({ strike = false }: { strike?: boolean }) {
   return (
     <section className="panel minigame" data-testid="minigame" data-status={m.status} role="dialog" aria-label={def.title}>
       <h2>{title}</h2>
-      <p className="instructions">{seek ? AIM[m.weapon as Exclude<Weapon, 'drone'>] : def.instructions}</p>
+      <p className="instructions">{seek ? AIM[m.weapon!] : def.instructions}</p>
       {seek && (
         <p className="eyes" data-testid="strike-eyes" data-eyes={m.eyes ?? 'none'}>
           {m.eyes ? EYES[m.eyes] : 'No eyes: a blind strike. Kills won\'t be confirmed or paid.'}

@@ -23,6 +23,9 @@ const found = (look: number | null = 0, extra: object = {}): GameState => {
   };
 };
 
+// The heli unlocked: the one weapon left with a board to aim on.
+const HELI = (): GameState => ({ ...found(), ordnance: { ...found().ordnance, heli: { unlocked: true, uses: null, readyAtMs: 0 } } });
+
 describe('ordnance', () => {
   it('drone and sniper are ready; the helicopter is locked until upgrades', () => {
     const s = found();
@@ -31,15 +34,16 @@ describe('ordnance', () => {
     expect(weaponBlocked(s, 'heli', s.contacts[0])).toBe('Unlocks with upgrades');
   });
 
-  it('the drone is one use; the sniper comes back after its cooldown', () => {
-    const store = createStore(found());
-    store.fire('t', 'drone');
-    expect(weaponBlocked(store.get(), 'drone')).toBe('Used');
-    store.fire('t', 'sniper');
+  it('the drone is one use; the heli comes back after its cooldown', () => {
+    const drone = createStore(found());
+    drone.fire('t', 'drone');
+    expect(weaponBlocked(drone.get(), 'drone')).toBe('Used');
+    const store = createStore(HELI());
+    store.fire('t', 'heli');
     store.abortMiniGame();
-    expect(weaponBlocked(store.get(), 'sniper')).toMatch(/^Ready in \d+ min$/);
-    store.set(run(store.get(), WEAPON.sniper.runMs + WEAPON.sniper.cooldownMs));
-    expect(weaponBlocked(store.get(), 'sniper')).toBeNull();
+    expect(weaponBlocked(store.get(), 'heli')).toMatch(/^Ready in /);
+    store.set(run(store.get(), WEAPON.heli.runMs + WEAPON.heli.cooldownMs));
+    expect(weaponBlocked(store.get(), 'heli')).toBeNull();
   });
 });
 
@@ -62,38 +66,24 @@ describe('eyes on the target', () => {
 });
 
 describe('strike', () => {
-  it('firing opens the square with the fighters HQ has seen', () => {
-    const store = createStore(found());
-    store.fire('t', 'sniper');
-    expect(store.get().minigame).toMatchObject({ kind: 'seekDestroy', square: 'E3', weapon: 'sniper', roundsLeft: 8, status: 'active', eyes: 'fresh', spotted: [5, 6, 9, 10] });
-  });
-
-  it('sniper: a shot at a fighter you can see is a kill; the rest scatter to cover', () => {
-    const store = createStore(found());
-    store.fire('t', 'sniper');
-    store.tapMiniGame('E3', 5);
-    const s = store.get();
-    expect(s.minigame!.hits).toBe(1);
-    expect(s.contacts[0].units).toHaveLength(3);
-    expect(s.contacts[0].units).not.toEqual([6, 9, 10]); // they moved
-    expect(s.minigame!.spotted).toEqual([6, 9, 10]); // HQ's picture still shows where they were
-    expect(s.imagery.E3.seen[0].units).toEqual([6, 9, 10]); // the kill is confirmed
-    store.tapMiniGame('E3', 6); // still cycling: ignored
-    expect(store.get().minigame!.roundsLeft).toBe(7);
+  it('firing the heli opens the square with the fighters HQ has seen', () => {
+    const store = createStore(HELI());
+    store.fire('t', 'heli');
+    expect(store.get().minigame).toMatchObject({ kind: 'seekDestroy', square: 'E3', weapon: 'heli', roundsLeft: 3, status: 'active', eyes: 'fresh', spotted: [5, 6, 9, 10] });
   });
 
   it('heli: a gun run strafes the whole row', () => {
-    const store = createStore({ ...found(), ordnance: { ...found().ordnance, heli: { unlocked: true, uses: null, readyAtMs: 0 } } });
+    const store = createStore(HELI());
     store.fire('t', 'heli');
     store.tapMiniGame('E3', 4); // row 4-7 catches 5 and 6
     expect(store.get().minigame!.hits).toBe(2);
   });
 
   it('taps outside the target square do nothing', () => {
-    const store = createStore(found());
-    store.fire('t', 'sniper');
+    const store = createStore(HELI());
+    store.fire('t', 'heli');
     store.tapMiniGame('D3', 5);
-    expect(store.get().minigame!.roundsLeft).toBe(8);
+    expect(store.get().minigame!.roundsLeft).toBe(3);
   });
 
   it('fighters drift: one moves a cell every 33 s, so an old look stops matching', () => {

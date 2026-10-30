@@ -22,8 +22,10 @@ describe('target painting', () => {
   it('the war room strike on a painted target sees every fighter', () => {
     const store = createStore(untilHold(facing()));
     answer(store, 'contact-call-cp', 'observe');
+    const units = store.get().contacts[0].units;
     store.fire('cp', 'sniper');
-    expect(store.get().minigame).toMatchObject({ eyes: 'live', spotted: store.get().contacts[0].units });
+    expect(store.get().sniper!.shots.map((x) => x.unit).sort()).toEqual([...units].sort().slice(0, store.get().sniper!.shots.length)); // OVERWATCH aims at all of them
+    expect(store.get().sniper!.shots.every((x) => x.hit)).toBe(true);
   });
 
   it('unpainted and unseen, the sniper can’t aim; the drone still flies', () => {
