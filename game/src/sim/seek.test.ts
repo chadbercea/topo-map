@@ -37,9 +37,15 @@ describe('ordnance', () => {
     expect(weaponBlocked(drone.get(), 'drone')).toBe('Used');
     const store = createStore(found());
     store.fire('t', 'heli');
-    expect(weaponBlocked(store.get(), 'heli')).toMatch(/^Ready in /);
-    store.set(run(store.get(), WEAPON.heli.runMs + WEAPON.heli.cooldownMs));
+    expect(weaponBlocked(store.get(), 'heli')).toMatch(/^Ready in \d+:\d\d$/); // ticking down, m:ss (ILI-1273)
+    const ready = (x: ReturnType<typeof store.get>) => x.comms.messages.filter((m) => m.from === 'HAMMER-2' && m.id.startsWith('ready-'));
+    store.set(run(store.get(), WEAPON.heli.runMs + WEAPON.heli.cooldownMs - 200));
+    expect(ready(store.get())).toHaveLength(0);
+    store.set(run(store.get(), 200));
     expect(weaponBlocked(store.get(), 'heli')).toBeNull();
+    // ...and it says so, once (ILI-1273).
+    expect(ready(store.get())).toHaveLength(1);
+    expect(ready(run(store.get(), 5_000))).toHaveLength(1);
   });
 });
 

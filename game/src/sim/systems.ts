@@ -16,6 +16,7 @@ import { signalSystem } from './signal';
 import { missionSystem } from './mission';
 import { scriptSystem } from './script';
 import { casualtySystem, supportSystem } from './support';
+import { ordnanceSystem } from './ordnance';
 
 // A system reads the state and returns the next one for a fixed slice of mission time.
 // New systems (movement, comms, ...) slot into SYSTEMS in the order they should run.
@@ -42,7 +43,7 @@ export const readoutSystem: System = (s) => {
   return { ...s, team: { ...s.team, vitals, activeUntilMs: s.elapsedMs + ACTIVE_MS } };
 };
 
-export const SYSTEMS: System[] = [timerSystem, noiseSystem, eventSystem, scriptSystem, satelliteSystem, signalSystem, minigameSystem, airSystem, sniperSystem, commsSystem, approachSystem, siteSystem, firefightSystem, casualtySystem, supportSystem, missionSystem, movementSystem, driftSystem, eyesSystem, readoutSystem];
+export const SYSTEMS: System[] = [timerSystem, noiseSystem, eventSystem, scriptSystem, satelliteSystem, signalSystem, minigameSystem, airSystem, sniperSystem, ordnanceSystem, commsSystem, approachSystem, siteSystem, firefightSystem, casualtySystem, supportSystem, missionSystem, movementSystem, driftSystem, eyesSystem, readoutSystem];
 
 // One fixed tick: advance the clocks, then let every system have its turn.
 export function step(state: GameState, dtMs: number, systems: System[] = SYSTEMS): GameState {
