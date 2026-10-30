@@ -23,24 +23,20 @@ const found = (look: number | null = 0, extra: object = {}): GameState => {
   };
 };
 
-// The heli unlocked: the one weapon left with a board to aim on.
-const HELI = (): GameState => ({ ...found(), ordnance: { ...found().ordnance, heli: { unlocked: true, uses: null, readyAtMs: 0 } } });
-
 describe('ordnance', () => {
-  it('drone and sniper are ready; the helicopter is locked until upgrades', () => {
+  it('drone, sniper and helicopter are all ready from the start (ILI-1254)', () => {
     const s = found();
     expect(weaponBlocked(s, 'drone', s.contacts[0])).toBeNull();
     expect(weaponBlocked(s, 'sniper', s.contacts[0])).toBeNull();
-    expect(weaponBlocked(s, 'heli', s.contacts[0])).toBe('Unlocks with upgrades');
+    expect(weaponBlocked(s, 'heli', s.contacts[0])).toBeNull();
   });
 
   it('the drone is one use; the heli comes back after its cooldown', () => {
     const drone = createStore(found());
     drone.fire('t', 'drone');
     expect(weaponBlocked(drone.get(), 'drone')).toBe('Used');
-    const store = createStore(HELI());
+    const store = createStore(found());
     store.fire('t', 'heli');
-    store.abortMiniGame();
     expect(weaponBlocked(store.get(), 'heli')).toMatch(/^Ready in /);
     store.set(run(store.get(), WEAPON.heli.runMs + WEAPON.heli.cooldownMs));
     expect(weaponBlocked(store.get(), 'heli')).toBeNull();
@@ -65,27 +61,7 @@ describe('eyes on the target', () => {
   });
 });
 
-describe('strike', () => {
-  it('firing the heli opens the square with the fighters HQ has seen', () => {
-    const store = createStore(HELI());
-    store.fire('t', 'heli');
-    expect(store.get().minigame).toMatchObject({ kind: 'seekDestroy', square: 'E3', weapon: 'heli', roundsLeft: 3, status: 'active', eyes: 'fresh', spotted: [5, 6, 9, 10] });
-  });
-
-  it('heli: a gun run strafes the whole row', () => {
-    const store = createStore(HELI());
-    store.fire('t', 'heli');
-    store.tapMiniGame('E3', 4); // row 4-7 catches 5 and 6
-    expect(store.get().minigame!.hits).toBe(2);
-  });
-
-  it('taps outside the target square do nothing', () => {
-    const store = createStore(HELI());
-    store.fire('t', 'heli');
-    store.tapMiniGame('D3', 5);
-    expect(store.get().minigame!.roundsLeft).toBe(3);
-  });
-
+describe('targets', () => {
   it('fighters drift: one moves a cell every 33 s, so an old look stops matching', () => {
     const s = run(found(null), DRIFT_MS);
     const units = s.contacts[0].units;

@@ -712,8 +712,6 @@ html, body {
 .orion .o-targets { position: absolute; top: 0; bottom: 0; left: 50%; aspect-ratio: 1; transform: translateX(-50%); }
 .orion .o-picture .o-target { position: absolute; width: 24px; height: 24px; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 1px solid transparent; border-radius: 50%; background: none; cursor: crosshair; }
 .orion .o-picture .o-target:hover, .orion .o-picture .o-target:focus-visible { border-color: #e5484d; background: rgba(229, 72, 77, 0.18); }
-.orion .o-picture .o-cell { position: absolute; min-height: 0; padding: 0; border: 1px solid transparent; background: none; cursor: crosshair; }
-.orion .o-picture .o-cell:hover, .orion .o-picture .o-cell:focus-visible { border-color: #e5484d; background: rgba(229, 72, 77, 0.12); }
 .orion .minigame { border: 0; animation: none; }
 .orion .o-buttons[hidden] { display: none; }
 /* The placeholder (ILI-1229): where the Three.js satellite goes (ILI-1196). Painted, unlike the
@@ -919,26 +917,26 @@ html, body {
 .ask.sent .dish { animation: sending 0.8s steps(2, jump-none) infinite; }
 @media (prefers-reduced-motion: reduce) { .ask.sent .dish { animation: none; } }
 
-/* The drone panel (ILI-1252): REAPER-1 and its time to target, popping up in the band over the
+/* The air strike panels (ILI-1252, ILI-1254): REAPER-1 or HAMMER-2 and its time to target, popping up in the band over the
    map; then a "Tango down" per kill, and it slides away. */
 @keyframes drone-in { from { opacity: 0; transform: translateY(12px) scale(0.97); } }
 @keyframes drone-out { to { opacity: 0; transform: translateY(12px) scale(0.97); } }
-.drone { display: grid; grid-template-columns: 140px 1fr; grid-template-rows: auto 1fr; column-gap: 12px; border-color: #e5484d; background: var(--bg); animation: drone-in 220ms ease-out; }
-.drone[data-leaving] { animation: drone-out 400ms ease-in forwards; }
-.drone h2 { grid-column: 1 / -1; display: flex; justify-content: space-between; color: #e5484d; }
-.drone h2 .where { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; }
-.drone .d-model { position: relative; display: grid; place-items: center; height: 84px; }
-.drone .d-model > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.drone .d-mark { width: 80%; fill: none; stroke: var(--accent); stroke-width: 1.5; }
-.drone .d-clock { display: grid; align-content: center; gap: 2px; }
-.drone .d-clock small { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
-.drone .d-clock b { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1.1; }
-.drone .decay { display: block; height: 6px; background: rgba(229, 72, 77, 0.12); border: 1px solid rgba(229, 72, 77, 0.4); }
-.drone .decay > span { display: block; height: 100%; background: #e5484d; transition: width 200ms linear; }
-.drone .d-log { list-style: none; margin: 0; padding: 0; display: grid; align-content: center; gap: 1px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #e5484d; }
-.drone .d-log li { animation: alert-in 160ms ease-out; }
-.drone .d-log .d-all { margin-top: 4px; color: var(--ink); font-weight: 600; }
-@media (prefers-reduced-motion: reduce) { .drone, .drone[data-leaving], .drone .d-log li { animation: none; } .drone .decay > span { transition: none; } }
+.air { display: grid; grid-template-columns: 140px 1fr; grid-template-rows: auto 1fr; column-gap: 12px; border-color: #e5484d; background: var(--bg); animation: drone-in 220ms ease-out; }
+.air[data-leaving] { animation: drone-out 400ms ease-in forwards; }
+.air h2 { grid-column: 1 / -1; display: flex; justify-content: space-between; color: #e5484d; }
+.air h2 .where { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; }
+.air .d-model { position: relative; display: grid; place-items: center; height: 84px; }
+.air .d-model > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.air .d-mark { width: 80%; fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.air .d-clock { display: grid; align-content: center; gap: 2px; }
+.air .d-clock small { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.air .d-clock b { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1.1; }
+.air .decay { display: block; height: 6px; background: rgba(229, 72, 77, 0.12); border: 1px solid rgba(229, 72, 77, 0.4); }
+.air .decay > span { display: block; height: 100%; background: #e5484d; transition: width 200ms linear; }
+.air .d-log { list-style: none; margin: 0; padding: 0; display: grid; align-content: center; gap: 1px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #e5484d; }
+.air .d-log li { animation: alert-in 160ms ease-out; }
+.air .d-log .d-all { margin-top: 4px; color: var(--ink); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .air, .air[data-leaving], .air .d-log li { animation: none; } .air .decay > span { transition: none; } }
 
 /* The sniper (ILI-1253): OVERWATCH's crosshairs in ORION-3's picture, gliding to each fighter it
    shoots, and its panel under the picture. */

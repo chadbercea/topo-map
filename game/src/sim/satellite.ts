@@ -76,20 +76,20 @@ export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing'
 // opened), else the one ORION-3 is working, else its last look until HQ closes it. Nothing
 // while a mini game is up.
 // The square ORION-3's panel shows (ILI-1219): where it's tasked; idle, the square HQ picked
-// (ILI-1228) or just looked at. Nothing when none is (the placeholder, ILI-1229), or while a
-// strike has it tied up.
+// (ILI-1228) or just looked at. Nothing when none is (the placeholder, ILI-1229), or while the
+// intercept has it tied up; the sniper's run while it shoots (ILI-1253).
 export function orionSquare(s: GameState): SquareId | null {
   const sat = s.satellite;
-  if (s.minigame) return s.minigame.kind === 'seekDestroy' ? s.minigame.square : null; // a strike plays out in its picture (ILI-1250)
-  if (s.sniper && !s.sniper.done) return s.sniper.square; // so does the sniper's run (ILI-1253)
+  if (s.minigame) return null;
+  if (s.sniper && !s.sniper.done) return s.sniper.square; // it plays out in its picture (ILI-1253)
   if (sat.state !== 'idle') return sat.aim;
   return s.map.selected ?? sat.result?.square ?? null;
 }
 
 export function lookSquare(s: GameState): SquareId | null {
   const sat = s.satellite;
-  if (s.minigame) return s.minigame.kind === 'seekDestroy' ? s.minigame.square : null; // a strike plays out in its picture (ILI-1250)
-  if (s.sniper && !s.sniper.done) return s.sniper.square; // so does the sniper's run (ILI-1253)
+  if (s.minigame) return null;
+  if (s.sniper && !s.sniper.done) return s.sniper.square; // it plays out in its picture (ILI-1253)
   if (s.map.selected) return s.map.selected;
   if (sat.state !== 'idle') return sat.aim;
   return sat.result?.square ?? null;

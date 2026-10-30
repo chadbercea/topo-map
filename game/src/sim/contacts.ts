@@ -256,14 +256,3 @@ export const driftSystem: System = (s) => {
   });
   return moved ? { ...s, contacts } : s;
 };
-
-// Under fire, a group scatters to cover: every survivor ends up in a different cell.
-export function scatter(c: Contact, seed: number): Contact {
-  const free = Array.from({ length: CELLS * CELLS }, (_, i) => i);
-  const units: number[] = [];
-  for (let k = 0; k < c.units.length; k++) {
-    const pick = Math.floor(roll(seed * 31 + k) * free.length);
-    units.push(free.splice(pick, 1)[0]);
-  }
-  return { ...c, units };
-}

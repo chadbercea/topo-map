@@ -1,4 +1,4 @@
-import { CROSS_MS, FLIGHT_MS } from './drone';
+import { CROSS_MS, FLIGHT_MS } from './air';
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH } from './sites';

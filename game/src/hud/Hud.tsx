@@ -3,7 +3,7 @@ import { DebugPanel } from './DebugPanel';
 import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
 import { MiniGamePanel } from './MiniGamePanel';
-import { DronePanel } from './DronePanel';
+import { AirPanel } from './AirPanel';
 import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
@@ -80,7 +80,8 @@ export function Hud() {
       <div className="slot-band">
         <div className="band-cards" data-overlay="band">
           <MiniGamePanel />
-          <DronePanel />
+          <AirPanel weapon="drone" />
+          <AirPanel weapon="heli" />
         </div>
       </div>
       <div className="slot-orion" data-overlay="orion">
