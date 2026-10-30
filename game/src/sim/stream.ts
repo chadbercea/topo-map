@@ -37,11 +37,12 @@ export const initialStream = (): Stream => ({
 const STRIKES = new Set(['REAPER-1', 'OVERWATCH', 'HAMMER-2']);
 export const EVENT_LABEL: Record<EventKind, string> = { contact: 'CONTACT', signal: 'SIGNAL', site: 'KILL SITE', request: 'REQUEST' };
 
-// What kind of intel a message is, and whether it's routine. ORION-3 moving and settling is
-// routine; what it saw isn't.
+// What kind of intel a message is, and whether it's routine. ORION-3 moving is routine; on
+// station and what it saw aren't.
 export function classify(m: Message): { kind: IntelKind; quiet: boolean } {
   if (m.alert) return { kind: 'alert', quiet: false };
-  if (m.from === 'ORION-3') return { kind: 'imagery', quiet: m.id.startsWith('slew-') || m.id.startsWith('station-') };
+  // On station it's ready for HQ's shot (ILI-1257), so that line speaks up; moving stays quiet.
+  if (m.from === 'ORION-3') return { kind: 'imagery', quiet: m.id.startsWith('slew-') };
   if (m.from === 'SIGINT') return { kind: 'sigint', quiet: false };
   if (STRIKES.has(m.from)) return { kind: 'strike', quiet: false };
   return { kind: 'hq', quiet: false };

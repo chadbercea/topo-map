@@ -127,7 +127,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     map: { ...s.map, selected: null },
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
-  return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Moving to ${square}. On station in ${gameSpan(ms)}.` : `On station over ${square}.`));
+  return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Moving to ${square}. On station in ${gameSpan(ms)}.` : `On station over ${square}. Ready to shoot.`));
 }
 
 // On station: take the picture.
@@ -183,7 +183,8 @@ export function describe(r: LookResult): string {
 export const satelliteSystem: System = (s) => {
   const sat = s.satellite;
   if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs)
-    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, 'ORION-3', `station-${s.elapsedMs}`, `On station over ${sat.aim}.`));
+    // It says what's next (ILI-1257): the shot is HQ's to take.
+    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, 'ORION-3', `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready to shoot.`));
   if (sat.state !== 'capturing') return s;
   if (s.elapsedMs >= sat.captureUntilMs) return finishLook(s);
   // Video is live: the map follows them while it runs.

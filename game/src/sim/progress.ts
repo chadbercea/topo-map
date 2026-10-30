@@ -70,11 +70,14 @@ export function nextUp(s: GameState): Pressing {
 
 export type Blocker = { tone: 'decision' | 'threat' | 'team'; text: string };
 
-// What's stopping progress or pressing right now (ILI-1187), most urgent first: a call
-// waiting on HQ, a fight, contacts and unimaged ground on the route ahead, the team's
+// What's stopping progress or pressing right now (ILI-1187), most urgent first: a look ALPHA
+// is waiting on with ORION-3 in place (ILI-1257), a call waiting on HQ, a fight, contacts and unimaged ground on the route ahead, the team's
 // condition, and the enemy's alert.
 export function blockers(s: GameState): Blocker[] {
   const out: Blocker[] = [];
+  // ALPHA waiting on a look ORION-3 is in place for (ILI-1257): the shot is the next thing to do.
+  const sat = s.satellite;
+  if (sat.callId && sat.state === 'onStation') out.push({ tone: 'decision', text: `ORION-3 on station over ${sat.aim}: take the shot` });
   const calls = waitingCalls(s.comms);
   if (calls.length) out.push({ tone: 'decision', text: `${calls[0].from} waiting on your call${calls.length > 1 ? ` (+${calls.length - 1})` : ''}` });
   if (s.team.fight) out.push({ tone: 'threat', text: `${s.team.callsign} in contact` });
