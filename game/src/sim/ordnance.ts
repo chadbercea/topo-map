@@ -5,7 +5,7 @@ import { gameSpan } from './gameTime';
 
 // Ordnance for strikes (GDD, reworked in ILI-1168): the drone strike is one use, clears the
 // whole square (ILI-1252, drone.ts), and can fire blind; the sniper takes them out itself,
-// seven rounds for the mission, at fighters HQ can see (ILI-1253, sniper.ts); the helicopter
+// seven rounds a call, at fighters HQ can see (ILI-1253, sniper.ts); the helicopter
 // gun run strafes a row, also needing eyes, and unlocks through upgrades. Each goes on
 // cooldown after a run.
 
@@ -23,7 +23,7 @@ export const WEAPON = {
 
 export const initialOrdnance = (): Ordnance => ({
   drone: { unlocked: true, uses: 1, readyAtMs: 0 },
-  sniper: { unlocked: true, uses: 7, readyAtMs: 0 }, // rounds, for the mission (ILI-1253)
+  sniper: { unlocked: true, uses: null, readyAtMs: 0 }, // a fresh sniper every call (ILI-1253)
   heli: { unlocked: false, uses: null, readyAtMs: 0 },
 });
 
@@ -34,7 +34,7 @@ export const NEEDS_EYES: Record<Weapon, boolean> = { drone: false, sniper: true,
 export function weaponBlocked(s: GameState, w: Weapon, c?: Contact): string | null {
   const o = s.ordnance[w];
   if (!o.unlocked) return 'Unlocks with upgrades';
-  if (o.uses === 0) return w === 'sniper' ? 'Out of rounds' : 'Used';
+  if (o.uses === 0) return 'Used';
   if (s.elapsedMs < o.readyAtMs) return `Ready in ${gameSpan(o.readyAtMs - s.elapsedMs)}`;
   if (s.minigame?.status === 'active' || (s.sniper && !s.sniper.done)) return 'Busy';
   if (c && NEEDS_EYES[w]) {

@@ -25,7 +25,6 @@ describe('sniper (ILI-1253)', () => {
     expect(store.get().minigame).toBeNull(); // nothing to aim
     expect(r.shots).toHaveLength(5); // six fighters, but only time for five
     expect(r.shots.map((x) => x.atMs - r.startedMs)).toEqual([0, 1, 2, 3, 4].map((i) => FIRST_MS + i * BOLT_MS));
-    expect(store.get().ordnance.sniper.uses).toBe(2); // seven rounds for the mission
     let s = run(store.get(), FIRST_MS + 50);
     expect(s.contacts[0].units).toHaveLength(5);
     s = run(s, RUN_MS);
@@ -46,14 +45,13 @@ describe('sniper (ILI-1253)', () => {
     }
   });
 
-  it('fewer fighters than time: it takes them all, the target is cleared, and the rest of the rounds keep', () => {
+  it('fewer fighters than time: it takes them all, and the target is cleared', () => {
     const store = createStore(e3([5, 6]));
     store.fire('t', 'sniper');
     const s = run(store.get(), RUN_MS + 200);
     expect(s.contacts[0].status).toBe('cleared');
     expect(s.events.find((e) => e.id === 'contact-t')?.status).toBe('resolved');
     expect(s.comms.messages.at(-1)?.text).toMatch(/^E3: all targets down\. 2 down\./);
-    expect(s.ordnance.sniper.uses).toBe(5);
   });
 
   it('a fighter that has moved since the look is a miss', () => {
@@ -63,13 +61,13 @@ describe('sniper (ILI-1253)', () => {
     expect(store.get().sniper!.shots.map((x) => x.hit)).toEqual(expect.arrayContaining([true, false]));
   });
 
-  it('seven rounds a mission: then it is out', () => {
+  it('a fresh sniper every call: seven rounds again, and no wait', () => {
     const store = createStore(e3([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]));
     store.fire('t', 'sniper');
-    store.set(run(store.get(), RUN_MS + LEAVE_MS + 200));
+    store.set(run(store.get(), RUN_MS + 200));
+    expect(weaponBlocked(store.get(), 'sniper')).toBeNull();
     store.fire('t', 'sniper');
-    expect(store.get().sniper!.shots).toHaveLength(2);
-    store.set(run(store.get(), RUN_MS + LEAVE_MS + 200));
-    expect(weaponBlocked(store.get(), 'sniper')).toBe('Out of rounds');
+    expect(store.get().sniper).toMatchObject({ rounds: 7, fired: 0 });
+    expect(store.get().sniper!.shots).toHaveLength(5);
   });
 });

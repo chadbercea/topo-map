@@ -16,7 +16,7 @@ async function targetE3(page: Page) {
 test('the target menu lists every weapon with its state, and ALPHA attacks', async ({ page }) => {
   await targetE3(page);
   await expect(page.getByTestId('fire-drone')).toContainText('1 use');
-  await expect(page.getByTestId('fire-sniper')).toContainText('7 rounds');
+  await expect(page.getByTestId('fire-sniper')).toContainText('Ready');
   await expect(page.getByTestId('fire-heli')).toBeDisabled();
   await expect(page.getByTestId('fire-heli')).toContainText('Unlocks with upgrades');
   await expect(page.getByTestId('send-team')).toBeVisible();
