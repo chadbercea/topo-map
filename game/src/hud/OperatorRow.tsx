@@ -42,28 +42,29 @@ function RankIcon({ grade, title }: { grade: number; title: string }) {
 export const STATUS = { fine: 'FINE', caution: 'CAUTION', danger: 'DANGER', down: 'DOWN' } as const;
 
 type Level = 'ok' | 'low' | 'out';
-// A supply as a number (ILI-1248): quiet while there's enough, amber under the resupply line,
-// red when it's gone.
+// Ammo and meds as short bars (ILI-1248): green while there's enough, amber under the resupply
+// line, red when it's gone.
 const supply = (left: number): Level => (left <= 0.1 ? 'out' : left < LOW ? 'low' : 'ok');
-// Noise the same way: quiet, enough to make them suspicious, enough to raise the alarm.
+// Noise, for the row's edge: enough to make them suspicious, enough to raise the alarm.
 const loudness = (n: number): Level => (n >= ALERT_AT ? 'out' : n >= SUSPICIOUS_NOISE ? 'low' : 'ok');
 
-function Gauge({ label, text, value, level, name, testId }: { label: string; text: string; value: number; level: Level; name: string; testId?: string }) {
+function Gauge({ label, value, level, name, testId }: { label: string; value: number; level?: Level; name: string; testId?: string }) {
+  const v = Math.max(0, Math.min(100, value));
   return (
-    <span className="gauge" data-level={level} data-testid={testId} role="meter" aria-label={`${name} ${label.toLowerCase()}`} aria-valuenow={Math.round(value)} aria-valuemin={0} aria-valuemax={100}>
+    <span className="gauge" data-level={level} data-testid={testId}>
       <span className="k">{label}</span>
-      <span className="v">{text}</span>
+      <span className="bar" role="meter" aria-label={`${name} ${label.toLowerCase()}`} aria-valuenow={Math.round(v)} aria-valuemin={0} aria-valuemax={100}>
+        <span style={{ width: `${v}%` }} />
+      </span>
     </span>
   );
 }
 
-// One operator in the team panel (ILI-1248, tightened): rank, name and role; heartbeat and
-// status; then ammo, meds and how loud they've been (ILI-1222), as small numbers. All of it sits
-// quiet while they're fine, and the row lights when something isn't: hurt, low, or loud.
+// One operator in the team panel (ILI-1248): rank, name and role in even columns; heartbeat and
+// status; then ammo and meds as short bars, and how loud they've been moving (ILI-1222) as an
+// orange one. The row gets a coloured edge when something's wrong: hurt, low or loud.
 export function OperatorRow({ o }: { o: Operator }) {
   const c = condition(o);
-  const ammo = ammoLeft(o) * 100;
-  const meds = medsLeft(o) * 100;
   const levels = [supply(ammoLeft(o)), supply(medsLeft(o)), loudness(o.noise)];
   const flag = c === 'down' ? 'down' : c === 'danger' || levels.includes('out') ? 'danger' : c === 'caution' || levels.includes('low') ? 'caution' : undefined;
   return (
@@ -78,9 +79,9 @@ export function OperatorRow({ o }: { o: Operator }) {
         <span className="status">{STATUS[c]}</span>
       </div>
       <div className="supplies">
-        <Gauge label="AMMO" text={`${Math.round(ammo)}%`} value={ammo} level={levels[0]} name={o.name} />
-        <Gauge label="MEDS" text={`${Math.round(meds)}%`} value={meds} level={levels[1]} name={o.name} />
-        <Gauge label="NOISE" text={`${Math.round(o.noise)}`} value={o.noise} level={levels[2]} name={o.name} testId={`noise-${o.id}`} />
+        <Gauge label="AMMO" value={ammoLeft(o) * 100} level={levels[0]} name={o.name} />
+        <Gauge label="MEDS" value={medsLeft(o) * 100} level={levels[1]} name={o.name} />
+        <Gauge label="NOISE" value={o.noise} name={o.name} testId={`noise-${o.id}`} />
       </div>
     </li>
   );

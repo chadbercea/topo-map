@@ -22,7 +22,7 @@ test('the team moves along its route on its own and stops when paused', async ({
 test("each operator's noise is on their row; ALERTED is in the team panel's title (ILI-1222)", async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
-  const gunner = page.getByTestId('noise-heavy'); // the noise readout on Brandt's row (ILI-1248)
+  const gunner = page.getByTestId('noise-heavy').getByRole('meter');
   await expect(gunner).toHaveAttribute('aria-valuenow', '0');
   await expect(page.getByTestId('alerted')).toHaveCount(0);
   await page.evaluate(() => {

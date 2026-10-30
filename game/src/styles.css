@@ -435,7 +435,7 @@ html, body {
 .team { overflow-y: auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr); align-content: start; }
 /* One line per operator: who, heartbeat and status, ammo and meds. */
 .team .readout { margin: 6px 0 0; gap: 4px; }
-.team .op { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'who vitals supplies'; align-items: center; gap: 12px; }
+.team .op { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'who vitals supplies'; align-items: center; gap: 8px; }
 .team .op .vitals { display: flex; align-items: center; gap: 6px; }
 .team .op .ecg { width: 52px; height: 16px; }
 .team .op .status { width: 52px; }
@@ -447,7 +447,7 @@ html, body {
   .slot-bottom { justify-items: start; }
   .slot-team { width: max-content; max-width: 100%; }
   .team { height: auto; max-height: 260px; }
-  .team .op { grid-template-columns: 200px max-content max-content; justify-content: start; gap: 16px; }
+  .team .op { grid-template-columns: max-content max-content max-content; justify-content: start; gap: 8px; }
 }
 .team h2 { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
 .team .callsign { color: var(--accent); letter-spacing: 0.12em; flex: none; }
@@ -460,24 +460,26 @@ html, body {
 .readout { margin-top: 8px; gap: 8px; }
 
 .op { display: grid; grid-template-columns: 1fr 72px; grid-template-areas: 'who vitals' 'supplies supplies'; gap: 2px 8px; }
-.op .who { grid-area: who; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.op .who { grid-area: who; display: grid; grid-template-columns: 10px 7ch 12ch; align-items: center; gap: 6px; min-width: 0; } /* rank, name, role: even columns (ILI-1248) */
 .op .name { color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .op .rank { flex: none; }
 .op .role { color: var(--dim); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .op .vitals { grid-area: vitals; display: grid; justify-items: end; }
 .op .status { font-size: 9px; letter-spacing: 0.1em; }
 .team h2 .alerted { color: #e5484d; letter-spacing: 0.1em; }
-/* Ammo, meds and noise (ILI-1248): small numbers, dim while fine; amber when low or loud
-   enough to make them suspicious, red when out or loud enough to raise the alarm. */
-.op .supplies { grid-area: supplies; display: flex; align-items: baseline; gap: 12px; font-size: 9px; color: var(--dim); }
-.op .gauge { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; }
+/* Ammo and meds as short bars (ILI-1248), amber when low and red when out; noise, how loud
+   they've been moving (ILI-1222), as an orange one that rises and falls with it. */
+.op .supplies { grid-area: supplies; display: flex; align-items: center; gap: 8px; font-size: 9px; color: var(--dim); }
+.op .gauge { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .op .gauge .k { letter-spacing: 0.1em; }
-.op .gauge .v { min-width: 4ch; text-align: right; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
-.op .gauge[data-level='low'] .v, .op .gauge[data-level='low'] .k { color: #f2c14e; }
-.op .gauge[data-level='out'] .v, .op .gauge[data-level='out'] .k { color: #e5484d; }
+.op .gauge .bar { width: 36px; height: 5px; }
+.op .gauge .bar > span { transition: width 300ms ease-out; }
+.op .gauge[data-level='low'] .bar > span { background: #f2c14e; }
+.op .gauge[data-level='out'] .bar > span { background: #e5484d; }
+.op .gauge[data-testid^='noise-'] .bar > span { background: #ff8a2a; }
+@media (prefers-reduced-motion: reduce) { .op .gauge .bar > span { transition: none; } }
 /* Quiet while fine; the row lights when something isn't. */
 .op .role { color: var(--dim); }
-.op[data-condition='fine'] .status { opacity: 0.55; }
 .op { position: relative; }
 .op[data-flag]::before { content: ''; position: absolute; left: -8px; top: -2px; bottom: -2px; width: 2px; background: var(--flag); }
 .op[data-flag] { background: linear-gradient(90deg, color-mix(in srgb, var(--flag) 14%, transparent), transparent 70%); }
@@ -834,7 +836,6 @@ html, body {
   .small-widget h2 { display: none; }
 
   .readout .op { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'who vitals supplies'; gap: 8px; }
-  .readout .op .supplies { gap: 6px; }
 
   .debug { bottom: auto; top: 40%; }
   .hud[data-playing='true'] .minigame .instructions { display: none; }
@@ -1000,11 +1001,17 @@ html, body {
 }
 .call-box .what[data-hidden] { visibility: hidden; } /* the Answer covers it; it keeps the header's height */
 
-/* A fold or phone (ILI-1248): TEAM is narrow, so the role and the status word wait for a wider
-   screen; the heartbeat's colour and the row's edge carry the condition. */
+/* A fold or phone (ILI-1248): TEAM is narrow, so the role waits for a wider screen and the bars are shorter. */
 @media (max-width: 1199px) {
-  .team .op .role, .team .op .status { display: none; }
+  .team .op .who { grid-template-columns: 10px minmax(0, 7ch); }
+  .team .op .role { display: none; }
   .team .op .ecg { width: 40px; }
-  .team .op { gap: 8px; }
-  .team .op .supplies { gap: 8px; }
+  .team .op .gauge .bar { width: 24px; }
+}
+@media (max-width: 699px) {
+  .team .op { gap: 6px; }
+  .team .op .ecg { width: 32px; }
+  .team .op .status { width: 40px; font-size: 8px; }
+  .team .op .supplies { gap: 6px; }
+  .team .op .gauge .bar { width: 18px; }
 }
