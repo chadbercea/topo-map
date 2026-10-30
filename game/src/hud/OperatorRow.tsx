@@ -49,24 +49,24 @@ const supply = (left: number): Level => (left <= 0.1 ? 'out' : left < LOW ? 'low
 // Noise, for the row's edge: enough to make them suspicious, enough to raise the alarm.
 const loudness = (n: number): Level => (n >= ALERT_AT ? 'out' : n >= SUSPICIOUS_NOISE ? 'low' : 'ok');
 
-// The gauges' labels as pictures (ILI-1265): three rounds side by side for ammo, a red cross for meds.
+// The gauges' labels as pictures (ILI-1265): three rounds side by side for ammo, a cross for meds,
+// a speaker for noise (ILI-1266). Outlines in the base green, inset so the line isn't clipped (ILI-1268).
 const Rounds = () => (
-  <svg className="k rounds" viewBox="0 0 11 10" aria-hidden>
-    {[0, 4, 8].map((x) => (
-      <path key={x} d={`M${x} 10 V4.5 Q${x + 1.5} 0 ${x + 3} 4.5 V10 Z`} />
+  <svg className="k rounds" viewBox="0 0 12 11" aria-hidden>
+    {[0.6, 4.7, 8.8].map((x) => (
+      <path key={x} d={`M${x} 10.4 V5 Q${x + 1.3} 0.6 ${x + 2.6} 5 V10.4 Z`} />
     ))}
   </svg>
 );
-// Noise (ILI-1266): a speaker and its waves.
 const Sound = () => (
-  <svg className="k sound" viewBox="0 0 12 10" aria-hidden>
-    <path d="M0 3.5h2.5L5.5 1v8L2.5 6.5H0z" />
-    <path className="w" d="M7.5 3.2q1 1.8 0 3.6M9.5 1.8q2 3.2 0 6.4" />
+  <svg className="k sound" viewBox="0 0 12 11" aria-hidden>
+    <path d="M0.6 4h2.2l3-2.6v8.2l-3-2.6H0.6z" />
+    <path d="M7.8 3.8q0.9 1.7 0 3.4M9.8 2.2q1.8 3.3 0 6.6" />
   </svg>
 );
 const Cross = () => (
-  <svg className="k cross" viewBox="0 0 10 10" aria-hidden>
-    <path d="M3.5 0h3v3.5h3.5v3h-3.5v3.5h-3v-3.5h-3.5v-3h3.5z" />
+  <svg className="k cross" viewBox="0 0 11 11" aria-hidden>
+    <path d="M4 0.6h3v3.4h3.4v3h-3.4v3.4h-3v-3.4H0.6v-3h3.4z" />
   </svg>
 );
 
