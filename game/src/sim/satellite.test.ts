@@ -3,6 +3,7 @@ import { moveContact } from './contacts';
 import { FRESH_MS, GHOST_MS, freshness } from './imagery';
 import { PATROL_MOVES_MS, PATROL_WALK_MS } from './missions/blackBox';
 import { SETTLE_MS, SLEW_MS_PER_SQUARE, slewMs } from './satellite';
+import { blockers } from './progress';
 import { initialState, type GameState } from './state';
 import { createStore, type Store } from './store';
 import { answer, run, walking } from './testkit';
@@ -24,6 +25,16 @@ const look = (store: Store, square: string, mode: 'photo' | 'burst' | 'video' = 
 };
 
 describe('ORION-3 tasking', () => {
+  it('on station for ALPHA\u2019s look, ORION-3 says it\u2019s ready and taking the shot is what needs HQ (ILI-1257)', () => {
+    const store = atRequest();
+    answer(store, REQUEST, 'send');
+    onStation(store);
+    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: 'On station over F4. Ready to shoot.' });
+    expect(blockers(store.get())[0]).toEqual({ tone: 'decision', text: 'ORION-3 on station over F4: take the shot' });
+    store.capture('photo');
+    expect(blockers(store.get()).map((b) => b.text)).not.toContain('ORION-3 on station over F4: take the shot');
+  });
+
   it('looking at F4 from the map answers ALPHA\'s call about F4; another square leaves it waiting', () => {
     const elsewhere = atRequest();
     elsewhere.lookAt('E3');

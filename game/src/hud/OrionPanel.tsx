@@ -181,12 +181,13 @@ export function OrionPanel() {
       {/* The sniper's panel, under its picture (ILI-1253). */}
       <SniperPanel />
 
-      {/* ORION-3's buttons, always here under the picture (ILI-1230): each lit when it can be used. */}
+      {/* ORION-3's buttons, always here under the picture (ILI-1230): each lit when it can be used.
+          On station, Photo pulses: it's the next thing to do (ILI-1257). */}
       <div ref={rowRef} className="o-buttons" data-testid="orion-buttons" hidden={!!sniping}>
         {inPosition && !tied ? (
           <div className="modes" data-testid="capture-modes">
             {MODES.map((m) => (
-              <button key={m} disabled={sat.state === 'capturing'} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what}>
+              <button key={m} disabled={sat.state === 'capturing'} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what} data-cue={(m === 'photo' && sat.state === 'onStation') || undefined}>
                 {CAPTURE[m].label}
                 <small>{CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
               </button>
