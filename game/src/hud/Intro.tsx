@@ -42,7 +42,7 @@ function Terminal({ wiping }: { wiping: boolean }) {
     };
   }, []);
 
-  const at = flat ? { x: innerWidth * 0.72, y: innerHeight * 0.3, visible: true } : spot;
+  const at = flat ? { x: innerWidth * 0.68, y: innerHeight * 0.56, visible: true } : spot;
   return (
     <div className="castle" data-wiping={wiping || undefined}>
       <div ref={host} className="castle-scene" />
