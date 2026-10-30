@@ -15,6 +15,7 @@ import { BOARD } from '../sim/minigame';
 import { orionSquare, satellitePoint } from '../sim/satellite';
 import { freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
+import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
@@ -69,6 +70,7 @@ export class MapScene extends Phaser.Scene {
   private modeGfx!: Phaser.GameObjects.Graphics;
   private droneGfx!: Phaser.GameObjects.Graphics;
   private airLabels!: Record<'drone' | 'heli', Phaser.GameObjects.Text>;
+  private exfilLabel!: Phaser.GameObjects.Text;
   private intelGfx!: Phaser.GameObjects.Graphics; // what ORION-3 and ALPHA have seen
   private satGfx!: Phaser.GameObjects.Graphics; // ORION-3's reticle
   private modeLabels: Phaser.GameObjects.Text[] = [];
@@ -99,12 +101,13 @@ export class MapScene extends Phaser.Scene {
     this.fightGfx = this.add.graphics();
     this.modeGfx = this.add.graphics();
     this.droneGfx = this.add.graphics();
-    const airLabel = () =>
+    const airLabel = (color = '#e5484d') =>
       this.add
-        .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color: '#e5484d', stroke: '#0b0f0d', strokeThickness: 3 * DPR })
+        .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color, stroke: '#0b0f0d', strokeThickness: 3 * DPR })
         .setOrigin(0.5, 0)
         .setVisible(false);
     this.airLabels = { drone: airLabel(), heli: airLabel() };
+    this.exfilLabel = airLabel('#ff8a2a');
     this.teamGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
@@ -121,7 +124,7 @@ export class MapScene extends Phaser.Scene {
     // ORION-3's inset: a second camera on the square it's looking at. Taps go to the map.
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
-    this.inset.ignore([...this.labels, this.teamLabel, this.airLabels.drone, this.airLabels.heli]); // the caption names the square
+    this.inset.ignore([...this.labels, this.teamLabel, this.airLabels.drone, this.airLabels.heli, this.exfilLabel]); // the caption names the square
     // ?debug: tests read the live camera to turn world points into screen taps.
     if (new URLSearchParams(location.search).has('debug'))
       Object.assign(window, {
@@ -239,6 +242,18 @@ export class MapScene extends Phaser.Scene {
         g.lineStyle(1.2 * px, 0xcfe8dc, 0.8).strokeCircle(at.x, at.y, z * 1.1);
       }
       label.setText(AIR[w].callsign).setScale(1 / this.zoom).setPosition(at.x, at.y + z * 1.3).setVisible(true);
+    }
+    // The exfil transport (ILI-1264): an orange arrow into the square, down at the marker while
+    // ALPHA boards, then out the other side.
+    const t = s.exfil && transportAt(s.exfil, now);
+    if (!t) this.exfilLabel.setVisible(false);
+    else {
+      const z = 9 * px;
+      const dir = t.east ? 1 : -1;
+      g.fillStyle(0xff8a2a, 1).fillTriangle(t.x + z * dir, t.y, t.x - z * dir, t.y - z * 0.8, t.x - z * dir, t.y + z * 0.8);
+      g.lineStyle(1.5 * px, 0x0b0f0d, 0.9).strokeTriangle(t.x + z * dir, t.y, t.x - z * dir, t.y - z * 0.8, t.x - z * dir, t.y + z * 0.8);
+      if (t.down) g.lineStyle(1.2 * px, 0xff8a2a, 0.7).strokeCircle(t.x, t.y, z * 1.6);
+      this.exfilLabel.setText(TRANSPORT.callsign).setScale(1 / this.zoom).setPosition(t.x, t.y - z * 3.2).setVisible(true); // above: the exfil marker's label is below
     }
   }
 
@@ -760,7 +775,10 @@ export class MapScene extends Phaser.Scene {
   // is headed. Each drifts a little on its own and pings on its own beat, so the team reads as
   // alive. The downed stay in the group, dim and hollow. Reduced motion: still and quiet.
   private drawTeam(time = 0) {
-    const { position, path, route, waypoint, operators } = game.get().team;
+    const st = game.get();
+    const { position, path, route, waypoint, operators } = st.team;
+    // Those aboard the exfil transport are off the map, one at a time (ILI-1264).
+    const gone = st.exfil ? aboard(st.exfil, operators.map((o) => o.id), st.elapsedMs) : [];
     const moved = position.x !== this.lastTeam.x || position.y !== this.lastTeam.y;
     if (moved) {
       this.lastTeam = position;
@@ -779,6 +797,7 @@ export class MapScene extends Phaser.Scene {
     const fy = Math.sin(this.heading);
     const g = this.teamGfx.clear();
     operators.forEach((o, i) => {
+      if (gone.includes(o.id)) return;
       const [along, across] = WEDGE[i % WEDGE.length];
       const k = i * 1.7 + 0.4; // each one's own rhythm
       const dx = still ? 0 : Math.sin(time / (900 + i * 170) + k) * 0.28 + Math.sin(time / 2300 + k * 2) * 0.18;
@@ -797,6 +816,7 @@ export class MapScene extends Phaser.Scene {
       else g.fillStyle(TEAM, 1).fillCircle(x, y, 3.2 * u).lineStyle(1.2 * u, 0x0b0f0d, 1).strokeCircle(x, y, 3.2 * u);
     });
     if (moved || this.teamLabel.scale !== 1 / this.zoom) this.teamLabel.setScale(1 / this.zoom).setPosition(position.x + 16 * u, position.y - 22 * u);
+    this.teamLabel.setVisible(gone.length < operators.length); // all aboard: ALPHA is off the map
   }
 
   // A finger (or the mouse) down on the map: it may become a drag or a pinch, and only a release

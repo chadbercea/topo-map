@@ -21,7 +21,9 @@ import { casualtySystem, supportSystem } from './support';
 // New systems (movement, comms, ...) slot into SYSTEMS in the order they should run.
 export type System = (state: GameState, dtMs: number) => GameState;
 
+// The contract clock stops once the exfil is called in (ILI-1264): the bird is coming.
 export const timerSystem: System = (s, dt) => {
+  if (s.exfil) return s;
   const remainingMs = Math.max(0, s.timer.remainingMs - dt);
   return {
     ...s,

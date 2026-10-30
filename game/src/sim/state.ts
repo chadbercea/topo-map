@@ -10,6 +10,7 @@ import type { Fight, Treatment } from './firefight';
 import type { MiniGame } from './minigame';
 import type { AirRun } from './air';
 import type { SniperRun } from './sniper';
+import type { ExfilRun } from './exfil';
 import type { Contact, Decision } from './contacts';
 import { BLACK_BOX } from './missions/blackBox';
 import type { MissionDef } from './script';
@@ -63,6 +64,7 @@ export type GameState = {
   drone: AirRun | null; // REAPER-1's strike: in flight, over the square, or just done
   heli: AirRun | null; // HAMMER-2's gun run, the same way (ILI-1254)
   sniper: SniperRun | null; // OVERWATCH's last run: shooting, or done
+  exfil: ExfilRun | null; // RAVEN-6 coming for ALPHA, from the pilot's call on (ILI-1264)
   resources: { budget: number };
   satellite: Satellite; // ORION-3: where it's looking and what it's doing
   imagery: Record<string, Snapshot>; // the newest look at each square
@@ -121,6 +123,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     drone: null,
     heli: null,
     sniper: null,
+    exfil: null,
     resources: { budget: 0 },
     satellite: initialSatellite(ROUTE[0]),
     imagery: {},
