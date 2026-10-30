@@ -37,7 +37,7 @@ test('ALPHA\u2019s ask flags at its marker and opens on a click; answering close
   await expect(log).toContainText('HQ › Move in blind');
 });
 
-test('COMMS is a list only; TEAM\u2019s call box answers ALPHA and slides away after the readback (ILI-1255)', async ({ page, isMobile }) => {
+test('COMMS is a list only; TEAM\u2019s call box answers ALPHA and goes back to the gear after the readback (ILI-1255, ILI-1256)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
@@ -57,7 +57,8 @@ test('COMMS is a list only; TEAM\u2019s call box answers ALPHA and slides away a
   await expect(page.getByTestId('call-state')).toHaveText('Move in blind · sending');
   await expect(page.getByTestId('sent')).toContainText('Move in blind · sending to ALPHA');
   await linked(page);
-  await expect(box).toHaveCount(0);
+  await expect(box).not.toHaveAttribute('data-call'); // back to the team's gear (ILI-1256)
+  await expect(box).toHaveAttribute('data-gear', /map|m4|ifak/);
   await expect(page.getByTestId('sent')).toHaveCount(0);
   if (isMobile) await page.getByTestId('tab-satcom').click();
   await expect(page.getByTestId('satcom').locator('.thread')).toContainText('Copy, moving in blind.');
@@ -133,7 +134,7 @@ test('when the square card opens where ALPHA\u2019s flag was, the flag moves cle
   await expect(page.getByTestId('comms')).toHaveCount(0);
 });
 
-test('the call box\u2019s strip follows the link: incoming while ALPHA waits, sending while the answer is up, then the box goes (ILI-1236, ILI-1255)', async ({ page, isMobile }) => {
+test('the call box\u2019s strip follows the link: incoming while ALPHA waits, sending while the answer is up, then the box goes back to the gear (ILI-1236, ILI-1255, ILI-1256)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
@@ -145,5 +146,5 @@ test('the call box\u2019s strip follows the link: incoming while ALPHA waits, se
   await page.evaluate(() => window.game.respond(window.game.get().team.holdFor!, 'blind'));
   await expect(strip).toHaveAttribute('data-state', 'sending');
   await fastForward(page, 3_000);
-  await expect(page.getByTestId('call-box')).toHaveCount(0);
+  await expect(page.getByTestId('call-box')).not.toHaveAttribute('data-call');
 });
