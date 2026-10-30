@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
-import { kindOf, sending } from '../sim/comms';
+import { kindOf, sending, type Message } from '../sim/comms';
 import { classify } from '../sim/stream';
 import { gameClock } from '../sim/gameTime';
 import { bus, EV, getAskHidden } from '../game/events';
+import { FeedIcon, type Tier } from './feedIcons';
 
 export const RELAY = 'RELAY-7'; // the comms satellite HQ talks to the team through
 
@@ -51,9 +52,14 @@ export function CommsPanel() {
         {feed.map((f) => {
           if ('note' in f) {
             const n = f.note;
+            const tier: Tier = n.source === 'SIGINT' ? 'sigint' : n.source === 'HUMINT' ? 'humint' : 'intel';
             return (
-              <li key={n.id} className="report" data-kind="note" data-quiet>
-                <span className="t">PRE</span> <b>{n.source}</b> {n.text}
+              <li key={n.id} className="report" data-kind="note" data-tier={tier} data-quiet>
+                <span className="t">PRE</span>
+                <FeedIcon tier={tier} />
+                <span className="body">
+                  <b>{n.source}</b> {n.text}
+                </span>
               </li>
             );
           }
@@ -63,28 +69,63 @@ export function CommsPanel() {
           const label = (id: string | null | undefined) => (id ? m.responses?.find((r) => r.id === id)?.label : 'Copy');
           const waiting = kindOf(m) === 'call' && m.status === 'new' && !out;
           const report = team || kindOf(m) === 'call' ? null : classify(m);
-          const text = m.square && report ? (
-            <button className="text" onClick={() => game.selectSquare(m.square!)}>
-              {m.text}
-            </button>
-          ) : (
-            m.text
-          );
+          const tier = tierOf(m, team, report);
+          const text =
+            m.square && report ? (
+              <button className="text" onClick={() => game.selectSquare(m.square!)}>
+                {m.text}
+              </button>
+            ) : (
+              m.text
+            );
           return (
-            <li key={m.id} className={team ? 'in' : report ? 'report' : 'out'} data-kind={report?.kind} data-quiet={report?.quiet || undefined} data-waiting={waiting} data-testid={report?.kind === 'alert' ? 'banner' : undefined}>
-              <span className="t">{gameClock(m.atMs, Math.floor)}</span> <b>{m.from}</b> {text}
-              {m.answer && <span className="answer"> HQ › {label(m.answer)}</span>}
-              {out && (
-                <span className="answer sending" data-testid="sending">
-                  {' '}
-                  HQ › {label(out.responseId)} · sending
-                </span>
-              )}
-              {waiting && <span className="awaiting"> · waiting on HQ</span>}
+            <li
+              key={m.id}
+              className={team ? 'in' : report ? 'report' : 'out'}
+              data-kind={report?.kind}
+              data-tier={tier}
+              data-quiet={report?.quiet || undefined}
+              data-waiting={waiting}
+              data-testid={report?.kind === 'alert' ? 'banner' : undefined}
+            >
+              <span className="t">{gameClock(m.atMs, Math.floor)}</span>
+              <FeedIcon tier={tier} />
+              <span className="body">
+                <b>{m.from}</b> {text}
+                {m.answer && <span className="answer"> HQ › {label(m.answer)}</span>}
+                {out && (
+                  <span className="answer sending" data-testid="sending">
+                    {' '}
+                    HQ › {label(out.responseId)} · sending
+                  </span>
+                )}
+                {waiting && <span className="awaiting"> · waiting on HQ</span>}
+              </span>
             </li>
           );
         })}
       </ol>
     </section>
   );
+}
+
+// A line's tier (ILI-1258), in rising order of how much it asks of HQ: chatter (the team's
+// routine traffic: grey, no icon); the reports, each with its icon and colour (ORION-3,
+// SIGINT, the analysts' and HQ's intel, the strike assets); communications (ALPHA's calls and
+// the other callsigns HQ talks to: the flag's orange); and alerts (red, the whole line).
+function tierOf(m: Message, team: boolean, report: ReturnType<typeof classify> | null): Tier {
+  if (team) return kindOf(m) === 'call' ? 'comms' : 'chatter';
+  if (!report) return 'comms';
+  switch (report.kind) {
+    case 'alert':
+      return 'alert';
+    case 'imagery':
+      return 'sat';
+    case 'sigint':
+      return 'sigint';
+    case 'strike':
+      return 'strike';
+    default:
+      return m.from === 'HQ' ? 'intel' : 'comms';
+  }
 }
