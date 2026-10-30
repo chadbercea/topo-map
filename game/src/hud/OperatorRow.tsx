@@ -57,16 +57,23 @@ const Rounds = () => (
     ))}
   </svg>
 );
+// Noise (ILI-1266): a speaker and its waves.
+const Sound = () => (
+  <svg className="k sound" viewBox="0 0 12 10" aria-hidden>
+    <path d="M0 3.5h2.5L5.5 1v8L2.5 6.5H0z" />
+    <path className="w" d="M7.5 3.2q1 1.8 0 3.6M9.5 1.8q2 3.2 0 6.4" />
+  </svg>
+);
 const Cross = () => (
   <svg className="k cross" viewBox="0 0 10 10" aria-hidden>
     <path d="M3.5 0h3v3.5h3.5v3h-3.5v3.5h-3v-3.5h-3.5v-3h3.5z" />
   </svg>
 );
 
-function Gauge({ label, icon, value, level, name, testId }: { label: string; icon?: ReactNode; value: number; level?: Level; name: string; testId?: string }) {
+function Gauge({ label, icon, value, level, source, name, testId }: { label: string; icon?: ReactNode; value: number; level?: Level; source?: 'move' | 'fire'; name: string; testId?: string }) {
   const v = Math.max(0, Math.min(100, value));
   return (
-    <span className="gauge" data-level={level} data-testid={testId}>
+    <span className="gauge" data-level={level} data-source={source} data-testid={testId}>
       {icon}
       <span className="bar" role="meter" aria-label={`${name} ${label.toLowerCase()}`} aria-valuenow={Math.round(v)} aria-valuemin={0} aria-valuemax={100}>
         <span style={{ width: `${v}%` }} />
@@ -77,7 +84,7 @@ function Gauge({ label, icon, value, level, name, testId }: { label: string; ico
 
 // One operator in the team panel (ILI-1248): rank, name and role in even columns; heartbeat and
 // status; then ammo and meds as short bars under their pictures, and how loud they've been moving (ILI-1222) as an
-// orange one. The row gets a coloured edge when something's wrong: hurt, low or loud.
+// orange one, red while it's their weapon (ILI-1266). The row gets a coloured edge when something's wrong: hurt, low or loud.
 export function OperatorRow({ o }: { o: Operator }) {
   const c = condition(o);
   const levels = [supply(ammoLeft(o)), supply(medsLeft(o)), loudness(o.noise)];
@@ -96,7 +103,14 @@ export function OperatorRow({ o }: { o: Operator }) {
       <div className="supplies">
         <Gauge label="AMMO" icon={<Rounds />} value={ammoLeft(o) * 100} level={levels[0]} name={o.name} testId={`ammo-${o.id}`} />
         <Gauge label="MEDS" icon={<Cross />} value={medsLeft(o) * 100} level={levels[1]} name={o.name} testId={`meds-${o.id}`} />
-        <Gauge label="NOISE" value={o.noise} name={o.name} testId={`noise-${o.id}`} />
+        <Gauge
+          label="NOISE"
+          icon={<Sound />}
+          value={Math.max(o.noise, o.steps)}
+          source={o.noise > 0 && o.noise >= o.steps ? 'fire' : o.steps > 0 ? 'move' : undefined}
+          name={o.name}
+          testId={`noise-${o.id}`}
+        />
       </div>
     </li>
   );

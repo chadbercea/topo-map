@@ -87,4 +87,18 @@ describe('noise per operator (ILI-1222)', () => {
     const s = step({ ...s0, team: { ...s0.team, operators: s0.team.operators.map((o) => ({ ...o, noise: 100 })) } }, 100);
     expect(s.alerted).toBe(false);
   });
+
+  it('footfalls spike while the team moves, each on their own stride, and die away when it stops (ILI-1266)', () => {
+    let s = walking();
+    const seen = s.team.operators.map(() => new Set<number>());
+    for (let t = 0; t < 3_000; t += 100) {
+      s = step(s, 100);
+      s.team.operators.forEach((o, i) => seen[i].add(Math.round(o.steps)));
+    }
+    expect(seen.every((v) => v.size > 1)).toBe(true); // spikes, not a flat line
+    expect(s.team.operators.every((o) => o.noise === 0)).toBe(true); // footfalls aren't gunfire
+    const held = run({ ...s, team: { ...s.team, holdUntilMs: s.elapsedMs + 60_000 } }, 1_000);
+    expect(held.team.operators.every((o) => o.steps === 0)).toBe(true);
+    expect(held.noise).toBe(0); // and the enemy doesn't hear them
+  });
 });
