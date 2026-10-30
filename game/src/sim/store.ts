@@ -3,8 +3,8 @@ import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { dismiss, respond, send } from './comms';
 import { cancelLook, capture, closeLook, lookAt, lookSquare, slewMs, type CaptureMode } from './satellite';
-import { abortMiniGame, startSeek, tapMiniGame } from './minigame';
-import { launchDrone } from './drone';
+import { abortMiniGame } from './minigame';
+import { launch } from './air';
 import { callSniper } from './sniper';
 import { weaponBlocked, type Weapon } from './ordnance';
 import { applyEffect } from './contacts';
@@ -78,12 +78,11 @@ export function createStore(initial: GameState = initialState()) {
     dropEvent: () => state.openEvent && set({ ...state, openEvent: null }),
     confirmCall: (id: string) => set(send(state, id, null)),
     respond: (id: string, responseId: string) => set(send(state, id, responseId)),
-    tapMiniGame: (square: string, cell?: number) => state.phase === 'running' && set(tapMiniGame(state, square, cell)),
     fire: (contactId: string, weapon: Weapon) => {
       const c = state.contacts.find((x) => x.id === contactId);
       if (!c || weaponBlocked(state, weapon, c)) return;
-      // The drone and the sniper have no mini game: they do it themselves (ILI-1252, ILI-1253).
-      set(weapon === 'drone' ? launchDrone(state, contactId) : weapon === 'sniper' ? callSniper(state, contactId) : startSeek(state, contactId, weapon));
+      // No mini games: the support does it itself (ILI-1252, ILI-1253, ILI-1254).
+      set(weapon === 'sniper' ? callSniper(state, contactId) : launch(state, weapon, contactId));
     },
     // Send ALPHA at a found contact: answers its call if it's waiting on one, else decides ahead.
     sendTeam: (contactId: string) => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CROSS_MS, droneGone, FLIGHT_MS, LINGER_MS } from './drone';
+import { airGone, CROSS_MS, FLIGHT_MS, HELI_PASSES, LINGER_MS, TURN_MS } from './air';
 import { CASH_PER_STRIKE_KILL } from './sites';
 import type { GameState } from './state';
 import { createStore } from './store';
@@ -68,9 +68,50 @@ describe('drone strike (ILI-1252)', () => {
     const store = createStore(e3());
     store.fire('t', 'drone');
     let s = run(store.get(), FLIGHT_MS + CROSS_MS + 200);
-    expect(droneGone(s.drone!, s.elapsedMs)).toBe(false);
+    expect(airGone(s.drone!, s.elapsedMs)).toBe(false);
     s = run(s, LINGER_MS);
-    expect(droneGone(s.drone!, s.elapsedMs)).toBe(true);
+    expect(airGone(s.drone!, s.elapsedMs)).toBe(true);
     expect(s.drone!.kills).toHaveLength(6); // the aftermath on the map
+  });
+});
+
+describe('helicopter gun run (ILI-1254)', () => {
+  it('comes in quicker, then strafes the rows HQ can see fighters in, turning back for each pass', () => {
+    const store = createStore(e3());
+    store.fire('t', 'heli');
+    expect(store.get().heli).toMatchObject({ weapon: 'heli', square: 'E3', arriveMs: 100_000 + 6_000 });
+    let s = run(store.get(), 6_100);
+    const h = s.heli!;
+    // Seen: cells 5, 6, 9, 10, rows 1 and 2. The hidden pair (3 and 12) is in rows 0 and 3.
+    expect(h.passes!.map((p) => p.row)).toEqual([1, 2]);
+    expect(h.passes!.map((p) => p.east)).toEqual([true, false]);
+    expect(h.passes![1].startMs - h.passes![0].startMs).toBe(CROSS_MS + TURN_MS);
+    s = run(s, 2 * (CROSS_MS + TURN_MS));
+    expect(s.contacts[0].status).toBe('cleared'); // all four technicals were in those rows
+    expect(s.contacts[1].units).toEqual([3, 12]); // the pair it couldn't see is untouched
+    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'HAMMER-2', text: `E3: 4 down, 2 still in there. +$${(4 * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` });
+  });
+
+  it(`at most ${HELI_PASSES} passes, the fullest rows first`, () => {
+    const s0 = e3();
+    const units = [0, 1, 4, 5, 6, 8, 12, 13, 14, 15];
+    const store = createStore({
+      ...s0,
+      contacts: [{ ...s0.contacts[0], units, total: units.length }],
+      imagery: { E3: { ...s0.imagery.E3, seen: [{ ...s0.imagery.E3.seen[0], units }] } },
+    });
+    store.fire('t', 'heli');
+    const h = run(store.get(), 6_100).heli!;
+    expect(h.passes!.map((p) => p.row)).toEqual([3, 1, 0]); // 4, 3 and 2 fighters; row 2 (one) is left
+  });
+
+  it('needs eyes on the target, and goes on cooldown', () => {
+    const blind = createStore(e3(null));
+    blind.fire('t', 'heli');
+    expect(blind.get().heli).toBeNull();
+    const store = createStore(e3());
+    store.fire('t', 'heli');
+    store.fire('t', 'heli');
+    expect(store.get().heli!.launchedMs).toBe(100_000);
   });
 });

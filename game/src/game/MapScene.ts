@@ -13,8 +13,8 @@ import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
 import { orionSquare, satellitePoint } from '../sim/satellite';
-import { eyesOn, freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
-import { CROSS_MS, DRONE_CALLSIGN, droneArrived, droneAt } from '../sim/drone';
+import { freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
+import { AIR, aircraftAt } from '../sim/air';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
@@ -68,8 +68,7 @@ export class MapScene extends Phaser.Scene {
   private fightGfx!: Phaser.GameObjects.Graphics;
   private modeGfx!: Phaser.GameObjects.Graphics;
   private droneGfx!: Phaser.GameObjects.Graphics;
-  private droneLabel!: Phaser.GameObjects.Text;
-  private boardGfx!: Phaser.GameObjects.Graphics; // a strike's board: ORION-3's picture only (ILI-1250)
+  private airLabels!: Record<'drone' | 'heli', Phaser.GameObjects.Text>;
   private intelGfx!: Phaser.GameObjects.Graphics; // what ORION-3 and ALPHA have seen
   private satGfx!: Phaser.GameObjects.Graphics; // ORION-3's reticle
   private modeLabels: Phaser.GameObjects.Text[] = [];
@@ -99,12 +98,13 @@ export class MapScene extends Phaser.Scene {
     this.markerGfx = this.add.graphics();
     this.fightGfx = this.add.graphics();
     this.modeGfx = this.add.graphics();
-    this.boardGfx = this.add.graphics();
     this.droneGfx = this.add.graphics();
-    this.droneLabel = this.add
-      .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color: '#e5484d', stroke: '#0b0f0d', strokeThickness: 3 * DPR })
-      .setOrigin(0.5, 0)
-      .setVisible(false);
+    const airLabel = () =>
+      this.add
+        .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color: '#e5484d', stroke: '#0b0f0d', strokeThickness: 3 * DPR })
+        .setOrigin(0.5, 0)
+        .setVisible(false);
+    this.airLabels = { drone: airLabel(), heli: airLabel() };
     this.teamGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
@@ -121,8 +121,7 @@ export class MapScene extends Phaser.Scene {
     // ORION-3's inset: a second camera on the square it's looking at. Taps go to the map.
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
-    this.inset.ignore([...this.labels, this.teamLabel, this.droneLabel]); // the caption names the square
-    this.cameras.main.ignore(this.boardGfx); // a strike plays out in ORION-3's picture, not on the map (ILI-1250)
+    this.inset.ignore([...this.labels, this.teamLabel, this.airLabels.drone, this.airLabels.heli]); // the caption names the square
     // ?debug: tests read the live camera to turn world points into screen taps.
     if (new URLSearchParams(location.search).has('debug'))
       Object.assign(window, {
@@ -200,90 +199,60 @@ export class MapScene extends Phaser.Scene {
     this.drawStrikes();
   }
 
-  // The drone strike (ILI-1252): a tiny drone crosses the square west to east, and each fighter
+  // Air strikes (ILI-1252, ILI-1254): the aircraft crosses the square on each pass, with its
+  // callsign under it as in its panel (REAPER-1 a triangle, HAMMER-2 a rotor), and each fighter
   // it passes becomes a red X, which stays as the aftermath. The sniper's kills (ILI-1253) are
   // X marks too, and its misses rings.
   private drawStrikes() {
     const g = this.droneGfx.clear();
-    const { drone: d, sniper, elapsedMs: now } = game.get();
+    const s = game.get();
+    const now = s.elapsedMs;
     const px = DPR / this.zoom;
     const r = 5 * px;
     const cross = (x: number, y: number) => {
       g.lineStyle(3.5 * px, 0x0b0f0d, 0.8).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
       g.lineStyle(2 * px, 0xe5484d, 1).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
     };
-    for (const shot of sniper?.shots ?? []) {
+    for (const shot of s.sniper?.shots ?? []) {
       if (shot.atMs > now) continue;
       if (shot.hit) cross(shot.x, shot.y);
       else g.lineStyle(1.5 * px, 0xcfe8dc, 0.6).strokeCircle(shot.x, shot.y, r);
     }
-    if (!d || !droneArrived(d, now)) return void this.droneLabel.setVisible(false);
-    for (const k of d.kills ?? []) if (k.atMs <= now) cross(k.x, k.y);
-    if (now >= d.arriveMs + CROSS_MS) return void this.droneLabel.setVisible(false);
-    // REAPER-1: a triangle, nose east, with its callsign under it, as in its panel.
-    const sq = parseSquare(d.square)!;
-    const x = sq.col * CELL + droneAt(d, now) * CELL;
-    const y = (sq.row + 0.5) * CELL;
-    const s = 7 * px;
-    g.fillStyle(0xe5484d, 1).fillTriangle(x + s, y, x - s, y - s * 0.8, x - s, y + s * 0.8);
-    g.lineStyle(1.5 * px, 0x0b0f0d, 0.9).strokeTriangle(x + s, y, x - s, y - s * 0.8, x - s, y + s * 0.8);
-    this.droneLabel.setText(DRONE_CALLSIGN).setScale(1 / this.zoom).setPosition(x, y + s * 1.3).setVisible(true);
+    for (const w of ['drone', 'heli'] as const) {
+      const run = w === 'drone' ? s.drone : s.heli;
+      const label = this.airLabels[w];
+      for (const k of run?.kills ?? []) if (k.atMs <= now) cross(k.x, k.y);
+      const at = run && aircraftAt(run, now);
+      if (!at) {
+        label.setVisible(false);
+        continue;
+      }
+      const z = 7 * px;
+      const dir = at.east ? 1 : -1;
+      if (w === 'drone') {
+        g.fillStyle(0xe5484d, 1).fillTriangle(at.x + z * dir, at.y, at.x - z * dir, at.y - z * 0.8, at.x - z * dir, at.y + z * 0.8);
+        g.lineStyle(1.5 * px, 0x0b0f0d, 0.9).strokeTriangle(at.x + z * dir, at.y, at.x - z * dir, at.y - z * 0.8, at.x - z * dir, at.y + z * 0.8);
+      } else {
+        // A body, a tail boom behind it, and the rotor disc over it.
+        g.fillStyle(0xe5484d, 1).fillCircle(at.x, at.y, z * 0.55);
+        g.lineStyle(2 * px, 0xe5484d, 1).lineBetween(at.x, at.y, at.x - z * 1.4 * dir, at.y);
+        g.lineStyle(1.2 * px, 0xcfe8dc, 0.8).strokeCircle(at.x, at.y, z * 1.1);
+      }
+      label.setText(AIR[w].callsign).setScale(1 / this.zoom).setPosition(at.x, at.y + z * 1.3).setVisible(true);
+    }
   }
 
-  // Mini game mode: seek and destroy draws its board; the signal pulses where it comes from.
+  // Mini game mode: the signal pulses where it comes from.
   private drawMiniGame(time: number) {
     const g = this.modeGfx.clear();
-    this.boardGfx.clear();
     const m = game.get().minigame;
     this.modeLabels.forEach((l) => l.setVisible(false));
     if (!m) return;
-    if (m.kind === 'seekDestroy') return this.drawBoard(this.boardGfx, m);
-    if (m.kind === 'signal') {
-      // Roughly where the signal comes from: the square and its neighbours, pulsing.
-      const sq = parseSquare(m.square)!;
-      const a = 0.08 + 0.08 * Math.abs(Math.sin(time / 300));
-      g.fillStyle(0x8fb8ff, a).fillRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
-      g.lineStyle((1.5 * DPR) / this.zoom, 0x8fb8ff, 0.7).strokeRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
-      return;
-    }
-  }
-
-  // Strike: the target square with the fighters HQ can see in it, in ORION-3's picture. Live eyes follow them;
-  // an older look shows where they were, fading with its age. Misses ring, kills cross out.
-  private drawBoard(g: Phaser.GameObjects.Graphics, m: NonNullable<ReturnType<typeof game.get>['minigame']>) {
+    // Roughly where the signal comes from: the square and its neighbours, pulsing.
     const sq = parseSquare(m.square)!;
-    const x0 = sq.col * CELL;
-    const y0 = sq.row * CELL;
-    const cell = CELL / BOARD;
-    for (let c = 0; c < COLS; c++)
-      for (let r = 0; r < ROWS; r++) if (c !== sq.col || r !== sq.row) g.fillStyle(0x0b0f0d, 0.65).fillRect(c * CELL, r * CELL, CELL, CELL);
-    const px = DPR / this.inset.zoom; // drawn for ORION-3's picture
-    g.lineStyle(1 * px, 0xe5484d, 0.5);
-    for (let i = 1; i < BOARD; i++) {
-      g.lineBetween(x0 + i * cell, y0, x0 + i * cell, y0 + CELL);
-      g.lineBetween(x0, y0 + i * cell, x0 + CELL, y0 + i * cell);
-    }
-    g.lineStyle(2 * px, 0xe5484d, 0.95).strokeRect(x0, y0, CELL, CELL);
-    const centre = (i: number) => ({ x: x0 + (i % BOARD + 0.5) * cell, y: y0 + (Math.floor(i / BOARD) + 0.5) * cell });
-    const c = game.get().contacts.find((x) => x.id === m.contactId);
-    const live = m.eyes === 'live' && c ? (eyesOn(game.get(), c)?.units ?? []) : null;
-    const alpha = m.eyes === 'live' || m.eyes === 'fresh' ? 1 : m.eyes === 'ghost' ? 0.45 : 0.2;
-    for (const i of live ?? m.spotted ?? []) {
-      const p = centre(i);
-      g.fillStyle(0x0b0f0d, 0.8 * alpha).fillCircle(p.x, p.y, cell * 0.2);
-      g.fillStyle(0xe5484d, alpha).fillCircle(p.x, p.y, cell * 0.14);
-      if (m.eyes !== 'live') g.lineStyle(1 * px, 0xe5484d, 0.5 * alpha).strokeCircle(p.x, p.y, cell * 0.32);
-    }
-    for (const shot of m.shots ?? []) {
-      const p = centre(shot.cell);
-      const k = cell * 0.28;
-      if (shot.hit) {
-        g.fillStyle(0xe5484d, 0.35).fillRect(p.x - cell / 2, p.y - cell / 2, cell, cell);
-        g.lineStyle(3 * px, 0xe5484d, 1).lineBetween(p.x - k, p.y - k, p.x + k, p.y + k).lineBetween(p.x - k, p.y + k, p.x + k, p.y - k);
-      } else {
-        g.lineStyle(1.5 * px, 0xcfe8dc, 0.6).strokeCircle(p.x, p.y, k * 0.6);
-      }
-    }
+    const a = 0.08 + 0.08 * Math.abs(Math.sin(time / 300));
+    g.fillStyle(0x8fb8ff, a).fillRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
+    g.lineStyle((1.5 * DPR) / this.zoom, 0x8fb8ff, 0.7).strokeRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
   }
 
   // What HQ has seen (ILI-1167): each look's fighters at the positions they were seen in.
@@ -292,15 +261,14 @@ export class MapScene extends Phaser.Scene {
   // show who was moving, and where to.
   private drawIntel() {
     const g = this.intelGfx.clear();
-    const { imagery, contacts, elapsedMs: now, minigame } = game.get();
-    const board = minigame?.kind === 'seekDestroy' && minigame.status === 'active' ? minigame.contactId : null;
+    const { imagery, contacts, elapsedMs: now } = game.get();
     const px = DPR / this.zoom;
     for (const snap of Object.values(imagery)) {
       const age = freshness(snap, now);
       const alpha = age === 'live' || age === 'fresh' ? 1 : age === 'ghost' ? 0.45 : 0.18;
       for (const seen of snap.seen) {
         const c = contacts.find((x) => x.id === seen.contactId);
-        if (!c || c.status === 'cleared' || c.id === board) continue; // a strike draws its own
+        if (!c || c.status === 'cleared') continue;
         // Live looks follow them; anything else shows where they were.
         const o = snap.live ? groupOrigin(c, now) : seen;
         const units = snap.live ? c.units : seen.units;
@@ -405,11 +373,10 @@ export class MapScene extends Phaser.Scene {
   private drawMarkers(time: number) {
     const g = this.markerGfx.clear();
     const r = (MARKER_R * DPR) / this.zoom;
-    const { events, openEvent, minigame, elapsedMs } = game.get();
-    const board = minigame?.kind === 'seekDestroy' && minigame.status === 'active' ? minigame.square : null;
+    const { events, openEvent, elapsedMs } = game.get();
     const px = (DPR * 1) / this.zoom;
     for (const e of events) {
-      if (e.status === 'resolved' || e.square === board || e.kind === 'site') continue; // its board is open; a kill site's X marks are enough (ILI-1252)
+      if (e.status === 'resolved' || e.kind === 'site') continue; // a kill site's X marks are enough (ILI-1252)
       const { x, y } = this.markerPos(e.square);
       const color = EVENT_COLOR[e.kind];
       const sq = parseSquare(e.square)!;

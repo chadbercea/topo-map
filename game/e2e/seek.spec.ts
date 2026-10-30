@@ -17,8 +17,8 @@ test('the target menu lists every weapon with its state, and ALPHA attacks', asy
   await targetE3(page);
   await expect(page.getByTestId('fire-drone')).toContainText('1 use');
   await expect(page.getByTestId('fire-sniper')).toContainText('Ready');
-  await expect(page.getByTestId('fire-heli')).toBeDisabled();
-  await expect(page.getByTestId('fire-heli')).toContainText('Unlocks with upgrades');
+  await expect(page.getByTestId('fire-heli')).toBeEnabled(); // unlocked from the start (ILI-1254)
+  await expect(page.getByTestId('fire-heli')).toContainText('Ready');
   await expect(page.getByTestId('send-team')).toBeVisible();
   await expect(page.getByTestId('eyes')).toContainText('Fresh look');
 });
@@ -84,4 +84,23 @@ test('a drone strike is loud: the enemy hears it, though no operator made it (IL
   await page.evaluate(() => { for (let t = 0; t < 10_000; t += 100) window.game.tick(100); });
   await expect.poll(() => page.evaluate(() => window.game.get().noise)).toBeGreaterThan(30);
   expect(await page.evaluate(() => window.game.get().team.operators.every((o) => o.noise === 0))).toBe(true);
+});
+
+test('heli: HAMMER-2 counts down, strafes the rows it can see fighters in, Tango down by Tango down, then goes (ILI-1254)', async ({ page }) => {
+  await targetE3(page);
+  await page.getByTestId('fire-heli').click();
+  const panel = page.getByTestId('heli-panel');
+  await expect(panel).toContainText('HAMMER-2');
+  await expect(panel).toContainText('gun run · E3');
+  await expect(page.getByTestId('heli-eta')).toHaveText('0:06');
+  const tick = (ms: number) => page.evaluate((ms) => { for (let t = 0; t < ms; t += 100) window.game.tick(100); }, ms);
+  await tick(6_500);
+  await expect(panel).toHaveAttribute('data-state', 'strike');
+  await tick(2_000); // across the first row
+  await expect(page.getByTestId('heli-log').getByText('Tango down').first()).toBeVisible();
+  await tick(6_000);
+  await expect(page.getByTestId('heli-log')).toContainText('All targets neutralized');
+  await expect(page.getByTestId('comms-feed')).toContainText('E3: all targets neutralized. 5 down.');
+  await tick(3_500);
+  await expect(panel).toHaveCount(0);
 });

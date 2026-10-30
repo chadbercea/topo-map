@@ -1,4 +1,4 @@
-import { FLIGHT_MS } from './drone';
+import { FLIGHT_MS } from './air';
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { ALERT_AT, ALERT_HARDEN, FADE_PER_S, NOISE, NOISE_PER_ROUND } from './noise';
