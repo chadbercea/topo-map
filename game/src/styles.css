@@ -473,10 +473,7 @@ html, body {
 .op .gauge { display: flex; align-items: center; gap: 3px; white-space: nowrap; font-size: 9px; color: var(--dim); }
 .op .gauge .k { letter-spacing: 0.1em; }
 .op .gauge svg.k { display: block; width: 9px; height: 8px; flex: none; } /* one box for every icon, centred on its bar (ILI-1266) */
-.op .gauge .rounds { fill: #b8a06a; } /* brass */
-.op .gauge .cross { fill: #e5484d; }
-.op .gauge .sound { fill: var(--dim); stroke: var(--dim); stroke-width: 0; }
-.op .gauge .sound .w { fill: none; stroke-width: 1.2; stroke-linecap: round; }
+.op .gauge svg.k path { fill: none; stroke: var(--accent); stroke-width: 1px; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; } /* outlines in the base green (ILI-1268) */
 /* Noise (ILI-1266): footfalls spike it orange, quick; weapons fire takes it red. */
 .op .gauge[data-source='move'] .bar > span { transition-duration: 80ms; }
 .op .gauge[data-testid^='noise-'][data-source='fire'] .bar > span { background: #e5484d; }
