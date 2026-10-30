@@ -2,7 +2,7 @@ import { COLS, parseSquare, ROWS, squareAt, squareId, type SquareId } from '../m
 import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
-import { treeCall } from './responses';
+import { TREE, treeCall } from './responses';
 import { pass } from './sites';
 import { isMissionPoint } from './mission';
 import { sendResupply } from './support';
@@ -112,6 +112,7 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 export const approachSystem: System = (s) => {
   const { team } = s;
   const next = team.route[team.waypoint];
+  if (team.holdFor) return clearedHold(s);
   if (!next || team.holdFor || team.fight || team.treating || s.minigame?.status === 'active') return s;
   if (squareAt(team.position.x, team.position.y) === next) return s; // already there
   const decided = team.decisions[next];
@@ -131,6 +132,16 @@ export const approachSystem: System = (s) => {
   }
   return s;
 };
+
+// ALPHA's hold about a contact that support has since wiped out turns into an all clear
+// (ILI-1277): the same call, so it stays the one ALPHA waits on.
+function clearedHold(s: GameState): GameState {
+  const m = s.comms.messages.find((x) => x.id === s.team.holdFor);
+  if (!m?.square || m.status !== 'new' || (m.node !== 'contact' && m.node !== 'contact-observed') || contactIn(s, m.square)) return s;
+  const n = TREE['contact-cleared'];
+  const cleared = { ...m, node: 'contact-cleared', text: n.text({ square: m.square }), responses: n.responses };
+  return { ...s, comms: { ...s.comms, messages: s.comms.messages.map((x) => (x === m ? cleared : x)) } };
+}
 
 function holdOn(s: GameState, c: { node: string; id: string; square: SquareId; label?: string; eventId?: string }): GameState {
   const m = treeCall(s, c.id, c.node, c.square, c.eventId, c.label);
