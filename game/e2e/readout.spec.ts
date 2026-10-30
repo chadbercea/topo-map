@@ -7,7 +7,7 @@ test('the team panel shows every operator: heartbeat, status, ammo and meds, und
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
   await expect(page.getByTestId('readout').locator('svg.ecg')).toHaveCount(5);
   await expect(page.getByTestId('op-medic')).toContainText('MEDS');
-  await expect(page.getByTestId('team-title')).toHaveText('TEAM');
+  await expect(page.getByTestId('team-title')).toHaveText('ALPHA TEAM');
   await expect(page.getByTestId('team-condition')).toHaveCount(0); // no team totals: each row has its own
 });
 

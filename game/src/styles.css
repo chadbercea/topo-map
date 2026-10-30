@@ -436,9 +436,9 @@ html, body {
 /* One line per operator: who, heartbeat and status, ammo and meds. */
 .team .readout { margin: 6px 0 0; gap: 4px; }
 .team .op { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'who vitals supplies'; align-items: center; gap: 8px; }
-.team .op .vitals { display: flex; align-items: center; gap: 6px; }
-.team .op .ecg { width: 52px; height: 16px; }
-.team .op .status { width: 52px; }
+.team .op .vitals { display: flex; align-items: center; gap: 4px; }
+.team .op .ecg { width: 40px; height: 16px; }
+.team .op .status { width: 8ch; } /* as wide as CAUTION, no wider (ILI-1248) */
 /* Wide (ILI-1237): TEAM sizes to what it holds. It was a fixed 230 px strip the width of the
    bottom row, its three columns stretched apart and its bars 200 px long: mostly empty space.
    Now each row's parts sit together at set widths, the bars are short, and the panel is as wide
@@ -460,7 +460,7 @@ html, body {
 .readout { margin-top: 8px; gap: 8px; }
 
 .op { display: grid; grid-template-columns: 1fr 72px; grid-template-areas: 'who vitals' 'supplies supplies'; gap: 2px 8px; }
-.op .who { grid-area: who; display: grid; grid-template-columns: 10px 7ch 12ch; align-items: center; gap: 6px; min-width: 0; } /* rank, name, role: even columns (ILI-1248) */
+.op .who { grid-area: who; display: grid; grid-template-columns: 10px 7ch 11ch; align-items: center; gap: 6px; min-width: 0; } /* rank, name, role: even columns (ILI-1248) */
 .op .name { color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .op .rank { flex: none; }
 .op .role { color: var(--dim); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -472,7 +472,8 @@ html, body {
 .op .supplies { grid-area: supplies; display: flex; align-items: center; gap: 8px; font-size: 9px; color: var(--dim); }
 .op .gauge { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .op .gauge .k { letter-spacing: 0.1em; }
-.op .gauge .bar { width: 36px; height: 5px; }
+.op .gauge .bar { width: 24px; height: 4px; }
+.op .gauge[data-testid^='noise-'] .bar { width: 12px; } /* noise: no label, half as wide (ILI-1248) */
 .op .gauge .bar > span { transition: width 300ms ease-out; }
 .op .gauge[data-level='low'] .bar > span { background: #f2c14e; }
 .op .gauge[data-level='out'] .bar > span { background: #e5484d; }
@@ -1031,12 +1032,12 @@ html, body {
   .team .op .who { grid-template-columns: 10px minmax(0, 7ch); }
   .team .op .role { display: none; }
   .team .op .ecg { width: 40px; }
-  .team .op .gauge .bar { width: 24px; }
+  .team .op .gauge .bar { width: 20px; }
 }
 @media (max-width: 699px) {
   .team .op { gap: 6px; }
   .team .op .ecg { width: 32px; }
-  .team .op .status { width: 40px; font-size: 8px; }
+  .team .op .status { width: 8.5ch; font-size: 8px; }
   .team .op .supplies { gap: 6px; }
-  .team .op .gauge .bar { width: 18px; }
+  .team .op .gauge .bar { width: 16px; }
 }
