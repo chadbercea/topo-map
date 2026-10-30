@@ -1,90 +1,111 @@
 import * as THREE from 'three';
 import { mountWire, type WireSpec } from './wireScene';
 
-// The team navigating, in 3D: a folded field map, partly open on the ground. Four accordion panels
-// at alternating slight angles with a crease between each, a grid and a few contour rings on them,
-// the route across in a dashed line with a marker on it, and a lensatic compass on one corner. In
-// the HUD's line language (wireScene); loaded on demand like the other scenes.
+// The team navigating, in 3D: a lensatic compass lying open. A round body with its bezel ring
+// and ticks, the floating dial inside it with the north arrow; the cover hinged at the far edge
+// and standing up, its sighting wire down the middle of the window; at the near edge the rear
+// sight with its lens, folded up, and the thumb loop folded out under it. The body lies flat in
+// x and z, the cover at -z, the user's side at +z. In the HUD's line language (wireScene);
+// loaded on demand like the other scenes.
 export type GearState = 'on';
 
-// The sheet: panels side by side along x, its depth along z, its creases up and down in y.
-const W = 0.9; // a panel's width
-const D = 0.68; // half the sheet's depth
-const FOLDS = [-2, -1, 0, 1, 2].map((i) => i * W); // the sheet's edges and creases
-const LIFT = [0, 0.3, 0, 0.3, 0]; // the height at each
-const lift = (x: number) => {
-  const i = Math.min(3, Math.max(0, Math.floor((x - FOLDS[0]) / W)));
-  const t = (x - FOLDS[i]) / W;
-  return LIFT[i] + (LIFT[i + 1] - LIFT[i]) * t;
-};
-// A point on the sheet, a hair above it so the ink sits on the paper.
-const on = (x: number, z: number): [number, number, number] => [x, lift(x) + 0.004, z];
-
-// A run of points across the sheet as line segments, split finely so it follows the folds.
-const ink = (pts: [number, number][], n = 4) => {
-  const out: number[] = [];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const [ax, az] = pts[i];
-    const [bx, bz] = pts[i + 1];
-    for (let k = 0; k < n; k++) out.push(...on(ax + ((bx - ax) * k) / n, az + ((bz - az) * k) / n), ...on(ax + ((bx - ax) * (k + 1)) / n, az + ((bz - az) * (k + 1)) / n));
-  }
-  return out;
+// A flat ring, r0 to r1, lying in x and z, `d` deep upward from y = 0.
+const ring = (r0: number, r1: number, d: number, segs: number) => {
+  const s = new THREE.Shape();
+  s.absarc(0, 0, r1, 0, Math.PI * 2, false);
+  const h = new THREE.Path();
+  h.absarc(0, 0, r0, 0, Math.PI * 2, true);
+  s.holes.push(h);
+  const g = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: false, curveSegments: segs });
+  g.rotateX(-Math.PI / 2);
+  return g;
 };
 
-const MAP: WireSpec<GearState> = {
+// A flat 2D outline (x, y pairs) with optional holes, extruded `w` deep and centred on z.
+const slab = (pts: number[], w: number, holes: number[][] = []) => {
+  const shape = (p: number[], s: THREE.Shape | THREE.Path) => {
+    s.moveTo(p[0], p[1]);
+    for (let i = 2; i < p.length; i += 2) s.lineTo(p[i], p[i + 1]);
+    return s;
+  };
+  const s = shape(pts, new THREE.Shape()) as THREE.Shape;
+  for (const h of holes) s.holes.push(shape(h, new THREE.Path()) as THREE.Path);
+  const g = new THREE.ExtrudeGeometry(s, { depth: w, bevelEnabled: false });
+  g.translate(0, 0, -w / 2);
+  return g;
+};
+
+const R = 0.6; // the body's radius
+const H = 0.16; // its height
+
+const COMPASS: WireSpec<GearState> = {
   looks: { on: { color: '--accent', opacity: 0.85, spin: 0.25 } },
-  fov: 26,
-  eye: [0, 4.3, 5.9],
-  target: [0, 0, 0],
-  roll: 0.05,
-  rest: -0.35,
+  fov: 30,
+  eye: [0, 1.9, 3.7],
+  target: [0, 0.12, 0],
+  roll: 0.06,
+  rest: -0.75,
   build: ({ root, edges, lines }) => {
-    // The sheet's outline, and the creases across it.
-    lines(ink([[FOLDS[0], -D], [FOLDS[4], -D], [FOLDS[4], D], [FOLDS[0], D], [FOLDS[0], -D]], 4));
-    for (const x of FOLDS.slice(1, 4)) lines(ink([[x, -D], [x, D]], 1));
-    // The grid: the creases stand in for eastings; two northings across the sheet.
-    const grid: number[] = [];
-    for (const z of [-D / 3, D / 3]) grid.push(...ink([[FOLDS[0], z], [FOLDS[4], z]], 4));
-    lines(grid);
-    // Contours: rings round a hilltop, and a smaller knoll, a little uneven like the ground.
-    const ring = (cx: number, cz: number, rx: number, rz: number, wob: number, ph: number) => {
-      const pts: [number, number][] = [];
-      for (let i = 0; i <= 28; i++) {
-        const a = (i / 28) * Math.PI * 2;
-        const r = 1 + wob * Math.sin(a * 3 + ph) + wob * 0.5 * Math.cos(a * 2);
-        pts.push([cx + Math.cos(a) * rx * r, cz + Math.sin(a) * rz * r]);
-      }
-      return ink(pts, 1);
-    };
-    for (const s of [1, 0.66, 0.33]) lines(ring(-0.55, -0.08, 0.95 * s, 0.48 * s, 0.12, 0.4));
-    for (const s of [1, 0.5]) lines(ring(1.15, 0.2, 0.45 * s, 0.3 * s, 0.1, 2));
-    // The route: a dashed line across the sheet, round the hill.
-    const route: [number, number][] = [];
-    for (let i = 0; i <= 24; i++) {
-      const t = i / 24;
-      route.push([-1.65 + t * 3.3, 0.5 - t * 0.85 + Math.sin(t * Math.PI * 2) * 0.12]);
+    const kit = new THREE.Group();
+    kit.position.set(0, -0.25, 0.1);
+    root.add(kit);
+
+    // The body: a low drum, only its rims drawn, and the bezel ring on top.
+    edges(new THREE.CylinderGeometry(R, R, H, 20), 0, H / 2, 0, 30, kit);
+    edges(ring(R - 0.11, R, 0.05, 10), 0, H, 0, 30, kit);
+    // The bezel's ticks: sixteen, the four cardinals longer.
+    const ticks: number[] = [];
+    const ty = H + 0.052;
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      const r0 = i % 4 === 0 ? R - 0.1 : R - 0.06;
+      ticks.push(Math.sin(a) * r0, ty, -Math.cos(a) * r0, Math.sin(a) * (R - 0.02), ty, -Math.cos(a) * (R - 0.02));
     }
-    const dashes: number[] = [];
-    for (let i = 0; i < route.length - 1; i += 2) dashes.push(...ink([route[i], route[i + 1]], 2));
-    lines(dashes);
-    // The marker on the route: a small upturned triangle, the team's position.
-    const [mx, mz] = route[15];
-    const my = lift(mx) + 0.004;
-    lines([mx - 0.15, my, mz + 0.12, mx + 0.15, my, mz + 0.12, mx + 0.15, my, mz + 0.12, mx, my, mz - 0.15, mx, my, mz - 0.15, mx - 0.15, my, mz + 0.12]);
-    lines([mx, my, mz, mx, my + 0.4, mz, mx, my + 0.4, mz, mx + 0.2, my + 0.33, mz, mx + 0.2, my + 0.33, mz, mx, my + 0.26, mz]); // a flag on a pin above it, so it reads from the side
-    // The lensatic compass, resting flat on the sheet's near corner: its body, its open lid, its needle.
-    const compass = new THREE.Group();
-    compass.position.set(1.45, lift(1.45) + 0.04, 0.38);
-    compass.rotation.z = Math.atan2(LIFT[3] - LIFT[4], W); // lying on the panel's slope
-    root.add(compass);
-    edges(new THREE.CylinderGeometry(0.22, 0.22, 0.07, 10), 0, 0, 0, 1, compass);
-    const lid = new THREE.Group();
-    lid.position.set(0, 0.035, -0.22);
-    lid.rotation.x = -1.2; // folded up, sighting forward
-    compass.add(lid);
-    edges(new THREE.BoxGeometry(0.3, 0.02, 0.36), 0, 0, -0.18, 1, lid);
-    lines([0, 0.036, 0.15, 0, 0.036, -0.15], compass); // the needle
+    lines(ticks, kit);
+
+    // The dial, floating in the body: a disc a little below the bezel, the north arrow on it,
+    // pointing at the cover.
+    const dy = H - 0.03;
+    const dial: number[] = [];
+    const DR = 0.4;
+    for (let i = 0; i < 20; i++) {
+      const a0 = (i / 20) * Math.PI * 2;
+      const a1 = ((i + 1) / 20) * Math.PI * 2;
+      dial.push(Math.cos(a0) * DR, dy, Math.sin(a0) * DR, Math.cos(a1) * DR, dy, Math.sin(a1) * DR);
+    }
+    dial.push(0, dy, -0.3, 0.1, dy, 0.02, 0.1, dy, 0.02, 0, dy, -0.06, 0, dy, -0.06, -0.1, dy, 0.02, -0.1, dy, 0.02, 0, dy, -0.3); // the arrow's head
+    dial.push(0, dy, -0.06, 0, dy, 0.28); // its tail
+    lines(dial, kit);
+
+    // The cover, hinged at the far edge and standing up, leaning back a touch: a frame round its
+    // window, the sighting wire down the middle.
+    const cover = new THREE.Group();
+    cover.position.set(0, H, -R - 0.02);
+    cover.rotation.x = -0.2;
+    kit.add(cover);
+    const CW = 0.5; // half its width
+    const CH = 0.9; // its height
+    edges(slab([-CW, 0, CW, 0, CW, CH, -CW, CH], 0.03, [[-CW + 0.1, 0.12, CW - 0.1, 0.12, CW - 0.1, CH - 0.1, -CW + 0.1, CH - 0.1]]), 0, 0, 0, 1, cover);
+    lines([0, 0.12, 0.017, 0, CH - 0.1, 0.017], cover);
+    edges(new THREE.CylinderGeometry(0.035, 0.035, 0.5, 6), 0, 0, 0, 1, cover).rotation.z = Math.PI / 2; // the hinge
+
+    // The rear sight at the near edge, folded up: a narrow plate with the sighting notch cut in
+    // its top and the round lens below it.
+    const sight = new THREE.Group();
+    sight.position.set(0, H, R + 0.02);
+    sight.rotation.x = 0.2;
+    kit.add(sight);
+    edges(slab([-0.13, 0, 0.13, 0, 0.13, 0.42, 0.03, 0.42, 0, 0.36, -0.03, 0.42, -0.13, 0.42], 0.03), 0, 0, 0, 1, sight);
+    edges(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 10).rotateX(Math.PI / 2), 0, 0.2, 0, 30, sight); // the lens
+    edges(new THREE.CylinderGeometry(0.03, 0.03, 0.26, 6), 0, 0, 0, 1, sight).rotation.z = Math.PI / 2; // its hinge
+
+    // The thumb loop, folded out from under the near edge.
+    const loop = new THREE.Group();
+    loop.position.set(0, 0, R - 0.08);
+    loop.rotation.x = 0.25;
+    kit.add(loop);
+    edges(ring(0.12, 0.18, 0.025, 6), 0, 0, 0.2, 30, loop);
   },
 };
 
-export const mount = (host: HTMLElement, stateRef: { current: GearState }, repaint: { current: (() => void) | null }) => mountWire(host, MAP, stateRef, repaint);
+export const mount = (host: HTMLElement, stateRef: { current: GearState }, repaint: { current: (() => void) | null }) => mountWire(host, COMPASS, stateRef, repaint);
