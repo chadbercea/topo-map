@@ -144,6 +144,13 @@ test('over a square it has already shot, no Reposition and no Rescan: the shots 
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
 });
 
+test('standing by, ORION-3 names the next square ahead with no imagery (ILI-1272)', async ({ page, isMobile }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  if (isMobile) await page.getByTestId('tab-orion').click();
+  await expect(page.getByTestId('orion-placeholder')).toHaveText('Standing by over G5 · no imagery of F4 ahead');
+});
+
 test("a slew counts down in ORION-3's frame, then the photo (ILI-1269)", async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
