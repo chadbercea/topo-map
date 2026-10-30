@@ -436,10 +436,7 @@ html, body {
 .team { overflow-y: auto; display: grid; grid-template-rows: auto auto minmax(0, 1fr); align-content: start; }
 /* One line per operator: who, heartbeat and status, ammo and meds. */
 .team .readout { margin: 6px 0 0; gap: 4px; }
-.team .op { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'who vitals supplies'; align-items: center; gap: 8px; }
-.team .op .vitals { display: flex; align-items: center; gap: 4px; }
-.team .op .ecg { width: 40px; height: 16px; }
-.team .op .status { width: 8ch; } /* as wide as CAUTION, no wider (ILI-1248) */
+.team .op .ecg { width: 100%; height: 16px; display: block; }
 /* Wide (ILI-1237): TEAM sizes to what it holds. It was a fixed 230 px strip the width of the
    bottom row, its three columns stretched apart and its bars 200 px long: mostly empty space.
    Now each row's parts sit together at set widths, the bars are short, and the panel is as wide
@@ -448,7 +445,6 @@ html, body {
   .slot-bottom { justify-items: start; }
   .slot-team { width: max-content; max-width: 100%; }
   .team { height: auto; max-height: 260px; }
-  .team .op { grid-template-columns: max-content max-content max-content; justify-content: start; gap: 8px; }
 }
 .team h2 { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
 .team .callsign { color: var(--accent); letter-spacing: 0.12em; flex: none; }
@@ -460,18 +456,21 @@ html, body {
 /* Mode B readout: a row per operator. */
 .readout { margin-top: 8px; gap: 8px; }
 
-.op { display: grid; grid-template-columns: 1fr 72px; grid-template-areas: 'who vitals' 'supplies supplies'; gap: 2px 8px; }
-.op .who { grid-area: who; display: grid; grid-template-columns: 10px 7ch 11ch; align-items: center; gap: 6px; min-width: 0; } /* rank, name, role: even columns (ILI-1248) */
+/* One grid for every row (ILI-1267): rank, name, role, heartbeat, status, then ammo, meds and
+   noise (each an icon on its bar). Set column widths, so each column lines up down the panel,
+   and one 6 px gap between all of them; the icon sits 3 px from its bar. The status column is
+   as wide as CAUTION, its longest word. Narrower screens drop the role and shorten the parts
+   (--cols and --bar below), never the rhythm. */
+.op { --cols: 10px 7ch 11ch 40px 44px auto auto auto; --bar: 24px; display: grid; grid-template-columns: var(--cols); column-gap: 6px; align-items: center; justify-content: start; }
+.op .who, .op .vitals, .op .supplies { display: contents; }
 .op .name { color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .op .rank { flex: none; }
 .op .role { color: var(--dim); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.op .vitals { grid-area: vitals; display: grid; justify-items: end; }
-.op .status { font-size: 9px; letter-spacing: 0.1em; }
+.op .status { font-size: 9px; letter-spacing: 0.1em; white-space: nowrap; }
 .team h2 .alerted { color: #e5484d; letter-spacing: 0.1em; }
 /* Ammo and meds as short bars (ILI-1248), amber when low and red when out; noise, how loud
    they've been moving (ILI-1222), as an orange one that rises and falls with it. */
-.op .supplies { grid-area: supplies; display: flex; align-items: center; gap: 8px; font-size: 9px; color: var(--dim); }
-.op .gauge { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.op .gauge { display: flex; align-items: center; gap: 3px; white-space: nowrap; font-size: 9px; color: var(--dim); }
 .op .gauge .k { letter-spacing: 0.1em; }
 .op .gauge svg.k { display: block; width: 9px; height: 8px; flex: none; } /* one box for every icon, centred on its bar (ILI-1266) */
 .op .gauge .rounds { fill: #b8a06a; } /* brass */
@@ -481,8 +480,8 @@ html, body {
 /* Noise (ILI-1266): footfalls spike it orange, quick; weapons fire takes it red. */
 .op .gauge[data-source='move'] .bar > span { transition-duration: 80ms; }
 .op .gauge[data-testid^='noise-'][data-source='fire'] .bar > span { background: #e5484d; }
-.op .gauge .bar { width: 24px; height: 4px; }
-.op .gauge[data-testid^='noise-'] .bar { width: 12px; } /* noise: no label, half as wide (ILI-1248) */
+.op .gauge .bar { width: var(--bar); height: 4px; }
+.op .gauge[data-testid^='noise-'] .bar { width: calc(var(--bar) / 2); } /* noise: half as wide (ILI-1248) */
 .op .gauge .bar > span { transition: width 300ms ease-out; }
 .op .gauge[data-level='low'] .bar > span { background: #f2c14e; }
 .op .gauge[data-level='out'] .bar > span { background: #e5484d; }
@@ -868,8 +867,6 @@ html, body {
   .small-widget { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 10px; padding: 3px 8px; border: none; background: none; }
   .small-widget h2 { display: none; }
 
-  .readout .op { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-areas: 'who vitals supplies'; gap: 8px; }
-
   .debug { bottom: auto; top: 40%; }
   .hud[data-playing='true'] .minigame .instructions { display: none; }
   .square-card > .sc-body { flex-direction: row; }
@@ -1043,19 +1040,11 @@ html, body {
 }
 .call-box .what[data-hidden] { visibility: hidden; } /* the Answer covers it; it keeps the header's height */
 
-/* A fold or phone (ILI-1248): TEAM is narrow, so the role waits for a wider screen and the bars are shorter. */
+/* A fold or phone (ILI-1248, ILI-1267): TEAM is narrow, so the role waits for a wider screen and
+   the heartbeat and bars are shorter; the grid and its gaps stay the same. */
 @media (max-width: 1199px) {
-  .team .op .who { grid-template-columns: 10px minmax(0, 7ch); }
+  .team .op { --cols: 10px 7ch 32px 44px auto auto auto; --bar: 16px; }
   .team .op .role { display: none; }
-  .team .op .ecg { width: 40px; }
-  .team .op .gauge .bar { width: 20px; }
-}
-@media (max-width: 699px) {
-  .team .op { gap: 6px; }
-  .team .op .ecg { width: 32px; }
-  .team .op .status { width: 8.5ch; font-size: 8px; }
-  .team .op .supplies { gap: 6px; }
-  .team .op .gauge .bar { width: 16px; }
 }
 
 /* Smaller on a fold, tablet and phone (ILI-1263). On a fold or tablet the rail is narrower and
@@ -1075,9 +1064,6 @@ html, body {
   .call-box .c-strip, .call-box .c-strip[data-state] { min-height: 0; height: 56px; }
   .call-box .c-telemetry .c-relay, .call-box .c-telemetry .c-latency { display: none; }
   .orion .o-frame { aspect-ratio: 4 / 3; }
-  .team .op { gap: 6px; }
-  .team .op .ecg { width: 32px; }
-  .team .op .gauge .bar { width: 16px; }
 }
 @media (max-width: 699px) {
   .mission { gap: 2px 8px; padding: 3px 8px 5px; }
