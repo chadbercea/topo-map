@@ -2,6 +2,7 @@ import { METRES_PER_UNIT, squareCenter } from '../map/grid';
 import { heightAt, theater } from '../map/terrain';
 import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
+import { footfall } from './noise';
 
 // The team moves on its own (GDD: the player never controls it), waypoint to waypoint. Each
 // leg follows the ground (paths.ts, ILI-1191): roads, stream banks, the easy way up. Climbing
@@ -54,6 +55,7 @@ export const movementSystem: System = (s, dt) => {
       pathTo: arrived ? null : target,
       waypoint,
       activity: next ? `Moving to ${next}` : `Holding at ${target}`,
+      operators: team.operators.map((o, i) => (o.health > 0 ? { ...o, steps: footfall(i, s.elapsedMs, grade) } : o)), // heard on the move (ILI-1266)
     },
   };
 };

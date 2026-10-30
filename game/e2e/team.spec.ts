@@ -23,12 +23,15 @@ test("each operator's noise is on their row; ALERTED is in the team panel's titl
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   const gunner = page.getByTestId('noise-heavy').getByRole('meter');
-  await expect(gunner).toHaveAttribute('aria-valuenow', '0');
+  // On the move, only footfalls: orange (ILI-1266). Gunfire takes it red.
+  await expect(page.getByTestId('noise-heavy')).not.toHaveAttribute('data-source', 'fire');
+  await expect(page.getByTestId('noise-heavy').locator('svg.sound')).toBeVisible();
   await expect(page.getByTestId('alerted')).toHaveCount(0);
   await page.evaluate(() => {
     const s = window.game.get();
     window.game.set({ ...s, noise: 70, team: { ...s.team, operators: s.team.operators.map((o) => (o.id === 'heavy' ? { ...o, noise: 80 } : o)) } });
   });
   await expect.poll(async () => Number(await gunner.getAttribute('aria-valuenow'))).toBeGreaterThan(70);
+  await expect(page.getByTestId('noise-heavy')).toHaveAttribute('data-source', 'fire');
   await expect(page.getByTestId('team-panel').getByTestId('alerted')).toHaveText('ALERTED');
 });

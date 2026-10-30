@@ -12,7 +12,8 @@ export type Operator = {
   health: number; // 0..100
   ammo: number; // rounds carried
   meds: number; // IFAKs and medical kits carried
-  noise: number; // 0..100, how loud this operator has been (ILI-1222); fades
+  noise: number; // 0..100, how loud this operator has been with their weapon (ILI-1222); fades
+  steps: number; // 0..100, their footfalls while the team moves (ILI-1266); gone soon after it stops
 };
 
 // GDD: everyone carries an IFAK and ammo; the medic has the least ammo and the most meds,
@@ -38,6 +39,7 @@ const operator = (id: string, name: string, role: Role, rank: Rank): Operator =>
   rank,
   health: 100,
   noise: 0,
+  steps: 0,
   ...LOADOUT[role],
 });
 
