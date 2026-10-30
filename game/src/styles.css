@@ -1041,3 +1041,34 @@ html, body {
   .team .op .supplies { gap: 6px; }
   .team .op .gauge .bar { width: 16px; }
 }
+
+/* Smaller on a fold, tablet and phone (ILI-1263). On a fold or tablet the rail is narrower and
+   each panel is as tall as what it holds, not the whole screen; the mission card and its clock
+   shrink. On a phone the mission, tabs and call box are slimmer, so the map gets the room. */
+@media (min-width: 700px) and (max-width: 1199px) {
+  .hud { grid-template-columns: minmax(0, 1fr) clamp(290px, 33vw, 320px); }
+  .slot-team, .slot-satcom, .slot-orion { align-self: start; max-height: 100%; grid-template-rows: minmax(0, 1fr); } /* to its content, and scrolls past the rail */
+  .orion::after { display: none; }
+  .slot-widget { width: min(280px, 100%); }
+  .mission { gap: 4px; padding: 6px 8px 8px; }
+  .mission .m-head { padding: 4px 8px; }
+  .mission .clock { font-size: 20px; }
+  .mission .objective { font-size: 11px; }
+  .panel { padding: 8px 10px; font-size: 11px; }
+  .dock-tabs button { min-height: 34px; }
+  .call-box .c-strip, .call-box .c-strip[data-state] { min-height: 0; height: 56px; }
+  .call-box .c-telemetry .c-relay, .call-box .c-telemetry .c-latency { display: none; }
+  .orion .o-frame { aspect-ratio: 4 / 3; }
+  .team .op { gap: 6px; }
+  .team .op .ecg { width: 32px; }
+  .team .op .gauge .bar { width: 16px; }
+}
+@media (max-width: 699px) {
+  .mission { gap: 2px 8px; padding: 3px 8px 5px; }
+  .mission .clock { font-size: 17px; }
+  .mission .pause { min-height: 26px; }
+  .panel { padding: 6px 8px; font-size: 11px; }
+  .dock-tabs button { min-height: 34px; }
+  .call-box .c-strip, .call-box .c-strip[data-state] { height: 44px; }
+  .slot-team:has(.call-box) .team { height: calc(var(--sheet, 30dvh) - 60px); max-height: calc(var(--sheet, 30dvh) - 60px); }
+}
