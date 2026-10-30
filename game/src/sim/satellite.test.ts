@@ -30,7 +30,7 @@ describe('ORION-3 tasking', () => {
     answer(store, REQUEST, 'send');
     onStation(store);
     expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: 'On station over F4. Ready to shoot.' });
-    expect(blockers(store.get())[0]).toEqual({ tone: 'decision', text: 'ORION-3 on station over F4: take the shot' });
+    expect(blockers(store.get())[0]).toEqual({ tone: 'decision', text: 'ORION-3 on station over F4: take the shot', go: { square: 'F4' } });
     store.capture('photo');
     expect(blockers(store.get()).map((b) => b.text)).not.toContain('ORION-3 on station over F4: take the shot');
   });

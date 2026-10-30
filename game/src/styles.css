@@ -694,6 +694,10 @@ html, body {
 .mission .need[data-tone='decision'] { border-color: #f2c14e; color: #f2c14e; }
 .mission .need[data-tone='threat'] { border-color: #e5484d; color: #e5484d; }
 .mission .need[data-tone='support'] { border-color: var(--accent); color: var(--accent); }
+/* A need with somewhere to go is a button (ILI-1271): the same line, a pointer, and it fills on hover. */
+button.need { font: inherit; font-size: 10px; line-height: 1.5; background: none; cursor: pointer; pointer-events: auto; }
+button.need::after { content: ' ›'; }
+button.need:hover, button.need:focus-visible { background: color-mix(in srgb, currentColor 16%, transparent); outline: none; }
 
 /* ENVIRONMENT (ILI-1218, ILI-1249): a six-stack inside ORION-3 under the satellite, three and
    three; each tile an icon and a monospace value, the label on hover. Cloud warns amber as it
