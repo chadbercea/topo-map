@@ -505,19 +505,34 @@ html, body {
    pinned under them with its answers. */
 .satcom { display: flex; flex-direction: column; gap: 6px; min-height: 0; background: rgba(11, 15, 13, 0.92); }
 .satcom .thread { flex: 1; }
-/* HQ's report lines in COMMS (ILI-1225): dimmer than ALPHA, the routine ones quieter still. */
-.satcom .thread li.report { color: var(--dim); }
-.satcom .thread li.report b { color: #8fd1ff; }
-.satcom .thread li[data-kind='sigint'] b { color: #8fb8ff; }
-.satcom .thread li[data-kind='strike'] b { color: #f2a14e; }
-.satcom .thread li[data-kind='alert'], .satcom .thread li[data-kind='alert'] b { color: #e5484d; }
-.satcom .thread li[data-quiet] { opacity: 0.5; }
+/* COMMS's lines by tier (ILI-1258), rising in how much they ask of HQ:
+   - chatter: the team's routine traffic, grey, the time and no icon;
+   - reports: an icon and a colour for who it's from: ORION-3 green (the satellite), SIGINT
+     blue (the mast), the analysts' and HQ's intel amber (the eye; HUMINT the person), the
+     strike assets red (crosshairs);
+   - communications: ALPHA's calls and the callsigns HQ talks to, in the flag's orange with the
+     backpack; a call still waiting gets an orange edge and tint;
+   - alerts: red, the warning triangle, and the whole line tinted with a red edge.
+   Routine reports (ORION-3 moving, the pre-mission notes) keep their icon, dimmed. */
+.satcom .thread li { display: grid; grid-template-columns: 30px 14px minmax(0, 1fr); align-items: baseline; column-gap: 4px; padding: 1px 4px; border-left: 2px solid transparent; }
+.satcom .thread .f-ic { display: inline-flex; align-self: start; padding-top: 2px; color: var(--tier, var(--dim)); }
+.satcom .thread .f-icon { display: block; }
+.satcom .thread li[data-tier='chatter'] { color: var(--dim); }
+.satcom .thread li[data-tier='chatter'] b { color: var(--dim); }
+.satcom .thread li[data-tier='sat'] { --tier: var(--accent); }
+.satcom .thread li[data-tier='sigint'] { --tier: #8fb8ff; }
+.satcom .thread li[data-tier='intel'], .satcom .thread li[data-tier='humint'] { --tier: #f2c14e; }
+.satcom .thread li[data-tier='strike'] { --tier: #e5484d; }
+.satcom .thread li[data-tier='comms'] { --tier: #ff8a2a; }
+.satcom .thread li[data-tier='alert'] { --tier: #e5484d; color: #ffb3b5; border-left-color: #e5484d; background: rgba(229, 72, 77, 0.12); }
+.satcom .thread li:not([data-tier='chatter']) b { color: var(--tier); }
+.satcom .thread li[data-tier='comms'][data-waiting='true'] { border-left-color: #ff8a2a; background: rgba(255, 138, 42, 0.1); }
+.satcom .thread li[data-quiet] { opacity: 0.55; }
 .satcom .thread li[data-kind='note'] { font-style: italic; }
 .satcom .thread button.text { all: unset; cursor: pointer; text-decoration: underline dotted var(--dim); text-underline-offset: 3px; }
 .satcom .thread { list-style: none; margin: 0; padding: 0; display: grid; align-content: start; gap: 4px; overflow-y: auto; min-height: 0; font-size: 12px; }
 .satcom .thread li { color: var(--ink); line-height: 1.4; }
-.satcom .thread li.out { color: var(--dim); }
-.satcom .thread b { color: var(--accent); margin-right: 2px; }
+.satcom .thread b { margin-right: 2px; }
 .satcom .thread .t { color: var(--dim); font-variant-numeric: tabular-nums; font-size: 10px; }
 .satcom .thread .answer { color: #f2c14e; }
 .satcom .thread .typing { color: var(--dim); font-style: italic; }
@@ -556,7 +571,7 @@ html, body {
 .ping::after { animation-delay: 1s; }
 @keyframes ping { from { transform: scale(1); opacity: 0.9; } to { transform: scale(4.5); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ping::before, .ping::after { animation: none; opacity: 0.8; } }
-.satcom .thread li[data-waiting='true'] { color: #f2c14e; }
+.satcom .thread li[data-waiting='true'] { color: var(--ink); }
 /* The link's strip (ILI-1236), ORION-3's sibling: ALPHA's SATCOM terminal in 3D, RELAY-7's signal
    trace and a little telemetry. In TEAM's call box since ILI-1255. */
 .c-strip { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-rows: minmax(0, 1fr); align-items: stretch; gap: 10px; height: 112px; background: radial-gradient(circle at 25% 55%, rgba(53, 208, 165, 0.09), transparent 65%), var(--panel); }
@@ -581,7 +596,7 @@ html, body {
 .c-strip[data-state='incoming'] .c-telemetry dd { color: var(--accent); }
 .c-strip[data-state='sending'] .c-telemetry dd { color: #f2c14e; }
 .c-strip[data-state='tied'] .c-telemetry dd { color: var(--dim); }
-.satcom .thread .awaiting { color: #f2c14e; font-size: 10px; }
+.satcom .thread .awaiting { color: #ff8a2a; font-size: 10px; }
 .comms {
   display: grid;
   gap: 6px;
