@@ -27,6 +27,10 @@ export type WireSpec<S extends string> = {
 };
 
 const FPS = 24; // a low frame rate: the map's WebGL canvas is the one that matters
+// Under test automation (Playwright sets navigator.webdriver) the wireframes hold a still frame:
+// CI renders WebGL in software, and several turning scenes at once slowed the long flows to
+// their time limits. Players never see this.
+const AUTOMATED = typeof navigator !== 'undefined' && navigator.webdriver === true;
 
 // Builds the scene into `host` and runs it; returns the teardown, or null without WebGL.
 export function mountWire<S extends string>(host: HTMLElement, spec: WireSpec<S>, stateRef: { current: S }, repaint: { current: (() => void) | null }) {
@@ -110,14 +114,14 @@ export function mountWire<S extends string>(host: HTMLElement, spec: WireSpec<S>
     root.position.y = Math.sin(t * 0.6) * 0.06; // a gentle drift
     draw();
   };
-  const running = () => onScreen && !document.hidden && !still.matches;
+  const running = () => onScreen && !document.hidden && !still.matches && !AUTOMATED;
   const update = () => {
     if (running()) {
       if (!raf) { last = 0; raf = requestAnimationFrame(tick); }
     } else {
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
-      if (still.matches) { root.rotation.y = spec.rest; root.position.y = 0; draw(); } // a still frame
+      if (still.matches || AUTOMATED) { root.rotation.y = spec.rest; root.position.y = 0; draw(); } // a still frame
     }
   };
   repaint.current = () => { paint(); if (!raf) draw(); };

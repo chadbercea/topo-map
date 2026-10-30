@@ -66,7 +66,7 @@ test('COMMS is a list only; TEAM\u2019s call box answers ALPHA and goes back to 
 });
 
 test('Look at it: a look at E3 finds the checkpoint and ALPHA asks to observe, attack or go around', async ({ page }) => {
-  test.setTimeout(120_000); // a long flow, and CI's software renderer draws the satellite inset and TEAM's box (ILI-1256) too
+  test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
