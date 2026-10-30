@@ -1,4 +1,7 @@
 import { ammoLeft, condition, medsLeft, type Operator } from '../sim/team';
+import { LOW } from '../sim/support';
+import { SUSPICIOUS_NOISE } from '../sim/imagery';
+import { ALERT_AT } from '../sim/noise';
 
 // One beat of an ECG trace, repeated; the strip scrolls left under a fixed window. Faster as
 // the operator gets worse, flat when down (ILI-1123, back in ILI-1186).
@@ -36,20 +39,35 @@ function RankIcon({ grade, title }: { grade: number; title: string }) {
   );
 }
 
-export const Bar = ({ value, label }: { value: number; label: string }) => (
-  <span className="bar" role="meter" aria-label={label} aria-valuenow={Math.round(value * 100)} aria-valuemin={0} aria-valuemax={100}>
-    <span style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
-  </span>
-);
-
 export const STATUS = { fine: 'FINE', caution: 'CAUTION', danger: 'DANGER', down: 'DOWN' } as const;
 
-// One operator in the team panel: rank, name, role, heartbeat, status, how loud they've been
-// (ILI-1222) and every supply.
+type Level = 'ok' | 'low' | 'out';
+// A supply as a number (ILI-1248): quiet while there's enough, amber under the resupply line,
+// red when it's gone.
+const supply = (left: number): Level => (left <= 0.1 ? 'out' : left < LOW ? 'low' : 'ok');
+// Noise the same way: quiet, enough to make them suspicious, enough to raise the alarm.
+const loudness = (n: number): Level => (n >= ALERT_AT ? 'out' : n >= SUSPICIOUS_NOISE ? 'low' : 'ok');
+
+function Gauge({ label, text, value, level, name, testId }: { label: string; text: string; value: number; level: Level; name: string; testId?: string }) {
+  return (
+    <span className="gauge" data-level={level} data-testid={testId} role="meter" aria-label={`${name} ${label.toLowerCase()}`} aria-valuenow={Math.round(value)} aria-valuemin={0} aria-valuemax={100}>
+      <span className="k">{label}</span>
+      <span className="v">{text}</span>
+    </span>
+  );
+}
+
+// One operator in the team panel (ILI-1248, tightened): rank, name and role; heartbeat and
+// status; then ammo, meds and how loud they've been (ILI-1222), as small numbers. All of it sits
+// quiet while they're fine, and the row lights when something isn't: hurt, low, or loud.
 export function OperatorRow({ o }: { o: Operator }) {
   const c = condition(o);
+  const ammo = ammoLeft(o) * 100;
+  const meds = medsLeft(o) * 100;
+  const levels = [supply(ammoLeft(o)), supply(medsLeft(o)), loudness(o.noise)];
+  const flag = c === 'down' ? 'down' : c === 'danger' || levels.includes('out') ? 'danger' : c === 'caution' || levels.includes('low') ? 'caution' : undefined;
   return (
-    <li className="op" data-condition={c} data-testid={`op-${o.id}`}>
+    <li className="op" data-condition={c} data-flag={flag} data-testid={`op-${o.id}`}>
       <div className="who">
         <RankIcon grade={o.rank.grade} title={o.rank.title} />
         <span className="name">{o.name}</span>
@@ -58,15 +76,11 @@ export function OperatorRow({ o }: { o: Operator }) {
       <div className="vitals">
         <Heartbeat o={o} />
         <span className="status">{STATUS[c]}</span>
-        <span className="noise" data-testid={`noise-${o.id}`} title={`${o.name} noise`}>
-          <Bar value={o.noise / 100} label={`${o.name} noise`} />
-        </span>
       </div>
       <div className="supplies">
-        <span>AMMO</span>
-        <Bar value={ammoLeft(o)} label={`${o.name} ammo`} />
-        <span>MEDS</span>
-        <Bar value={medsLeft(o)} label={`${o.name} meds`} />
+        <Gauge label="AMMO" text={`${Math.round(ammo)}%`} value={ammo} level={levels[0]} name={o.name} />
+        <Gauge label="MEDS" text={`${Math.round(meds)}%`} value={meds} level={levels[1]} name={o.name} />
+        <Gauge label="NOISE" text={`${Math.round(o.noise)}`} value={o.noise} level={levels[2]} name={o.name} testId={`noise-${o.id}`} />
       </div>
     </li>
   );
