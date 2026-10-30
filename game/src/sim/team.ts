@@ -1,6 +1,6 @@
 // The MVP team (GDD: one five-man special operations unit) and each role's loadout.
 
-export type Role = 'Squad lead' | 'Gunner' | 'Medic' | 'Navigator' | 'Heavy gunner';
+export type Role = 'Squad lead' | 'Gunner' | 'Medic' | 'Commo' | 'Heavy gunner';
 
 export type Rank = { title: string; abbr: string; grade: number }; // grade drives the rank icon
 
@@ -22,7 +22,7 @@ export const LOADOUT: Record<Role, { ammo: number; meds: number }> = {
   'Squad lead': { ammo: 210, meds: 2 },
   Gunner: { ammo: 300, meds: 2 },
   Medic: { ammo: 150, meds: 10 },
-  Navigator: { ammo: 210, meds: 2 },
+  Commo: { ammo: 210, meds: 2 },
   'Heavy gunner': { ammo: 600, meds: 1 },
 };
 
@@ -47,7 +47,7 @@ export const roster = (): Operator[] => [
   operator('lead', 'Reyes', 'Squad lead', RANKS.sfc),
   operator('gunner', 'Okafor', 'Gunner', RANKS.ssg),
   operator('medic', 'Lind', 'Medic', RANKS.ssg),
-  operator('nav', 'Tanaka', 'Navigator', RANKS.sgt),
+  operator('commo', 'Tanaka', 'Commo', RANKS.sgt),
   operator('heavy', 'Brandt', 'Heavy gunner', RANKS.sgt),
 ];
 

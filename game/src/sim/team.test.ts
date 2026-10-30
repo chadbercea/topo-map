@@ -5,7 +5,7 @@ describe('roster', () => {
   const team = roster();
 
   it('is the GDD five-man unit, each with a rank', () => {
-    expect(team.map((o) => o.role)).toEqual(['Squad lead', 'Gunner', 'Medic', 'Navigator', 'Heavy gunner']);
+    expect(team.map((o) => o.role)).toEqual(['Squad lead', 'Gunner', 'Medic', 'Commo', 'Heavy gunner']);
     expect(new Set(team.map((o) => o.id)).size).toBe(5);
     for (const o of team) expect(o.rank.abbr).toMatch(/^[A-Z]{3}$/);
     expect(team[0].rank.grade).toBe(Math.max(...team.map((o) => o.rank.grade))); // lead outranks
