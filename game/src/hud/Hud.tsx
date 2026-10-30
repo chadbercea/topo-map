@@ -37,11 +37,22 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 // a fold or tablet the mission floats over the map's corner and COMMS, ORION-3 and TEAM share a
 // rail down the right behind tabs (ILI-1213); on a phone the mission is the line on top and the
 // three share a bottom sheet. Picking a square or tasking ORION-3 brings its tab forward.
+// Long enough for the last panel's rows to come in (styles.css, power-on).
+const BOOT_MS = 2_000;
+
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
   const askHidden = useAskHidden(); // ALPHA's flag is out of sight: light TEAM's tab, where its call box is (ILI-1255)
   const tier = useTier();
+  // The panels power on in turn when the HUD first loads (ILI-1281); not for reduced motion, and
+  // not under test automation, which drives the HUD straight away.
+  const [boot, setBoot] = useState(() => !navigator.webdriver && !matchMedia('(prefers-reduced-motion: reduce)').matches);
+  useEffect(() => {
+    if (!boot) return;
+    const t = setTimeout(() => setBoot(false), BOOT_MS);
+    return () => clearTimeout(t);
+  }, [boot]);
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
   // on the map itself (ILI-1201), so the dock stays where it is.
   // A new event marks its square on the map, and its report lands in COMMS (ILI-1225): that
@@ -73,7 +84,7 @@ export function Hud() {
   };
 
   return (
-    <div className="hud" data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet}>
+    <div className="hud" data-boot={boot || undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet}>
       <div className="slot-widget">
         <MissionPanel />
       </div>

@@ -1085,3 +1085,33 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .call-box .c-strip, .call-box .c-strip[data-state] { height: 44px; }
   .slot-team:has(.call-box) .team { height: calc(var(--sheet, 30dvh) - 60px); max-height: calc(var(--sheet, 30dvh) - 60px); }
 }
+
+/* Power-on (ILI-1281): on load each panel comes online in turn. Its frame opens from a point
+   to a bright line across its middle, grows to full height and settles to its own ground; then
+   its rows flicker in, top to bottom. Only while the HUD is booting (Hud.tsx). */
+.slot-widget { --on: 0ms; }
+.slot-satcom { --on: 140ms; }
+.slot-team { --on: 280ms; }
+.slot-team .call-box { --on: 380ms; }
+.slot-orion { --on: 480ms; }
+.slot-small, .orion .env { --on: 680ms; }
+@keyframes power-content {
+  0% { opacity: 0; }
+  40% { opacity: 1; }
+  55% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+.hud[data-boot] .panel > * { --i: 0; animation: power-content 260ms ease-out both; animation-delay: calc(var(--on) + 400ms + var(--i) * 50ms); }
+.hud[data-boot] .panel > :nth-child(2) { --i: 1; }
+.hud[data-boot] .panel > :nth-child(3) { --i: 2; }
+.hud[data-boot] .panel > :nth-child(4) { --i: 3; }
+.hud[data-boot] .panel > :nth-child(5) { --i: 4; }
+.hud[data-boot] .panel > :nth-child(6) { --i: 5; }
+.hud[data-boot] .panel > :nth-child(n + 7) { --i: 6; }
+@keyframes power-frame {
+  0% { clip-path: inset(calc(50% - 1px) 50% calc(50% - 1px) 50%); background-color: var(--accent); border-color: var(--accent); }
+  40% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); background-color: var(--accent); border-color: var(--accent); }
+  75% { clip-path: inset(0); background-color: rgba(53, 208, 165, 0.16); border-color: var(--accent); }
+  100% { clip-path: inset(0); }
+}
+.hud[data-boot] .panel { animation: power-frame 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--on); }
