@@ -11,3 +11,8 @@ export function linkTraffic(s: GameState): LinkState {
   if (waitingCalls(s.comms).length) return 'incoming';
   return 'idle';
 }
+
+// What the team has in hand, by what it's doing (ILI-1256), for TEAM's box when there's no call:
+// its map on the move, the M4 in a fight, the IFAK while the medic works.
+export type Gear = 'map' | 'm4' | 'ifak';
+export const gearFor = (s: GameState): Gear => (s.team.fight ? 'm4' : s.team.treating || s.team.activity === 'Treating wounded' ? 'ifak' : 'map');

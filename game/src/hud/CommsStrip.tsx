@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useGame } from '../sim/store';
 import { kindOf, LINK_MS } from '../sim/comms';
 import { gameSpan } from '../sim/gameTime';
@@ -12,14 +12,19 @@ const TRAFFIC: Record<LinkState, string> = { idle: 'idle', incoming: 'incoming',
 // The link's strip (ILI-1236), the sibling of ORION-3's (ILI-1235): ALPHA's SATCOM backpack (ILI-1246)
 // in 3D on the left, and on the right the RELAY-7 link's signal trace and a little telemetry. All
 // of it read off the game: a call coming in, HQ's answer up the link, the readback landing. It
-// lives in TEAM's call box now (ILI-1255), out only while ALPHA's call is.
-export function CommsStrip() {
+// lives in TEAM's box (ILI-1255), which puts the team's gear on the left when there's no call
+// (ILI-1256). Both stay mounted and the one not in use is hidden (a hidden scene stops drawing),
+// so a call doesn't tear down one WebGL scene and build another each time.
+export function CommsStrip({ gear, showGear = false }: { gear?: ReactNode; showGear?: boolean }) {
   const traffic = useGame(linkTraffic);
   const calls = useGame((s) => s.comms.messages.filter((m) => kindOf(m) === 'call').length);
   const flying = useGame((s) => s.comms.inFlight.length);
   return (
     <div className="c-strip" data-testid="comms-avatar" data-state={traffic}>
-      <WireAvatar state={traffic} fallback={<TerminalMark />} load={loadTerminal} className="c-terminal" />
+      <div className="c-pictures" data-gear={showGear || undefined}>
+        <WireAvatar state={traffic} fallback={<TerminalMark />} load={loadTerminal} className="c-terminal c-pack" />
+        {gear}
+      </div>
       <div className="c-link">
         <LinkTrace traffic={traffic} calls={calls} flying={flying} />
         <dl className="c-telemetry">
