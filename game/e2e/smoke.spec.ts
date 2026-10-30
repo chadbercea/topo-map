@@ -7,7 +7,7 @@ test('scene fills the screen and hears input, with no errors', async ({ page, is
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 
   await start(page, '?debug');
-  const canvas = page.locator('canvas:not(.o-sat-3d > canvas, .satcom canvas)'); // the map's; ORION-3's avatar (ILI-1196) and COMMS's strip (ILI-1236) have their own
+  const canvas = page.locator('canvas:not(.o-sat-3d > canvas, .call-box canvas)'); // the map's; ORION-3's avatar (ILI-1196) and the call box's strip (ILI-1236, ILI-1255) have their own
   await expect(canvas).toHaveCount(1);
   const vp = page.viewportSize()!;
   await expect.poll(() => canvas.evaluate((c) => [c.clientWidth, c.clientHeight])).toEqual([vp.width, vp.height]);

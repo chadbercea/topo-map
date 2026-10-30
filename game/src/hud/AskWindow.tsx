@@ -7,13 +7,13 @@ import { obstacles, overlap, pick } from './overlays';
 
 const WIDTH = 260;
 
-// ALPHA's ask (ILI-1199, ILI-1200): when the team needs something, an orange flag with a dish
-// goes up at the top right of its marker on the map, where ALPHA was when it asked (top left
+// ALPHA's ask (ILI-1199, ILI-1200): when the team needs something, an orange flag with its SATCOM
+// backpack (ILI-1255) goes up at the top right of its marker on the map, where ALPHA was when it asked (top left
 // when there's no room on the right), and a ping pulses from the marker. Click the flag and it
 // opens into the ask with the replies as buttons. It holds still as the camera moves; if the
 // marker is out of view it waits at the foot of the open map. Several waiting asks page
 // "1 of N". It never covers a mini game: it waits while one runs. The whole exchange is logged
-// in comms.
+// in comms. TEAM's call box (CallBox) slides out with it, the same backpack in the same orange.
 export function AskWindow() {
   const comms = useGame((s) => s.comms);
   const pos = useGame((s) => s.team.position);
@@ -93,7 +93,7 @@ export function AskWindow() {
     const label = out.responseId ? sent.responses?.find((r) => r.id === out.responseId)?.label : 'Copy';
     return (
       <p className="ask sent" data-testid="sent" data-overlay="flag" data-pinned={where.inView} style={where.style && { ...where.style, width: undefined }} role="status">
-        <Dish /> {label} · sending to {sent.from}
+        <Backpack /> {label} · sending to {sent.from}
       </p>
     );
   }
@@ -131,13 +131,13 @@ export function AskWindow() {
       >
         {!open ? (
           <button className="flag" data-testid="incoming" onClick={() => setOpenId(call.id)} aria-label={`Incoming from ${who}`}>
-            <Dish /> {who}
+            <Backpack /> {who}
             {calls.length > 1 && <span className="n">{calls.length}</span>}
           </button>
         ) : (
           <>
             <header className="incoming">
-              <Dish /> {who}
+              <Backpack /> {who}
               {calls.length > 1 && (
                 <span className="pager">
                   <button onClick={() => page(-1)} aria-label="Previous call">
@@ -190,7 +190,7 @@ function place(anchor: { x: number; y: number }, size: { w: number; h: number })
 }
 
 // HQ's answers to a call, as buttons: each reply, greyed with the reason when HQ can't afford
-// it or lacks the kit, or a plain Copy. The same buttons at ALPHA's flag and in COMMS SAT.
+// it or lacks the kit, or a plain Copy. At ALPHA's flag: COMMS is a list only (ILI-1255).
 export function Replies({ call, testId }: { call: Message; testId: string }) {
   const state = useGame((s) => s);
   return (
@@ -212,14 +212,13 @@ export function Replies({ call, testId }: { call: Message; testId: string }) {
   );
 }
 
-// A satellite dish: the bowl, its feed, the stand, and the signal coming in.
-const Dish = () => (
-  <svg className="dish" viewBox="0 0 16 16" width="14" height="14" aria-hidden>
+// ALPHA's SATCOM backpack (ILI-1255), the one in 3D in TEAM's call box: the pack, its lid,
+// the radio pocket, and the whip antenna.
+export const Backpack = () => (
+  <svg className="pack" viewBox="0 0 16 16" width="14" height="14" aria-hidden>
     <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2.5 5a7 7 0 0 0 8.5 8.5z" />
-      <path d="M6.75 9.25 10 6" />
-      <path d="M5.5 12.5 4 15h4.5" />
-      <path d="M11 1.5a3.5 3.5 0 0 1 3.5 3.5M11 4a1 1 0 0 1 1 1" />
+      <rect x="3.5" y="5" width="8" height="10" rx="1" />
+      <path d="M3.5 7.5h8M5.5 10h4v3h-4zM6 5V3.5h3V5M10.5 5 13 1" />
     </g>
   </svg>
 );

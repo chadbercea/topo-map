@@ -77,7 +77,7 @@ export async function tapAt(page: Page, isMobile: boolean, p: { x: number; y: nu
 }
 
 // ALPHA's ask arrives as an orange flag at its marker; click it to read the ask and answer
-// (ILI-1200). If the flag is under the square card, the intel stream raises it (ILI-1203).
+// (ILI-1200). If the flag is under the square card, TEAM's call box answers for it (ILI-1255).
 export async function openAsk(page: Page) {
   // Let the camera finish following ALPHA first: the flag rides with it, and may end up under
   // the square card, where the ask is raised elsewhere instead. That can take a moment to
@@ -90,9 +90,9 @@ export async function openAsk(page: Page) {
     const answer = page.getByTestId('answer-alpha');
     if (await answer.count()) {
       if (await answer.isVisible()) return answer.click();
-      // In the stream behind another tab: open it, unless the action panel covers the dock and
-      // its tabs (it raises the ask itself, a moment later).
-      const tab = page.getByTestId('tab-satcom');
+      // In TEAM's call box behind another tab: open it, unless the action panel covers the dock
+      // and its tabs (it raises the ask itself, a moment later).
+      const tab = page.getByTestId('tab-team');
       if (await tab.isVisible()) {
         await tab.click();
         return answer.click();

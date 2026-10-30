@@ -9,9 +9,10 @@ import type { LinkState } from './terminalScene'; // a type only: the scene load
 
 const TRAFFIC: Record<LinkState, string> = { idle: 'idle', incoming: 'incoming', sending: 'sending', tied: 'on hold' };
 
-// COMMS's strip (ILI-1236), the sibling of ORION-3's (ILI-1235): ALPHA's SATCOM backpack (ILI-1246)
+// The link's strip (ILI-1236), the sibling of ORION-3's (ILI-1235): ALPHA's SATCOM backpack (ILI-1246)
 // in 3D on the left, and on the right the RELAY-7 link's signal trace and a little telemetry. All
-// of it read off the game: a call coming in, HQ's answer up the link, the readback landing.
+// of it read off the game: a call coming in, HQ's answer up the link, the readback landing. It
+// lives in TEAM's call box now (ILI-1255), out only while ALPHA's call is.
 export function CommsStrip() {
   const traffic = useGame(linkTraffic);
   const calls = useGame((s) => s.comms.messages.filter((m) => kindOf(m) === 'call').length);
@@ -72,7 +73,7 @@ function LinkTrace({ traffic, calls, flying }: { traffic: LinkState; calls: numb
     const canvas = ref.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
-    const css = getComputedStyle(document.documentElement);
+    const css = getComputedStyle(canvas); // the call box inks it in the flag's orange
     const accent = css.getPropertyValue('--accent').trim() || '#35d0a5';
     const dim = css.getPropertyValue('--dim').trim() || '#6b7f76';
     const INKS = [accent, accent, '#f2c14e', dim];
