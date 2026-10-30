@@ -8,6 +8,7 @@ import { isMissionPoint } from './mission';
 import { sendResupply } from './support';
 import { nextRandom } from './firefight';
 import { missionDef } from './script';
+import { lookAt, satelliteBusy } from './satellite';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -151,8 +152,13 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
     case 'blind':
       return { ...s, team: decide('blind') };
     case 'push':
-    case 'attack':
       return { ...s, team: decide(effect) };
+    case 'attack': {
+      // ORION-3 swings onto the fight, so HQ watches its order play out (ILI-1275). Quietly:
+      // its picture counts the slew down, and the radio stays ALPHA's.
+      const next = { ...s, team: decide(effect) };
+      return satelliteBusy(s) || (s.sniper && !s.sniper.done) ? next : { ...lookAt(next, square), comms: next.comms };
+    }
     case 'observe': {
       // The team watches for a while and paints the target for the war room: a look at the
       // squares next door, and a laser on every fighter.

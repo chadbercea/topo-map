@@ -53,6 +53,21 @@ describe('firefight', () => {
     expect(used('Heavy gunner')).toBeGreaterThan(used('Medic'));
   });
 
+  it('its fighters fall as the fight wears them down, and each still pays when cleared (ILI-1275)', () => {
+    const start = step(inContact('revealed', false), 100);
+    let s = start;
+    let seen = 2;
+    while (s.team.fight && seen === 2) {
+      s = step(s, 100);
+      seen = s.contacts[0].units.length;
+    }
+    expect(s.team.fight).not.toBeNull(); // one dropped mid-fight, before the clear
+    expect(seen).toBe(1);
+    const end = run(s, 30_000);
+    expect(end.contacts[0].status).toBe('cleared');
+    expect(end.comms.messages.some((m) => /^E3 clear\..*\+\$2,000\.$/.test(m.text))).toBe(true); // both fighters paid
+  });
+
   it('ends with the contact cleared and a report on the radio', () => {
     const s = run(inContact(), 30_000);
     expect(s.contacts[0].status).toBe('cleared');

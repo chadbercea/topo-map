@@ -44,6 +44,16 @@ describe('response tree', () => {
     expect(s.team.fight).toMatchObject({ square: 'E3', full: 50 });
   });
 
+  it('attack: ORION-3 swings onto the fight on its own, without a radio line (ILI-1275)', () => {
+    const store = atContact();
+    answer(store, CALL, 'attack');
+    let s = store.get();
+    for (let i = 0; i < 600 && !s.team.fight; i++) s = run(s, 100);
+    expect(s.satellite.aim).toBe('E3');
+    expect(s.satellite.state).not.toBe('idle');
+    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /^Moving to E3/.test(m.text))).toBe(false);
+  });
+
   it('observe: the team watches, gets a look next door, then asks again', () => {
     const store = atContact();
     answer(store, CALL, 'observe');

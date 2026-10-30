@@ -4,6 +4,7 @@ import type { System } from './systems';
 import type { Operator, Role } from './team';
 import type { Message } from './comms';
 import { contactIn, effectiveStrength } from './contacts';
+import { confirmKills } from './imagery';
 import { CASH_PER_TEAM_KILL, earn, markSite } from './sites';
 import { ALERT_AMBUSH, makeNoise, NOISE, NOISE_PER_ROUND } from './noise';
 
@@ -14,7 +15,7 @@ import { ALERT_AMBUSH, makeNoise, NOISE, NOISE_PER_ROUND } from './noise';
 // drain by role, the enemy wears down, and hits land on the team. Afterwards the medic
 // treats the wounded one at a time, spending time and meds. A downed operator stays down.
 
-export type Fight = { contactId: string; eventId: string; square: string; enemy: number; full: number; startedMs: number };
+export type Fight = { contactId: string; eventId: string; square: string; enemy: number; full: number; units: number; startedMs: number };
 export type Treatment = { patient: string; doneMs: number };
 
 const ENEMY_STRENGTH = 100;
@@ -79,7 +80,7 @@ export const firefightSystem: System = (s, dt) => {
           ...team,
           operators,
           holdFor: null,
-          fight: { contactId: contact.id, eventId: `contact-${contact.id}`, square: contact.square, enemy, full: enemy, startedMs: s.elapsedMs },
+          fight: { contactId: contact.id, eventId: `contact-${contact.id}`, square: contact.square, enemy, full: enemy, units: contact.units.length, startedMs: s.elapsedMs },
           activity: `Engaged in ${contact.square}`,
         },
         // An ambush is news nobody saw coming: a banner. A planned fight shows on the map.
@@ -112,7 +113,7 @@ export const firefightSystem: System = (s, dt) => {
 
     const outOfAmmo = operators.every((o) => !alive(o) || o.ammo <= 0);
     if (enemy > 0 && !outOfAmmo && operators.some(alive)) {
-      return { ...s, rng, team: { ...team, operators, fight: { ...fight, enemy } } };
+      return dropFighters({ ...s, rng, team: { ...team, operators, fight: { ...fight, enemy } } });
     }
 
     // Fight over: the contact is cleared (or the team breaks contact, out of ammo).
@@ -120,7 +121,7 @@ export const firefightSystem: System = (s, dt) => {
     const down = operators.filter((o) => !alive(o)).length;
     // The team cleared it: its fighters are confirmed kills, and the spot is a kill site.
     const cleared = enemy <= 0 ? s.contacts.find((c) => c.id === fight.contactId) : undefined;
-    const pay = cleared ? cleared.units.length * CASH_PER_TEAM_KILL : 0;
+    const pay = cleared ? fight.units * CASH_PER_TEAM_KILL : 0;
     const after: GameState = cleared ? markSite(earn(s, pay), cleared) : s;
     const text = outOfAmmo && enemy > 0
       ? `Out of ammo, breaking contact in ${fight.square}.`
@@ -138,6 +139,17 @@ export const firefightSystem: System = (s, dt) => {
   // Treatment: the medic works through the wounded, worst first.
   return treat(s);
 };
+
+// Fighters fall as the fight wears them down, so whoever is watching sees them drop (ILI-1275).
+function dropFighters(s: GameState): GameState {
+  const fight = s.team.fight!;
+  const c = s.contacts.find((x) => x.id === fight.contactId);
+  const keep = Math.ceil((fight.units * fight.enemy) / fight.full);
+  if (!c || c.units.length <= keep) return s;
+  const dead = c.units.slice(keep);
+  const next = { ...s, contacts: s.contacts.map((x) => (x === c ? { ...x, units: x.units.slice(0, keep) } : x)) };
+  return confirmKills(next, c.id, dead);
+}
 
 function treat(s: GameState): GameState {
   const { team } = s;
