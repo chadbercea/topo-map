@@ -20,6 +20,8 @@ import { PauseMenu } from './PauseMenu';
 import { Intro } from './Intro';
 import { useIntro } from './intro';
 import { WrapUp } from './WrapUp';
+import { useFlash, useUnseen } from './attention';
+import { currentCall } from '../sim/comms';
 
 const debug = new URLSearchParams(location.search).has('debug');
 // Tests and debugging drive the game directly through window.game when ?debug is on.
@@ -72,6 +74,18 @@ export function Hud() {
       setSheet((h) => (h === 'peek' ? 'half' : h));
     }
   }, [tasked]);
+  // News in a panel out of sight dots its tab; a panel in view flashes its frame (ILI-1287).
+  // ALPHA waiting on HQ lights TEAM's tab whole: its call box is there.
+  const tabbed = tier !== 'wide';
+  const shown = (t: Tab) => !tabbed || (tab === t && !(tier === 'compact' && sheet === 'peek'));
+  const commsNews = useGame((s) => s.comms.messages.length + s.stream.items.length);
+  const orionNews = useGame((s) => `${s.satellite.state}|${s.satellite.aim}|${s.satellite.result ? 'look' : ''}`);
+  const calling = useGame((s) => !!currentCall(s.comms));
+  const unseen = { satcom: useUnseen(commsNews, shown('satcom')), orion: useUnseen(orionNews, shown('orion')), team: false };
+  const satcomSlot = useRef<HTMLDivElement>(null);
+  const orionSlot = useRef<HTMLDivElement>(null);
+  useFlash(satcomSlot, commsNews, shown('satcom'));
+  useFlash(orionSlot, orionNews, shown('orion'));
   const pick = (t: Tab) => {
     // A tab always shows its panel: a folded sheet opens. Folding is the handle's job.
     setSheet((h) => (h === 'peek' ? 'half' : h));
@@ -93,7 +107,7 @@ export function Hud() {
           <ExfilPanel />
         </div>
       </div>
-      <div className="slot-orion" data-overlay="orion">
+      <div className="slot-orion" data-overlay="orion" ref={orionSlot}>
         <OrionPanel />
       </div>
       <div className="slot-bottom">
@@ -107,14 +121,15 @@ export function Hud() {
           <CallBox />
         </div>
       </div>
-      <div className="slot-satcom">
+      <div className="slot-satcom" ref={satcomSlot}>
         <CommsPanel />
       </div>
       {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
       <nav className="dock-tabs" aria-label="Panels">
         {(['satcom', 'orion', 'team'] as const).map((t) => (
-          <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'team' && askHidden && tab !== 'team'}>
+          <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'team' && (askHidden || calling) && !shown('team')} data-update={unseen[t] || undefined}>
             {t === 'satcom' ? 'COMMS' : t === 'orion' ? 'ORION-3' : t.toUpperCase()}
+            {unseen[t] && <span className="tab-dot" aria-hidden />}
           </button>
         ))}
       </nav>
