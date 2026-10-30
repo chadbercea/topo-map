@@ -135,3 +135,25 @@ describe('map selection', () => {
     expect(lookSquare(store.get())).toBeNull();
   });
 });
+
+describe('standby (ILI-1282)', () => {
+  it('holds the clock until go, and ALPHA’s first call only comes with the clock', () => {
+    const store = createStore();
+    store.standby();
+    expect(store.get().phase).toBe('standby');
+    store.tick(1_000);
+    expect(store.get().elapsedMs).toBe(0);
+    expect(store.get().team.holdFor).toBeNull();
+    store.go();
+    store.tick(100);
+    expect(store.get().phase).toBe('running');
+    expect(store.get().team.holdFor).not.toBeNull();
+  });
+
+  it('only from a fresh mission', () => {
+    const store = createStore();
+    store.tick(100);
+    store.standby();
+    expect(store.get().phase).toBe('running');
+  });
+});

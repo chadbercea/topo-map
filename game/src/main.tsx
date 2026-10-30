@@ -4,6 +4,7 @@ import { createGame } from './game/createGame';
 import { Hud } from './hud/Hud';
 import { loadSettings, saveSettings } from './hud/settings';
 import { game } from './sim/store';
+import { intro } from './hud/intro';
 import './styles.css';
 
 // Phaser and React each own one layer. The game is created once, outside React,
@@ -18,6 +19,10 @@ let settings = game.get().settings;
 game.subscribe(() => {
   if (game.get().settings !== settings) saveSettings((settings = game.get().settings));
 });
+
+// Castle House's terminal idles, the clock held, until HQ logs in (ILI-1280).
+if (navigator.webdriver) document.documentElement.dataset.automated = '';
+intro.idle();
 
 const phaser = createGame(document.getElementById('game')!);
 
