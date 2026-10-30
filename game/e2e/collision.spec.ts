@@ -27,8 +27,8 @@ async function check(page: Page, square: boolean) {
       .filter((b) => b.width && b.height),
   );
   // ALPHA's flag may only sit under a panel when nowhere is clear, and then its call is raised
-  // where it can't be missed (the stream, or the action panel on a phone).
-  const raised = (await page.getByTestId('incoming-alert').count()) > 0;
+  // where it can't be missed (TEAM's call box, ILI-1255).
+  const raised = (await page.locator('[data-testid="call-box"][data-raised]').count()) > 0;
   for (let i = 0; i < panels.length; i++)
     for (let j = i + 1; j < panels.length; j++) {
       if (raised && (panels[i].name === 'flag' || panels[j].name === 'flag')) continue;

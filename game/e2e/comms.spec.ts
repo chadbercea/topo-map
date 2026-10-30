@@ -37,22 +37,29 @@ test('ALPHA\u2019s ask flags at its marker and opens on a click; answering close
   await expect(log).toContainText('HQ › Move in blind');
 });
 
-test('COMMS SAT answers ALPHA too: the call\'s replies wait under the thread (ILI-1207)', async ({ page, isMobile }) => {
+test('COMMS is a list only; TEAM\u2019s call box answers ALPHA and slides away after the readback (ILI-1255)', async ({ page, isMobile }) => {
   await start(page, '?debug');
-  await page.waitForFunction(() => window.game);
+  await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
-  await fastForward(page, 500);
+  await expect(page.getByTestId('incoming').locator('.pack')).toHaveCount(1); // the backpack on the flag
   if (isMobile) await page.getByTestId('tab-satcom').click();
-  const replies = page.getByTestId('satcom').getByTestId('satcom-responses');
-  await replies.getByRole('button', { name: 'Move in blind' }).click();
-  await expect(replies).toHaveCount(0);
+  await expect(page.getByTestId('satcom').locator('.thread')).toContainText('waiting on HQ');
+  await expect(page.getByTestId('satcom').locator('.actions, .incoming-alert')).toHaveCount(0); // nothing to press in COMMS
+  if (isMobile) await page.getByTestId('tab-team').click();
+  const box = page.getByTestId('call-box');
+  await expect(box).toBeVisible();
+  await expect(box).toContainText('ALPHA');
+  await box.getByTestId('answer-alpha').click();
+  await expect(page.getByTestId('comms-text')).toHaveText(/Holding short of F4/);
+  await page.getByTestId('responses').getByRole('button', { name: 'Move in blind' }).click();
   await expect(page.getByTestId('comms')).toHaveCount(0); // the flag came down with it
-  // It goes up the link (ILI-1209): sending, then ALPHA reads it back.
-  await expect(page.getByTestId('satcom').getByTestId('sending')).toContainText('HQ › Move in blind · sending');
+  // It goes up the link (ILI-1209): sending, then ALPHA reads it back and the box goes.
+  await expect(page.getByTestId('call-state')).toHaveText('Move in blind · sending');
   await expect(page.getByTestId('sent')).toContainText('Move in blind · sending to ALPHA');
   await linked(page);
-  await expect(page.getByTestId('sending')).toHaveCount(0);
+  await expect(box).toHaveCount(0);
   await expect(page.getByTestId('sent')).toHaveCount(0);
+  if (isMobile) await page.getByTestId('tab-satcom').click();
   await expect(page.getByTestId('satcom').locator('.thread')).toContainText('Copy, moving in blind.');
   await expect(page.getByTestId('satcom').locator('.thread')).toContainText('HQ › Move in blind');
 });
@@ -120,24 +127,23 @@ test('when the square card opens where ALPHA\u2019s flag was, the flag moves cle
   const card = (await page.getByTestId('square-card').boundingBox())!;
   const apart = flag.x + flag.width <= card.x || card.x + card.width <= flag.x || flag.y + flag.height <= card.y || card.y + card.height <= flag.y;
   expect(apart).toBe(true);
-  await expect(page.getByTestId('incoming-alert')).toHaveCount(0); // in plain sight, so not raised elsewhere
+  await expect(page.locator('[data-testid="call-box"][data-raised]')).toHaveCount(0); // in plain sight, so not raised elsewhere
   await page.getByTestId('incoming').click();
   await page.getByTestId('responses').getByRole('button', { name: 'Move in blind' }).click();
   await expect(page.getByTestId('comms')).toHaveCount(0);
 });
 
-test('COMMS’s strip follows the link: incoming while ALPHA waits, sending while the answer is up, then idle (ILI-1236)', async ({ page, isMobile }) => {
+test('the call box\u2019s strip follows the link: incoming while ALPHA waits, sending while the answer is up, then the box goes (ILI-1236, ILI-1255)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   await freeze(page);
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  const strip = page.getByTestId('comms-avatar');
+  if (isMobile) await page.getByTestId('tab-team').click();
+  const strip = page.getByTestId('call-box').getByTestId('comms-avatar');
   await expect(strip).toBeVisible();
   await expect(strip).toHaveAttribute('data-state', 'incoming');
   await expect(page.getByTestId('comms-traffic')).toHaveText('incoming');
-  await expect(page.getByTestId('satcom-responses')).toBeInViewport({ ratio: 1 }); // the strip leaves the replies on screen
   await page.evaluate(() => window.game.respond(window.game.get().team.holdFor!, 'blind'));
   await expect(strip).toHaveAttribute('data-state', 'sending');
   await fastForward(page, 3_000);
-  await expect(strip).toHaveAttribute('data-state', 'idle');
+  await expect(page.getByTestId('call-box')).toHaveCount(0);
 });

@@ -14,6 +14,7 @@ import { CommsPanel } from './CommsPanel';
 import { AskWindow } from './AskWindow';
 import { useAskHidden } from './CommsPanel';
 import { TeamPanel } from './TeamPanel';
+import { CallBox } from './CallBox';
 import { PauseMenu } from './PauseMenu';
 import { WrapUp } from './WrapUp';
 
@@ -29,7 +30,7 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 // theater. Top left MISSION · BLACK BOX, the clock and the mission in one panel; under it COMMS,
 // HQ's one feed (ILI-1225). The map fills the middle, the mini game floating at its foot. Down
 // the whole right side ENVIRONMENT, a HUD readout (ILI-1218), over ORION-3 (ILI-1219). Along
-// the bottom TEAM. A square HQ picks, on the map or named in COMMS, shows in ORION-3's
+// the bottom TEAM, and when ALPHA calls, its call box slides out of TEAM's right end (ILI-1255). A square HQ picks, on the map or named in COMMS, shows in ORION-3's
 // panel, its details and Reposition (ILI-1228, ILI-1250), and what HQ can call in on it floats beside it (the
 // action panel). When ALPHA needs something its ask pops up beside its marker (AskWindow). On
 // a fold or tablet the mission floats over the map's corner and COMMS, ORION-3 and TEAM share a
@@ -38,7 +39,7 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
-  const askHidden = useAskHidden(); // ALPHA's ask is raised in COMMS: light its tab
+  const askHidden = useAskHidden(); // ALPHA's flag is out of sight: light TEAM's tab, where its call box is (ILI-1255)
   const tier = useTier();
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
   // on the map itself (ILI-1201), so the dock stays where it is.
@@ -95,6 +96,7 @@ export function Hud() {
         )}
         <div className="slot-team">
           <TeamPanel />
+          <CallBox />
         </div>
       </div>
       <div className="slot-satcom">
@@ -103,7 +105,7 @@ export function Hud() {
       {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
       <nav className="dock-tabs" aria-label="Panels">
         {(['satcom', 'orion', 'team'] as const).map((t) => (
-          <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'satcom' && askHidden && tab !== 'satcom'}>
+          <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'team' && askHidden && tab !== 'team'}>
             {t === 'satcom' ? 'COMMS' : t === 'orion' ? 'ORION-3' : t.toUpperCase()}
           </button>
         ))}

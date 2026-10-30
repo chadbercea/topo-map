@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
-import { currentCall, kindOf, sending } from '../sim/comms';
+import { kindOf, sending } from '../sim/comms';
 import { classify } from '../sim/stream';
-import { Replies } from './AskWindow';
 import { gameClock } from '../sim/gameTime';
 import { bus, EV, getAskHidden } from '../game/events';
-import { CommsStrip } from './CommsStrip';
 
 export const RELAY = 'RELAY-7'; // the comms satellite HQ talks to the team through
 
 // Whether ALPHA's waiting ask is out of sight on the map (under the square card, or waiting
-// out a mini game).
+// out a mini game): TEAM's call box answers for it then (ILI-1255).
 export function useAskHidden() {
   const [hidden, setHidden] = useState(getAskHidden);
   useEffect(() => {
@@ -21,21 +19,17 @@ export function useAskHidden() {
   return hidden;
 }
 
-// COMMS (ILI-1199, ILI-1225): HQ's one feed, through RELAY-7. ALPHA's texts and calls, HQ's
-// answers, and since the intel stream went (ILI-1225) HQ's report lines too: ORION-3, SIGINT,
-// the strike assets, HQ's news, and what the analysts had before the mission. Routine lines
-// sit quiet; a line that names a square selects it on the map. The tasks themselves (contacts,
-// signals, kill sites) live on the map. When ALPHA needs something its flag goes up on the map
-// (AskWindow), and the replies wait here too, under the thread (ILI-1207); when the flag is
-// out of sight the ask is raised at the top. They wait out a mini game, as the flag does. An
+// COMMS (ILI-1199, ILI-1225, ILI-1255): HQ's one feed, through RELAY-7, and only a list of
+// what's happening. ALPHA's texts and calls, HQ's answers, and HQ's report lines: ORION-3,
+// SIGINT, the strike assets, HQ's news, and what the analysts had before the mission. Routine
+// lines sit quiet; a line that names a square selects it on the map. Nothing to press here:
+// ALPHA's call is answered at its flag on the map, or from the call box on TEAM (CallBox). An
 // answer takes a moment to reach the team (ILI-1209): it shows as sending until ALPHA reads it back.
 export function CommsPanel() {
   const callsign = useGame((s) => s.team.callsign);
   const comms = useGame((s) => s.comms);
   const notes = useGame((s) => s.stream.items);
   const messages = comms.messages;
-  const call = useGame((s) => (s.minigame?.status === 'active' ? undefined : currentCall(s.comms)));
-  const hidden = useAskHidden();
   const log = useRef<HTMLOListElement>(null);
   const feed = [...notes.map((n) => ({ note: n, at: n.atMs })), ...messages.map((m) => ({ msg: m, at: m.atMs }))].sort((a, b) => a.at - b.at);
 
@@ -53,9 +47,6 @@ export function CommsPanel() {
           {RELAY} ↔ {callsign} · link good
         </span>
       </h2>
-      {/* The link itself, always on screen (ILI-1236): ALPHA's SATCOM backpack and RELAY-7's signal. */}
-      <CommsStrip />
-      {hidden && <IncomingAlert as="div" testId="answer-alpha" />}
       <ol className="thread" ref={log} role="log" aria-live="polite" data-testid="comms-feed">
         {feed.map((f) => {
           if ('note' in f) {
@@ -94,29 +85,6 @@ export function CommsPanel() {
           );
         })}
       </ol>
-      {call && <Replies call={call} testId="satcom-responses" />}
     </section>
-  );
-}
-
-// ALPHA's ask, raised where it can't be missed when its flag is out of sight: at the top of
-// COMMS, and on a phone at the top of the action panel that covers the dock (brief: one line,
-// so the strikes under it stay in view).
-export function IncomingAlert({ as: Tag, testId, brief = false }: { as: 'li' | 'div'; testId: string; brief?: boolean }) {
-  const playing = useGame((s) => s.minigame?.status === 'active');
-  const call = useGame((s) => currentCall(s.comms));
-  if (!call) return null;
-  return (
-    <Tag className="incoming-alert" data-testid="incoming-alert" data-brief={brief} role="alert">
-      <span className="who">INCOMING · {call.from}</span>
-      {!brief && <p>{call.text}</p>}
-      {playing ? (
-        <small>Answer when the strike is done.</small>
-      ) : (
-        <button onClick={() => bus.emit(EV.openAsk)} data-testid={testId}>
-          Answer ›
-        </button>
-      )}
-    </Tag>
   );
 }
