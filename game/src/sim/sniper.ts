@@ -9,11 +9,11 @@ import { CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
 
 // The sniper (ILI-1253): OVERWATCH, an elite marksman, works on its own. HQ calls it on a
 // square it can see, and for five seconds its crosshairs move from red dot to red dot in
-// ORION-3's picture, one bolt-action round each, as many as it can get. Seven rounds for the
-// whole mission. A fighter still where HQ saw it goes down; one that has moved is a miss.
+// ORION-3's picture, one bolt-action round each, as many as it can get. A fresh sniper, with
+// seven rounds, every call. A fighter still where HQ saw it goes down; one that has moved is a miss.
 
 export const SNIPER_CALLSIGN = 'OVERWATCH';
-export const SNIPER_ROUNDS = 7; // for the mission
+export const SNIPER_ROUNDS = 7; // a fresh sniper, every call
 export const RUN_MS = 5_000; // how long it shoots for
 export const FIRST_MS = 600; // onto the first target
 export const BOLT_MS = 1_000; // rack and reload between shots
@@ -59,13 +59,11 @@ function plan(s: GameState, square: SquareId, startMs: number, rounds: number): 
 export function callSniper(s: GameState, contactId: string): GameState {
   const c = s.contacts.find((x) => x.id === contactId);
   if (!c || c.status !== 'revealed' || weaponBlocked(s, 'sniper', c) || sniperActive(s)) return s;
-  const rounds = s.ordnance.sniper.uses ?? SNIPER_ROUNDS;
-  const shots = plan(s, c.square, s.elapsedMs, rounds);
+  const shots = plan(s, c.square, s.elapsedMs, SNIPER_ROUNDS);
   return {
     ...s,
     openEvent: null,
-    ordnance: { ...s.ordnance, sniper: { ...s.ordnance.sniper, uses: rounds - shots.length } },
-    sniper: { square: c.square, startedMs: s.elapsedMs, endMs: s.elapsedMs + RUN_MS, rounds, shots, fired: 0, done: false },
+    sniper: { square: c.square, startedMs: s.elapsedMs, endMs: s.elapsedMs + RUN_MS, rounds: SNIPER_ROUNDS, shots, fired: 0, done: false },
   };
 }
 
