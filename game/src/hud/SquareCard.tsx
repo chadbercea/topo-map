@@ -4,7 +4,7 @@ import { game, useGame } from '../sim/store';
 import { CAPTURE, lookSquare } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
 import { ground, weather } from '../sim/conditions';
-import { gameSpan, zulu } from '../sim/gameTime';
+import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { EVENT_LABEL } from '../sim/stream';
 import { useTier } from './tier';
 import { alphaBox, obstacles, pick, squareBox } from './overlays';
@@ -133,7 +133,7 @@ export function Card({ s, square }: { s: GameState; square: string }) {
   const found = s.contacts.filter((c) => c.square === square && c.status === 'revealed');
   const status = working
     ? sat.state === 'slewing'
-      ? `ORION-3 ${gameSpan(sat.arriveMs - now)} away`
+      ? `ORION-3 ${countdown(sat.arriveMs - now)} away`
       : sat.state === 'onStation'
         ? 'ORION-3 on station'
         : `ORION-3 ${CAPTURE[sat.mode!].label.toLowerCase()} · ${gameSpan(sat.captureUntilMs - now)}`

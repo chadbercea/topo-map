@@ -19,7 +19,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
   await expect(sat.getByTestId('orion-placeholder')).toContainText('No imagery of E3 · Reposition');
   // Not over E3 yet: one big Reposition, and no shots to take (ILI-1250).
-  await expect(page.getByTestId('look-here')).toHaveText(/^Reposition\s*to E3 · \d+ min$/);
+  await expect(page.getByTestId('look-here')).toHaveText(/^Reposition\s*to E3 · \d+:\d\d$/);
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
   await page.getByTestId('look-here').click();
 
@@ -27,15 +27,15 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   // but Cancel. On a fold or phone its tab comes forward.
   const moving = page.getByTestId('orion-repositioning');
   await expect(moving).toBeVisible();
-  await expect(moving).toContainText(/Repositioning to E3 · \d+ min/);
-  await expect(sat.getByTestId('orion-placeholder')).toContainText('On its way to E3');
+  await expect(moving).toContainText(/Repositioning to E3 · \d+:\d\d/);
+  await expect(sat.getByTestId('orion-placeholder')).toContainText('On station over E3 in'); // counting down in the frame (ILI-1269)
   // The button row keeps its place under the picture: Reposition, unlit while it moves.
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
   await expect(sat.getByTestId('look-here')).toBeDisabled();
   await expect(sat.getByTestId('look-here')).toContainText('Repositioning to E3');
   await expect(sat.getByRole('button', { name: 'Cancel' })).toHaveCount(0); // no Cancel
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
-  await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+ min away/); // the square, in the same panel (ILI-1228)
+  await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+:\d\d away/); // the square, in the same panel (ILI-1228)
   await untilOnStation(page);
 
   // On station the panel opens up: the larger square, and the ways to look.
@@ -142,6 +142,23 @@ test('over a square it has already shot, no Reposition and no Rescan: the shots 
   await page.evaluate(() => window.game.selectSquare('F4'));
   await expect(sat.getByTestId('look-here')).toHaveText(/^Reposition\s*to F4/);
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
+});
+
+test("a slew counts down in ORION-3's frame, then the photo (ILI-1269)", async ({ page, isMobile }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  await page.evaluate(() => {
+    window.game.selectSquare('E3');
+    window.game.lookAt('E3');
+  });
+  if (isMobile) await page.getByTestId('tab-orion').click();
+  const eta = page.getByTestId('orion-eta');
+  await expect(eta).toHaveText(/^0:\d\d$/);
+  const first = await eta.textContent();
+  await page.evaluate(() => window.game.tick(2000));
+  await expect(eta).not.toHaveText(first!);
+  await expect(page.getByTestId('orion-placeholder')).toContainText('then take the photo');
 });
 
 test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMobile }) => {
