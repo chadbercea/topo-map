@@ -48,11 +48,11 @@ const supply = (left: number): Level => (left <= 0.1 ? 'out' : left < LOW ? 'low
 // Noise, for the row's edge: enough to make them suspicious, enough to raise the alarm.
 const loudness = (n: number): Level => (n >= ALERT_AT ? 'out' : n >= SUSPICIOUS_NOISE ? 'low' : 'ok');
 
-function Gauge({ label, value, level, name, testId }: { label: string; value: number; level?: Level; name: string; testId?: string }) {
+function Gauge({ label, value, level, name, testId, bare = false }: { label: string; value: number; level?: Level; name: string; testId?: string; bare?: boolean }) {
   const v = Math.max(0, Math.min(100, value));
   return (
     <span className="gauge" data-level={level} data-testid={testId}>
-      <span className="k">{label}</span>
+      {!bare && <span className="k">{label}</span>}
       <span className="bar" role="meter" aria-label={`${name} ${label.toLowerCase()}`} aria-valuenow={Math.round(v)} aria-valuemin={0} aria-valuemax={100}>
         <span style={{ width: `${v}%` }} />
       </span>
@@ -81,7 +81,7 @@ export function OperatorRow({ o }: { o: Operator }) {
       <div className="supplies">
         <Gauge label="AMMO" value={ammoLeft(o) * 100} level={levels[0]} name={o.name} />
         <Gauge label="MEDS" value={medsLeft(o) * 100} level={levels[1]} name={o.name} />
-        <Gauge label="NOISE" value={o.noise} name={o.name} testId={`noise-${o.id}`} />
+        <Gauge label="NOISE" value={o.noise} name={o.name} testId={`noise-${o.id}`} bare />
       </div>
     </li>
   );
