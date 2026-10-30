@@ -54,7 +54,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   // What it saw stays in the panel; the find is on the card, the strikes beside it.
   await expect(sat.getByTestId('satellite-result')).toContainText('Burst: 5 fighters, unaware');
   await expect(sat.getByTestId('satellite-inset')).toHaveCount(1); // the picture stays up
-  await expect(page.getByTestId('comms-feed')).toContainText('E3 imaged (burst): 5 fighters, unaware');
+  await expect(page.getByTestId('comms-feed')).toContainText('E3 collection complete (burst): 5 fighters, unaware');
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
   // The strikes are ORION-3's too (ILI-1230): a tap on a fighter in its picture opens them (ILI-1250).
