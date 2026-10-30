@@ -222,6 +222,14 @@ export class MapScene extends Phaser.Scene {
       if (shot.hit) cross(shot.x, shot.y);
       else g.lineStyle(1.5 * px, 0xcfe8dc, 0.6).strokeCircle(shot.x, shot.y, r);
     }
+    // Every vehicle is drawn in outline, the map's wireframe, over a dark halo so it reads on
+    // the contours, with its callsign under it (ILI-1289).
+    const outline = (color: number, draw: (w: number, c: number, a: number) => void) => {
+      draw(3.5 * px, 0x0b0f0d, 0.8);
+      draw(1.6 * px, color, 1);
+    };
+    const arrow = (x: number, y: number, z: number, dir: number, color: number) =>
+      outline(color, (w, c, a) => g.lineStyle(w, c, a).strokeTriangle(x + z * dir, y, x - z * dir, y - z * 0.8, x - z * dir, y + z * 0.8));
     for (const w of ['drone', 'heli'] as const) {
       const run = w === 'drone' ? s.drone : s.heli;
       const label = this.airLabels[w];
@@ -233,16 +241,13 @@ export class MapScene extends Phaser.Scene {
       }
       const z = 7 * px;
       const dir = at.east ? 1 : -1;
-      if (w === 'drone') {
-        g.fillStyle(0xe5484d, 1).fillTriangle(at.x + z * dir, at.y, at.x - z * dir, at.y - z * 0.8, at.x - z * dir, at.y + z * 0.8);
-        g.lineStyle(1.5 * px, 0x0b0f0d, 0.9).strokeTriangle(at.x + z * dir, at.y, at.x - z * dir, at.y - z * 0.8, at.x - z * dir, at.y + z * 0.8);
-      } else {
+      if (w === 'drone') arrow(at.x, at.y, z, dir, 0xe5484d);
+      else {
         // A body, a tail boom behind it, and the rotor disc over it.
-        g.fillStyle(0xe5484d, 1).fillCircle(at.x, at.y, z * 0.55);
-        g.lineStyle(2 * px, 0xe5484d, 1).lineBetween(at.x, at.y, at.x - z * 1.4 * dir, at.y);
+        outline(0xe5484d, (lw, c, a) => g.lineStyle(lw, c, a).strokeCircle(at.x, at.y, z * 0.55).lineBetween(at.x - z * 0.55 * dir, at.y, at.x - z * 1.4 * dir, at.y));
         g.lineStyle(1.2 * px, 0xcfe8dc, 0.8).strokeCircle(at.x, at.y, z * 1.1);
       }
-      label.setText(AIR[w].callsign).setScale(1 / this.zoom).setPosition(at.x, at.y + z * 1.3).setVisible(true);
+      label.setText(AIR[w].callsign).setScale(1 / this.zoom).setPosition(at.x, at.y + z * (w === 'heli' ? 1.3 : 1.1)).setVisible(true);
     }
     // The exfil transport (ILI-1264): an orange arrow into the square, down at the marker while
     // ALPHA boards, then out the other side.
@@ -251,10 +256,10 @@ export class MapScene extends Phaser.Scene {
     else {
       const z = 9 * px;
       const dir = t.east ? 1 : -1;
-      g.fillStyle(0xff8a2a, 1).fillTriangle(t.x + z * dir, t.y, t.x - z * dir, t.y - z * 0.8, t.x - z * dir, t.y + z * 0.8);
-      g.lineStyle(1.5 * px, 0x0b0f0d, 0.9).strokeTriangle(t.x + z * dir, t.y, t.x - z * dir, t.y - z * 0.8, t.x - z * dir, t.y + z * 0.8);
+      arrow(t.x, t.y, z, dir, 0xff8a2a);
       if (t.down) g.lineStyle(1.2 * px, 0xff8a2a, 0.7).strokeCircle(t.x, t.y, z * 1.6);
-      this.exfilLabel.setText(TRANSPORT.callsign).setScale(1 / this.zoom).setPosition(t.x, t.y - z * 3.2).setVisible(true); // above: the exfil marker's label is below
+      // Under it; down at the marker, under the marker's own label (drawMission).
+      this.exfilLabel.setText(TRANSPORT.callsign).setScale(1 / this.zoom).setPosition(t.x, t.y + (t.down ? 32 * px : z * 1.1)).setVisible(true);
     }
   }
 
