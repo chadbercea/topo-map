@@ -18,6 +18,7 @@ describe('mission A to B to C', () => {
   it('at B the team holds to pull the black box, then heads for C', () => {
     let s = until(walking(), (x) => x.mission.phase === 'objective');
     expect(s.team.activity).toBe('Recovering the black box at D3');
+    expect(s.team.position).toEqual(squareCenter('D3')); // at the wreck, not the square's edge
     const at = s.team.position;
     s = run(s, RECOVER_MS - 500);
     expect(s.team.position).toEqual(at);

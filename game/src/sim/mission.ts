@@ -44,8 +44,9 @@ export const missionSystem: System = (s, dt) => {
     return { ...s, phase: 'ended', comms: { ...s.comms, messages: [...s.comms.messages, { ...radio(s, 'team-lost', `${team.callsign} is not responding.`), from: 'HQ' }] } };
   }
 
-  // At the crash site: pull the drive.
-  if (mission.phase === 'infil' && here === mission.b && quiet) {
+  // At the crash site, where its marker is, not just over the square's edge: pull the drive.
+  const atWreck = team.route.slice(0, team.waypoint).includes(mission.b);
+  if (mission.phase === 'infil' && atWreck && quiet) {
     return {
       ...s,
       mission: { ...mission, phase: 'objective', recoverUntilMs: s.elapsedMs + RECOVER_MS },
