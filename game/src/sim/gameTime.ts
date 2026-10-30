@@ -13,6 +13,13 @@ export function gameClock(ms: number, round: (n: number) => number = Math.ceil) 
 }
 
 // A span of game time in words: "25 min", "1 h 40 min".
+// A short wait counted down in real time, m:ss, as the strike and exfil panels count theirs
+// (ILI-1269): ORION-3's slews use it too.
+export function countdown(ms: number) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 export function gameSpan(ms: number) {
   const m = minutes(ms, Math.ceil);
   if (m < 60) return `${m} min`;

@@ -1,5 +1,6 @@
 import { game, useGame } from '../sim/store';
-import { blockers, nextUp, race } from '../sim/progress';
+import { bus, EV } from '../game/events';
+import { blockers, nextUp, race, type Blocker } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 
 // The contract window counts down real minutes, M:SS, rounding up (ILI-1251): ten minutes reads
@@ -64,11 +65,23 @@ export function MissionPanel() {
         ◆ {objectiveText(mission)}
         {recovering}
       </p>
-      <p className="need" data-testid="needs-hq" data-tone={need?.tone}>
-        {need ? need.text : 'Nothing in the way'}
-      </p>
+      {need && 'go' in need && need.go ? (
+        // A tap goes to what it's about (ILI-1271): the square on the map, or ALPHA's call.
+        <button className="need" data-testid="needs-hq" data-tone={need.tone} onClick={() => go(need.go!)}>
+          {need.text}
+        </button>
+      ) : (
+        <p className="need" data-testid="needs-hq" data-tone={need?.tone}>
+          {need ? need.text : 'Nothing in the way'}
+        </p>
+      )}
     </section>
   );
+}
+
+function go(to: NonNullable<Blocker['go']>) {
+  if (to.square) game.selectSquare(to.square);
+  if (to.ask) bus.emit(EV.openAsk);
 }
 
 // The one thing that needs HQ most: what's in the way now, else a threat or resupply on its way.

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward } from './helpers';
+import { fastForward, start } from './helpers';
 
 test('the mission panel: the deadline, the race, what to do, what needs HQ (ILI-1216, ILI-1245)', async ({ page, isMobile }) => {
   await page.goto('?debug');
@@ -26,4 +26,23 @@ test('the mission panel: the deadline, the race, what to do, what needs HQ (ILI-
   await page.evaluate(() => window.game.selectSquare('E2'));
   await expect(page.getByTestId('square-elevation')).toHaveText(/^\d+–\d+ m$/);
   await expect(page.getByTestId('square-facts')).toContainText(/Features\s*town/);
+});
+
+test("the need line goes where it points: ALPHA's call, or the square (ILI-1271)", async ({ page }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  const need = page.getByTestId('needs-hq');
+  await expect(need).toHaveText('ALPHA waiting on your call');
+  await need.click();
+  await expect(page.getByTestId('comms-text')).toBeVisible(); // the call, open
+  // Nothing waiting, unimaged ground ahead: the line picks that square.
+  await page.evaluate(() => {
+    window.frozen = true;
+    const s = window.game.get();
+    window.game.set({ ...s, comms: { ...s.comms, messages: [] }, team: { ...s.team, holdFor: null } });
+  });
+  await expect(need).toContainText('No imagery ahead at');
+  const sq = (await need.textContent())!.match(/at (\w\d)/)![1];
+  await need.click();
+  await expect.poll(() => page.evaluate(() => window.game.get().map.selected)).toBe(sq);
 });
