@@ -27,8 +27,8 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   // but Cancel. On a fold or phone its tab comes forward.
   const moving = page.getByTestId('orion-repositioning');
   await expect(moving).toBeVisible();
-  await expect(moving).toContainText(/Repositioning to E3 · \d+ min/);
-  await expect(sat.getByTestId('orion-placeholder')).toContainText('On its way to E3');
+  await expect(moving).toContainText(/Repositioning to E3 · \d+:\d\d/);
+  await expect(sat.getByTestId('orion-placeholder')).toContainText('On station over E3 in'); // counting down in the frame (ILI-1269)
   // The button row keeps its place under the picture: Reposition, unlit while it moves.
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
   await expect(sat.getByTestId('look-here')).toBeDisabled();
