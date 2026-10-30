@@ -472,6 +472,9 @@ html, body {
 .op .supplies { grid-area: supplies; display: flex; align-items: center; gap: 8px; font-size: 9px; color: var(--dim); }
 .op .gauge { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .op .gauge .k { letter-spacing: 0.1em; }
+.op .gauge svg.k { width: 11px; height: 10px; flex: none; }
+.op .gauge .rounds { fill: #b8a06a; } /* brass */
+.op .gauge .cross { width: 10px; fill: #e5484d; }
 .op .gauge .bar { width: 24px; height: 4px; }
 .op .gauge[data-testid^='noise-'] .bar { width: 12px; } /* noise: no label, half as wide (ILI-1248) */
 .op .gauge .bar > span { transition: width 300ms ease-out; }
