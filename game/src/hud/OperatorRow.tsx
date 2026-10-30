@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ammoLeft, condition, medsLeft, type Operator } from '../sim/team';
 import { LOW } from '../sim/support';
 import { SUSPICIOUS_NOISE } from '../sim/imagery';
@@ -48,11 +49,25 @@ const supply = (left: number): Level => (left <= 0.1 ? 'out' : left < LOW ? 'low
 // Noise, for the row's edge: enough to make them suspicious, enough to raise the alarm.
 const loudness = (n: number): Level => (n >= ALERT_AT ? 'out' : n >= SUSPICIOUS_NOISE ? 'low' : 'ok');
 
-function Gauge({ label, value, level, name, testId, bare = false }: { label: string; value: number; level?: Level; name: string; testId?: string; bare?: boolean }) {
+// The gauges' labels as pictures (ILI-1265): three rounds side by side for ammo, a red cross for meds.
+const Rounds = () => (
+  <svg className="k rounds" viewBox="0 0 11 10" aria-hidden>
+    {[0, 4, 8].map((x) => (
+      <path key={x} d={`M${x} 10 V4.5 Q${x + 1.5} 0 ${x + 3} 4.5 V10 Z`} />
+    ))}
+  </svg>
+);
+const Cross = () => (
+  <svg className="k cross" viewBox="0 0 10 10" aria-hidden>
+    <path d="M3.5 0h3v3.5h3.5v3h-3.5v3.5h-3v-3.5h-3.5v-3h3.5z" />
+  </svg>
+);
+
+function Gauge({ label, icon, value, level, name, testId }: { label: string; icon?: ReactNode; value: number; level?: Level; name: string; testId?: string }) {
   const v = Math.max(0, Math.min(100, value));
   return (
     <span className="gauge" data-level={level} data-testid={testId}>
-      {!bare && <span className="k">{label}</span>}
+      {icon}
       <span className="bar" role="meter" aria-label={`${name} ${label.toLowerCase()}`} aria-valuenow={Math.round(v)} aria-valuemin={0} aria-valuemax={100}>
         <span style={{ width: `${v}%` }} />
       </span>
@@ -61,7 +76,7 @@ function Gauge({ label, value, level, name, testId, bare = false }: { label: str
 }
 
 // One operator in the team panel (ILI-1248): rank, name and role in even columns; heartbeat and
-// status; then ammo and meds as short bars, and how loud they've been moving (ILI-1222) as an
+// status; then ammo and meds as short bars under their pictures, and how loud they've been moving (ILI-1222) as an
 // orange one. The row gets a coloured edge when something's wrong: hurt, low or loud.
 export function OperatorRow({ o }: { o: Operator }) {
   const c = condition(o);
@@ -79,9 +94,9 @@ export function OperatorRow({ o }: { o: Operator }) {
         <span className="status">{STATUS[c]}</span>
       </div>
       <div className="supplies">
-        <Gauge label="AMMO" value={ammoLeft(o) * 100} level={levels[0]} name={o.name} />
-        <Gauge label="MEDS" value={medsLeft(o) * 100} level={levels[1]} name={o.name} />
-        <Gauge label="NOISE" value={o.noise} name={o.name} testId={`noise-${o.id}`} bare />
+        <Gauge label="AMMO" icon={<Rounds />} value={ammoLeft(o) * 100} level={levels[0]} name={o.name} testId={`ammo-${o.id}`} />
+        <Gauge label="MEDS" icon={<Cross />} value={medsLeft(o) * 100} level={levels[1]} name={o.name} testId={`meds-${o.id}`} />
+        <Gauge label="NOISE" value={o.noise} name={o.name} testId={`noise-${o.id}`} />
       </div>
     </li>
   );

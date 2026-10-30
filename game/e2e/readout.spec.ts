@@ -6,7 +6,11 @@ test('the team panel shows every operator: heartbeat, status, ammo and meds, und
   if (isMobile) await page.getByTestId('tab-team').click();
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
   await expect(page.getByTestId('readout').locator('svg.ecg')).toHaveCount(5);
-  await expect(page.getByTestId('op-medic')).toContainText('MEDS');
+  // Ammo and meds as pictures, not words (ILI-1265); the meters keep their names.
+  await expect(page.getByTestId('op-medic')).not.toContainText('MEDS');
+  await expect(page.getByTestId('meds-medic').locator('svg.cross')).toBeVisible();
+  await expect(page.getByTestId('ammo-medic').locator('svg.rounds')).toBeVisible();
+  await expect(page.getByTestId('meds-medic').getByRole('meter')).toHaveAccessibleName(/meds/);
   await expect(page.getByTestId('team-title')).toHaveText('ALPHA TEAM');
   await expect(page.getByTestId('team-condition')).toHaveCount(0); // no team totals: each row has its own
 });
