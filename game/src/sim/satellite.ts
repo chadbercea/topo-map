@@ -127,7 +127,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     map: { ...s.map, selected: null },
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
-  return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Moving to ${square}. On station in ${countdown(ms)}.` : `On station over ${square}. Ready to shoot.`));
+  return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Slewing to ${square}. On station in ${countdown(ms)}.` : `On station over ${square}. Ready for collection.`));
 }
 
 // On station: take the picture.
@@ -170,7 +170,7 @@ function finishLook(s: GameState): GameState {
     satellite: { ...sat, state: 'idle', from: at(square), mode: null, callId: null, result },
     team: sat.callId && next.team.holdFor === sat.callId ? { ...next.team, holdFor: null } : next.team,
   };
-  next = log(next, radio(s, 'ORION-3', `look-${s.elapsedMs}`, `${square} imaged (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. Downlinked to ${s.team.callsign}.`));
+  next = log(next, radio(s, 'ORION-3', `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. IMINT pushed to ${s.team.callsign}.`));
   return sat.callId ? log(next, radio(s, s.team.callsign, `look-${s.elapsedMs}-team`, 'Imagery received.')) : next;
 }
 
@@ -184,7 +184,7 @@ export const satelliteSystem: System = (s) => {
   const sat = s.satellite;
   if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs)
     // It says what's next (ILI-1257): the shot is HQ's to take.
-    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, 'ORION-3', `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready to shoot.`));
+    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, 'ORION-3', `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready for collection.`));
   if (sat.state !== 'capturing') return s;
   if (s.elapsedMs >= sat.captureUntilMs) return finishLook(s);
   // Video is live: the map follows them while it runs.
