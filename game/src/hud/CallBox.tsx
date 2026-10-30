@@ -54,7 +54,7 @@ export function CallBox() {
           {call ? (playing ? 'Holding' : 'Incoming') : out ? `${out} · sending` : activity}
         </span>
       </h2>
-      <CommsStrip picture={live ? undefined : <WireAvatar key={gear} state="on" fallback={null} load={LOAD[gear]} className="c-terminal" />} />
+      <CommsStrip showGear={!live} gear={<WireAvatar key={gear} state="on" fallback={null} load={LOAD[gear]} className="c-terminal c-gear" />} />
       {call && !playing && (
         <button className="cb-hit" onClick={() => bus.emit(EV.openAsk)} data-testid="answer-alpha" aria-label={`Answer ${who}`}>
           <span>Answer ›</span>
