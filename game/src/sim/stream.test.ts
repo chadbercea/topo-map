@@ -15,7 +15,7 @@ describe('intel stream (ILI-1194, ILI-1197)', () => {
 
   it('stays quiet until the first event, then only routine items do', () => {
     const s0 = initialState();
-    const chatter = { ...s0, comms: { ...s0.comms, messages: [msg('slew-1', 'ORION-3', 'Moving to E3.'), msg('look-1', 'ORION-3', 'E3 imaged.')] } };
+    const chatter = { ...s0, comms: { ...s0.comms, messages: [msg('slew-1', 'ORION-3', 'Slewing to E3.'), msg('look-1', 'ORION-3', 'E3 collection complete.')] } };
     expect(streamView(chatter).every((i) => i.quiet)).toBe(true);
     const started = { ...chatter, events: [{ id: 'traffic-c2', kind: 'signal' as const, square: 'C2', title: 'Enemy radio traffic', atMs: 3_000, status: 'new' as const }] };
     const view = streamView(started);

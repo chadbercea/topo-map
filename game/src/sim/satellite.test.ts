@@ -29,7 +29,7 @@ describe('ORION-3 tasking', () => {
     const store = atRequest();
     answer(store, REQUEST, 'send');
     onStation(store);
-    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: 'On station over F4. Ready to shoot.' });
+    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: 'On station over F4. Ready for collection.' });
     expect(blockers(store.get())[0]).toEqual({ tone: 'decision', text: 'ORION-3 on station over F4: take the shot', go: { square: 'F4' } });
     store.capture('photo');
     expect(blockers(store.get()).map((b) => b.text)).not.toContain('ORION-3 on station over F4: take the shot');
@@ -69,7 +69,7 @@ describe('ORION-3 tasking', () => {
     expect(s.team.holdFor).toBeNull();
     expect(s.satellite).toMatchObject({ state: 'idle', aim: 'F4', result: { square: 'F4', mode: 'photo', fighters: 0 } });
     expect(s.imagery.F4).toMatchObject({ mode: 'photo', live: false, seen: [] });
-    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 imaged \(photo\): nothing there\. Downlinked to ALPHA\./.test(m.text))).toBe(true);
+    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 collection complete \(photo\): nothing there\. IMINT pushed to ALPHA\./.test(m.text))).toBe(true);
   });
 
   it('a look at E3 finds the checkpoint: every fighter, and that they have not noticed ALPHA', () => {
