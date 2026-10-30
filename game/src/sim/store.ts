@@ -5,6 +5,7 @@ import { dismiss, respond, send } from './comms';
 import { cancelLook, capture, closeLook, lookAt, lookSquare, slewMs, type CaptureMode } from './satellite';
 import { abortMiniGame, startSeek, tapMiniGame } from './minigame';
 import { launchDrone } from './drone';
+import { callSniper } from './sniper';
 import { weaponBlocked, type Weapon } from './ordnance';
 import { applyEffect } from './contacts';
 import { sendResupply } from './support';
@@ -81,8 +82,8 @@ export function createStore(initial: GameState = initialState()) {
     fire: (contactId: string, weapon: Weapon) => {
       const c = state.contacts.find((x) => x.id === contactId);
       if (!c || weaponBlocked(state, weapon, c)) return;
-      // The drone has no mini game: it flies there and clears the square (ILI-1252).
-      set(weapon === 'drone' ? launchDrone(state, contactId) : startSeek(state, contactId, weapon));
+      // The drone and the sniper have no mini game: they do it themselves (ILI-1252, ILI-1253).
+      set(weapon === 'drone' ? launchDrone(state, contactId) : weapon === 'sniper' ? callSniper(state, contactId) : startSeek(state, contactId, weapon));
     },
     // Send ALPHA at a found contact: answers its call if it's waiting on one, else decides ahead.
     sendTeam: (contactId: string) => {

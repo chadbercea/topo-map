@@ -197,22 +197,28 @@ export class MapScene extends Phaser.Scene {
     this.drawPlans();
     this.drawSatellite(_time);
     this.drawMiniGame(_time);
-    this.drawDrone();
+    this.drawStrikes();
   }
 
   // The drone strike (ILI-1252): a tiny drone crosses the square west to east, and each fighter
-  // it passes becomes a red X, which stays as the aftermath.
-  private drawDrone() {
+  // it passes becomes a red X, which stays as the aftermath. The sniper's kills (ILI-1253) are
+  // X marks too, and its misses rings.
+  private drawStrikes() {
     const g = this.droneGfx.clear();
-    const { drone: d, elapsedMs: now } = game.get();
-    if (!d || !droneArrived(d, now)) return void this.droneLabel.setVisible(false);
+    const { drone: d, sniper, elapsedMs: now } = game.get();
     const px = DPR / this.zoom;
-    for (const k of d.kills ?? []) {
-      if (k.atMs > now) continue;
-      const r = 5 * px;
-      g.lineStyle(3.5 * px, 0x0b0f0d, 0.8).lineBetween(k.x - r, k.y - r, k.x + r, k.y + r).lineBetween(k.x - r, k.y + r, k.x + r, k.y - r);
-      g.lineStyle(2 * px, 0xe5484d, 1).lineBetween(k.x - r, k.y - r, k.x + r, k.y + r).lineBetween(k.x - r, k.y + r, k.x + r, k.y - r);
+    const r = 5 * px;
+    const cross = (x: number, y: number) => {
+      g.lineStyle(3.5 * px, 0x0b0f0d, 0.8).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
+      g.lineStyle(2 * px, 0xe5484d, 1).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
+    };
+    for (const shot of sniper?.shots ?? []) {
+      if (shot.atMs > now) continue;
+      if (shot.hit) cross(shot.x, shot.y);
+      else g.lineStyle(1.5 * px, 0xcfe8dc, 0.6).strokeCircle(shot.x, shot.y, r);
     }
+    if (!d || !droneArrived(d, now)) return void this.droneLabel.setVisible(false);
+    for (const k of d.kills ?? []) if (k.atMs <= now) cross(k.x, k.y);
     if (now >= d.arriveMs + CROSS_MS) return void this.droneLabel.setVisible(false);
     // REAPER-1: a triangle, nose east, with its callsign under it, as in its panel.
     const sq = parseSquare(d.square)!;

@@ -11,6 +11,8 @@ import { OrionAvatar } from './OrionAvatar';
 import { useTier } from './tier';
 import { EnvWidget } from './EnvWidget';
 import { MiniGamePanel } from './MiniGamePanel';
+import { SniperPanel } from './SniperPanel';
+import { sniperGone } from '../sim/sniper';
 import { BOARD } from '../sim/minigame';
 
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
@@ -30,6 +32,9 @@ export function OrionPanel() {
   const tied = s.minigame?.status === 'active';
   // A strike plays out here, in the picture (ILI-1250): the map stays as it is.
   const strike = tied && s.minigame!.kind === 'seekDestroy' ? s.minigame! : null;
+  // So does the sniper's run (ILI-1253): its crosshairs in the picture, its panel under it.
+  const sniping = s.sniper && !sniperGone(s.sniper, now) ? s.sniper : null;
+  const aimAt = sniping && !sniping.done ? (sniping.shots.find((x) => x.atMs > now) ?? sniping.shots.at(-1)) : null;
   const square = orionSquare(s);
   const snap = square ? s.imagery[square] : undefined;
   const live = sat.state === 'onStation' || sat.state === 'capturing';
@@ -54,7 +59,7 @@ export function OrionPanel() {
   const phone = tier === 'compact';
   // The larger square while ORION-3 is on it, or a picked square it has imagery of; else the
   // placeholder (ILI-1229).
-  const showPicture = !!strike || (!tied && (live || (sat.state === 'idle' && !!picked && !!snap)));
+  const showPicture = !!strike || !!sniping || (!tied && (live || (sat.state === 'idle' && !!picked && !!snap)));
   const caption = tied
     ? 'Tied up by the strike'
     : sat.state === 'slewing'
@@ -89,10 +94,10 @@ export function OrionPanel() {
     if (panelRef.current) panelRef.current.scrollTop = 0;
   }, [sat.state, picked]);
 
-  const head = strike ? `strike · ${strike.square}` : tied ? 'tied up' : sat.state === 'idle' ? `over ${sat.aim}` : sat.state === 'slewing' ? `→ ${sat.aim}` : `${sat.aim} · ${sat.state === 'onStation' ? 'on station' : CAPTURE[sat.mode!].label.toLowerCase()}`;
+  const head = strike ? `strike · ${strike.square}` : sniping ? `sniper · ${sniping.square}` : tied ? 'tied up' : sat.state === 'idle' ? `over ${sat.aim}` : sat.state === 'slewing' ? `→ ${sat.aim}` : `${sat.aim} · ${sat.state === 'onStation' ? 'on station' : CAPTURE[sat.mode!].label.toLowerCase()}`;
   const travel = Math.max(1, sat.arriveMs - sat.startMs);
   const avatar = tied ? 'tied' : sat.state === 'slewing' ? 'slewing' : 'idle';
-  const status = strike ? 'Strike' : tied ? 'Tied up' : sat.state === 'idle' ? 'Standby' : sat.state === 'slewing' ? 'Repositioning' : sat.state === 'onStation' ? 'On station' : CAPTURE[sat.mode!].label;
+  const status = strike ? 'Strike' : sniping ? 'Sniper' : tied ? 'Tied up' : sat.state === 'idle' ? 'Standby' : sat.state === 'slewing' ? 'Repositioning' : sat.state === 'onStation' ? 'On station' : CAPTURE[sat.mode!].label;
   const left = Math.max(0, sat.arriveMs - now);
   // Reposition, then shoot (ILI-1250): a scan *is* the photo, burst or video, so there's no Scan
   // step. Until ORION-3 is over the square HQ is working, its one button is a big Reposition;
@@ -139,11 +144,21 @@ export function OrionPanel() {
       {/* The image area: always here, always the same size (ILI-1229). */}
       <div className="o-frame">
         {showPicture ? (
-          <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={strike ? 'strike' : live ? sat.state : 'imaged'} aria-label={`ORION-3's picture of ${square}`}>
+          <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={strike ? 'strike' : sniping ? 'sniper' : live ? sat.state : 'imaged'} aria-label={`ORION-3's picture of ${square}`}>
             {/* The fighters it shows, each a tap away from its strikes (ILI-1250). Phaser draws the
                 dots; these sit on them, in the square's width at the picture's middle. */}
             <div className="o-targets">
-              {strike
+              {aimAt && square && (
+                // OVERWATCH's crosshairs, moving to the next fighter it shoots (ILI-1253).
+                <span
+                  className="o-crosshair"
+                  data-testid="sniper-crosshair"
+                  style={{ left: `${50 + ((aimAt.x - squareCenter(square)!.x) / CELL) * 100}%`, top: `${50 + ((aimAt.y - squareCenter(square)!.y) / CELL) * 100}%` }}
+                />
+              )}
+              {sniping
+                ? null
+                : strike
                 ? // The strike's board (ILI-1250): Phaser draws it into the picture; a tap on a cell aims there.
                   Array.from({ length: BOARD * BOARD }, (_, i) => (
                     <button
@@ -181,11 +196,12 @@ export function OrionPanel() {
         )}
       </div>
 
-      {/* A strike's aim, countdown and Abort, under its board (ILI-1250). */}
+      {/* A strike's aim, countdown and Abort, under its board (ILI-1250); the sniper's panel (ILI-1253). */}
       <MiniGamePanel strike />
+      <SniperPanel />
 
       {/* ORION-3's buttons, always here under the picture (ILI-1230): each lit when it can be used. */}
-      <div ref={rowRef} className="o-buttons" data-testid="orion-buttons" hidden={!!strike}>
+      <div ref={rowRef} className="o-buttons" data-testid="orion-buttons" hidden={!!strike || !!sniping}>
         {inPosition && !tied ? (
           <div className="modes" data-testid="capture-modes">
             {MODES.map((m) => (

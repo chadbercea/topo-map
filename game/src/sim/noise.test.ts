@@ -26,8 +26,8 @@ describe('noise', () => {
     expect(drone.get().noise).toBeGreaterThanOrEqual(NOISE.drone - 1); // heard as it arrives
     const sniper = createStore(withContacts());
     sniper.fire('t', 'sniper');
-    sniper.tapMiniGame('E3', 0);
-    expect(sniper.get().noise).toBe(NOISE.sniperRound);
+    sniper.set(run(sniper.get(), 700)); // its first round
+    expect(sniper.get().noise).toBeCloseTo(NOISE.sniperRound, 0);
   });
 
   it('a firefight makes noise too', () => {
