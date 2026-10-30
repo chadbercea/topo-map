@@ -63,6 +63,12 @@ export const TREE: Record<string, CallNode> = {
       { id: 'push', label: 'Move on without', effect: 'pass', reply: 'Understood. Moving with what we have.' },
     ],
   },
+  // Support took the contact out while ALPHA held for a decision (ILI-1277): nothing left to
+  // attack or go around.
+  'contact-cleared': {
+    text: ({ square }) => `Targets in ${square} are down. All clear to move through?`,
+    responses: [{ id: 'clear', label: 'All clear', effect: 'push', reply: 'Copy, moving through.' }],
+  },
   'contact-observed': {
     text: ({ square, label }) => `Eyes on ${square}: ${label}, dug in, not moving. Target's painted for you. Hit it, or go around?`,
     responses: [

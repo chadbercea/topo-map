@@ -44,6 +44,20 @@ describe('response tree', () => {
     expect(s.team.fight).toMatchObject({ square: 'E3', full: 50 });
   });
 
+  it('support wipes out the contact while ALPHA holds: the hold turns into an all clear (ILI-1277)', () => {
+    const store = atContact();
+    const s0 = store.get();
+    let s = run({ ...s0, contacts: s0.contacts.map((c) => ({ ...c, status: 'cleared' as const, units: [] })) }, 100);
+    expect(s.team.holdFor).toBe(CALL);
+    expect(msg(s, CALL)?.text).toBe('Targets in E3 are down. All clear to move through?');
+    expect(msg(s, CALL)?.responses?.map((r) => r.label)).toEqual(['All clear']);
+    store.set(s);
+    answer(store, CALL, 'clear');
+    s = run(store.get(), LINK_MS + 200);
+    expect(s.team.holdFor).toBeNull();
+    expect(s.comms.messages.some((m) => m.text === 'Copy, moving through.')).toBe(true);
+  });
+
   it('observe: the team watches, gets a look next door, then asks again', () => {
     const store = atContact();
     answer(store, CALL, 'observe');
