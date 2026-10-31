@@ -1195,12 +1195,19 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 }
 .castle-orion[data-side='left'] .castle-label { left: auto; right: 34px; }
 .castle-orion[data-side='below'] .castle-label { left: 50%; top: 40px; transform: translateX(-50%); }
-/* The close-up's screens (ILI-1292, ILI-1295): ORION-3's rack down the right, its outer panels
-   hanging off the screen's edges, and the dead feeds down the left. They power on as the camera
-   arrives, and slide with the pointer: the near rack more than the far feeds. */
-.feed-rack, .feed-dead { position: absolute; top: 50%; display: flex; flex-direction: column; gap: 14px; pointer-events: none; transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1); }
-.feed-rack { top: -56px; bottom: -56px; right: var(--gutter); width: 320px; gap: 22px; justify-content: space-between; transform: translate(calc(var(--lx) * -46px), calc(var(--ly) * -34px)); } /* the outer panels hang off the top and bottom */
-.feed-dead { left: var(--gutter); width: 230px; gap: 18px; transform: translate(calc(var(--lx) * -18px), calc(-50% + var(--ly) * -12px)); }
+/* The close-up's screens (ILI-1292, ILI-1295, ILI-1299): one column down the right, close
+   together: the payload, ORION-3's feed, the dead feeds side by side, power. They power on as the
+   camera arrives, and slide with the pointer. */
+.feed-rack { position: absolute; top: 50%; right: var(--gutter); width: 320px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; transform: translate(calc(var(--lx) * -46px), calc(-50% + var(--ly) * -34px)); transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+.feed-dead { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.feed-dead .feed-panel { gap: 6px; padding: 8px 10px; }
+.feed-dead header { white-space: nowrap; }
+.feed-dead header b { letter-spacing: 0.1em; }
+.feed-dead header span { font-size: 9px; letter-spacing: 0.02em; overflow: hidden; }
+.feed-dead footer { flex-wrap: wrap; gap: 2px 8px; font-size: 8px; letter-spacing: 0.04em; white-space: nowrap; }
+/* A short screen: the rack shrinks so its outer panels hang off by about as much as at 900. */
+@media (min-width: 721px) and (max-height: 860px) { .feed-rack { zoom: 0.86; } }
+@media (min-width: 721px) and (max-height: 760px) { .feed-rack { zoom: 0.78; } }
 .castle { --lx: 0; --ly: 0; } /* the pointer's lean, -1 to 1 (Intro.tsx) */
 .feed-panel { flex-shrink: 0; display: grid; gap: 10px; padding: 12px 14px; font-size: 11px; letter-spacing: 0.08em; background: rgba(11, 15, 13, 0.72); border-color: var(--line); --on: 650ms; animation: power-frame 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--on); }
 .feed-panel > * { animation: power-content 260ms ease-out both; animation-delay: calc(var(--on) + 400ms + var(--i, 0) * 70ms); }
@@ -1269,7 +1276,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .orion-feed .log { height: 44px; }
   .orion-feed .track { height: 28px; }
 }
-@media (prefers-reduced-motion: reduce) { .feed-panel, .feed-panel > *, .orion-feed .spectrum s, .orion-feed .log li, .feed-panel .static p { animation: none; } .feed-rack, .feed-dead { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .feed-panel, .feed-panel > *, .orion-feed .spectrum s, .orion-feed .log li, .feed-panel .static p { animation: none; } .feed-rack { transition: none; } }
 .castle-mark { z-index: 1; } /* over the satellites: they never block the menu */
 .castle-sat { position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px; padding: 0; background: none; border: none; cursor: default; font: inherit; }
 .castle-sat[hidden] { display: none; }

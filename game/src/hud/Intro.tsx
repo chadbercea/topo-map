@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Castle, Spots } from './castleScene'; // types only: the scene loads lazily
 import { intro, LINE_MS, LOGIN_LINES, useIntro, WIPE_MS, type Stage } from './intro';
 import { MapViews } from './MapViews';
-import { DeadFeeds, OrionRack } from './OrionFeed';
+import { OrionRack } from './OrionFeed';
 import { game, useGame } from '../sim/store';
 
 // The way in (ILI-1280): Castle House's idle terminal, the wipe, the login, and the link with
@@ -65,7 +65,7 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
   }, [title]);
 
   // Heavy parallax on the close-up (ILI-1295): the pointer leans the camera and slides the
-  // screens, the near rack more than the dead feeds behind it.
+  // screens.
   const lean = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerType !== 'mouse' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const x = (e.clientX / innerWidth) * 2 - 1;
@@ -92,12 +92,7 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
         </div>
       )}
       {title && sheet && <Sheet which={sheet} close={closeSheet} />}
-      {!title && (
-        <>
-          <DeadFeeds />
-          <OrionRack />
-        </>
-      )}
+      {!title && <OrionRack />}
       {!title && at && (
         <button
           className="castle-orion"
