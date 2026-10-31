@@ -43,13 +43,14 @@ function useClock() {
 // A value that wanders about `mid`, by up to `span`, at its own pace.
 const wander = (t: number, mid: number, span: number, rate: number, seed = 0) => mid + span * (0.6 * Math.sin(t * rate + seed) + 0.4 * Math.sin(t * rate * 2.7 + seed * 3));
 
-// ORION-3's rack, down the right.
+// ORION-3's rack, down the right, with the dead feeds side by side under its feed (ILI-1299).
 export function OrionRack() {
   const t = useClock();
   return (
     <div className="feed-rack" data-depth="near" aria-hidden>
       <Payload t={t} />
       <OrionFeed t={t} />
+      <DeadFeeds />
       <Power t={t} />
     </div>
   );
@@ -211,15 +212,15 @@ function Power({ t }: { t: number }) {
   );
 }
 
-// The rest of the constellation, down the left: their feeds are dead.
+// The rest of the constellation: their feeds are dead.
 const DEAD = [
   { name: 'ATLAS-1', id: 'NORAD 58402' },
   { name: 'VEGA-5', id: 'NORAD 58431' },
 ];
 
-export function DeadFeeds() {
+function DeadFeeds() {
   return (
-    <div className="feed-dead" data-depth="far" aria-hidden>
+    <div className="feed-dead">
       {DEAD.map((d, i) => (
         <section key={d.name} className="panel feed-panel dead" style={{ '--on': `${780 + i * 160}ms` } as React.CSSProperties}>
           <header>
