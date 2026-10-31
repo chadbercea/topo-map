@@ -175,6 +175,11 @@ html, body {
 /* In ORION-3's panel (ILI-1228) the square's details sit in the panel, not floating over the map. */
 .orion .square-card { position: static; z-index: auto; overflow: visible; animation: none; border: none; border-top: 1px solid var(--line); padding: 0; }
 .orion .square-card > *, .orion .square-card .facts { background: none; }
+/* Many at once (ILI-1306): a grey chip at a square with a strike running that isn't the picked one. */
+.busy-chip { position: fixed; z-index: 6; display: grid; gap: 1px; justify-items: start; padding: 3px 7px; font: inherit; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: rgba(11, 15, 13, 0.88); border: 1px solid var(--dim); cursor: pointer; pointer-events: auto; }
+.busy-chip b { color: var(--dim); font-weight: 600; }
+.busy-chip:hover, .busy-chip:focus-visible { border-color: var(--accent); outline: none; }
+.busy-chip:hover b { color: var(--accent); }
 /* The anchor's leader (ILI-1305): a dashed line to its square; an arrow at the map's edge when the square is off it. */
 .anchor-leader { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 6; pointer-events: none; overflow: visible; }
 .anchor-leader line { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 3; opacity: 0.85; }
