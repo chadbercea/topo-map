@@ -6,14 +6,15 @@ import { WireAvatar } from './OrionAvatar';
 const LOAD = { drone: () => import('./droneScene'), heli: () => import('./heliScene') };
 const LEAVE_MS = 400; // the panel's way out, at the end of its linger
 
-// An air strike's panel (ILI-1252, ILI-1254): it pops open when HQ calls REAPER-1 or HAMMER-2
-// in. The aircraft, and the time to target counting down; then a "Tango down" for each fighter
-// as it passes over it on the map, a sign-off, and the panel goes.
-export function AirPanel({ weapon }: { weapon: AirWeapon }) {
+// An air strike's panel (ILI-1252, ILI-1254), at its square's anchor (ILI-1304): it pops open
+// when HQ calls REAPER-1 or HAMMER-2 in. The aircraft, and the time to target counting down;
+// then a "Tango down" for each fighter as it passes over it on the map, a sign-off, and the
+// panel goes.
+export function AirPanel({ weapon, square }: { weapon: AirWeapon; square: string }) {
   const r = useGame((s) => (weapon === 'drone' ? s.drone : s.heli));
   const now = useGame((s) => s.elapsedMs);
   const contacts = useGame((s) => s.contacts);
-  if (!r || airGone(r, now)) return null;
+  if (!r || r.square !== square || airGone(r, now)) return null;
   const over = arrived(r, now);
   const flight = AIR[weapon].flightMs;
   const left = Math.max(0, r.arriveMs - now);

@@ -997,6 +997,11 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .air .d-log li { animation: alert-in 160ms ease-out; }
 .air .d-log .d-all { margin-top: 4px; color: var(--ink); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .air, .air[data-leaving], .air .d-log li { animation: none; } .air .decay > span { transition: none; } }
+/* At its square's anchor (ILI-1304): a block in the anchor, not a panel of its own. */
+.square-card .air { border: none; border-bottom: 1px solid #e5484d; padding: 8px 10px; }
+.square-card .air h2 { margin: 0 0 4px; font-size: 11px; letter-spacing: 0.12em; }
+.square-card .air .d-model { height: 64px; }
+.square-card .air { grid-template-columns: 110px 1fr; }
 /* The exfil (ILI-1264): an air panel in orange, not a strike's red. */
 .air.exfil { border-color: #ff8a2a; }
 .air.exfil h2, .air.exfil .d-log { color: #ff8a2a; }
