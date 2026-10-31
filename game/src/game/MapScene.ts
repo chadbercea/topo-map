@@ -72,6 +72,8 @@ export class MapScene extends Phaser.Scene {
   private droneGfx!: Phaser.GameObjects.Graphics;
   private airLabels!: Record<'drone' | 'heli', Phaser.GameObjects.Text>;
   private exfilLabel!: Phaser.GameObjects.Text;
+  private hoverLabel!: Phaser.GameObjects.Text; // what a hovered ping is (ILI-1297)
+  private hovered: string | null = null;
   private intelGfx!: Phaser.GameObjects.Graphics; // what ORION-3 and ALPHA have seen
   private satGfx!: Phaser.GameObjects.Graphics; // ORION-3's reticle
   private modeLabels: Phaser.GameObjects.Text[] = [];
@@ -109,6 +111,11 @@ export class MapScene extends Phaser.Scene {
         .setVisible(false);
     this.airLabels = { drone: airLabel(), heli: airLabel() };
     this.exfilLabel = airLabel('#ff8a2a');
+    this.hoverLabel = this.add
+      .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color: '#e5484d', backgroundColor: '#0b0f0de6', padding: { x: 6 * DPR, y: 3 * DPR } })
+      .setOrigin(0, 1)
+      .setDepth(10)
+      .setVisible(false);
     this.teamGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
@@ -125,7 +132,7 @@ export class MapScene extends Phaser.Scene {
     // ORION-3's inset: a second camera on the square it's looking at. Taps go to the map.
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
-    this.inset.ignore([...this.labels, this.teamLabel, this.airLabels.drone, this.airLabels.heli, this.exfilLabel]); // the caption names the square
+    this.inset.ignore([...this.labels, this.teamLabel, this.airLabels.drone, this.airLabels.heli, this.exfilLabel, this.hoverLabel]); // the caption names the square; ORION-3's panel has its own hovers
     // ?debug: tests read the live camera to turn world points into screen taps.
     if (new URLSearchParams(location.search).has('debug'))
       Object.assign(window, {
@@ -154,6 +161,10 @@ export class MapScene extends Phaser.Scene {
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onMove, this);
     this.input.on(Phaser.Input.Events.POINTER_UP, this.onUp, this);
     this.input.on(Phaser.Input.Events.POINTER_UP_OUTSIDE, this.onUp, this);
+    this.input.on(Phaser.Input.Events.GAME_OUT, () => {
+      this.hovered = null; // off the map: no ping is hovered (ILI-1297)
+      this.input.manager.canvas.style.cursor = '';
+    });
     this.input.on(Phaser.Input.Events.POINTER_WHEEL, (p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => this.zoomAt(Math.exp(-dy * 0.0015), p.x, p.y));
     this.unsubscribe = game.subscribe(() => {
       this.drawSelection();
@@ -419,6 +430,19 @@ export class MapScene extends Phaser.Scene {
       g.fillStyle(0x0b0f0d, 0.9).fillCircle(x, y, r);
       g.lineStyle((2 * DPR) / this.zoom, color, 1).strokeCircle(x, y, r);
       g.fillStyle(color, e.id === openEvent ? 1 : 0.7).fillCircle(x, y, r * 0.45);
+    }
+    // Hovered (ILI-1297): a ring round the ping and a tag saying what it is.
+    const hover = events.find((e) => e.id === this.hovered && e.status !== 'resolved');
+    this.hoverLabel.setVisible(!!hover);
+    if (hover) {
+      const { x, y } = this.markerPos(hover.square);
+      const color = EVENT_COLOR[hover.kind];
+      g.lineStyle(1.5 * px, color, 0.9).strokeCircle(x, y, r * 1.7);
+      this.hoverLabel
+        .setText(`${hover.square} · ${hover.title}`)
+        .setColor(`#${color.toString(16).padStart(6, '0')}`)
+        .setScale(1 / this.zoom)
+        .setPosition(x + r * 1.6, y - r * 1.2);
     }
   }
 
@@ -846,6 +870,11 @@ export class MapScene extends Phaser.Scene {
 
   private onMove(p: Phaser.Input.Pointer) {
     this.track(p);
+    // A mouse over a ping names it (ILI-1297); touch gets the card on a tap instead.
+    if (!p.wasTouch && !p.isDown) {
+      this.hovered = this.eventAt(p.worldX, p.worldY)?.id ?? null;
+      this.input.manager.canvas.style.cursor = this.hovered ? 'pointer' : '';
+    }
     const [a, b] = this.fingers();
     if (this.pinch && a && b) {
       const d = Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y);
