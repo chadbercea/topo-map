@@ -46,3 +46,10 @@ export function answer(store: ReturnType<typeof createStore>, id: string, respon
   store.respond(id, responseId);
   store.tick(LINK_MS);
 }
+
+// ALPHA's one question since it decides for itself (ILI-1315): combat ineffective, it stops and
+// asks for a resupply bird. Two operators down, a moment later, the call is up.
+export function asking(s: GameState = walking()): GameState {
+  const ops = s.team.operators.map((o, i) => (i < 2 ? { ...o, health: 0 } : o));
+  return run({ ...s, team: { ...s.team, operators: ops } }, 200);
+}

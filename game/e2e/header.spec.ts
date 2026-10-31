@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, start } from './helpers';
+import { askResupply, fastForward, start } from './helpers';
 
 test('the mission panel: the deadline, the race, what to do, what needs HQ (ILI-1216, ILI-1245)', async ({ page, isMobile }) => {
   await page.goto('?debug');
@@ -13,7 +13,7 @@ test('the mission panel: the deadline, the race, what to do, what needs HQ (ILI-
   await expect(race.locator('li')).toHaveText(['A', 'B', 'C']);
   await expect(race).toHaveAttribute('data-behind', 'false');
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
-  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  await askResupply(page); // ALPHA's one question (ILI-1315)
   await expect(page.getByTestId('needs-hq')).toHaveText('ALPHA waiting on your decision'); // only the most pressing
   await fastForward(page, 15_000);
   await expect(page.getByTestId('clock')).toHaveText(/^9:4[0-5]$/);
@@ -30,7 +30,7 @@ test('the mission panel: the deadline, the race, what to do, what needs HQ (ILI-
 
 test("the need line goes where it points: ALPHA's call, or the square (ILI-1271)", async ({ page }) => {
   await start(page, '?debug');
-  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  await askResupply(page); // ALPHA's one question (ILI-1315)
   const need = page.getByTestId('needs-hq');
   await expect(need).toHaveText('ALPHA waiting on your decision');
   await need.click();

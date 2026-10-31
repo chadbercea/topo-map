@@ -5,15 +5,10 @@ test('walking blind into the hidden checkpoint is an ambush; the team panel goes
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
 
-  // HQ waves ALPHA through every unimaged square until it runs into something.
+  // HQ scans nothing: ALPHA walks on through unimaged ground (ILI-1315) until it runs into something.
   await page.evaluate(() => {
     const g = window.game;
-    for (let i = 0; i < 3000 && !g.get().team.fight; i++) {
-      g.tick(100);
-      const hold = g.get().team.holdFor;
-      const call = g.get().comms.messages.find((m) => m.id === hold && m.status === 'new');
-      if (call?.node === 'unimaged') g.respond(call.id, 'blind');
-    }
+    for (let i = 0; i < 3000 && !g.get().team.fight; i++) g.tick(100);
   });
   const panel = page.getByTestId('team-panel');
   await expect(panel).toContainText('Engaged in E3');

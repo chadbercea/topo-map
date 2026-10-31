@@ -6,7 +6,7 @@ const press = (el: Locator, isMobile: boolean) => (isMobile ? el.tap() : el.clic
 // ORION-3 into focus; picking it wipes into the login, the war room powers on, ORION-3 links
 // with ALPHA, and only then does the clock start, with ALPHA's first call. (Automation skips it
 // unless the URL asks: ?intro.)
-test('the title screen, then ORION-3; the clock starts with ALPHA’s first call', async ({ page, isMobile }) => {
+test('the title screen, then ORION-3; the clock starts and ALPHA sets off', async ({ page, isMobile }) => {
   await page.goto('?intro&debug');
   await page.waitForFunction(() => window.game);
   await expect(page.getByText('CASTLE HOUSE', { exact: true })).toBeVisible();
@@ -24,7 +24,7 @@ test('the title screen, then ORION-3; the clock starts with ALPHA’s first call
 
   await expect(page.getByTestId('intro')).toHaveCount(0, { timeout: 20_000 });
   await expect.poll(() => page.evaluate(() => window.game.get().phase)).toBe('running');
-  await expect.poll(() => page.evaluate(() => window.game.get().team.holdFor)).not.toBeNull();
+  await expect.poll(() => page.evaluate(() => window.game.get().elapsedMs)).toBeGreaterThan(0); // the clock runs; ALPHA sets off on its own (ILI-1315)
 });
 
 test('ABOUT and SETTINGS open over the title; Skip intro makes START go straight to the boot', async ({ page, isMobile }) => {

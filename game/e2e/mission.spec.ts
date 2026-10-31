@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { freeze, start, openAsk, linked } from './helpers';
+import { freeze, start } from './helpers';
 
 test('the objective leads ALPHA from the crash site to exfil, and the mission completes', async ({ page }) => {
   await start(page, '?debug');
@@ -68,22 +68,19 @@ test('running out of time fails the mission; the wrap-up offers a retry', async 
   await expect(wrap.getByRole('button', { name: 'Retry mission' })).toBeVisible();
 });
 
-test('a salvage convoy cuts the exfil; moving exfil sends ALPHA wide to A2', async ({ page }) => {
+test('a salvage convoy cuts the exfil; spent, ALPHA swings wide to A2 on its own and gets out (ILI-1192, ILI-1315)', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
-  // Clear ground: ALPHA walks in, recovers the black box, and the convoy pulls onto B1.
+  // Clear ground, and ALPHA down to 40% ammo: too spent to take the convoy that pulls onto B1.
   await page.evaluate(() => {
     const s = window.game.get();
-    window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route, 'B2', 'A2'] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, holdFor: null } });
-    for (let i = 0; i < 6000 && window.game.get().team.holdFor !== 'exfil-cut'; i++) window.game.tick(100);
+    const operators = s.team.operators.map((o) => ({ ...o, ammo: Math.round(o.ammo * 0.4) }));
+    window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route, 'B2', 'A2'] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, operators } });
+    for (let i = 0; i < 6000 && window.game.get().mission.c === 'B1'; i++) window.game.tick(100);
   });
-  const ask = page.getByTestId('comms');
-  await openAsk(page);
-  await expect(ask.getByTestId('comms-text')).toContainText('salvage convoy parked on our exfil at B1');
-  await expect(page.getByTestId('needs-hq')).toContainText('ALPHA waiting on your decision');
-  await ask.getByRole('button', { name: 'Move exfil' }).click();
-  await linked(page);
+  await expect(page.getByTestId('comms-feed')).toContainText('alternate exfil at A2');
+  await expect(page.getByTestId('comms')).toHaveCount(0); // it said so; it didn't ask
   await expect(page.getByTestId('objective')).toContainText('Exfil at A2');
   await page.evaluate(() => {
     for (let i = 0; i < 7000 && window.game.get().phase !== 'ended'; i++) window.game.tick(100);

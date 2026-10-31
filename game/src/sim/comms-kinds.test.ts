@@ -3,12 +3,12 @@ import { kindOf, liveAlerts, ALERT_MS } from './comms';
 import { initialState, MISSION_MS } from './state';
 import { createStore } from './store';
 import { step } from './systems';
-import { run } from './testkit';
+import { asking, run } from './testkit';
 
 describe('message kinds (ILI-1171)', () => {
   it('decision calls are calls; flagged news is an alert; everything else is log', () => {
-    const s = run(initialState(), 500);
-    const call = s.comms.messages.find((m) => m.node === 'unimaged')!;
+    const s = asking();
+    const call = s.comms.messages.find((m) => m.node === 'resupply')!;
     expect(kindOf(call)).toBe('call');
     const alerted = step({ ...initialState(), noise: 70 }, 100);
     expect(kindOf(alerted.comms.messages.find((m) => m.id === 'enemy-alerted')!)).toBe('alert');
@@ -31,7 +31,7 @@ describe('message kinds (ILI-1171)', () => {
       if (s.satellite.state === 'onStation') store.capture('photo');
       if (s.satellite.result) store.closeLook();
       const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.status === 'new');
-      if (call?.responses) store.respond(call.id, call.node === 'unimaged' ? 'send' : 'attack');
+      if (call?.responses) store.respond(call.id, call.responses[0].id);
     }
     const all = store.get().comms.messages;
     const cards = all.filter((m) => kindOf(m) === 'call');

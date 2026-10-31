@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHATTER_MS, currentCall, kindOf } from './comms';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { run, walking } from './testkit';
+import { asking, fed, run, walking } from './testkit';
 
 const ids = (s: GameState) => s.comms.messages.map((m) => m.id);
 
@@ -20,25 +20,25 @@ describe('comms', () => {
     expect(s.comms.messages.find((m) => m.id === 'insert')?.status).toBe('read');
   });
 
-  it('unimaged ground ahead makes the team hold short and radio until HQ answers', () => {
-    const s = run(initialState(), 500);
-    const call = currentCall(s.comms)!;
-    expect(call).toMatchObject({ node: 'unimaged', square: 'F4', holds: true });
-    expect(call.text).toMatch(/Holding short of F4\. No imagery/);
-    expect(s.team.holdFor).toBe(call.id);
-    expect(run(s, 5_000).team.position).toEqual(s.team.position);
+  it('ALPHA doesn\u2019t ask about unimaged ground: fed, it walks on into F4 (ILI-1315)', () => {
+    const s0 = fed(initialState());
+    const s = run(s0, 20_000);
+    expect(currentCall(s.comms)).toBeUndefined();
+    expect(s.team.holdFor).toBeNull();
+    expect(s.team.position).not.toEqual(s0.team.position);
   });
 
-  it('if HQ stays silent the team keeps holding: nothing is decided for HQ', () => {
-    const s = run(initialState(), 60_000);
-    expect(currentCall(s.comms)).toMatchObject({ node: 'unimaged', square: 'F4', status: 'new' });
-    expect(s.team.decisions.F4).toBeUndefined();
+  it('unfed, ALPHA holds without asking anything (ILI-1314, ILI-1315)', () => {
+    const s = run(initialState(), 20_000);
+    expect(currentCall(s.comms)).toBeUndefined();
+    expect(s.team.activity).toBe('Holding · needs intel');
     expect(s.team.position).toEqual(initialState().team.position);
   });
 
   it('dismissing a hold hides it but the team keeps waiting', () => {
-    const store = createStore(run(initialState(), 500));
+    const store = createStore(asking());
     const id = store.get().team.holdFor!;
+    expect(id).toBeTruthy();
     store.dismissCall(id);
     expect(store.get().comms.messages.find((m) => m.id === id)?.status).toBe('dismissed');
     expect(store.get().team.holdFor).toBe(id);
@@ -49,11 +49,9 @@ describe('comms', () => {
     store.setCommsMinimized(true);
     store.set(run(store.get(), 5_000)); // the insert line at 5 s is log only
     expect(store.get().comms.minimized).toBe(true);
-    const fresh = createStore(run(initialState(), 100)); // holding short of F4: a call
-    fresh.setCommsMinimized(true);
-    fresh.set({ ...fresh.get(), comms: { ...fresh.get().comms, messages: [] }, team: { ...fresh.get().team, holdFor: null } });
-    fresh.set(run(fresh.get(), 200));
-    expect(fresh.get().comms.minimized).toBe(false);
+    const s = store.get();
+    store.set(asking(s)); // combat ineffective: a call
+    expect(store.get().comms.minimized).toBe(false);
   });
 
   it('calls in when the team reaches the end of its route', () => {

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { freeze, start, worldToScreen } from './helpers';
+import { freeze, start, worldToScreen, running } from './helpers';
 
 // Floating panels keep clear of each other, ALPHA and the square being worked (ILI-1215).
 type Box = { x: number; y: number; width: number; height: number };
@@ -7,7 +7,7 @@ const hit = (a: Box, b: Box) => a.x < b.x + b.width - 1 && a.x + a.width - 1 > b
 
 async function workE3(page: Page) {
   await start(page, '?debug');
-  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  await running(page);
   await freeze(page);
   await page.evaluate(() => {
     const g = window.game;

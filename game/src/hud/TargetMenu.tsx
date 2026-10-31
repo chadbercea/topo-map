@@ -15,13 +15,12 @@ export function eyesLine(e: Eyes | null, now: number) {
 }
 
 // Contextual target menu (GDD): tap a found enemy's ping and get every ordnance option for
-// it, with uses and cooldowns, plus sending the team in. It leads with what HQ can see of
+// it, with uses and cooldowns. It leads with what HQ can see of
 // it, since that decides which weapons can aim (ILI-1168).
 export function TargetMenu({ contactId }: { contactId: string }) {
   const state = useGame((s) => s);
   const c = state.contacts.find((x) => x.id === contactId);
   if (!c) return null;
-  const ahead = state.team.route.slice(state.team.waypoint).includes(c.square);
   const status = (w: (typeof WEAPONS)[number]) => {
     const o = state.ordnance[w];
     return weaponBlocked(state, w, c) ?? (o.uses === null ? 'Ready' : `${o.uses} use${o.uses === 1 ? '' : 's'}`);
@@ -46,12 +45,7 @@ export function TargetMenu({ contactId }: { contactId: string }) {
               <small>{status(w)}</small>
             </button>
           ))}
-          {ahead && (
-            <button onClick={() => game.sendTeam(c.id)} data-testid="send-team">
-              <span>{state.team.callsign} attacks</span>
-              <small>{state.team.decisions[c.square] === 'attack' ? 'ordered' : 'surprise attack'}</small>
-            </button>
-          )}
+          {/* No "ALPHA attacks": HQ doesn't order the team, it changes the odds (ILI-1315). */}
         </div>
       )}
     </div>

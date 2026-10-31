@@ -80,6 +80,16 @@ describe('the intel gauge', () => {
     expect(s.intel.feeds.some((f) => f.amount === 50)).toBe(true); // E3's high grade, paid out
   });
 
+  it('banked intel for a square ALPHA no longer goes to (it went around it) pays out at once (ILI-1315)', () => {
+    const s0 = blindAhead();
+    const later = s0.team.route[s0.team.waypoint + 1];
+    const far = pushPhoto(s0, later, 3).next;
+    const rerouted = { ...far, team: { ...far.team, route: far.team.route.map((sq) => (sq === later ? 'E4' : sq)) } };
+    const s = run(rerouted, 100);
+    expect(s.intel.banked).toHaveLength(0);
+    expect(gauge(s)).toBeGreaterThan(0);
+  });
+
   it('a photo through the store feeds ALPHA, and ORION-3 says what the analysts pushed', () => {
     const store = createStore(initialState());
     store.lookAt('G5');

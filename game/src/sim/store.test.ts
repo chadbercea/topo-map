@@ -137,7 +137,7 @@ describe('map selection', () => {
 });
 
 describe('standby (ILI-1282)', () => {
-  it('holds the clock until go, and ALPHA’s first call only comes with the clock', () => {
+  it('holds the clock until go, and ALPHA only starts to want intel with the clock', () => {
     const store = createStore();
     store.standby();
     expect(store.get().phase).toBe('standby');
@@ -147,7 +147,7 @@ describe('standby (ILI-1282)', () => {
     store.go();
     store.tick(100);
     expect(store.get().phase).toBe('running');
-    expect(store.get().team.holdFor).not.toBeNull();
+    expect(store.get().team.activity).toBe('Holding · needs intel');
   });
 
   it('only from a fresh mission', () => {

@@ -1,27 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { makeContact, OBSERVE_MS } from './contacts';
+import { makeContact } from './contacts';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { answer, run, walking, untilHold } from './testkit';
+import { walking } from './testkit';
 
-// ALPHA holding short of a found checkpoint in E3.
+// A found checkpoint in E3. (HQ paints nothing itself: ALPHA's laser does. ILI-1315 took out
+// the Hold-and-watch that set it, so painting is set directly here.)
 const facing = (): GameState => {
   const s = walking();
   return { ...s, contacts: [{ ...makeContact('cp', 'E3', 'a checkpoint', 1.6, [1, 5, 6, 9, 10]), status: 'revealed' }] };
 };
 
 describe('target painting', () => {
-  it('observing paints the target, and ALPHA says so', () => {
-    const store = createStore(untilHold(facing()));
-    answer(store, 'contact-call-cp', 'observe');
-    expect(store.get().contacts[0].painted).toBe(true);
-    store.set(run(store.get(), OBSERVE_MS + 1_000));
-    expect(store.get().comms.messages.find((m) => m.id === 'contact-call-cp-contact-observed')?.text).toMatch(/Target's painted for you/);
-  });
-
-  it('the war room strike on a painted target sees every fighter', () => {
-    const store = createStore(untilHold(facing()));
-    answer(store, 'contact-call-cp', 'observe');
+  it('painted, the war room strike sees every fighter', () => {
+    const s = facing();
+    const store = createStore({ ...s, contacts: s.contacts.map((c) => ({ ...c, painted: true })) });
     const units = store.get().contacts[0].units;
     store.fire('cp', 'sniper');
     expect(store.get().sniper!.shots.map((x) => x.unit).sort()).toEqual([...units].sort().slice(0, store.get().sniper!.shots.length)); // OVERWATCH aims at all of them

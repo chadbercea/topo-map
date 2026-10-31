@@ -3,8 +3,7 @@ import { eyesOn } from './imagery';
 import { WEAPON, weaponBlocked } from './ordnance';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { run, walking, untilHold } from './testkit';
-import { LINK_MS } from './comms';
+import { run, walking } from './testkit';
 import { DRIFT_MS } from './contacts';
 
 // The technicals in E3, found: four fighters in cells 5, 6, 9 and 10 of the 4x4 over the
@@ -73,15 +72,5 @@ describe('targets', () => {
     const units = s.contacts[0].units;
     expect(units).toHaveLength(4);
     expect(units.filter((u) => [5, 6, 9, 10].includes(u))).toHaveLength(3);
-  });
-
-  it('send ALPHA in answers the contact call with an attack', () => {
-    const store = createStore({ ...found(), elapsedMs: 0 });
-    store.set(untilHold(store.get())); // ALPHA reaches F4 and holds short of E3
-    expect(store.get().team.holdFor).toBe('contact-call-t');
-    store.sendTeam('t');
-    store.tick(LINK_MS);
-    expect(store.get().team.holdFor).toBeNull();
-    expect(store.get().team.decisions.E3).toBe('attack');
   });
 });

@@ -3,6 +3,7 @@ import type { Message } from './comms';
 import type { Contact } from './contacts';
 import type { GameState } from './state';
 import type { System } from './systems';
+import { feed } from './intel';
 
 // Confirmed kills earn cash (GDD), and a destroyed contact leaves a kill site. ALPHA sweeps
 // it for documents worth cash as it passes through.
@@ -10,6 +11,7 @@ import type { System } from './systems';
 export const CASH_PER_STRIKE_KILL = 1_500;
 export const CASH_PER_TEAM_KILL = 1_000;
 export const SEARCH_CASH = 1_000;
+export const SITE_INTEL = 25; // intel a swept site feeds ALPHA's gauge (ILI-1315)
 
 export const earn = (s: GameState, amount: number): GameState => ({ ...s, resources: { ...s.resources, budget: s.resources.budget + amount } });
 
@@ -27,11 +29,11 @@ export const siteSystem: System = (s) => {
   const here = squareAt(team.position.x, team.position.y);
   const site = s.events.find((e) => e.kind === 'site' && e.square === here && e.status !== 'resolved');
   if (!site) return s;
-  const next = earn(s, SEARCH_CASH);
+  const next = feed(earn(s, SEARCH_CASH), SITE_INTEL); // what it found feeds its own gauge (ILI-1315)
   const found: Message = {
     id: `search-${site.id}`,
     from: team.callsign,
-    text: `Swept the kill site in ${site.square} on the way through: documents, maps, a phone. +$${SEARCH_CASH.toLocaleString('en-US')}.`,
+    text: `Swept the kill site in ${site.square} on the way through: documents, maps, a phone. +$${SEARCH_CASH.toLocaleString('en-US')}, and intel to keep us moving.`,
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,
