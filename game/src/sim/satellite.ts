@@ -1,4 +1,5 @@
 import { GRADE_LABEL, pushPhoto, pushVideo } from './intel';
+import { maybeBuilding } from './buildings';
 import { parseSquare, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import { reveal } from './contacts';
@@ -174,6 +175,7 @@ function finishLook(s: GameState): GameState {
     next = pushVideo(next);
     pushed = `Analysts: live feed to ${s.team.callsign} for the rest of the op`;
   } else {
+    if (!fighters) next = maybeBuilding(next, square); // the hunt: empty ground can turn up a building (ILI-1316)
     const p = pushPhoto(next, square, fighters);
     next = p.next;
     pushed = p.banked ? `Analysts: ${GRADE_LABEL[p.grade]} for ${s.team.callsign}, when it heads into ${square}` : `Analysts: ${GRADE_LABEL[p.grade]} pushed to ${s.team.callsign}`;

@@ -75,6 +75,7 @@ export type GameState = {
   exfil: ExfilRun | null; // RAVEN-6 coming for ALPHA, from the pilot's call on (ILI-1264)
   resources: { budget: number; ledger: Ledger }; // the balance now, and where the mission's money went (ILI-1316)
   bankrupt: boolean; // the PMC's credit ran out (ILI-1316)
+  searching: string[]; // buildings HQ sent ALPHA to search (ILI-1316)
   satellite: Satellite; // ORION-3: where it's looking and what it's doing
   imagery: Record<string, Snapshot>; // the newest look at each square
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
@@ -139,6 +140,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     exfil: null,
     resources: { budget: opening - DEPLOY, ledger: openLedger(opening) },
     bankrupt: false,
+    searching: [],
     satellite: initialSatellite(ROUTE[0]),
     imagery: {},
     capabilities: ['imagery'],

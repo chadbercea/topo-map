@@ -365,7 +365,18 @@ export function Actions({ s, square }: { s: GameState; square: string }) {
             {EVENT_LABEL[e.kind]} · {e.square}
           </h3>
           <p className="title">{e.title}</p>
-          {e.kind === 'signal' ? (
+          {e.kind === 'building' ? (
+            // The hunt (ILI-1316): worth mission time? ALPHA detours through it and searches it.
+            <div className="signal-options">
+              {s.searching.includes(e.square) ? (
+                <p className="note">{s.team.callsign} is on its way to search it.</p>
+              ) : (
+                <button onClick={() => game.search(e.square)} data-testid="send-search">
+                  Send {s.team.callsign} to search it
+                </button>
+              )}
+            </div>
+          ) : e.kind === 'signal' ? (
             <div className="signal-options">
               <button className="intercept" onClick={() => game.intercept(e.id)}>
                 Listen

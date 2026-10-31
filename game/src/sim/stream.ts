@@ -35,7 +35,7 @@ export const initialStream = (): Stream => ({
 });
 
 const STRIKES = new Set(['REAPER-1', 'OVERWATCH', 'HAMMER-2']);
-export const EVENT_LABEL: Record<EventKind, string> = { contact: 'CONTACT', signal: 'SIGNAL', site: 'KILL SITE', request: 'REQUEST' };
+export const EVENT_LABEL: Record<EventKind, string> = { contact: 'CONTACT', signal: 'SIGNAL', site: 'KILL SITE', request: 'REQUEST', building: 'BUILDING' };
 
 // What kind of intel a message is, and whether it's routine. ORION-3 moving is routine; on
 // station and what it saw aren't.
