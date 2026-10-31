@@ -7,6 +7,8 @@ import { squareAt } from '../map/grid';
 import { TargetMenu } from './TargetMenu';
 import { SniperPanel } from './SniperPanel';
 import { AirPanel } from './AirPanel';
+import { AIR, airGone, arrived } from '../sim/air';
+import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { ground, weather } from '../sim/conditions';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { EVENT_LABEL } from '../sim/stream';
@@ -56,10 +58,12 @@ export function SquareCard() {
   useEffect(() => () => void bus.emit(EV.overlays), []);
 
   const area = getMapRect();
-  if (!square || !area) return null;
+  if (!area) return null;
+  if (!square) return <Busy s={s} area={area} picked={null} />;
   const at: Placed = tier === 'compact' ? strip(area, actHeight) : beside(square, area, actHeight, s.team.position, ANCHOR_W);
   return (
     <>
+      <Busy s={s} area={area} picked={square} />
       <Leader square={square} area={area} anchor={{ x: at.left, y: at.top, w: at.width, h: Math.min(actHeight || 200, at.maxHeight) }} />
       <section
         ref={actRef}
@@ -74,6 +78,40 @@ export function SquareCard() {
       >
         <Card s={s} square={square} />
       </section>
+    </>
+  );
+}
+
+// Many at once (ILI-1306): a strike running on a square that isn't the picked one keeps a
+// small grey chip at that square, saying who's at work there and how it's going; a tap opens
+// the square's anchor. (ALPHA waiting on HQ has its own orange flag, and a new find its red
+// ping: those already pull the eye.)
+function Busy({ s, area, picked }: { s: GameState; area: Area; picked: string | null }) {
+  const now = s.elapsedMs;
+  const work: { square: string; text: string }[] = [];
+  if (s.sniper && !sniperGone(s.sniper, now)) work.push({ square: s.sniper.square, text: `${SNIPER_CALLSIGN} · ${s.sniper.done ? 'done' : 'firing'}` });
+  for (const w of ['drone', 'heli'] as const) {
+    const r = w === 'drone' ? s.drone : s.heli;
+    if (!r || airGone(r, now)) continue;
+    const text = r.doneMs !== null ? 'done' : arrived(r, now) ? 'over target' : countdown(r.arriveMs - now);
+    work.push({ square: r.square, text: `${AIR[w].callsign} · ${text}` });
+  }
+  const bySquare = new Map<string, string[]>();
+  for (const w of work) if (w.square !== picked) bySquare.set(w.square, [...(bySquare.get(w.square) ?? []), w.text]);
+  return (
+    <>
+      {[...bySquare].map(([square, lines]) => {
+        const sq = squareBox(square);
+        if (!sq || sq.x + sq.w < area.x || sq.x > area.x + area.width || sq.y + sq.h < area.y || sq.y > area.y + area.height) return null;
+        return (
+          <button key={square} className="busy-chip" style={{ left: Math.max(area.x + 4, sq.x + 4), top: Math.max(area.y + 4, sq.y + 4) }} onClick={() => game.selectSquare(square)} data-testid="busy-chip" data-square={square}>
+            <b>{square}</b>
+            {lines.map((l) => (
+              <span key={l}>{l}</span>
+            ))}
+          </button>
+        );
+      })}
     </>
   );
 }
