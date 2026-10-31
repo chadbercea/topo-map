@@ -16,7 +16,6 @@ import { orionSquare, satellitePoint } from '../sim/satellite';
 import { freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
-import { nextBlind } from '../sim/progress';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the team stands out from the map in amber
@@ -358,15 +357,8 @@ export class MapScene extends Phaser.Scene {
       g.lineStyle(2 * px, TEAL, 0.7).strokeRect(to.col * CELL, to.row * CELL, CELL, CELL);
     }
     if (sat.state === 'capturing') g.fillStyle(TEAL, 0.06 + 0.06 * Math.abs(Math.sin(time / 250))).fillRect(x, y, CELL, CELL);
-    // Standing by (ILI-1272): the next square on ALPHA's way with no imagery breathes, slowly,
-    // as a hint that it's worth a look before ALPHA walks into it.
-    const blind = sat.state === 'idle' && nextBlind(game.get());
-    if (blind) {
-      const b = parseSquare(blind)!;
-      const a = reducedMotion() ? 0.5 : 0.25 + 0.5 * Math.abs(Math.sin(time / 900));
-      g.fillStyle(TEAL, 0.1 * a).fillRect(b.col * CELL, b.row * CELL, CELL, CELL);
-      g.lineStyle(1.5 * px, TEAL, a).strokeRect(b.col * CELL, b.row * CELL, CELL, CELL);
-    }
+    // No glow on the next blind square (ILI-1296): out of nowhere, it read as a glitch. The
+    // mission line and ORION-3's standby line name it instead (ILI-1272).
     const k = CELL * 0.18;
     g.lineStyle((working ? 2 : 1.2) * px, TEAL, working ? 0.95 : 0.4);
     for (const [cx, cy, dx, dy] of [[x, y, 1, 1], [x + CELL, y, -1, 1], [x + CELL, y + CELL, -1, -1], [x, y + CELL, 1, -1]]) {
