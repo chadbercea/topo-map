@@ -908,6 +908,11 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .dock-tabs { gap: 4px; pointer-events: auto; }
 .dock-tabs button { flex: 1; font: inherit; font-size: 10px; letter-spacing: 0.12em; color: var(--dim); background: var(--panel); border: 1px solid var(--line); min-height: 40px; cursor: pointer; }
 .dock-tabs button[aria-pressed='true'] { color: var(--accent); border-color: var(--accent); }
+.dock-tabs button[data-alert='true'] { animation: tab-alert 1.4s ease-in-out infinite; }
+@keyframes tab-alert { 50% { box-shadow: 0 0 0 2px rgba(255, 138, 42, 0.35), 0 0 14px rgba(255, 138, 42, 0.45); } }
+.dock-tabs button[data-update] { color: var(--ink); border-color: rgba(255, 138, 42, 0.7); }
+.dock-tabs .tab-dot { display: inline-block; width: 7px; height: 7px; margin-left: 7px; vertical-align: 1px; border-radius: 50%; background: #ff8a2a; box-shadow: 0 0 6px rgba(255, 138, 42, 0.8); }
+@media (prefers-reduced-motion: reduce) { .dock-tabs button[data-alert='true'] { animation: none; } }
 .dock-tabs .badge { margin-left: 6px; color: #0b0f0d; background: #f2c14e; padding: 0 5px; }
 
 /* Medium (ILI-1213: 700–1199 px wide; a fold open either way, tablets, phones sideways): the
