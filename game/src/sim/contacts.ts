@@ -133,6 +133,19 @@ export const approachSystem: System = (s) => {
   return s;
 };
 
+// Moving in blind pays out where the player can see it (ILI-1309): the moment ALPHA reaches a
+// square HQ sent it into blind, the square is known ground, and the map stamps what it found
+// there, clear or contact (MapScene). On the instruments, not over the radio.
+export const blindSystem: System = (s) => {
+  const here = squareAt(s.team.position.x, s.team.position.y);
+  if (!here || s.team.decisions[here] !== 'blind' || s.map.blind.some((b) => b.square === here)) return s;
+  const found = !!contactIn(s, here);
+  return {
+    ...s,
+    map: { ...s.map, scanned: [...new Set([...s.map.scanned, here])], blind: [...s.map.blind, { square: here, atMs: s.elapsedMs, found }] },
+  };
+};
+
 // ALPHA's hold about a contact that support has since wiped out turns into an all clear
 // (ILI-1277): the same call, so it stays the one ALPHA waits on.
 function clearedHold(s: GameState): GameState {
