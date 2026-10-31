@@ -1,5 +1,5 @@
 import { game, useGame } from '../sim/store';
-import { intro } from './intro';
+import { intro, introOn } from './intro';
 import { wrapUp } from '../sim/wrapup';
 import { gameClock } from '../sim/gameTime';
 
@@ -62,7 +62,7 @@ export function WrapUp() {
           </div>
         </dl>
         <button onClick={intro.reboot}>{w.outcome === 'failed' ? 'Retry mission' : 'Play again'}</button>
-        <button onClick={game.exit}>Exit</button>
+        <button onClick={introOn ? intro.home : game.exit}>Exit</button>
       </section>
     </div>
   );
