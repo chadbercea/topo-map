@@ -56,3 +56,15 @@ test('Exit from the pause menu goes back to the title screen', async ({ page, is
   await expect(page.getByTestId('title-start')).toBeVisible();
   expect(await page.evaluate(() => window.game.get().phase)).toBe('standby');
 });
+
+test('Exit from the After Action Report goes back to the title screen too', async ({ page, isMobile }) => {
+  await page.goto('?intro&debug');
+  await page.waitForFunction(() => window.game);
+  await page.evaluate(() => window.game.setSettings({ skipIntro: true }));
+  await press(page.getByTestId('title-start'), isMobile);
+  await expect.poll(() => page.evaluate(() => window.game.get().phase), { timeout: 10_000 }).toBe('running');
+  await page.evaluate(() => window.game.set({ ...window.game.get(), phase: 'ended' }));
+  await press(page.getByRole('button', { name: 'Exit' }), isMobile);
+  await expect(page.getByTestId('title-start')).toBeVisible();
+  expect(await page.evaluate(() => window.game.get().phase)).toBe('standby');
+});
