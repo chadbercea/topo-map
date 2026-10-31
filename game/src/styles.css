@@ -1137,15 +1137,15 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .intro[data-stage='idle'], .intro[data-stage='wipe'], .intro[data-stage='login'] { pointer-events: auto; }
 
 /* Castle House at rest (ILI-1283). */
-.castle { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 67%, rgba(53, 208, 165, 0.07), transparent 60%), var(--bg); overflow: hidden; }
+.castle { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 70%, rgba(53, 208, 165, 0.07), transparent 60%), var(--bg); overflow: hidden; }
 .castle-scene { position: absolute; inset: 0; }
 .castle-scene canvas { width: 100%; height: 100%; display: block; }
-.castle-mark { position: absolute; left: 0; right: 0; top: 36.5%; display: grid; justify-items: center; gap: 6px; text-align: center; padding: 0 var(--gutter); text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg); }
-.castle-mark h1 { margin: 0; font-size: clamp(16px, 2.6vw, 26px); font-weight: 600; letter-spacing: 0.42em; margin-right: -0.42em; color: var(--ink); }
+.castle-mark { position: absolute; left: 0; right: 0; bottom: max(9vh, 56px); display: grid; justify-items: center; gap: 6px; text-align: center; padding: 0 var(--gutter); text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg); }
+.castle-mark h1 { margin: 0; font-size: clamp(22px, 4.2vw, 40px); font-weight: 600; letter-spacing: 0.42em; margin-right: -0.42em; color: var(--ink); }
 .castle-mark p { margin: 0; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); }
 .castle-mark .castle-status { color: var(--accent); letter-spacing: 0.16em; }
 .castle-mark .caret { animation: blink 1s steps(2) infinite; }
-.castle .rook-mark { position: absolute; left: 50%; top: 28%; height: 12%; width: auto; transform: translate(-50%, -50%); color: var(--accent); }
+.castle .rook-mark { position: absolute; left: 50%; top: 34%; width: 96px; transform: translate(-50%, -50%); color: var(--accent); }
 .castle-orion { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; background: none; border: none; cursor: pointer; font: inherit; }
 .castle-orion[hidden] { display: none; }
 .castle-ping { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
@@ -1188,3 +1188,30 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .login li, .login li .k, .login li .dots, .login li b { animation-duration: 1ms; }
 }
 .castle-orion[data-side='left'] .castle-label { left: auto; right: 34px; }
+.castle-orion[data-side='below'] .castle-label { left: 50%; top: 40px; transform: translateX(-50%); }
+
+/* The title screen (ILI-1290): START, ABOUT, SETTINGS. The globe and satellites wait behind,
+   blurred and dimmed, ORION-3's orange glinting through; START brings them into focus. */
+.intro[data-stage='title'] { pointer-events: auto; }
+.castle-front { pointer-events: none; }
+.castle-back { transition: filter 900ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 900ms ease-out; }
+.castle[data-stage='title'] .castle-back { filter: blur(7px); opacity: 0.45; }
+.title-menu { display: flex; gap: 10px; margin: 14px 0 4px; }
+.title-menu[hidden] { visibility: hidden; display: flex; }
+.title-menu button { font: inherit; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink); background: rgba(11, 15, 13, 0.7); border: 1px solid var(--line); min-width: 104px; min-height: 40px; padding: 0 14px; cursor: pointer; }
+.title-menu button:first-child { color: var(--accent); border-color: var(--accent); }
+.title-menu button:hover, .title-menu button:focus-visible { color: var(--bg); background: var(--accent); border-color: var(--accent); outline: none; }
+.castle-mark[data-leaving] { animation: power-off 360ms cubic-bezier(0.6, 0, 0.8, 0.4) forwards; }
+@keyframes power-off {
+  0% { clip-path: inset(0 0 0 0); opacity: 1; }
+  45% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); opacity: 1; }
+  100% { clip-path: inset(calc(50% - 1px) 50% calc(50% - 1px) 50%); opacity: 0; }
+}
+.castle-mark[hidden] { display: none; }
+.title-sheet { position: absolute; z-index: 2; background: rgba(11, 15, 13, 0.45); }
+.title-sheet .menu { background: var(--bg); width: min(380px, 100%); }
+.title-sheet h2 { margin: 0 0 4px; letter-spacing: 0.24em; }
+.title-sheet p { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
+.title-sheet a { color: var(--accent); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+@media (max-width: 420px) { .title-menu button { min-width: 0; flex: 1; padding: 0 8px; letter-spacing: 0.14em; } .title-menu { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .castle-back { transition: none; } .castle-mark[data-leaving] { animation: none; opacity: 0; } }

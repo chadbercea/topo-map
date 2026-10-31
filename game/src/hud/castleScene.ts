@@ -4,32 +4,38 @@ import * as THREE from 'three';
 // centre, turning slowly; most of the globe behind it in a faint graticule; two satellites on
 // their orbits, ORION-3 in orange. Each frame it reports where ORION-3 is on screen, so its ping
 // (Intro.tsx) can sit on it. Loaded lazily, like the other wireframes.
+//
+// Two canvases (ILI-1290): the globe and satellites at the back, which the title screen blurs,
+// and the rook in front, sharp. START (focus) folds the rook away and flies the camera in on
+// ORION-3.
 
 const FPS = 30;
 const GLOBE_R = 3.4;
-const BACK = 12; // the camera, looking straight down -z
-// The layout, in screen thirds: the rook sits on the upper third line, the word mark under it
-// (styles.css, .castle-mark); the globe and its satellites centre on the lower third line.
-const ROOK_Z = 1.2;
-const ROOK_H = 2.08; // the lathe and its merlons, top to toe
-const ROOK_AT = 0.28; // its centre, down the screen, so rook and name together sit on the third
-const ROOK_SIZE = 0.12; // of the screen's height
-const WORLD_Z = -2.5;
-const WORLD_AT = 2 / 3;
-const GLOBE_SIZE = 0.17; // the globe's radius, of the screen's height
+const GLOBE_AT = new THREE.Vector3(0, -2.2, -2.5);
 
 export type OrionSpot = { x: number; y: number; visible: boolean };
 
-export function mountCastle(host: HTMLElement, onOrion: (p: OrionSpot) => void, still: boolean) {
-  let renderer: THREE.WebGLRenderer;
+const FOCUS_MS = 900;
+const ROOK_OUT_MS = 320;
+const ease = (k: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
+
+export type Castle = { stop(): void; focus(): void };
+
+export function mountCastle(back: HTMLElement, front: HTMLElement, onOrion: (p: OrionSpot) => void, still: boolean): Castle | null {
+  const renderers: THREE.WebGLRenderer[] = [];
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    for (const host of [back, front]) {
+      const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      r.setClearColor(0x000000, 0);
+      r.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+      host.appendChild(r.domElement);
+      renderers.push(r);
+    }
   } catch {
+    renderers.forEach((r) => (r.dispose(), r.domElement.remove()));
     return null;
   }
-  renderer.setClearColor(0x000000, 0);
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  host.appendChild(renderer.domElement);
+  const host = back;
 
   const css = getComputedStyle(document.documentElement);
   const accent = new THREE.Color(css.getPropertyValue('--accent').trim() || '#35d0a5');
@@ -41,7 +47,8 @@ export function mountCastle(host: HTMLElement, onOrion: (p: OrionSpot) => void, 
   const dim = line(accent, 0.55);
   const disposables: { dispose(): void }[] = [bright, faint, orbitLine, orange, dim];
 
-  const scene = new THREE.Scene();
+  const scene = new THREE.Scene(); // the globe and satellites
+  const fore = new THREE.Scene(); // the rook
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
 
   const edges = (g: THREE.BufferGeometry, m: THREE.Material, threshold = 1) => {
@@ -58,10 +65,8 @@ export function mountCastle(host: HTMLElement, onOrion: (p: OrionSpot) => void, 
   const circle = (r: number, n = 96) => Array.from({ length: n }, (_, i) => new THREE.Vector3(Math.cos((i / n) * Math.PI * 2) * r, 0, Math.sin((i / n) * Math.PI * 2) * r));
 
   // The globe: parallels and meridians every 15°, and a ring on the theater.
-  const world = new THREE.Group(); // the globe and both orbits, placed and scaled on resize
-  world.position.z = WORLD_Z;
-  scene.add(world);
   const globe = new THREE.Group();
+  globe.position.copy(GLOBE_AT);
   globe.rotation.z = 0.32;
   for (let lat = -75; lat <= 75; lat += 15) {
     const a = (lat * Math.PI) / 180;
@@ -81,14 +86,15 @@ export function mountCastle(host: HTMLElement, onOrion: (p: OrionSpot) => void, 
   theater.position.copy(n.clone().multiplyScalar(GLOBE_R * 1.002));
   theater.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
   globe.add(theater);
-  world.add(globe);
+  scene.add(globe);
 
   // Two orbits, tilted, around the globe.
   const orbit = (r: number, tiltX: number, tiltZ: number) => {
     const o = new THREE.Group();
+    o.position.copy(GLOBE_AT);
     o.rotation.set(tiltX, 0, tiltZ);
     o.add(loop(circle(r, 160), orbitLine));
-    world.add(o);
+    scene.add(o);
     return o;
   };
   const satellite = (m: THREE.Material, s: number) => {
@@ -122,47 +128,43 @@ export function mountCastle(host: HTMLElement, onOrion: (p: OrionSpot) => void, 
     merlon.rotation.y = a;
     rook.add(merlon);
   }
+  rook.position.set(0, -0.55, 1.2);
   rook.rotation.x = 0.12;
-  scene.add(rook);
+  fore.add(rook);
 
-  camera.position.set(0, 0, BACK);
-  camera.lookAt(0, 0, 0);
-  const tan = Math.tan(((camera.fov / 2) * Math.PI) / 180);
-  // Half the screen's height, in world units, at depth z.
-  const half = (z: number) => (BACK - z) * tan;
-  // A point a fraction of the way down the screen, at depth z.
-  const down = (f: number, z: number) => (1 - 2 * f) * half(z);
-
+  const home = new THREE.Vector3();
+  const homeLook = new THREE.Vector3(0, -0.1, 0);
   const resize = () => {
     const w = host.clientWidth || innerWidth;
     const h = host.clientHeight || innerHeight;
-    renderer.setSize(w, h, false);
+    renderers.forEach((r) => r.setSize(w, h, false));
     camera.aspect = w / h;
+    // A narrow screen steps back, so the rook and the globe still fit across it.
+    const dist = camera.aspect < 1 ? 11 / Math.max(0.45, camera.aspect) : 9.5;
+    home.set(0, 1.1, dist);
     camera.updateProjectionMatrix();
-    const rs = (ROOK_SIZE * 2 * half(ROOK_Z)) / ROOK_H;
-    rook.scale.setScalar(rs);
-    rook.position.set(0, down(ROOK_AT, ROOK_Z) - (rs * ROOK_H) / 2, ROOK_Z);
-    // The outer orbit has to fit across a narrow screen too.
-    const hw = half(WORLD_Z);
-    const ws = Math.min((GLOBE_SIZE * 2 * hw) / GLOBE_R, (0.92 * hw * camera.aspect) / 4.9);
-    world.scale.setScalar(ws);
-    world.position.y = down(WORLD_AT, WORLD_Z);
   };
   resize();
   addEventListener('resize', resize);
 
   // Is ORION-3 hidden behind the globe? The line from the eye to it passes through the sphere.
   const occluded = (p: THREE.Vector3) => {
-    const eye = camera.position;
-    const d = p.clone().sub(eye);
+    const from = camera.position;
+    const d = p.clone().sub(from);
     const len = d.length();
     d.normalize();
-    const t = world.position.clone().sub(eye).dot(d);
+    const t = GLOBE_AT.clone().sub(from).dot(d);
     if (t <= 0 || t >= len) return false;
-    return eye.clone().add(d.multiplyScalar(t)).distanceTo(world.position) < GLOBE_R * world.scale.x;
+    return from.clone().add(d.multiplyScalar(t)).distanceTo(GLOBE_AT) < GLOBE_R;
   };
 
-  const at = new THREE.Vector3();
+  const world = new THREE.Vector3();
+  const eye = new THREE.Vector3();
+  const look = new THREE.Vector3();
+  const near = new THREE.Vector3();
+  const aim = new THREE.Vector3();
+  let focusAt: number | null = null; // when START was pressed
+  const jump = still || matchMedia('(prefers-reduced-motion: reduce)').matches; // no flight: straight there
   let raf = 0;
   let last = 0;
   const frame = (now: number) => {
@@ -180,19 +182,34 @@ export function mountCastle(host: HTMLElement, onOrion: (p: OrionSpot) => void, 
     const ob = 4 + t * 0.16;
     other.position.set(Math.cos(ob) * 4.9, 0, Math.sin(ob) * 4.9);
     other.rotation.y = -ob;
-    renderer.render(scene, camera);
-    orion.getWorldPosition(at);
-    const hidden = occluded(at);
-    const p = at.clone().project(camera);
+    // The camera: at home over the rook, or flying in to sit off ORION-3's shoulder, the
+    // globe's limb curving away under it.
+    orion.getWorldPosition(world);
+    const k = focusAt === null ? 0 : jump ? 1 : ease((now - focusAt) / FOCUS_MS);
+    const out = camera.aspect < 1 ? 6.2 : 4.6;
+    near.set(world.x * 0.4, world.y + 0.7, world.z + out);
+    eye.lerpVectors(home, near, k);
+    look.lerpVectors(homeLook, aim.copy(world).setY(world.y - 1.1), k); // ORION-3 high, the limb under it
+    camera.position.copy(eye);
+    camera.lookAt(look);
+    const r = focusAt === null ? 1 : jump ? 0 : 1 - ease((now - focusAt) / ROOK_OUT_MS);
+    rook.visible = r > 0.01;
+    rook.scale.setScalar(Math.max(0.01, r));
+    renderers[0].render(scene, camera);
+    renderers[1].render(fore, camera);
+    const hidden = occluded(world);
+    const p = world.clone().project(camera);
     onOrion({ x: ((p.x + 1) / 2) * host.clientWidth, y: ((1 - p.y) / 2) * host.clientHeight, visible: !hidden && p.z < 1 });
   };
   raf = requestAnimationFrame(frame);
 
-  return () => {
-    cancelAnimationFrame(raf);
-    removeEventListener('resize', resize);
-    disposables.forEach((d) => d.dispose());
-    renderer.dispose();
-    renderer.domElement.remove();
+  return {
+    focus: () => void (focusAt ??= performance.now()),
+    stop() {
+      cancelAnimationFrame(raf);
+      removeEventListener('resize', resize);
+      disposables.forEach((d) => d.dispose());
+      renderers.forEach((r) => (r.dispose(), r.domElement.remove()));
+    },
   };
 }

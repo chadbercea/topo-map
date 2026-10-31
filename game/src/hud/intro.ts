@@ -1,13 +1,14 @@
 import { useSyncExternalStore } from 'react';
 import { game } from '../sim/store';
 
-// The way into the war room (ILI-1280). Castle House's terminal idles until HQ picks ORION-3
-// (ILI-1283); a wipe (ILI-1284) opens on the login, the panels power on, ORION-3 links with
+// The way into the war room (ILI-1280). Castle House's title screen comes first (ILI-1290):
+// START, ABOUT, SETTINGS over the blurred globe. START brings ORION-3 into focus, and the
+// terminal idles until HQ picks it (ILI-1283); a wipe (ILI-1284) opens on the login, the panels power on, ORION-3 links with
 // ALPHA, and only then does the clock start, with ALPHA's first call (ILI-1282). A restart
 // replays the short half: panels, link, go (ILI-1285). No briefing: nothing on the way in says
 // what the mission is.
 
-export type Stage = 'idle' | 'wipe' | 'login' | 'panels' | 'link' | 'live';
+export type Stage = 'title' | 'idle' | 'wipe' | 'login' | 'panels' | 'link' | 'live';
 
 export const WIPE_MS = 520;
 export const LOGIN_LINES = [
@@ -54,15 +55,21 @@ export const intro = {
     listeners.add(l);
     return () => void listeners.delete(l);
   },
-  // Page load: the terminal idles, the clock held.
+  // Page load: the title screen, the clock held.
   idle() {
     if (!introOn) return;
     game.standby();
-    set('idle');
+    set('title');
+  },
+  // START: ORION-3 comes into focus to be picked; with Skip intro on, straight into the boot.
+  start() {
+    if (stage !== 'title') return;
+    if (game.get().settings.skipIntro) intro.engage();
+    else set('idle');
   },
   // HQ picks ORION-3: wipe, login, panels, link, go.
   engage() {
-    if (stage !== 'idle') return;
+    if (stage !== 'idle' && stage !== 'title') return;
     run([['wipe', WIPE_MS], ['login', LOGIN_MS], ['panels', PANELS_MS], ['link', LINK_MS], ['live', 0]]);
   },
   // Restart, Retry, Play again: the mission over, and the war room powers back on.
@@ -71,6 +78,13 @@ export const intro = {
     if (!introOn) return;
     game.standby();
     run([['panels', PANELS_MS], ['link', LINK_MS], ['live', 0]]);
+  },
+  // Exit, from the pause menu: the mission over, back to the title screen.
+  home() {
+    timers.forEach(clearTimeout);
+    game.restart();
+    game.standby();
+    set('title');
   },
 };
 
