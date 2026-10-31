@@ -28,8 +28,8 @@ import { initialStream, type Stream } from './stream';
 export type Phase = 'standby' | 'running' | 'paused' | 'ended' | 'exited';
 
 export type MapView = 'topo' | 'relief';
-export type Settings = { mapView: MapView; city: boolean };
-export const DEFAULT_SETTINGS: Settings = { mapView: 'topo', city: true };
+export type Settings = { mapView: MapView; city: boolean; skipIntro: boolean }; // skipIntro: START goes straight to the boot (ILI-1290)
+export const DEFAULT_SETTINGS: Settings = { mapView: 'topo', city: true, skipIntro: false };
 
 export type GameState = {
   tick: number;
