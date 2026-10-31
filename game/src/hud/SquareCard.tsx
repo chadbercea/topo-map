@@ -59,19 +59,66 @@ export function SquareCard() {
   if (!square || !area) return null;
   const at: Placed = tier === 'compact' ? strip(area, actHeight) : beside(square, area, actHeight, s.team.position, ANCHOR_W);
   return (
-    <section
-      ref={actRef}
-      className="square-card anchor"
-      data-testid="square-card"
-      data-overlay="actions"
-      data-square={square}
-      data-side={at.side}
-      style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight }}
-      role="group"
-      aria-label={`Square ${square}`}
-    >
-      <Card s={s} square={square} />
-    </section>
+    <>
+      <Leader square={square} area={area} anchor={{ x: at.left, y: at.top, w: at.width, h: Math.min(actHeight || 200, at.maxHeight) }} />
+      <section
+        ref={actRef}
+        className="square-card anchor"
+        data-testid="square-card"
+        data-overlay="actions"
+        data-square={square}
+        data-side={at.side}
+        style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight }}
+        role="group"
+        aria-label={`Square ${square}`}
+      >
+        <Card s={s} square={square} />
+      </section>
+    </>
+  );
+}
+
+// The anchor's leader (ILI-1305): a line from the anchor to its square, so the two read as one
+// however far apart they sit. When the square is off the open map, the line stops at the map's
+// edge in an arrow with the square's name, pointing the way to it.
+function Leader({ square, area, anchor }: { square: string; area: Area; anchor: Box }) {
+  const sq = squareBox(square);
+  if (!sq) return null;
+  const centre = { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 };
+  const inside = (p: { x: number; y: number }) => p.x >= area.x && p.x <= area.x + area.width && p.y >= area.y && p.y <= area.y + area.height;
+  const nearest = (b: Box, p: { x: number; y: number }) => ({ x: Math.max(b.x, Math.min(p.x, b.x + b.w)), y: Math.max(b.y, Math.min(p.y, b.y + b.h)) });
+  const off = !inside(centre);
+  // Off the map: the arrow goes on the map's edge (inset a little) where a line from the map's
+  // middle to the square crosses it, so it points the way the square lies.
+  let to = nearest(sq, nearest(anchor, centre));
+  let a = 0;
+  if (off) {
+    const m = 16;
+    const mid = { x: area.x + area.width / 2, y: area.y + area.height / 2 };
+    const dx = centre.x - mid.x;
+    const dy = centre.y - mid.y;
+    const t = Math.min(dx ? (dx > 0 ? area.x + area.width - m - mid.x : area.x + m - mid.x) / dx : Infinity, dy ? (dy > 0 ? area.y + area.height - m - mid.y : area.y + m - mid.y) / dy : Infinity);
+    to = { x: mid.x + dx * t, y: mid.y + dy * t };
+    a = Math.atan2(dy, dx);
+  }
+  const from = nearest(anchor, to);
+  if (Math.hypot(to.x - from.x, to.y - from.y) < 6 && !off) return null; // touching: nothing to draw
+  if (!off) a = Math.atan2(to.y - from.y, to.x - from.x);
+  const head = (r: number, da: number) => `${to.x - Math.cos(a + da) * r},${to.y - Math.sin(a + da) * r}`;
+  return (
+    <svg className="anchor-leader" data-testid="anchor-leader" data-off={off || undefined} aria-hidden>
+      <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
+      {off ? (
+        <>
+          <polygon points={`${to.x},${to.y} ${head(15, 0.5)} ${head(15, -0.5)}`} />
+          <text x={to.x - Math.cos(a) * 30} y={to.y - Math.sin(a) * 22 + 4} data-testid="anchor-off">
+            {square}
+          </text>
+        </>
+      ) : (
+        <circle cx={to.x} cy={to.y} r="3" />
+      )}
+    </svg>
   );
 }
 
@@ -83,6 +130,8 @@ function strip(area: Area, height: number): Placed {
 }
 
 type Area = NonNullable<ReturnType<typeof getMapRect>>;
+
+type Box = { x: number; y: number; w: number; h: number };
 
 type Placed = { left: number; top: number; width: number; maxHeight: number; side: string };
 
