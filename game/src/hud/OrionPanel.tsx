@@ -58,6 +58,7 @@ export function OrionPanel() {
   // placeholder (ILI-1229).
   // The fighters ORION-3's picture marks, each a tap away from its strikes (ILI-1250, ILI-1270).
   const marked = square ? targets(s).filter((t) => squareAt(t.x, t.y) === square) : [];
+  const pings = square ? s.events.filter((e) => e.square === square && e.status !== 'resolved' && e.kind !== 'site') : [];
   const showPicture = !!sniping || (!tied && (live || (sat.state === 'idle' && !!picked && !!snap)));
   const blind = nextBlind(s);
   const caption = tied
@@ -158,6 +159,16 @@ export function OrionPanel() {
                   style={{ left: `${50 + ((aimAt.x - squareCenter(square)!.x) / CELL) * 100}%`, top: `${50 + ((aimAt.y - squareCenter(square)!.y) / CELL) * 100}%` }}
                 />
               )}
+              {/* The square's pings, named on hover like on the map (ILI-1297). The marker sits a
+                  quarter in from the square's top right (MapScene.markerPos). */}
+              {!sniping &&
+                pings.map((e) => (
+                  <button key={e.id} className="o-ping" data-kind={e.kind} style={{ left: '75%', top: '25%' }} onClick={() => game.openEvent(e.id)} data-testid="orion-ping">
+                    <span>
+                      {e.square} · {e.title}
+                    </span>
+                  </button>
+                ))}
               {!sniping &&
                 square &&
                 marked.map((t, i) => {
