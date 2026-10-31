@@ -20,7 +20,7 @@ const FOCUS_MS = 900;
 const ROOK_OUT_MS = 320;
 const ease = (k: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
 
-export type Castle = { stop(): void; focus(): void };
+export type Castle = { stop(): void; focus(): void; lean(x: number, y: number): void };
 
 export function mountCastle(back: HTMLElement, front: HTMLElement, onSpots: (p: Spots) => void, still: boolean): Castle | null {
   const renderers: THREE.WebGLRenderer[] = [];
@@ -172,6 +172,8 @@ export function mountCastle(back: HTMLElement, front: HTMLElement, onSpots: (p: 
   const near = new THREE.Vector3();
   const aim = new THREE.Vector3();
   let focusAt: number | null = null; // when START was pressed
+  const leanTo = new THREE.Vector2(); // where the pointer leans the close-up, -1 to 1
+  const leant = new THREE.Vector2();
   const jump = still || matchMedia('(prefers-reduced-motion: reduce)').matches; // no flight: straight there
   let raf = 0;
   let last = 0;
@@ -199,6 +201,11 @@ export function mountCastle(back: HTMLElement, front: HTMLElement, onSpots: (p: 
     const out = camera.aspect < 1 ? 6.2 : 4.6;
     near.set(world.x * 0.4, world.y + 0.7, world.z + out);
     eye.lerpVectors(home, near, k);
+    // Leaning (ILI-1295): the camera swings round ORION-3 with the pointer, eased, only once
+    // it's there.
+    leant.lerp(leanTo, 0.08);
+    eye.x += leant.x * 1.6 * k;
+    eye.y -= leant.y * 1.1 * k;
     look.lerpVectors(homeLook, aim.copy(world).setY(world.y - 1.1), k); // ORION-3 high, the limb under it
     camera.position.copy(eye);
     camera.lookAt(look);
@@ -219,6 +226,7 @@ export function mountCastle(back: HTMLElement, front: HTMLElement, onSpots: (p: 
 
   return {
     focus: () => void (focusAt ??= performance.now()),
+    lean: (x, y) => void leanTo.set(x, y),
     stop() {
       cancelAnimationFrame(raf);
       removeEventListener('resize', resize);
