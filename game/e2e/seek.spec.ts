@@ -23,7 +23,7 @@ test('the target menu lists every weapon with its state, and ALPHA attacks', asy
   await expect(page.getByTestId('eyes')).toContainText('Fresh look');
 });
 
-test('sniper: OVERWATCH shoots on its own in ORION-3\u2019s panel, crosshairs to each fighter, then goes (ILI-1253)', async ({ page }) => {
+test('sniper: OVERWATCH shoots on its own in ORION-3\u2019s panel, crosshairs to each fighter, then goes (ILI-1253)', async ({ page, isMobile }) => {
   await targetE3(page);
   const zoom = await page.evaluate(() => window.mapCamera().zoom);
   await page.getByTestId('fire-sniper').click();
@@ -34,7 +34,8 @@ test('sniper: OVERWATCH shoots on its own in ORION-3\u2019s panel, crosshairs to
   await expect(page.getByTestId('satellite-inset')).toHaveAttribute('data-state', 'sniper');
   await expect(sat.getByTestId('sniper-crosshair')).toBeVisible();
   await expect(sat.getByTestId('orion-buttons')).toBeHidden();
-  expect(await page.evaluate(() => window.mapCamera().zoom)).toBe(zoom); // the map stays put
+  // The map stays put (on a phone the sheet opening for ORION-3 resizes it, ILI-1302).
+  if (!isMobile) expect(await page.evaluate(() => window.mapCamera().zoom)).toBe(zoom);
   await expect(page.getByTestId('sniper-line')).toHaveText('On target');
   const tick = (ms: number) => page.evaluate((ms) => { for (let t = 0; t < ms; t += 100) window.game.tick(100); }, ms);
   await tick(700);
