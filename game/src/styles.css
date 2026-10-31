@@ -1039,6 +1039,12 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* ALPHA's box (ILI-1255, ILI-1256): on TEAM's right end, always up; on a fold or phone over
    TEAM in its tab. On a call the whole box opens the ask. */
 .slot-team { display: flex; align-items: stretch; gap: 0; }
+/* ALPHA's intel gauge (ILI-1314): a short orange bar by the team's name; the tick is where it moves. */
+.team .intel-gauge { position: relative; flex: 0 0 64px; height: 6px; border: 1px solid rgba(255, 138, 42, 0.5); align-self: center; }
+.team .intel-gauge i { position: absolute; left: 0; top: 0; bottom: 0; background: #ff8a2a; transition: width 200ms linear; }
+.team .intel-gauge b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--ink); opacity: 0.6; }
+.team .intel-gauge[data-low] { border-color: rgba(255, 138, 42, 0.9); animation: blink 1.4s steps(2) infinite; }
+@media (prefers-reduced-motion: reduce) { .team .intel-gauge i { transition: none; } .team .intel-gauge[data-low] { animation: none; } }
 .slot-team > .team { flex: 1 0 auto; min-width: 0; }
 /* With no call (ILI-1256) the box is in the HUD's base colour with the team's gear; on a call
    the whole box turns the flag's orange, with a sweep across it as it does. */

@@ -11,12 +11,12 @@ import { useTier } from './tier';
 import { EnvWidget } from './EnvWidget';
 import { Card } from './SquareCard';
 
-const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
+const MODES: CaptureMode[] = ['photo', 'video']; // no burst (ILI-1314)
 
 // ORION-3, the imaging satellite (ILI-1219): the big panel down the right, and everything about
 // looking at a square (ILI-1308). A square HQ picks shows here, its details and Reposition;
 // Reposition tasks ORION-3 (ILI-1250), and it moves with a countdown that runs down to nothing,
-// then, on station, the ways to look (photo, burst, video) take its place; a capture runs its
+// then, on station, the ways to look (photo, video) take its place; a capture runs its
 // time, and what it saw stays in the picture. What HQ can *do* to the square (its strikes, the
 // sniper, a signal) is in the square's anchor on the map (ILI-1302). The
 // picture has a fixed place at the panel's top (ILI-1229): with no square to show it holds a
@@ -82,7 +82,7 @@ export function OrionPanel() {
   const avatar = tied ? 'tied' : sat.state === 'slewing' ? 'slewing' : 'idle';
   const status = tied ? 'Tied up' : sat.state === 'idle' ? 'Standby' : sat.state === 'slewing' ? 'Repositioning' : sat.state === 'onStation' ? 'On station' : CAPTURE[sat.mode!].label;
   const left = Math.max(0, sat.arriveMs - now);
-  // Reposition, then shoot (ILI-1250): a scan *is* the photo, burst or video, so there's no Scan
+  // Reposition, then shoot (ILI-1250): a scan *is* the photo or video, so there's no Scan
   // step. Until ORION-3 is over the square HQ is working, its one button is a big Reposition;
   // once it's there, Photo, Burst and Video take its place.
   const away = picked ? slewMs(s, picked) : 0;
@@ -180,9 +180,10 @@ export function OrionPanel() {
         {inPosition && !tied ? (
           <div className="modes" data-testid="capture-modes">
             {MODES.map((m) => (
-              <button key={m} disabled={sat.state === 'capturing'} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what} data-cue={(m === 'photo' && sat.state === 'onStation') || undefined}>
+              <button key={m} disabled={sat.state === 'capturing' || (m === 'video' && s.intel.videoUsed)} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what} data-cue={(m === 'photo' && sat.state === 'onStation') || undefined}>
                 {CAPTURE[m].label}
-                <small>{CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
+                {/* Video is once a session (ILI-1314). */}
+                <small>{m === 'video' && s.intel.videoUsed ? 'used' : m === 'video' ? `${gameSpan(CAPTURE[m].ms)} · once` : CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
               </button>
             ))}
           </div>

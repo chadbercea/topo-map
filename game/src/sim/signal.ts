@@ -1,3 +1,4 @@
+import { feed, SIGNAL_INTEL } from './intel';
 import { nextRandom } from './firefight';
 import { reveal } from './contacts';
 import type { Message } from './comms';
@@ -103,7 +104,7 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
   const c = g.contactId ? next.contacts.find((x) => x.id === g.contactId) : undefined;
   if (where && c?.status === 'hidden') next = reveal(next, [c.square], 'SIGINT');
   if (plan) {
-    next = { ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } };
+    next = feed({ ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } }, SIGNAL_INTEL); // decoded, it feeds ALPHA's gauge (ILI-1314)
     if (c) next = { ...next, contacts: next.contacts.map((x) => (x.id === c.id ? { ...x, planKnown: true } : x)) };
   }
   const report: Message = {

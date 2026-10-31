@@ -1,3 +1,4 @@
+import { GRADE_LABEL, pushPhoto, pushVideo } from './intel';
 import { parseSquare, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import { reveal } from './contacts';
@@ -10,14 +11,13 @@ import type { System } from './systems';
 
 // ORION-3 (ILI-1167). HQ tasks the satellite to a square; it takes time to swing over,
 // in proportion to how far it has to move, so where to look is the decision. On station,
-// HQ picks how to look: a photo (where they are now), a burst (who is moving, and where
-// to) or video (live, and the satellite is tied up while it runs). What it sees goes on
+// HQ picks how to look: a photo (where they are now) or video (live, who is moving and where
+// to, and the satellite is tied up while it runs; once a session, ILI-1314). What it sees goes on
 // the map as a snapshot that ages, and down to ALPHA as known ground.
 
 export const CAPTURE: Record<CaptureMode, { ms: number; label: string; what: string }> = {
   photo: { ms: 0, label: 'Photo', what: 'Who is there and where, right now' },
-  burst: { ms: 6_000, label: 'Burst', what: 'Plus who is moving, and where to' },
-  video: { ms: 15_000, label: 'Video', what: 'Live: they move on your map while it runs' },
+  video: { ms: 15_000, label: 'Video', what: 'Live: who is moving and where to. Once: a permanent intel feed to ALPHA' },
 };
 
 export const SLEW_MS_PER_SQUARE = 2_000;
@@ -129,7 +129,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
 
 // On station: take the picture.
 export function capture(s: GameState, mode: CaptureMode): GameState {
-  if (s.satellite.state !== 'onStation') return s;
+  if (s.satellite.state !== 'onStation' || (mode === 'video' && s.intel.videoUsed)) return s;
   const sat = { ...s.satellite, state: 'capturing' as const, mode, captureUntilMs: s.elapsedMs + CAPTURE[mode].ms };
   const next = { ...s, satellite: sat };
   return mode === 'photo' ? finishLook(next) : next;
@@ -167,7 +167,18 @@ function finishLook(s: GameState): GameState {
     satellite: { ...sat, state: 'idle', from: at(square), mode: null, callId: null, result },
     team: sat.callId && next.team.holdFor === sat.callId ? { ...next.team, holdFor: null } : next.team,
   };
-  next = log(next, radio(s, 'ORION-3', `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. IMINT pushed to ${s.team.callsign}.`));
+  // To the analysts, and what it was worth to ALPHA (ILI-1314): a photo's grade feeds its
+  // gauge for ten seconds; video, once, is a permanent feed.
+  let pushed: string;
+  if (mode === 'video') {
+    next = pushVideo(next);
+    pushed = `Analysts: live feed to ${s.team.callsign} for the rest of the op`;
+  } else {
+    const p = pushPhoto(next, square, fighters);
+    next = p.next;
+    pushed = p.banked ? `Analysts: ${GRADE_LABEL[p.grade]} for ${s.team.callsign}, when it heads into ${square}` : `Analysts: ${GRADE_LABEL[p.grade]} pushed to ${s.team.callsign}`;
+  }
+  next = log(next, radio(s, 'ORION-3', `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. ${pushed}.`));
   return sat.callId ? log(next, radio(s, s.team.callsign, `look-${s.elapsedMs}-team`, 'Imagery received.')) : next;
 }
 

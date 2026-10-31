@@ -37,6 +37,7 @@ export function createStore(initial: GameState = initialState()) {
     listeners.forEach((l) => l());
   };
 
+  const keepBase = (s: GameState): GameState => ({ ...s, intel: { ...s.intel, base: state.intel.base } });
   return {
     get: () => state,
     set,
@@ -48,10 +49,12 @@ export function createStore(initial: GameState = initialState()) {
     pause: () => state.phase === 'running' && set({ ...state, phase: 'paused' }),
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
     // No saves in the MVP: retry and restart both start the mission over, live.
-    restart: () => set(initialState(state.settings, state.timer.totalMs)),
+    restart: () => set(keepBase(initialState(state.settings, state.timer.totalMs))),
     // Tuning: start over with a different mission length (1 to 30 minutes).
     setMissionLength: (minutes: number) =>
-      set(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000))),
+      set(keepBase(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000)))),
+    // Tuning and tests: a fixed offset on ALPHA's intel gauge that survives restarts (ILI-1314).
+    setIntelBase: (base: number) => set({ ...state, intel: { ...state.intel, base } }),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
     // The intro holds the clock until the war room is online, then starts it (ILI-1282).
     standby: () => state.phase === 'running' && state.elapsedMs === 0 && set({ ...state, phase: 'standby' }),

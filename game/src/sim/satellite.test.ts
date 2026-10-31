@@ -18,7 +18,7 @@ const onStation = (store: Store) => {
   expect(store.get().satellite.state).toBe('onStation');
 };
 
-const look = (store: Store, square: string, mode: 'photo' | 'burst' | 'video' = 'photo') => {
+const look = (store: Store, square: string, mode: 'photo' | 'video' = 'photo') => {
   store.lookAt(square);
   onStation(store);
   store.capture(mode);
@@ -69,7 +69,7 @@ describe('ORION-3 tasking', () => {
     expect(s.team.holdFor).toBeNull();
     expect(s.satellite).toMatchObject({ state: 'idle', aim: 'F4', result: { square: 'F4', mode: 'photo', fighters: 0 } });
     expect(s.imagery.F4).toMatchObject({ mode: 'photo', live: false, seen: [] });
-    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 collection complete \(photo\): nothing there\. IMINT pushed to ALPHA\./.test(m.text))).toBe(true);
+    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 collection complete \(photo\): nothing there\. Analysts: [a-z -]+ pushed to ALPHA\./.test(m.text))).toBe(true);
   });
 
   it('a look at E3 finds the checkpoint: every fighter, and that they have not noticed ALPHA', () => {
@@ -122,12 +122,11 @@ describe('fog of war', () => {
     return s;
   };
 
-  it('a burst shows who is moving and where to; a photo cannot tell', () => {
-    const burst = createStore(walkingPatrol());
-    look(burst, 'C2', 'burst');
-    burst.set(run(burst.get(), 6_000));
-    expect(burst.get().imagery.C2.seen[0]).toMatchObject({ contactId: 'patrol', to: 'D3' });
-    expect(burst.get().satellite.result).toMatchObject({ mode: 'burst', fighters: 3, moving: 3 });
+  it('video shows who is moving and where to; a photo cannot tell (no burst, ILI-1314)', () => {
+    const video = createStore(walkingPatrol());
+    look(video, 'C2', 'video');
+    video.set(run(video.get(), 300));
+    expect(video.get().imagery.C2.seen[0]).toMatchObject({ contactId: 'patrol', to: 'D3' });
 
     const photo = createStore(walkingPatrol());
     look(photo, 'C2', 'photo');

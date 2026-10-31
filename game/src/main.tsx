@@ -22,6 +22,9 @@ game.subscribe(() => {
 
 // Castle House's terminal idles, the clock held, until HQ logs in (ILI-1280).
 if (navigator.webdriver) document.documentElement.dataset.automated = '';
+// Under test automation ALPHA's intel gauge is pinned full, so a test of something else isn't
+// a test of keeping the team fed; ?gauge plays it for real (ILI-1314).
+if (navigator.webdriver && !new URLSearchParams(location.search).has('gauge')) game.setIntelBase(100);
 intro.idle();
 
 const phaser = createGame(document.getElementById('game')!);

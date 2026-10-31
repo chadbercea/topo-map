@@ -9,7 +9,7 @@ import type { System } from './systems';
 // look is a snapshot of who was there, and it ages: fresh, then a ghost of where they were,
 // then a faint last-known mark. Video and ALPHA's eyes are live while they last.
 
-export type CaptureMode = 'photo' | 'burst' | 'video';
+export type CaptureMode = 'photo' | 'video'; // no burst (ILI-1314)
 export type Awareness = 'unaware' | 'suspicious' | 'alerted';
 
 export type Seen = {

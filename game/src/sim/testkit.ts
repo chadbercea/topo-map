@@ -4,6 +4,10 @@ import { createStore } from './store';
 import { step } from './systems';
 import { LINK_MS } from './comms';
 
+// The sim's tests run with ALPHA's intel gauge pinned full, unless they're about the gauge
+// (intel.test.ts): keeping the team fed is a game of its own (ILI-1314).
+export const fed = (s: GameState): GameState => ({ ...s, intel: { ...s.intel, base: 100 } });
+
 export const run = (s: GameState, ms: number) => {
   for (let t = 0; t < ms; t += 100) s = step(s, 100);
   return s;
@@ -12,7 +16,7 @@ export const run = (s: GameState, ms: number) => {
 // The team just walks: every square imaged and no contacts, so nothing stops it (not even
 // the salvage convoy that cuts the exfil, ILI-1192; convoy.test.ts plays that).
 export const walking = (): GameState => {
-  const s = initialState();
+  const s = fed(initialState());
   return { ...s, contacts: [], map: { ...s.map, scanned: [...ROUTE] }, script: { ...s.script, fired: [...s.script.fired, 'convoy-on-exfil'] } };
 };
 

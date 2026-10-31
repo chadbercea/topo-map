@@ -5,6 +5,7 @@ import type { SquareId } from '../map/grid';
 import { squareCenter } from '../map/grid';
 import type { MapEvent, Scheduled } from './events';
 import { initialComms, type Comms } from './comms';
+import { initialIntel, type Intel } from './intel';
 import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
 import type { MiniGame } from './minigame';
@@ -78,6 +79,7 @@ export type GameState = {
   noise: number; // 0-100, how loud the PMC has been
   script: { mission: string; fired: string[] }; // the mission script and which triggers have run
   flags: Record<string, boolean>; // choices the mission script reacts to (jammed, ...)
+  intel: Intel; // ALPHA's intel gauge: what keeps it moving (ILI-1314)
   stats: { searched: number; decoded: number; lost: string[] }; // for the wrap-up; lost: ids of operators who went down
   inbound: Inbound[]; // support on its way
   alerted: boolean; // the enemy knows a PMC is in the area
@@ -137,6 +139,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     noise: 0,
     script: { mission: MISSION.id, fired: [] },
     flags: {},
+    intel: initialIntel(),
     stats: { searched: 0, decoded: 0, lost: [] },
     inbound: [],
     alerted: false,
