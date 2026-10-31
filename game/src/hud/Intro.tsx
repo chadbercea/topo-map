@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Castle, Spots } from './castleScene'; // types only: the scene loads lazily
 import { intro, LINE_MS, LOGIN_LINES, useIntro, WIPE_MS, type Stage } from './intro';
 import { MapViews } from './MapViews';
-import { OrionFeed } from './OrionFeed';
+import { DeadFeeds, OrionRack } from './OrionFeed';
 import { game, useGame } from '../sim/store';
 
 // The way in (ILI-1280): Castle House's idle terminal, the wipe, the login, and the link with
@@ -64,9 +64,20 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
     return () => clearTimeout(t);
   }, [title]);
 
+  // Heavy parallax on the close-up (ILI-1295): the pointer leans the camera and slides the
+  // screens, the near rack more than the dead feeds behind it.
+  const lean = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const x = (e.clientX / innerWidth) * 2 - 1;
+    const y = (e.clientY / innerHeight) * 2 - 1;
+    e.currentTarget.style.setProperty('--lx', x.toFixed(3));
+    e.currentTarget.style.setProperty('--ly', y.toFixed(3));
+    castle.current?.lean(x, y);
+  };
+
   const at = flat ? { x: innerWidth * 0.72, y: innerHeight * 0.3, visible: true } : spots?.orion;
   return (
-    <div className="castle" data-stage={stage} data-wiping={wiping || undefined}>
+    <div className="castle" data-stage={stage} data-wiping={wiping || undefined} onPointerMove={title || wiping ? undefined : lean}>
       <div ref={back} className="castle-scene castle-back" />
       <div ref={front} className="castle-scene castle-front" />
       {flat && (title || leaving) && <RookMark />}
@@ -81,7 +92,12 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
         </div>
       )}
       {title && sheet && <Sheet which={sheet} close={closeSheet} />}
-      {!title && <OrionFeed />}
+      {!title && (
+        <>
+          <DeadFeeds />
+          <OrionRack />
+        </>
+      )}
       {!title && at && (
         <button
           className="castle-orion"
