@@ -17,7 +17,7 @@ import { TeamPanel } from './TeamPanel';
 import { CallBox } from './CallBox';
 import { PauseMenu } from './PauseMenu';
 import { Intro } from './Intro';
-import { useIntro } from './intro';
+import { firstBoot, useIntro } from './intro';
 import { WrapUp } from './WrapUp';
 import { useFlash, useUnseen } from './attention';
 import { currentCall } from '../sim/comms';
@@ -97,7 +97,7 @@ export function Hud() {
   };
 
   return (
-    <div className="hud" data-boot={boot || undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet}>
+    <div className="hud" data-boot={boot ? (firstBoot() ? 'first' : 'again') : undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet}>
       <div className="slot-widget">
         <MissionPanel />
       </div>

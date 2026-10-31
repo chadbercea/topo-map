@@ -23,6 +23,12 @@ export const LINE_MS = 230;
 const LOGIN_MS = LOGIN_LINES.length * LINE_MS + 450;
 const PANELS_MS = 1_800; // the last panel's rows are in (styles.css, power-on)
 const LINK_MS = 1_100;
+// The first time in (ILI-1307) it comes up slower: panel by panel, line by line, so HQ gets
+// its bearings; then the link holds a beat before ALPHA's first hold lands.
+const PANELS_FIRST_MS = 7_000; // styles.css, .hud[data-boot='first']
+const LINK_FIRST_MS = 2_600;
+let first = false;
+export const firstBoot = () => first;
 
 // Under test automation the HUD opens live, as it always has, unless the URL asks for the intro.
 const automated = typeof navigator !== 'undefined' && navigator.webdriver === true;
@@ -70,13 +76,15 @@ export const intro = {
   // HQ picks ORION-3: wipe, login, panels, link, go.
   engage() {
     if (stage !== 'idle' && stage !== 'title') return;
-    run([['wipe', WIPE_MS], ['login', LOGIN_MS], ['panels', PANELS_MS], ['link', LINK_MS], ['live', 0]]);
+    first = true;
+    run([['wipe', WIPE_MS], ['login', LOGIN_MS], ['panels', PANELS_FIRST_MS], ['link', LINK_FIRST_MS], ['live', 0]]);
   },
   // Restart, Retry, Play again: the mission over, and the war room powers back on.
   reboot() {
     game.restart();
     if (!introOn) return;
     game.standby();
+    first = false;
     run([['panels', PANELS_MS], ['link', LINK_MS], ['live', 0]]);
   },
   // Exit, from the pause menu: the mission over, back to the title screen.

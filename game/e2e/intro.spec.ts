@@ -19,10 +19,10 @@ test('the title screen, then ORION-3; the clock starts with ALPHA’s first call
   await expect(orion).toBeVisible();
   await press(orion, isMobile);
   await expect(page.getByTestId('intro-login')).toContainText('OPERATOR AUTH');
-  await expect(page.getByTestId('intro-link')).toContainText('SATCOM link established', { ignoreCase: true, timeout: 10_000 });
+  await expect(page.getByTestId('intro-link')).toContainText('SATCOM link established', { ignoreCase: true, timeout: 20_000 });
   expect(await page.evaluate(() => window.game.get().phase)).toBe('standby'); // still held
 
-  await expect(page.getByTestId('intro')).toHaveCount(0, { timeout: 10_000 });
+  await expect(page.getByTestId('intro')).toHaveCount(0, { timeout: 20_000 });
   await expect.poll(() => page.evaluate(() => window.game.get().phase)).toBe('running');
   await expect.poll(() => page.evaluate(() => window.game.get().team.holdFor)).not.toBeNull();
 });
@@ -50,7 +50,7 @@ test('Exit from the pause menu goes back to the title screen', async ({ page, is
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.setSettings({ skipIntro: true }));
   await press(page.getByTestId('title-start'), isMobile);
-  await expect.poll(() => page.evaluate(() => window.game.get().phase), { timeout: 10_000 }).toBe('running');
+  await expect.poll(() => page.evaluate(() => window.game.get().phase), { timeout: 20_000 }).toBe('running');
   await page.evaluate(() => window.game.pause());
   await press(page.getByRole('button', { name: 'Exit' }), isMobile);
   await expect(page.getByTestId('title-start')).toBeVisible();
@@ -62,7 +62,7 @@ test('Exit from the After Action Report goes back to the title screen too', asyn
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.setSettings({ skipIntro: true }));
   await press(page.getByTestId('title-start'), isMobile);
-  await expect.poll(() => page.evaluate(() => window.game.get().phase), { timeout: 10_000 }).toBe('running');
+  await expect.poll(() => page.evaluate(() => window.game.get().phase), { timeout: 20_000 }).toBe('running');
   await page.evaluate(() => window.game.set({ ...window.game.get(), phase: 'ended' }));
   await press(page.getByRole('button', { name: 'Exit' }), isMobile);
   await expect(page.getByTestId('title-start')).toBeVisible();
