@@ -1007,28 +1007,24 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 
 /* The sniper (ILI-1253): OVERWATCH's crosshairs in ORION-3's picture, gliding to each fighter it
    shoots, and its panel under the picture. */
-.orion .o-crosshair { position: absolute; width: 34px; height: 34px; transform: translate(-50%, -50%); border: 1.5px solid #e5484d; border-radius: 50%; pointer-events: none; transition: left 450ms ease-in-out, top 450ms ease-in-out; }
-.orion .o-crosshair::before, .orion .o-crosshair::after { content: ''; position: absolute; background: #e5484d; }
-.orion .o-crosshair::before { left: 50%; top: -8px; bottom: -8px; width: 1.5px; transform: translateX(-50%); }
-.orion .o-crosshair::after { top: 50%; left: -8px; right: -8px; height: 1.5px; transform: translateY(-50%); }
 @keyframes sniper-in { from { opacity: 0; transform: translateY(6px); } }
 @keyframes sniper-out { to { opacity: 0; transform: translateY(6px); } }
-.orion .sniper { display: grid; grid-template-columns: 120px 1fr; column-gap: 12px; border-top: 1px solid #e5484d; animation: sniper-in 200ms ease-out; }
-.orion .sniper[data-leaving] { animation: sniper-out 600ms ease-in forwards; }
-.orion .sniper h3 { grid-column: 1 / -1; display: flex; justify-content: space-between; margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: #e5484d; }
-.orion .sniper h3 .where { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; }
-.orion .sniper .s-model { position: relative; display: grid; place-items: center; height: 56px; }
-.orion .sniper .s-model > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.orion .sniper .s-mark { width: 90%; fill: none; stroke: var(--accent); stroke-width: 1.5; }
-.orion .sniper .s-read { display: grid; align-content: center; gap: 4px; }
-.orion .sniper .s-read b { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
-.orion .sniper[data-state='firing'] .s-read b { color: #e5484d; }
-.orion .sniper .s-rounds { display: flex; gap: 3px; }
-.orion .sniper .s-rounds i { width: 6px; height: 14px; background: #e5484d; }
-.orion .sniper .s-rounds i[data-spent] { background: none; outline: 1px solid rgba(229, 72, 77, 0.4); outline-offset: -1px; }
-.orion .sniper .decay { height: 6px; background: rgba(229, 72, 77, 0.12); border-color: rgba(229, 72, 77, 0.4); }
-.orion .sniper .decay > span { background: #e5484d; }
-@media (prefers-reduced-motion: reduce) { .orion .o-crosshair { transition: none; } .orion .sniper, .orion .sniper[data-leaving] { animation: none; } }
+.square-card .sniper { display: grid; grid-template-columns: 120px 1fr; column-gap: 12px; padding: 8px 10px; background: var(--bg); border-bottom: 1px solid #e5484d; animation: sniper-in 200ms ease-out; }
+.square-card .sniper[data-leaving] { animation: sniper-out 600ms ease-in forwards; }
+.square-card .sniper h3 { grid-column: 1 / -1; display: flex; justify-content: space-between; margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: #e5484d; }
+.square-card .sniper h3 .where { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; }
+.square-card .sniper .s-model { position: relative; display: grid; place-items: center; height: 56px; }
+.square-card .sniper .s-model > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.square-card .sniper .s-mark { width: 90%; fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.square-card .sniper .s-read { display: grid; align-content: center; gap: 4px; }
+.square-card .sniper .s-read b { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
+.square-card .sniper[data-state='firing'] .s-read b { color: #e5484d; }
+.square-card .sniper .s-rounds { display: flex; gap: 3px; }
+.square-card .sniper .s-rounds i { width: 6px; height: 14px; background: #e5484d; }
+.square-card .sniper .s-rounds i[data-spent] { background: none; outline: 1px solid rgba(229, 72, 77, 0.4); outline-offset: -1px; }
+.square-card .sniper .decay { height: 6px; background: rgba(229, 72, 77, 0.12); border-color: rgba(229, 72, 77, 0.4); }
+.square-card .sniper .decay > span { background: #e5484d; }
+@media (prefers-reduced-motion: reduce) { .square-card .sniper, .square-card .sniper[data-leaving] { animation: none; } }
 
 /* ALPHA's box (ILI-1255, ILI-1256): on TEAM's right end, always up; on a fold or phone over
    TEAM in its tab. On a call the whole box opens the ask. */

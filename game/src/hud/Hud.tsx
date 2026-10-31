@@ -66,8 +66,7 @@ export function Hud() {
   }, [fresh]);
   // Tasking ORION-3 brings its panel forward on a fold or phone (ILI-1219). Picking a square
   // doesn't: its anchor opens on the map (ILI-1302).
-  // So does the sniper's run, which plays out in ORION-3's picture (ILI-1253).
-  const tasked = useGame((s) => (s.sniper && !s.sniper.done ? `sniper|${s.sniper.square}` : s.satellite.state !== 'idle' && !s.minigame ? `${s.satellite.aim}|${s.satellite.state}` : ''));
+  const tasked = useGame((s) => (s.satellite.state !== 'idle' && !s.minigame ? `${s.satellite.aim}|${s.satellite.state}` : ''));
   useEffect(() => {
     if (tasked) {
       setTab('orion');

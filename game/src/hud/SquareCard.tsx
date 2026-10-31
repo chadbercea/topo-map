@@ -5,6 +5,7 @@ import { CAPTURE, slewMs } from '../sim/satellite';
 import { freshness, targets } from '../sim/imagery';
 import { squareAt } from '../map/grid';
 import { TargetMenu } from './TargetMenu';
+import { SniperPanel } from './SniperPanel';
 import { ground, weather } from '../sim/conditions';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { EVENT_LABEL } from '../sim/stream';
@@ -179,6 +180,9 @@ export function Card({ s, square }: { s: GameState; square: string }) {
       </header>
 
       <EyesOn s={s} square={square} />
+
+      {/* OVERWATCH at work on this square (ILI-1303): not ORION-3, which only watches. */}
+      <SniperPanel square={square} />
 
       {/* Its fighters, and every way to hit them (ILI-1230, ILI-1270), here at their square. */}
       {strikes.length > 0 && (

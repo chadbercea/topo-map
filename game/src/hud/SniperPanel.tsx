@@ -6,13 +6,13 @@ import { WireAvatar } from './OrionAvatar';
 const loadRifle = () => import('./rifleScene');
 const FLASH_MS = 400; // "Tango down" after a hit, before it reads "Racking"
 
-// The sniper panel (ILI-1253), inside ORION-3's panel under its picture: OVERWATCH's rifle, its
-// rounds, the five seconds it has, and what it's doing: on target, a shot, racking the bolt.
-// It goes when it's done firing.
-export function SniperPanel() {
+// The sniper panel (ILI-1253), at its square's anchor (ILI-1303): OVERWATCH's rifle, its rounds,
+// the five seconds it has, and what it's doing: on target, a shot, racking the bolt. Its
+// crosshairs are on the map (MapScene). It goes when it's done firing.
+export function SniperPanel({ square }: { square: string }) {
   const r = useGame((s) => s.sniper);
   const now = useGame((s) => s.elapsedMs);
-  if (!r || sniperGone(r, now)) return null;
+  if (!r || r.square !== square || sniperGone(r, now)) return null;
   const fired = r.shots.filter((x) => x.atMs <= now);
   const last = fired.at(-1);
   const left = Math.max(0, r.endMs - now);

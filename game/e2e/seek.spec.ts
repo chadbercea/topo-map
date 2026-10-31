@@ -23,19 +23,15 @@ test('the target menu lists every weapon with its state, and ALPHA attacks', asy
   await expect(page.getByTestId('eyes')).toContainText('Fresh look');
 });
 
-test('sniper: OVERWATCH shoots on its own in ORION-3\u2019s panel, crosshairs to each fighter, then goes (ILI-1253)', async ({ page, isMobile }) => {
+test('sniper: OVERWATCH shoots on its own at the square\u2019s anchor, one fighter after another, then goes (ILI-1253, ILI-1303)', async ({ page }) => {
   await targetE3(page);
   const zoom = await page.evaluate(() => window.mapCamera().zoom);
   await page.getByTestId('fire-sniper').click();
-  const sat = page.getByTestId('satellite');
-  const panel = sat.getByTestId('sniper-panel');
+  const panel = page.getByTestId('square-card').getByTestId('sniper-panel');
   await expect(panel).toContainText('OVERWATCH');
   await expect(panel).toContainText('sniper · E3');
-  await expect(page.getByTestId('satellite-inset')).toHaveAttribute('data-state', 'sniper');
-  await expect(sat.getByTestId('sniper-crosshair')).toBeVisible();
-  await expect(sat.getByTestId('orion-buttons')).toBeHidden();
-  // The map stays put (on a phone the sheet opening for ORION-3 resizes it, ILI-1302).
-  if (!isMobile) expect(await page.evaluate(() => window.mapCamera().zoom)).toBe(zoom);
+  await expect(page.getByTestId('satellite').getByTestId('sniper-panel')).toHaveCount(0); // ORION-3 only watches
+  expect(await page.evaluate(() => window.mapCamera().zoom)).toBe(zoom); // the map stays put
   await expect(page.getByTestId('sniper-line')).toHaveText('On target');
   const tick = (ms: number) => page.evaluate((ms) => { for (let t = 0; t < ms; t += 100) window.game.tick(100); }, ms);
   await tick(700);
@@ -48,7 +44,6 @@ test('sniper: OVERWATCH shoots on its own in ORION-3\u2019s panel, crosshairs to
   await expect(page.getByTestId('comms-feed')).toContainText('E3: all targets down. 5 down.');
   await tick(700);
   await expect(panel).toHaveCount(0);
-  await expect(sat.getByTestId('orion-buttons')).toBeVisible();
 });
 
 test('drone strike: its panel counts down to target, then it clears the square, Tango down by Tango down (ILI-1252)', async ({ page }) => {
