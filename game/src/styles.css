@@ -1043,7 +1043,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* With no call (ILI-1256) the box is in the HUD's base colour with the team's gear; on a call
    the whole box turns the flag's orange, with a sweep across it as it does. */
 .call-box { --comms: var(--accent); position: relative; flex: 0 1 300px; min-width: 200px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 6px; transition: border-color 200ms ease-out; }
-.call-box[data-call] { --accent: #ff8a2a; --comms: #ff8a2a; border-color: var(--comms); border-left: 3px solid var(--comms); background: radial-gradient(circle at 25% 60%, rgba(255, 138, 42, 0.14), transparent 65%), var(--panel); }
+.call-box[data-call] { --accent: #ff8a2a; --comms: #ff8a2a; border-color: var(--comms); border-right: 3px solid var(--comms); background: radial-gradient(circle at 25% 60%, rgba(255, 138, 42, 0.14), transparent 65%), var(--panel); }
 .call-box[data-call]::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(255, 138, 42, 0.25), transparent); animation: call-in 500ms ease-out forwards; }
 @keyframes call-in { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 .call-box h2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--comms); min-width: 0; }
@@ -1062,7 +1062,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @media (prefers-reduced-motion: reduce) { .call-box[data-call]::after, .call-box .what { animation: none; } }
 /* A fold or phone: TEAM is one tab of the rail or sheet, so the box sits over it, slim. */
 @media (max-width: 1199px) {
-  .slot-team { flex-direction: column-reverse; justify-content: flex-end; }
+  .slot-team { flex-direction: column; justify-content: flex-start; }
   .hud .slot-team { display: flex; }
   .hud:not([data-tab='team']) .slot-team { display: none; }
   .call-box { flex: none; width: auto; }
@@ -1117,8 +1117,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    its rows flicker in, top to bottom. Only while the HUD is booting (Hud.tsx). */
 .slot-widget { --on: 0ms; }
 .slot-satcom { --on: 140ms; }
-.slot-team { --on: 280ms; }
-.slot-team .call-box { --on: 380ms; }
+.slot-team { --on: 380ms; }
+.slot-team .call-box { --on: 280ms; } /* ALPHA's box first, then the table (ILI-1313) */
 .slot-orion { --on: 480ms; }
 .slot-small, .orion .env { --on: 680ms; }
 @keyframes power-content {
@@ -1146,8 +1146,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    ALPHA's box, ORION-3, the readouts. Restarts keep the quick version above. */
 .hud[data-boot='first'] .slot-widget { --on: 0ms; }
 .hud[data-boot='first'] .slot-satcom { --on: 1300ms; }
-.hud[data-boot='first'] .slot-team { --on: 2900ms; }
-.hud[data-boot='first'] .slot-team .call-box { --on: 4100ms; }
+.hud[data-boot='first'] .slot-team { --on: 3700ms; }
+.hud[data-boot='first'] .slot-team .call-box { --on: 2900ms; }
 .hud[data-boot='first'] .slot-orion { --on: 4800ms; }
 .hud[data-boot='first'] :is(.slot-small, .orion .env) { --on: 5900ms; }
 .hud[data-boot='first'] .panel { animation-duration: 560ms; }

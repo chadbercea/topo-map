@@ -62,10 +62,12 @@ test('layout A: mission and COMMS down the left, ENVIRONMENT over ORION-3 down t
   expect(env.y).toBeGreaterThanOrEqual(sat.y + sat.height - 1);
   await expect(page.getByTestId('satellite').getByTestId('conditions').locator('.env-tile')).toHaveCount(6);
   await expect(page.getByTestId('small-widgets')).toHaveCount(0);
-  // Along the bottom: TEAM, under COMMS and the map.
+  // Along the bottom: ALPHA's box at the left, then TEAM's table (ILI-1313), under COMMS and the map.
+  const alpha = await box('call-box');
   expect(team.y).toBeGreaterThan(comms.y + comms.height - 1);
   expect(team.y + team.height).toBeGreaterThan(view.height - 40);
-  expect(team.x).toBeLessThan(40);
+  expect(alpha.x).toBeLessThan(40);
+  expect(team.x).toBeGreaterThanOrEqual(alpha.x + alpha.width - 1);
   expect(team.x + team.width).toBeLessThanOrEqual(orion.x);
   await expect(page.getByTestId('resources')).toHaveCount(0); // no Logistics panel (ILI-1231)
 });
