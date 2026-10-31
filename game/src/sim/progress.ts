@@ -82,7 +82,7 @@ export function blockers(s: GameState): Blocker[] {
   const sat = s.satellite;
   if (sat.callId && sat.state === 'onStation') out.push({ tone: 'decision', text: `ORION-3 on station over ${sat.aim}: take the shot`, go: { square: sat.aim } });
   const calls = waitingCalls(s.comms);
-  if (calls.length) out.push({ tone: 'decision', text: `${calls[0].from} waiting on your call${calls.length > 1 ? ` (+${calls.length - 1})` : ''}`, go: { ask: true } });
+  if (calls.length) out.push({ tone: 'decision', text: `${calls[0].from} waiting on your decision${calls.length > 1 ? ` (+${calls.length - 1})` : ''}`, go: { ask: true } });
   if (s.team.fight) out.push({ tone: 'threat', text: `${s.team.callsign} in contact` });
   const ahead = s.team.route.slice(s.team.waypoint);
   const contact = ahead.find((sq) => s.contacts.some((c) => c.square === sq && c.status === 'revealed'));
