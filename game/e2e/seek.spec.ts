@@ -27,7 +27,7 @@ test('sniper: OVERWATCH shoots on its own at the square\u2019s anchor, one fight
   await targetE3(page);
   const zoom = await page.evaluate(() => window.mapCamera().zoom);
   await page.getByTestId('fire-sniper').click();
-  const panel = page.getByTestId('square-card').getByTestId('sniper-panel');
+  const panel = page.getByTestId('square-anchor').getByTestId('sniper-panel');
   await expect(panel).toContainText('OVERWATCH');
   await expect(panel).toContainText('sniper · E3');
   await expect(page.getByTestId('satellite').getByTestId('sniper-panel')).toHaveCount(0); // ORION-3 only watches
@@ -109,7 +109,7 @@ test('a strike running on a square that isn’t picked keeps a chip there; a tap
   await expect(chip).toHaveAttribute('data-square', 'E3');
   await expect(chip).toContainText(/REAPER-1 · 0:\d\d/);
   await chip.dispatchEvent('click');
-  await expect(page.getByTestId('square-card')).toHaveAttribute('data-square', 'E3');
-  await expect(page.getByTestId('square-card').getByTestId('drone-panel')).toBeVisible();
+  await expect(page.getByTestId('square-anchor')).toHaveAttribute('data-square', 'E3');
+  await expect(page.getByTestId('square-anchor').getByTestId('drone-panel')).toBeVisible();
   await expect(chip).toHaveCount(0); // its square is picked: the anchor says it all
 });

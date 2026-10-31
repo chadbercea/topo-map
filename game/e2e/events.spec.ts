@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { squarePoint, start, tapAt } from './helpers';
 
-test('a new event marks its square on the map; tapping the marker opens its square\'s anchor beside it, with its actions (ILI-1228, ILI-1302)', async ({ page, isMobile }) => {
+test('a new event marks its square on the map; tapping the marker picks it: its details in ORION-3, its actions beside it (ILI-1228)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'F4', title: 'Test contact' }));
@@ -16,19 +16,18 @@ test('a new event marks its square on the map; tapping the marker opens its squa
   await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25, -0.25));
   const card = page.getByTestId('square-card');
   const act = page.getByTestId('action-panel');
-  await expect(card).toBeVisible();
-  await expect(page.getByTestId('satellite').getByTestId('square-card')).toHaveCount(0); // not in ORION-3's panel
-  await expect(card.getByTestId('action-panel').getByTestId('event-card')).toContainText('Test contact');
+  await expect(page.getByTestId('satellite').getByTestId('square-card')).toBeVisible(); // in ORION-3's panel
+  await expect(act.getByTestId('event-card')).toContainText('Test contact');
   await expect.poll(status).toBe('seen'); // seen, so no longer flagged
   await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the event picks its square
 
   if (!isMobile) {
-    // The anchor floats beside the square: its near edge within a square's width of F4.
-    const box = (await card.boundingBox())!;
+    // The actions float beside the square: their near edge within a square's width of F4.
+    const box = (await act.boundingBox())!;
     const f4 = await squarePoint(page, 5, 3);
-    const side = await card.getAttribute('data-side');
+    const side = await act.getAttribute('data-side');
     const near = side === 'left' ? box.x + box.width : box.x; // the edge that faces the square
-    expect(Math.abs(near - f4.x)).toBeLessThan(230); // within a square and a half: it steps aside for ALPHA's flag
+    expect(Math.abs(near - f4.x)).toBeLessThan(160);
     expect(box.y).toBeLessThan(f4.y + 320); // level with it, or below what keeps it off ALPHA
   }
 

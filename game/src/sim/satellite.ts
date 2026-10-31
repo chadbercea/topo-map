@@ -75,13 +75,14 @@ export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing'
 // The square the card is on (ILI-1201, ILI-1203): the one HQ picked (or whose event it
 // opened), else the one ORION-3 is working, else its last look until HQ closes it. Nothing
 // while a mini game is up.
-// The square ORION-3's panel shows (ILI-1219): where it's tasked; idle, what it just looked at. Nothing when none is (the placeholder, ILI-1229), or while the
+// The square ORION-3's panel shows (ILI-1219): where it's tasked; idle, the square HQ picked
+// (ILI-1228, ILI-1308) or just looked at. Nothing when none is (the placeholder, ILI-1229), or while the
 // intercept has it tied up. The sniper's run plays out at its square's anchor (ILI-1303).
 export function orionSquare(s: GameState): SquareId | null {
   const sat = s.satellite;
   if (s.minigame) return null;
   if (sat.state !== 'idle') return sat.aim;
-  return sat.result?.square ?? null; // only where it's looking: a picked square has its anchor (ILI-1302)
+  return s.map.selected ?? sat.result?.square ?? null;
 }
 
 export function lookSquare(s: GameState): SquareId | null {

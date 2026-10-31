@@ -63,9 +63,10 @@ export function Hud() {
       setSheet((h) => (h === 'peek' ? 'half' : h)); // news opens a peeking sheet
     }
   }, [fresh]);
-  // Tasking ORION-3 brings its panel forward on a fold or phone (ILI-1219). Picking a square
-  // doesn't: its anchor opens on the map (ILI-1302).
-  const tasked = useGame((s) => (s.satellite.state !== 'idle' && !s.minigame ? `${s.satellite.aim}|${s.satellite.state}` : ''));
+  // Tasking ORION-3 brings its panel forward on a fold or phone (ILI-1219).
+  // So does picking a square: its details and Reposition are there (ILI-1228, ILI-1308).
+  // Keyed on what changed, so a strike ending with a square still picked brings it back too.
+  const tasked = useGame((s) => (lookSquare(s) ? `${lookSquare(s)}|${s.satellite.state}|${!!s.minigame}` : ''));
   useEffect(() => {
     if (tasked) {
       setTab('orion');
@@ -84,12 +85,6 @@ export function Hud() {
   const orionSlot = useRef<HTMLDivElement>(null);
   useFlash(satcomSlot, commsNews, shown('satcom'));
   useFlash(orionSlot, orionNews, shown('orion'));
-  // On a phone, picking a square folds the sheet to its tabs: the map, and the square's anchor
-  // along its foot, get the room (ILI-1302).
-  const picked = useGame((s) => s.map.selected);
-  useEffect(() => {
-    if (picked && tier === 'compact') setSheet('peek');
-  }, [picked, tier]);
   const pick = (t: Tab) => {
     // A tab always shows its panel: a folded sheet opens. Folding is the handle's job.
     setSheet((h) => (h === 'peek' ? 'half' : h));
