@@ -63,6 +63,23 @@ describe('the intel gauge', () => {
     expect(grade(s, 'F2', 0)).toBe(first); // the same square grades the same in a replay
   });
 
+  it('scanning ahead pays: a square past the next one banks, and hits the gauge as ALPHA heads into it (ILI-1316)', () => {
+    const s0 = blindAhead();
+    const next = s0.team.route[s0.team.waypoint]; // F4: the leg it's on
+    const later = s0.team.route[s0.team.waypoint + 1]; // E3: further on
+    const near = pushPhoto(s0, next, 0);
+    expect(near.banked).toBe(false);
+    expect(gauge(near.next)).toBeGreaterThan(0); // the square it's heading into feeds now
+    const far = pushPhoto(s0, later, 3);
+    expect(far.banked).toBe(true);
+    expect(gauge(far.next)).toBe(0); // banked: nothing yet
+    // ALPHA reaches F4 and starts for E3: the bank pays out, high grade.
+    const s = run({ ...far.next, intel: { ...far.next.intel, base: 100 } }, 60_000);
+    expect(s.team.route[s.team.waypoint]).not.toBe(next);
+    expect(s.intel.banked).toHaveLength(0);
+    expect(s.intel.feeds.some((f) => f.amount === 50)).toBe(true); // E3's high grade, paid out
+  });
+
   it('a photo through the store feeds ALPHA, and ORION-3 says what the analysts pushed', () => {
     const store = createStore(initialState());
     store.lookAt('G5');

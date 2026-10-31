@@ -176,7 +176,7 @@ function finishLook(s: GameState): GameState {
   } else {
     const p = pushPhoto(next, square, fighters);
     next = p.next;
-    pushed = `Analysts: ${GRADE_LABEL[p.grade]} pushed to ${s.team.callsign}`;
+    pushed = p.banked ? `Analysts: ${GRADE_LABEL[p.grade]} for ${s.team.callsign}, when it heads into ${square}` : `Analysts: ${GRADE_LABEL[p.grade]} pushed to ${s.team.callsign}`;
   }
   next = log(next, radio(s, 'ORION-3', `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. ${pushed}.`));
   return sat.callId ? log(next, radio(s, s.team.callsign, `look-${s.elapsedMs}-team`, 'Imagery received.')) : next;
