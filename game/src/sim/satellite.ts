@@ -75,15 +75,14 @@ export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing'
 // The square the card is on (ILI-1201, ILI-1203): the one HQ picked (or whose event it
 // opened), else the one ORION-3 is working, else its last look until HQ closes it. Nothing
 // while a mini game is up.
-// The square ORION-3's panel shows (ILI-1219): where it's tasked; idle, the square HQ picked
-// (ILI-1228) or just looked at. Nothing when none is (the placeholder, ILI-1229), or while the
+// The square ORION-3's panel shows (ILI-1219): where it's tasked; idle, what it just looked at. Nothing when none is (the placeholder, ILI-1229), or while the
 // intercept has it tied up; the sniper's run while it shoots (ILI-1253).
 export function orionSquare(s: GameState): SquareId | null {
   const sat = s.satellite;
   if (s.minigame) return null;
   if (s.sniper && !s.sniper.done) return s.sniper.square; // it plays out in its picture (ILI-1253)
   if (sat.state !== 'idle') return sat.aim;
-  return s.map.selected ?? sat.result?.square ?? null;
+  return sat.result?.square ?? null; // only where it's looking: a picked square has its anchor (ILI-1302)
 }
 
 export function lookSquare(s: GameState): SquareId | null {
@@ -123,8 +122,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
   };
   const next: GameState = {
     ...s,
-    satellite: sat,
-    map: { ...s.map, selected: null },
+    satellite: sat, // the picked square stays picked: its anchor shows ORION-3 on its way (ILI-1302)
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
   return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Slewing to ${square}. On station in ${countdown(ms)}.` : `On station over ${square}. Ready for collection.`));
