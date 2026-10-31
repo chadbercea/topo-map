@@ -5,6 +5,7 @@ import { Hud } from './hud/Hud';
 import { loadSettings, saveSettings } from './hud/settings';
 import { game } from './sim/store';
 import { intro } from './hud/intro';
+import { keepLedger, loadBalance } from './hud/ledger';
 import './styles.css';
 
 // Phaser and React each own one layer. The game is created once, outside React,
@@ -25,6 +26,9 @@ if (navigator.webdriver) document.documentElement.dataset.automated = '';
 // Under test automation ALPHA's intel gauge is pinned full, so a test of something else isn't
 // a test of keeping the team fed; ?gauge plays it for real (ILI-1314).
 if (navigator.webdriver && !new URLSearchParams(location.search).has('gauge')) game.setIntelBase(100);
+// The balance Castle House carries in, and keeping it when the mission ends (ILI-1316).
+game.setOpening(loadBalance());
+keepLedger();
 intro.idle();
 
 const phaser = createGame(document.getElementById('game')!);

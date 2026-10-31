@@ -424,6 +424,8 @@ html, body {
 .wrapup .payout .total { border-top: 1px solid var(--line); padding-top: 4px; margin-top: 2px; }
 .wrapup .payout .total dd { color: var(--accent); }
 .overlay[data-outcome='failed'] .wrapup h2 { color: #e5484d; }
+.overlay[data-outcome='bankrupt'] .wrapup h2, .overlay[data-outcome='bankrupt'] .wrapup .outcome { color: #e5484d; } /* ILI-1316 */
+.wrapup [data-testid='pnl'][data-loss] { color: #e5484d; }
 @media (max-width: 480px) { .wrapup .columns { grid-template-columns: 1fr; } }
 
 /* Shared panel bits */

@@ -20,14 +20,14 @@ describe('kill cash', () => {
     const store = createStore(withContact());
     store.fire('t', 'drone');
     store.set(run(store.get(), FLIGHT_MS + CROSS_MS + 200)); // REAPER-1 clears the square
-    expect(store.get().resources.budget).toBe(4 * CASH_PER_STRIKE_KILL);
+    expect(store.get().resources.ledger.field).toBe(4 * CASH_PER_STRIKE_KILL);
   });
 
   it('the team clearing a contact itself pays per fighter', () => {
     const s0 = withContact();
     const s = run({ ...s0, team: { ...s0.team, position: squareCenter('E3')!, waypoint: 3, decisions: { E3: 'attack' } } }, 30_000);
     expect(s.contacts[0].status).toBe('cleared');
-    expect(s.resources.budget).toBeGreaterThanOrEqual(4 * CASH_PER_TEAM_KILL);
+    expect(s.resources.ledger.field).toBeGreaterThanOrEqual(4 * CASH_PER_TEAM_KILL);
   });
 });
 

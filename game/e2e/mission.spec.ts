@@ -47,7 +47,9 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
   await expect(wrap).toHaveAttribute('data-outcome', 'win');
   await expect(wrap).toContainText('MISSION SUCCESS');
   await expect(wrap).toContainText('Black box recovered. Everyone came home.');
-  await expect(page.getByTestId('budget')).toHaveText('$20,000');
+  // The P&L (ILI-1316): −$400,000 up front, $1,500,000 out of escrow on a clean run.
+  await expect(page.getByTestId('pnl')).toHaveText('$1,100,000');
+  await expect(page.getByTestId('budget')).toHaveText('$1,100,000');
   await wrap.getByRole('button', { name: 'Play again' }).click();
   await expect(wrap).toHaveCount(0);
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3'); // a new mission, live

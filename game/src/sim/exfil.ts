@@ -1,3 +1,5 @@
+import { earn } from './sites';
+import { ESCROW_EXFIL } from './prices';
 import { CELL, parseSquare, squareCenter, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import type { GameState } from './state';
@@ -90,6 +92,7 @@ export function flyExfil(s: GameState): GameState {
   if (r.liftMs !== null && now >= r.liftMs && !s.comms.messages.some((m) => m.id === 'exfil')) {
     return say({ ...s, team: { ...team, activity: `Aboard ${TRANSPORT.callsign}` } }, 'exfil', team.callsign, `All aboard. ${TRANSPORT.callsign} lifting from ${r.square}. We're out.`);
   }
-  if (outMs(r) !== null && now >= outMs(r)! + SIGNOFF_MS) return { ...s, phase: 'ended', mission: { ...s.mission, phase: 'complete' } };
+  // Out: the rest of the contract comes out of escrow (ILI-1316).
+  if (outMs(r) !== null && now >= outMs(r)! + SIGNOFF_MS) return { ...earn(s, ESCROW_EXFIL, 'escrow'), phase: 'ended', mission: { ...s.mission, phase: 'complete' } };
   return s;
 }

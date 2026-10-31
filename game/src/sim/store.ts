@@ -48,7 +48,10 @@ export function createStore(initial: GameState = initialState()) {
     pause: () => state.phase === 'running' && set({ ...state, phase: 'paused' }),
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
     // No saves in the MVP: retry and restart both start the mission over, live.
-    restart: () => set(keepBase(initialState(state.settings, state.timer.totalMs))),
+    // A new mission opens on the balance HQ carries in (ILI-1316): the last one's, unless given.
+    restart: (opening = state.resources.ledger.opening) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening))),
+    // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
+    setOpening: (opening: number) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening))),
     // Tuning: start over with a different mission length (1 to 30 minutes).
     setMissionLength: (minutes: number) =>
       set(keepBase(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000)))),

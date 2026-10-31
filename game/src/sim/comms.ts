@@ -1,3 +1,4 @@
+import { spend } from './sites';
 import type { GameState } from './state';
 import type { System } from './systems';
 import { blocked, treeCall, type Response } from './responses';
@@ -193,12 +194,9 @@ export function respond(s: GameState, id: string, responseId: string): GameState
   let answered: GameState = {
     ...s,
     team: { ...s.team, holdFor, holdUntilMs, activity: holdFor ? 'Holding for HQ' : r.hold ? 'Holding' : s.team.activity },
-    resources: {
-      ...s.resources,
-      budget: s.resources.budget - (r.spend?.budget ?? 0),
-    },
     comms: { ...s.comms, messages },
   };
+  if (r.spend?.budget) answered = spend(answered, r.spend.budget);
   if (r.effect && m.square) answered = applyEffect(answered, r.effect, m.square);
   if (follow) {
     // Observing takes time: the follow-up call comes in when the observation ends.

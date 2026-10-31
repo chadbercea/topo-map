@@ -86,8 +86,7 @@ describe('what ALPHA still asks: resupply', () => {
       expect(node.responses.length).toBeLessThanOrEqual(3);
     }
     const send = TREE.resupply.responses[0];
-    expect(blocked({ ...walking(), resources: { ...walking().resources, budget: 1_000_000 } }, send)).toBeNull();
-    expect(blocked({ ...walking(), resources: { ...walking().resources, budget: 0 } }, send)).toBe('Over budget');
+    expect(blocked(walking(), send)).toBeNull(); // in the red is fine: HQ can spend into it (ILI-1316)
   });
 
   it('an answer goes up the link: ALPHA keeps holding, then reads it back and acts (ILI-1209)', () => {

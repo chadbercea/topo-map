@@ -30,7 +30,7 @@ describe('sniper (ILI-1253)', () => {
     s = run(s, RUN_MS);
     expect(s.contacts[0].units).toHaveLength(1);
     expect(s.sniper!.done).toBe(true);
-    expect(s.resources.budget).toBe(5 * CASH_PER_STRIKE_KILL);
+    expect(s.resources.ledger.field).toBe(5 * CASH_PER_STRIKE_KILL);
     expect(s.comms.messages.at(-1)).toMatchObject({ from: 'OVERWATCH', text: `E3: 5 down, 1 still in there. +$${(5 * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` });
     expect(sniperGone(run(s, LEAVE_MS).sniper!, s.elapsedMs + LEAVE_MS)).toBe(true);
   });

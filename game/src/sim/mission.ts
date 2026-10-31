@@ -1,3 +1,5 @@
+import { earn } from './sites';
+import { ESCROW_BOX } from './prices';
 import { squareAt, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import type { GameState } from './state';
@@ -59,12 +61,17 @@ export const missionSystem: System = (s, dt) => {
     return { ...s, mission: { ...mission, recoverUntilMs: mission.recoverUntilMs + dt } };
   }
   if (mission.phase === 'objective' && mission.recoverUntilMs !== null && s.elapsedMs >= mission.recoverUntilMs) {
+    // Half the contract comes out of escrow with the black box (ILI-1316).
     return {
-      ...s,
+      ...earn(s, ESCROW_BOX, 'escrow'),
       mission: { ...mission, phase: 'exfil', blackBox: true, recoverUntilMs: null },
       comms: {
         ...s.comms,
-        messages: [...s.comms.messages, radio(s, 'got-black-box', `Got the black box, and some paperwork. Heading for exfil at ${mission.c}.`)],
+        messages: [
+          ...s.comms.messages,
+          radio(s, 'got-black-box', `Got the black box, and some paperwork. Heading for exfil at ${mission.c}.`),
+          { ...radio(s, 'escrow-box', `Client confirms the black box. $${ESCROW_BOX.toLocaleString('en-US')} out of escrow.`), from: 'HQ' },
+        ],
       },
     };
   }

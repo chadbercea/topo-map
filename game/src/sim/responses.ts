@@ -36,7 +36,7 @@ export const TREE: Record<string, CallNode> = {
   resupply: {
     text: ({ label }) => `${label}. We need a resupply bird.`,
     responses: [
-      { id: 'resupply', label: `Send resupply ($${RESUPPLY_COST.toLocaleString('en-US')})`, requires: { budget: RESUPPLY_COST }, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
+      { id: 'resupply', label: `Send resupply ($${RESUPPLY_COST.toLocaleString('en-US')})`, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
       { id: 'push', label: 'Move on without', effect: 'pass', reply: 'Understood. Moving with what we have.' },
     ],
   },
