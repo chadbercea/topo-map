@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { game } from '../sim/store';
+import { loadBalance } from './ledger';
 
 // The way into the war room (ILI-1280). Castle House's title screen comes first (ILI-1290):
 // START, ABOUT, SETTINGS over the blurred globe. START brings ORION-3 into focus, and the
@@ -81,7 +82,7 @@ export const intro = {
   },
   // Restart, Retry, Play again: the mission over, and the war room powers back on.
   reboot() {
-    game.restart();
+    game.restart(loadBalance());
     if (!introOn) return;
     game.standby();
     first = false;
@@ -90,7 +91,7 @@ export const intro = {
   // Exit, from the pause menu: the mission over, back to the title screen.
   home() {
     timers.forEach(clearTimeout);
-    game.restart();
+    game.restart(loadBalance());
     game.standby();
     set('title');
   },

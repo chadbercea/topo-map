@@ -3,6 +3,7 @@ import { treeCall } from './responses';
 import { ammoLeft, LOADOUT, medsLeft } from './team';
 import type { Message } from './comms';
 import { RESUPPLY_COST } from './prices';
+import { spend } from './sites';
 export { RESUPPLY_COST };
 import type { GameState } from './state';
 import type { System } from './systems';
@@ -80,10 +81,11 @@ export const supportSystem: System = (s) => {
 };
 
 export function sendResupply(s: GameState): GameState {
-  if (s.resources.budget < RESUPPLY_COST || s.inbound.length) return s;
+  if (s.inbound.length) return s; // into the red if need be (ILI-1316)
+  const paid = spend(s, RESUPPLY_COST);
+  if (paid.bankrupt) return paid;
   return {
-    ...s,
-    resources: { ...s.resources, budget: s.resources.budget - RESUPPLY_COST },
+    ...paid,
     inbound: [...s.inbound, { kind: 'resupply', arrivesMs: s.elapsedMs + RESUPPLY_FLIGHT_MS }],
     comms: { ...s.comms, messages: [...s.comms.messages, radio(s, 'DUSTOFF-2', `resupply-out-${s.elapsedMs}`, 'Resupply bird is up. Twenty seconds out.')] },
   };

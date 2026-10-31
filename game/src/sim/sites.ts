@@ -8,12 +8,22 @@ import { feed } from './intel';
 // Confirmed kills earn cash (GDD), and a destroyed contact leaves a kill site. ALPHA sweeps
 // it for documents worth cash as it passes through.
 
-export const CASH_PER_STRIKE_KILL = 1_500;
-export const CASH_PER_TEAM_KILL = 1_000;
-export const SEARCH_CASH = 1_000;
+import { BANKRUPT_AT, CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH } from './prices';
+export { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH };
 export const SITE_INTEL = 25; // intel a swept site feeds ALPHA's gauge (ILI-1315)
 
-export const earn = (s: GameState, amount: number): GameState => ({ ...s, resources: { ...s.resources, budget: s.resources.budget + amount } });
+// Money in (the field, or out of escrow) and money out (support), kept on the mission's
+// ledger for the P&L (ILI-1316). Spending can go as deep into the red as HQ likes, until the
+// credit line runs out: then the PMC is bankrupt and the operation is over, mid-mission or not.
+export const earn = (s: GameState, amount: number, from: 'field' | 'escrow' = 'field'): GameState => {
+  const { budget, ledger } = s.resources;
+  return { ...s, resources: { budget: budget + amount, ledger: { ...ledger, [from]: ledger[from] + amount } } };
+};
+export const spend = (s: GameState, amount: number): GameState => {
+  const { budget, ledger } = s.resources;
+  const next = { ...s, resources: { budget: budget - amount, ledger: { ...ledger, spent: ledger.spent - amount } } };
+  return next.resources.budget <= BANKRUPT_AT && !s.bankrupt ? { ...next, bankrupt: true, phase: 'ended' } : next;
+};
 
 export function markSite(s: GameState, c: Contact): GameState {
   const id = `site-${c.id}`;

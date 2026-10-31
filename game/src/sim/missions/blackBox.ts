@@ -1,3 +1,4 @@
+import { earn } from '../sites';
 import { contactIn, makeContact, moveContact, startMove } from '../contacts';
 import { squareAt } from '../../map/grid';
 import { registerMission, say, type MissionDef } from '../script';
@@ -6,7 +7,8 @@ import type { GameState } from '../state';
 export const PATROL_MOVES_MS = 250_000;
 export const PATROL_JAMMED_MS = 400_000; // jamming its net slows it down
 export const PATROL_WALK_MS = 50_000; // it's on the move this long before it gets there
-export const LOOT = 8_000; // the convoy's haul, if ALPHA takes it
+export { LOOT } from '../prices'; // the convoy's haul, if ALPHA takes it
+import { LOOT } from '../prices';
 const LOOT_TEXT = `$${LOOT.toLocaleString('en-US')}`;
 
 // Operation Black Box, the MVP mission (GDD): infil at A, recover the downed drone's black
@@ -128,7 +130,7 @@ export const BLACK_BOX: MissionDef = registerMission({
     {
       id: 'convoy-looted',
       when: (s) => s.contacts.some((c) => c.id === 'convoy' && c.status === 'cleared') && squareAt(s.team.position.x, s.team.position.y) === 'B1' && !s.team.fight,
-      then: (s) => say({ ...s, resources: { ...s.resources, budget: s.resources.budget + LOOT } }, s.team.callsign, 'convoy-loot', `Convoy's ours. Loading the haul: ${LOOT_TEXT} in salvage.`),
+      then: (s) => say(earn(s, LOOT), s.team.callsign, 'convoy-loot', `Convoy's ours. Loading the haul: ${LOOT_TEXT} in salvage.`),
     },
     // The contract window, called out as it closes, in the clock's real minutes (ILI-1251).
     {

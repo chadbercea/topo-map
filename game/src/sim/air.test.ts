@@ -52,7 +52,7 @@ describe('drone strike (ILI-1252)', () => {
     expect(s.events.find((e) => e.id === 'contact-t')?.status).toBe('resolved');
     expect(s.events.some((e) => e.kind === 'site' && e.square === 'E3')).toBe(true);
     expect(s.comms.messages.at(-1)).toMatchObject({ from: 'REAPER-1', text: `E3: all targets neutralized. 6 down. +$${(4 * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` });
-    expect(s.resources.budget).toBe(4 * CASH_PER_STRIKE_KILL); // the four HQ saw are confirmed
+    expect(s.resources.ledger.field).toBe(4 * CASH_PER_STRIKE_KILL); // the four HQ saw are confirmed
   });
 
   it('blind, it still clears the square, but nothing is confirmed or paid', () => {
@@ -60,7 +60,7 @@ describe('drone strike (ILI-1252)', () => {
     store.fire('t', 'drone');
     const s = run(store.get(), FLIGHT_MS + CROSS_MS + 200);
     expect(s.contacts.every((c) => c.status === 'cleared')).toBe(true);
-    expect(s.resources.budget).toBe(0);
+    expect(s.resources.ledger.field).toBe(0);
     expect(s.comms.messages.at(-1)?.text).toBe('E3: all targets neutralized. 6 down. Unconfirmed: no eyes on it.');
   });
 

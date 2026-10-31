@@ -65,7 +65,7 @@ describe('firefight', () => {
     expect(seen).toBe(1);
     const end = run(s, 30_000);
     expect(end.contacts[0].status).toBe('cleared');
-    expect(end.comms.messages.some((m) => /^E3 clear\..*\+\$2,000\.$/.test(m.text))).toBe(true); // both fighters paid
+    expect(end.comms.messages.some((m) => /^E3 clear\..*\+\$20,000\.$/.test(m.text))).toBe(true); // both fighters paid
   });
 
   it('ends with the contact cleared and a report on the radio', () => {
