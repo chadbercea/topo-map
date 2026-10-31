@@ -1189,6 +1189,12 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 }
 .castle-orion[data-side='left'] .castle-label { left: auto; right: 34px; }
 .castle-orion[data-side='below'] .castle-label { left: 50%; top: 40px; transform: translateX(-50%); }
+.castle-mark { z-index: 1; } /* over the satellites: they never block the menu */
+.castle-sat { position: absolute; width: 40px; height: 40px; margin: -20px 0 0 -20px; padding: 0; background: none; border: none; cursor: default; font: inherit; }
+.castle-sat[hidden] { display: none; }
+.castle-sat .castle-label { left: 50%; top: auto; bottom: 34px; transform: translateX(-50%); color: var(--ink); border-color: var(--line); opacity: 0; transition: opacity 120ms ease-out; pointer-events: none; }
+.castle-sat:hover .castle-label, .castle-sat:focus .castle-label { opacity: 1; }
+.castle-sat:focus { outline: none; }
 
 /* The title screen (ILI-1290): START, ABOUT, SETTINGS. The globe and satellites wait behind,
    blurred and dimmed, ORION-3's orange glinting through; START brings them into focus. */
