@@ -1299,6 +1299,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .title-sheet .menu { background: var(--bg); width: min(380px, 100%); }
 .title-sheet h2 { margin: 0 0 4px; letter-spacing: 0.24em; }
 .title-sheet p { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
+.title-sheet .credit { color: var(--dim); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; }
 .title-sheet a { color: var(--accent); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
 @media (max-width: 420px) { .title-menu button { min-width: 0; flex: 1; padding: 0 8px; letter-spacing: 0.14em; } .title-menu { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .castle-back { transition: none; } .castle-mark[data-leaving] { animation: none; opacity: 0; } }

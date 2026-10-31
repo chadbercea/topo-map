@@ -170,9 +170,10 @@ function Sheet({ which, close }: { which: 'about' | 'settings'; close: () => voi
       {which === 'about' ? (
         <section className="panel menu" role="dialog" aria-label="About">
           <h2>ABOUT</h2>
-          {/* Placeholder copy (ILI-1290): Chad's words to come. */}
-          <p>Castle House is a private military support desk: one satellite, one ordnance net, one team on the ground.</p>
-          <p>A game by Chad Bercea.</p>
+          {/* ILI-1301. Who Castle House is and what HQ does; nothing about the mission. */}
+          <p>Castle House is private military support. We don't go in. We make sure the people who do come back out.</p>
+          <p>From this terminal you work one team on the ground: one satellite overhead, one ordnance net, one radio link. You see what ORION-3 sees, you decide what gets hit, and the team lives with what you decide.</p>
+          <p className="credit">PMC War Room · a game by Chad Bercea</p>
           <a href="../">Portfolio</a>
           <button ref={done} onClick={close}>
             Back
