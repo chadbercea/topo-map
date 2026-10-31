@@ -31,6 +31,10 @@ export type MapView = 'topo' | 'relief';
 export type Settings = { mapView: MapView; city: boolean; skipIntro: boolean }; // skipIntro: START goes straight to the boot (ILI-1290)
 export const DEFAULT_SETTINGS: Settings = { mapView: 'topo', city: true, skipIntro: false };
 
+// A square ALPHA moved into blind, and what it found there when it arrived (ILI-1309): the
+// gamble's outcome, stamped on the map.
+export type BlindLook = { square: string; atMs: number; found: boolean };
+
 export type GameState = {
   tick: number;
   elapsedMs: number; // mission time actually played, excludes pauses
@@ -55,7 +59,7 @@ export type GameState = {
     treating: Treatment | null; // the medic at work
     decisions: Record<string, Decision>; // what HQ decided about squares on the route
   };
-  map: { cols: number; rows: number; scanned: string[]; selected: string | null };
+  map: { cols: number; rows: number; scanned: string[]; selected: string | null; blind: BlindLook[] };
   contacts: Contact[]; // hidden until imagery finds them
   events: MapEvent[];
   schedule: Scheduled[]; // events still to come, by mission time
@@ -114,7 +118,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
       treating: null,
       decisions: {},
     },
-    map: { cols: 8, rows: 5, scanned: [ROUTE[0]], selected: null }, // the insertion point is known ground
+    map: { cols: 8, rows: 5, scanned: [ROUTE[0]], selected: null, blind: [] }, // the insertion point is known ground
     contacts: MISSION.contacts(),
     events: [],
     schedule: MISSION.schedule,

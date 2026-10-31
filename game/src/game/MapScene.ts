@@ -25,6 +25,7 @@ const PING_MS = [2300, 3100, 2700, 3700, 4300]; // each operator's own beat
 const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff } as const;
 const WATER = 0x5fa8d3;
 const FLASH_MS = 2_500; // a new event's square flashes this long, in mission time
+const BLIND_MS = 4_000; // a square moved into blind shows what ALPHA found this long (ILI-1309)
 const MARKER_R = 9; // CSS px
 const MARGIN = 8 * DPR; // 8 CSS px between the grid and the panels
 const MAX_TEXTURE = 4096;
@@ -66,6 +67,8 @@ export class MapScene extends Phaser.Scene {
   private missionGfx!: Phaser.GameObjects.Graphics;
   private missionLabels: Phaser.GameObjects.Text[] = [];
   private markerGfx!: Phaser.GameObjects.Graphics;
+  private blindGfx!: Phaser.GameObjects.Graphics;
+  private blindLabels: Phaser.GameObjects.Text[] = [];
   private fightGfx!: Phaser.GameObjects.Graphics;
   private modeGfx!: Phaser.GameObjects.Graphics;
   private droneGfx!: Phaser.GameObjects.Graphics;
@@ -100,6 +103,7 @@ export class MapScene extends Phaser.Scene {
     this.intelGfx = this.add.graphics();
     this.satGfx = this.add.graphics();
     this.markerGfx = this.add.graphics();
+    this.blindGfx = this.add.graphics();
     this.fightGfx = this.add.graphics();
     this.modeGfx = this.add.graphics();
     this.droneGfx = this.add.graphics();
@@ -211,6 +215,7 @@ export class MapScene extends Phaser.Scene {
     this.drawSatellite(_time);
     this.drawMiniGame(_time);
     this.drawStrikes();
+    this.drawBlind();
   }
 
   // Air strikes (ILI-1252, ILI-1254): the aircraft crosses the square on each pass, with its
@@ -274,6 +279,36 @@ export class MapScene extends Phaser.Scene {
       // Under it; down at the marker, under the marker's own label (drawMission).
       this.exfilLabel.setText(TRANSPORT.callsign).setScale(1 / this.zoom).setPosition(t.x, t.y + (t.down ? 32 * px : z * 1.1)).setVisible(true);
     }
+  }
+
+  // Moving in blind, paid out (ILI-1309): when ALPHA reaches a square HQ sent it into blind,
+  // the square flashes what it found there, green and CLEAR or red and CONTACT, fading out
+  // over a few seconds of mission time.
+  private drawBlind() {
+    const g = this.blindGfx.clear();
+    const { map, elapsedMs: now } = game.get();
+    const px = DPR / this.zoom;
+    const shown = map.blind.filter((b) => now - b.atMs < BLIND_MS);
+    shown.forEach((b, i) => {
+      const sq = parseSquare(b.square)!;
+      const color = b.found ? 0xe5484d : TEAL;
+      const a = 1 - (now - b.atMs) / BLIND_MS;
+      g.fillStyle(color, 0.18 * a).fillRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+      g.lineStyle(2.5 * px, color, a).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+      const label = (this.blindLabels[i] ??= this.add
+        .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${12 * DPR}px`, fontStyle: 'bold', stroke: '#0b0f0d', strokeThickness: 4 * DPR })
+        .setOrigin(0.5, 0.5)
+        .setDepth(10));
+      this.inset.ignore(label);
+      label
+        .setText(`${b.square} · ${b.found ? 'CONTACT' : 'CLEAR'}`)
+        .setColor(b.found ? '#e5484d' : '#35d0a5')
+        .setAlpha(Math.min(1, a * 1.5))
+        .setScale(1 / this.zoom)
+        .setPosition((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL)
+        .setVisible(true);
+    });
+    this.blindLabels.slice(shown.length).forEach((l) => l.setVisible(false));
   }
 
   // Mini game mode: the signal pulses where it comes from.
