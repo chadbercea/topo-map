@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Castle, Spots } from './castleScene'; // types only: the scene loads lazily
 import { intro, LINE_MS, LOGIN_LINES, useIntro, WIPE_MS, type Stage } from './intro';
 import { MapViews } from './MapViews';
+import { OrionFeed } from './OrionFeed';
 import { game, useGame } from '../sim/store';
 
 // The way in (ILI-1280): Castle House's idle terminal, the wipe, the login, and the link with
@@ -80,6 +81,7 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
         </div>
       )}
       {title && sheet && <Sheet which={sheet} close={closeSheet} />}
+      {!title && <OrionFeed />}
       {!title && at && (
         <button
           className="castle-orion"
