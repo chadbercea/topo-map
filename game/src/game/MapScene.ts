@@ -227,6 +227,16 @@ export class MapScene extends Phaser.Scene {
       g.lineStyle(3.5 * px, 0x0b0f0d, 0.8).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
       g.lineStyle(2 * px, 0xe5484d, 1).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
     };
+    // OVERWATCH's crosshairs on the map, on the fighter it shoots next (ILI-1303).
+    const aim = s.sniper && !s.sniper.done ? s.sniper.shots.find((x) => x.atMs > now) : null;
+    if (aim) {
+      const cr = 12 * px;
+      for (const [w, c, a] of [[3.5 * px, 0x0b0f0d, 0.7], [1.5 * px, 0xe5484d, 1]] as const) {
+        g.lineStyle(w, c, a).strokeCircle(aim.x, aim.y, cr);
+        g.lineBetween(aim.x - cr * 1.5, aim.y, aim.x - cr * 0.5, aim.y).lineBetween(aim.x + cr * 0.5, aim.y, aim.x + cr * 1.5, aim.y);
+        g.lineBetween(aim.x, aim.y - cr * 1.5, aim.x, aim.y - cr * 0.5).lineBetween(aim.x, aim.y + cr * 0.5, aim.x, aim.y + cr * 1.5);
+      }
+    }
     for (const shot of s.sniper?.shots ?? []) {
       if (shot.atMs > now) continue;
       if (shot.hit) cross(shot.x, shot.y);
