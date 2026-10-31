@@ -100,3 +100,16 @@ test('heli: HAMMER-2 counts down, strafes the rows it can see fighters in, Tango
   await tick(3_500);
   await expect(panel).toHaveCount(0);
 });
+
+test('a strike running on a square that isn’t picked keeps a chip there; a tap opens its anchor (ILI-1306)', async ({ page }) => {
+  await targetE3(page);
+  await page.getByTestId('fire-drone').click();
+  await page.evaluate(() => window.game.closeSquare());
+  const chip = page.getByTestId('busy-chip');
+  await expect(chip).toHaveAttribute('data-square', 'E3');
+  await expect(chip).toContainText(/REAPER-1 · 0:\d\d/);
+  await chip.dispatchEvent('click');
+  await expect(page.getByTestId('square-card')).toHaveAttribute('data-square', 'E3');
+  await expect(page.getByTestId('square-card').getByTestId('drone-panel')).toBeVisible();
+  await expect(chip).toHaveCount(0); // its square is picked: the anchor says it all
+});

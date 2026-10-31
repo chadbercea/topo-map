@@ -7,6 +7,8 @@ import { squareAt } from '../map/grid';
 import { TargetMenu } from './TargetMenu';
 import { SniperPanel } from './SniperPanel';
 import { AirPanel } from './AirPanel';
+import { AIR, airGone, arrived } from '../sim/air';
+import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { ground, weather } from '../sim/conditions';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { EVENT_LABEL } from '../sim/stream';
@@ -56,22 +58,105 @@ export function SquareCard() {
   useEffect(() => () => void bus.emit(EV.overlays), []);
 
   const area = getMapRect();
-  if (!square || !area) return null;
+  if (!area) return null;
+  if (!square) return <Busy s={s} area={area} picked={null} />;
   const at: Placed = tier === 'compact' ? strip(area, actHeight) : beside(square, area, actHeight, s.team.position, ANCHOR_W);
   return (
-    <section
-      ref={actRef}
-      className="square-card anchor"
-      data-testid="square-card"
-      data-overlay="actions"
-      data-square={square}
-      data-side={at.side}
-      style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight }}
-      role="group"
-      aria-label={`Square ${square}`}
-    >
-      <Card s={s} square={square} />
-    </section>
+    <>
+      <Busy s={s} area={area} picked={square} />
+      <Leader square={square} area={area} anchor={{ x: at.left, y: at.top, w: at.width, h: Math.min(actHeight || 200, at.maxHeight) }} />
+      <section
+        ref={actRef}
+        className="square-card anchor"
+        data-testid="square-card"
+        data-overlay="actions"
+        data-square={square}
+        data-side={at.side}
+        style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight }}
+        role="group"
+        aria-label={`Square ${square}`}
+      >
+        <Card s={s} square={square} />
+      </section>
+    </>
+  );
+}
+
+// Many at once (ILI-1306): a strike running on a square that isn't the picked one keeps a
+// small grey chip at that square, saying who's at work there and how it's going; a tap opens
+// the square's anchor. (ALPHA waiting on HQ has its own orange flag, and a new find its red
+// ping: those already pull the eye.)
+function Busy({ s, area, picked }: { s: GameState; area: Area; picked: string | null }) {
+  const now = s.elapsedMs;
+  const work: { square: string; text: string }[] = [];
+  if (s.sniper && !sniperGone(s.sniper, now)) work.push({ square: s.sniper.square, text: `${SNIPER_CALLSIGN} · ${s.sniper.done ? 'done' : 'firing'}` });
+  for (const w of ['drone', 'heli'] as const) {
+    const r = w === 'drone' ? s.drone : s.heli;
+    if (!r || airGone(r, now)) continue;
+    const text = r.doneMs !== null ? 'done' : arrived(r, now) ? 'over target' : countdown(r.arriveMs - now);
+    work.push({ square: r.square, text: `${AIR[w].callsign} · ${text}` });
+  }
+  const bySquare = new Map<string, string[]>();
+  for (const w of work) if (w.square !== picked) bySquare.set(w.square, [...(bySquare.get(w.square) ?? []), w.text]);
+  return (
+    <>
+      {[...bySquare].map(([square, lines]) => {
+        const sq = squareBox(square);
+        if (!sq || sq.x + sq.w < area.x || sq.x > area.x + area.width || sq.y + sq.h < area.y || sq.y > area.y + area.height) return null;
+        return (
+          <button key={square} className="busy-chip" style={{ left: Math.max(area.x + 4, sq.x + 4), top: Math.max(area.y + 4, sq.y + 4) }} onClick={() => game.selectSquare(square)} data-testid="busy-chip" data-square={square}>
+            <b>{square}</b>
+            {lines.map((l) => (
+              <span key={l}>{l}</span>
+            ))}
+          </button>
+        );
+      })}
+    </>
+  );
+}
+
+// The anchor's leader (ILI-1305): a line from the anchor to its square, so the two read as one
+// however far apart they sit. When the square is off the open map, the line stops at the map's
+// edge in an arrow with the square's name, pointing the way to it.
+function Leader({ square, area, anchor }: { square: string; area: Area; anchor: Box }) {
+  const sq = squareBox(square);
+  if (!sq) return null;
+  const centre = { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 };
+  const inside = (p: { x: number; y: number }) => p.x >= area.x && p.x <= area.x + area.width && p.y >= area.y && p.y <= area.y + area.height;
+  const nearest = (b: Box, p: { x: number; y: number }) => ({ x: Math.max(b.x, Math.min(p.x, b.x + b.w)), y: Math.max(b.y, Math.min(p.y, b.y + b.h)) });
+  const off = !inside(centre);
+  // Off the map: the arrow goes on the map's edge (inset a little) where a line from the map's
+  // middle to the square crosses it, so it points the way the square lies.
+  let to = nearest(sq, nearest(anchor, centre));
+  let a = 0;
+  if (off) {
+    const m = 16;
+    const mid = { x: area.x + area.width / 2, y: area.y + area.height / 2 };
+    const dx = centre.x - mid.x;
+    const dy = centre.y - mid.y;
+    const t = Math.min(dx ? (dx > 0 ? area.x + area.width - m - mid.x : area.x + m - mid.x) / dx : Infinity, dy ? (dy > 0 ? area.y + area.height - m - mid.y : area.y + m - mid.y) / dy : Infinity);
+    to = { x: mid.x + dx * t, y: mid.y + dy * t };
+    a = Math.atan2(dy, dx);
+  }
+  const from = nearest(anchor, to);
+  if (Math.hypot(to.x - from.x, to.y - from.y) < 6 && !off) return null; // touching: nothing to draw
+  if (!off) a = Math.atan2(to.y - from.y, to.x - from.x);
+  const head = (r: number, da: number) => `${to.x - Math.cos(a + da) * r},${to.y - Math.sin(a + da) * r}`;
+  return (
+    <svg className="anchor-leader" data-testid="anchor-leader" data-off={off || undefined} aria-hidden>
+      <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
+      {off ? (
+        <>
+          <polygon points={`${to.x},${to.y} ${head(15, 0.5)} ${head(15, -0.5)}`} />
+          <text x={to.x - Math.cos(a) * 30} y={to.y - Math.sin(a) * 22 + 4} data-testid="anchor-off">
+            {square}
+          </text>
+        </>
+      ) : (
+        <circle cx={to.x} cy={to.y} r="3" />
+      )}
+    </svg>
   );
 }
 
@@ -83,6 +168,8 @@ function strip(area: Area, height: number): Placed {
 }
 
 type Area = NonNullable<ReturnType<typeof getMapRect>>;
+
+type Box = { x: number; y: number; w: number; h: number };
 
 type Placed = { left: number; top: number; width: number; maxHeight: number; side: string };
 
