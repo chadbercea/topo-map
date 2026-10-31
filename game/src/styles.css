@@ -1146,7 +1146,27 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   100% { clip-path: inset(0); }
 }
 .hud[data-boot] .panel { animation: power-frame 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--on); }
-@media (prefers-reduced-motion: reduce) { .hud[data-boot] .panel, .hud[data-boot] .panel > * { animation: none; } }
+/* The first time in (ILI-1307): slower, one panel at a time, each finishing before the next
+   starts, and the lists in them filling line by line. The mission first, then COMMS, the team,
+   ALPHA's box, ORION-3, the readouts. Restarts keep the quick version above. */
+.hud[data-boot='first'] .slot-widget { --on: 0ms; }
+.hud[data-boot='first'] .slot-satcom { --on: 1300ms; }
+.hud[data-boot='first'] .slot-team { --on: 2900ms; }
+.hud[data-boot='first'] .slot-team .call-box { --on: 4100ms; }
+.hud[data-boot='first'] .slot-orion { --on: 4800ms; }
+.hud[data-boot='first'] :is(.slot-small, .orion .env) { --on: 5900ms; }
+.hud[data-boot='first'] .panel { animation-duration: 560ms; }
+.hud[data-boot='first'] .panel > * { animation-duration: 340ms; animation-delay: calc(var(--on) + 600ms + var(--i) * 150ms); }
+.hud[data-boot='first'] .panel li { --j: 0; animation: power-content 300ms ease-out both; animation-delay: calc(var(--on) + 760ms + var(--j) * 110ms); }
+.hud[data-boot='first'] .panel li:nth-child(2) { --j: 1; }
+.hud[data-boot='first'] .panel li:nth-child(3) { --j: 2; }
+.hud[data-boot='first'] .panel li:nth-child(4) { --j: 3; }
+.hud[data-boot='first'] .panel li:nth-child(5) { --j: 4; }
+.hud[data-boot='first'] .panel li:nth-child(6) { --j: 5; }
+.hud[data-boot='first'] .panel li:nth-child(7) { --j: 6; }
+.hud[data-boot='first'] .panel li:nth-child(8) { --j: 7; }
+.hud[data-boot='first'] .panel li:nth-child(n + 9) { --j: 8; }
+@media (prefers-reduced-motion: reduce) { .hud[data-boot] .panel, .hud[data-boot] .panel > *, .hud[data-boot] .panel li { animation: none; } }
 
 /* Menus and the After Action Report power on the same way (ILI-1285). */
 :root:not([data-automated]) .overlay > .panel { --on: 0ms; animation: power-frame 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
