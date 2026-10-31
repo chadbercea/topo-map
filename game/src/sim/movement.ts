@@ -25,6 +25,11 @@ export const movementSystem: System = (s, dt) => {
   const target = team.route[team.waypoint];
   const goal = target && squareCenter(target);
   if (!goal || team.holdFor || team.fight || team.treating || s.elapsedMs < team.holdUntilMs) return s; // holding, fighting or treating
+  // Holding short of a contact for HQ to soften it (ILI-1315), until it's done or time's up.
+  if (team.waitFor?.square === target && s.elapsedMs < team.waitFor.untilMs) {
+    const activity = `Holding short of ${target} · soften them up`;
+    return team.activity === activity ? s : { ...s, team: { ...team, activity } };
+  }
   // Out of intel (ILI-1314): it holds where it is until HQ feeds the gauge again.
   if (!moving(s)) return team.activity === STARVED ? s : { ...s, team: { ...team, activity: STARVED } };
 

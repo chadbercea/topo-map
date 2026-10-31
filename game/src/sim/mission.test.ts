@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { RECOVER_MS } from './mission';
 import type { GameState } from './state';
-import { createStore } from './store';
-import { answer, run, walking } from './testkit';
+import { run, walking } from './testkit';
 
 const until = (s: GameState, done: (x: GameState) => boolean, maxMs = 600_000) => {
   for (let t = 0; t < maxMs && !done(s); t += 100) s = run(s, 100);
@@ -35,15 +34,16 @@ describe('mission A to B to C', () => {
     expect(s.comms.messages.at(-1)?.text).toMatch(/We're out/);
   });
 
-  it('the crash site cannot be detoured around', () => {
+  it('the crash site cannot be detoured around: too strong to take, ALPHA goes in anyway (ILI-1315)', () => {
     const s0 = walking();
+    const units = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     const s = {
       ...s0,
-      contacts: [{ id: 'x', square: 'D3', label: 'a squad', strength: 1, status: 'revealed' as const, observed: false, units: [0], total: 1 }],
+      contacts: [{ id: 'x', square: 'D3', label: 'a squad', strength: 1, status: 'revealed' as const, observed: false, units, total: units.length }],
     };
-    const store = createStore(until(s, (x) => x.team.holdFor === 'contact-call-x'));
-    answer(store, 'contact-call-x', 'avoid');
-    expect(store.get().team.route).toContain('D3');
-    expect(store.get().team.decisions.D3).toBe('push');
+    const t = until(s, (x) => x.team.decisions.D3 !== undefined);
+    expect(t.team.route).toContain('D3');
+    expect(t.team.decisions.D3).toBe('attack');
+    expect(t.comms.messages.some((m) => /crash site: we're going in/.test(m.text))).toBe(true);
   });
 });

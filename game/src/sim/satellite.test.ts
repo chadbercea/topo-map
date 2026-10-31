@@ -6,11 +6,10 @@ import { SETTLE_MS, SLEW_MS_PER_SQUARE, slewMs } from './satellite';
 import { blockers } from './progress';
 import { initialState, type GameState } from './state';
 import { createStore, type Store } from './store';
-import { answer, run, walking } from './testkit';
+import { run, walking } from './testkit';
 
-// At the start ALPHA holds short of F4, which nobody has imaged. ORION-3 is over G5.
-const atRequest = () => createStore(run(initialState(), 500));
-const REQUEST = 'unimaged-F4-1';
+// ORION-3 over G5 at the start; ALPHA doesn't ask for looks any more (ILI-1315): HQ tasks it.
+const atStart = () => createStore(initialState());
 
 // Wait for ORION-3 to get on station (run, not store.tick, so nothing else needs answering).
 const onStation = (store: Store) => {
@@ -25,48 +24,28 @@ const look = (store: Store, square: string, mode: 'photo' | 'video' = 'photo') =
 };
 
 describe('ORION-3 tasking', () => {
-  it('on station for ALPHA\u2019s look, ORION-3 says it\u2019s ready and taking the shot is what needs HQ (ILI-1257)', () => {
-    const store = atRequest();
-    answer(store, REQUEST, 'send');
+  it('on station, ORION-3 says it\u2019s ready and taking the shot is what needs HQ (ILI-1257)', () => {
+    const store = atStart();
+    store.lookAt('F4');
     onStation(store);
     expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: 'On station over F4. Ready for collection.' });
-    expect(blockers(store.get())[0]).toEqual({ tone: 'decision', text: 'ORION-3 on station over F4: take the shot', go: { square: 'F4' } });
     store.capture('photo');
     expect(blockers(store.get()).map((b) => b.text)).not.toContain('ORION-3 on station over F4: take the shot');
   });
 
-  it('looking at F4 from the map answers ALPHA\'s call about F4; another square leaves it waiting', () => {
-    const elsewhere = atRequest();
-    elsewhere.lookAt('E3');
-    expect(elsewhere.get().satellite.callId).toBeNull();
-    expect(elsewhere.get().comms.messages.find((m) => m.id === REQUEST)?.status).toBe('new');
-    const store = atRequest();
+  it('a slew takes its time: G5 to F4 is one square diagonally', () => {
+    const store = atStart();
     store.lookAt('F4');
-    expect(store.get().satellite).toMatchObject({ aim: 'F4', callId: REQUEST });
-    expect(store.get().comms.messages.find((m) => m.id === REQUEST)).toMatchObject({ status: 'read', answer: 'send' });
-  });
-
-  it('Look at it tasks ORION-3 to F4; ALPHA waits on it and does not time out', () => {
-    const store = atRequest();
-    answer(store, REQUEST, 'send');
     const s = store.get();
-    expect(s.satellite).toMatchObject({ state: 'slewing', aim: 'F4', callId: REQUEST });
-    // G5 to F4 is one square diagonally.
+    expect(s.satellite).toMatchObject({ state: 'slewing', aim: 'F4', callId: null });
     expect(s.satellite.arriveMs - s.elapsedMs).toBe(Math.round((SETTLE_MS + Math.SQRT2 * SLEW_MS_PER_SQUARE) / 100) * 100);
-    expect(s.team).toMatchObject({ holdFor: REQUEST, activity: 'Waiting on the look' });
-    onStation(store);
-    store.set(run(store.get(), 30_000)); // HQ takes its time choosing: the call doesn't lapse
-    expect(store.get().team.holdFor).toBe(REQUEST);
   });
 
-  it('a photo images the square and releases ALPHA', () => {
-    const store = atRequest();
-    answer(store, REQUEST, 'send');
-    onStation(store);
-    store.capture('photo');
+  it('a photo images the square', () => {
+    const store = atStart();
+    look(store, 'F4');
     const s = store.get();
     expect(s.map.scanned).toContain('F4');
-    expect(s.team.holdFor).toBeNull();
     expect(s.satellite).toMatchObject({ state: 'idle', aim: 'F4', result: { square: 'F4', mode: 'photo', fighters: 0 } });
     expect(s.imagery.F4).toMatchObject({ mode: 'photo', live: false, seen: [] });
     expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 collection complete \(photo\): nothing there\. Analysts: [a-z -]+ pushed to ALPHA\./.test(m.text))).toBe(true);
@@ -90,26 +69,20 @@ describe('ORION-3 tasking', () => {
     expect(slewMs(s, 'E5')).toBe(SETTLE_MS + 2 * SLEW_MS_PER_SQUARE);
   });
 
-  it('while it captures it is busy: no new task, and Look at it is greyed out', () => {
-    const store = atRequest();
+  it('while it captures it is busy: no new task', () => {
+    const store = atStart();
     look(store, 'G4', 'video');
     expect(store.get().satellite.state).toBe('capturing');
     store.lookAt('A1');
     expect(store.get().satellite.aim).toBe('G4');
-    const send = store.get().comms.messages.find((m) => m.id === REQUEST)!.responses!.find((r) => r.id === 'send')!;
-    answer(store, REQUEST, 'send');
-    expect(store.get().comms.messages.find((m) => m.id === REQUEST)!.status).toBe('new');
-    expect(send.label).toBe('Look at it');
   });
 
-  it('cancel stops it where it is, and ALPHA moves on without imagery', () => {
-    const store = atRequest();
-    answer(store, REQUEST, 'send');
+  it('cancel stops it where it is', () => {
+    const store = atStart();
+    store.lookAt('F4');
     store.tick(1_000);
     store.cancelLook();
     expect(store.get().satellite.state).toBe('idle');
-    expect(store.get().team.holdFor).toBeNull();
-    expect(store.get().comms.messages.at(-1)?.text).toBe('No imagery. Moving anyway.');
   });
 });
 

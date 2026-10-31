@@ -54,6 +54,7 @@ export type GameState = {
     activity: string;
     holdFor: string | null; // radio call the team is waiting on HQ to answer
     holdUntilMs: number; // mission time a timed hold ends
+    waitFor: { square: string; untilMs: number } | null; // holding short of a contact for HQ to soften it (ILI-1315)
     activeUntilMs: number; // the readout stays in Mode B until then (fights, wounds, healing)
     vitals: string; // health/ammo/meds last tick, to notice them changing
     fight: Fight | null;
@@ -114,6 +115,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
       activity: `Moving to ${ROUTE[1]}`,
       holdFor: null,
       holdUntilMs: 0,
+      waitFor: null,
       activeUntilMs: 0,
       vitals: vitalsFor(operators),
       fight: null,

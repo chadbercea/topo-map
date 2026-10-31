@@ -76,6 +76,23 @@ export async function tapAt(page: Page, isMobile: boolean, p: { x: number; y: nu
   else await page.mouse.click(p.x, p.y);
 }
 
+// The game is up and the clock running: ALPHA walks its route on its own (ILI-1315: no
+// opening question; under test the intel gauge is pinned full, ILI-1314).
+export const running = (page: Page) => page.waitForFunction(() => window.game?.get().phase === 'running');
+
+// ALPHA's one question since it decides for itself (ILI-1315): combat ineffective, it stops and
+// asks for a resupply bird. Two operators down, a moment later, the call is up.
+export async function askResupply(page: Page) {
+  await running(page);
+  await page.evaluate(() => {
+    const s = window.game.get();
+    const operators = s.team.operators.map((o, i) => (i < 2 ? { ...o, health: 0 } : o));
+    window.game.set({ ...s, team: { ...s.team, operators } });
+    for (let t = 0; t < 200; t += 100) window.game.tick(100);
+  });
+  await page.waitForFunction(() => window.game.get().team.holdFor);
+}
+
 // ALPHA's ask arrives as an orange flag at its marker; click it to read the ask and answer
 // (ILI-1200). If the flag is under the square card, TEAM's call box answers for it (ILI-1255).
 export async function openAsk(page: Page) {

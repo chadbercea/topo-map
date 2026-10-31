@@ -1,25 +1,24 @@
 import { expect, test, type Page } from '@playwright/test';
-import { freeze, photo, start, openEvent, hasEvent } from './helpers';
+import { freeze, photo, start, openEvent, hasEvent, running } from './helpers';
 
 // Image E3 so the checkpoint is found, then open its target menu.
 async function targetE3(page: Page) {
   await start(page, '?debug');
-  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  await running(page);
   await freeze(page);
-  await page.evaluate(() => window.game.respond(window.game.get().team.holdFor!, 'blind'));
   await photo(page, 'E3');
   await openEvent(page, 'contact', 'E3');
   await expect(page.getByTestId('event-card')).toContainText('A fortified checkpoint');
   await expect(page.getByTestId('target-menu')).toBeVisible();
 }
 
-test('the target menu lists every weapon with its state, and ALPHA attacks', async ({ page }) => {
+test('the target menu lists every weapon with its state; no ALPHA attacks: HQ changes the odds, ALPHA decides (ILI-1315)', async ({ page }) => {
   await targetE3(page);
   await expect(page.getByTestId('fire-drone')).toContainText('1 use');
   await expect(page.getByTestId('fire-sniper')).toContainText('Ready');
   await expect(page.getByTestId('fire-heli')).toBeEnabled(); // unlocked from the start (ILI-1254)
   await expect(page.getByTestId('fire-heli')).toContainText('Ready');
-  await expect(page.getByTestId('send-team')).toBeVisible();
+  await expect(page.getByTestId('send-team')).toHaveCount(0);
   await expect(page.getByTestId('eyes')).toContainText('Fresh look');
 });
 

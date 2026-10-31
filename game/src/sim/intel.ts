@@ -68,13 +68,17 @@ export function pushPhoto(s: GameState, square: string, fighters: number): { nex
   return { next: { ...next, intel: { ...next.intel, graded: [...new Set([...next.intel.graded, square])] } }, grade: g, banked };
 }
 
-// The bank pays out as ALPHA starts the leg into a square HQ scanned ahead (ILI-1316).
+// The bank pays out as ALPHA starts the leg into a square HQ scanned ahead (ILI-1316), or
+// at once if ALPHA's route no longer goes there (it went around it, ILI-1315): the intel did
+// its work either way.
 export const intelSystem = (s: GameState): GameState => {
   const next = s.team.route[s.team.waypoint];
-  const due = s.intel.banked.filter((b) => b.square === next);
+  const ahead = s.team.route.slice(s.team.waypoint);
+  const isDue = (b: { square: string }) => b.square === next || !ahead.includes(b.square);
+  const due = s.intel.banked.filter(isDue);
   if (!due.length) return s;
   const paid = due.reduce((n, b) => feed(n, b.amount), s);
-  return { ...paid, intel: { ...paid.intel, banked: paid.intel.banked.filter((b) => b.square !== next) } };
+  return { ...paid, intel: { ...paid.intel, banked: paid.intel.banked.filter((b) => !isDue(b)) } };
 };
 
 // Video: the permanent floor, once a session.

@@ -7,7 +7,6 @@ import { abortMiniGame } from './minigame';
 import { launch } from './air';
 import { callSniper } from './sniper';
 import { weaponBlocked, type Weapon } from './ordnance';
-import { applyEffect } from './contacts';
 import { sendResupply } from './support';
 import { jam, startIntercept, tune } from './signal';
 import { step } from './systems';
@@ -89,14 +88,6 @@ export function createStore(initial: GameState = initialState()) {
       if (!c || weaponBlocked(state, weapon, c)) return;
       // No mini games: the support does it itself (ILI-1252, ILI-1253, ILI-1254).
       set(weapon === 'sniper' ? callSniper(state, contactId) : launch(state, weapon, contactId));
-    },
-    // Send ALPHA at a found contact: answers its call if it's waiting on one, else decides ahead.
-    sendTeam: (contactId: string) => {
-      const c = state.contacts.find((x) => x.id === contactId);
-      if (!c) return;
-      const call = state.comms.messages.find((m) => m.id === state.team.holdFor && m.square === c.square && m.status === 'new');
-      if (call?.responses?.some((r) => r.id === 'attack')) return set(send(state, call.id, 'attack')); // an order: it goes up the link
-      set({ ...applyEffect(state, 'attack', c.square), openEvent: null });
     },
     lookAt: (square: string) => set(task(state, square)),
     // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first

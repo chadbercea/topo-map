@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, untilOnStation, openAsk, linked, hasEvent, photo, worldToScreen } from './helpers';
+import { fastForward, freeze, start, untilOnStation, hasEvent, photo, worldToScreen, running } from './helpers';
 
 test('pick a square, Reposition: ORION-3 moves, then on station the shots take its place (ILI-1219, ILI-1250)', async ({ page }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
@@ -63,26 +63,11 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   const act = page.getByTestId('square-anchor').getByTestId('strike-menu');
   await expect(card.getByTestId('event-card')).toHaveCount(0);
   await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
-  await act.getByTestId('send-team').scrollIntoViewIfNeeded();
+  await act.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
   await expect(act.getByTestId('fire-sniper')).toBeVisible();
   await card.getByRole('button', { name: 'Close' }).click();
   await expect(card).toHaveCount(0); // closed: the look is filed
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
-});
-
-test('ALPHA asks for imagery: Look at it, then a photo on station lets it move', async ({ page }) => {
-  await start(page, '?debug');
-  await page.waitForFunction(() => window.game?.get().team.holdFor);
-  await freeze(page);
-  await openAsk(page);
-  await page.getByTestId('responses').getByRole('button', { name: 'Look at it' }).click();
-  await linked(page);
-  await expect(page.getByTestId('team-panel')).toContainText('Waiting on the look');
-  await untilOnStation(page);
-  await page.getByTestId('satellite').getByTestId('capture-photo').click();
-  await expect(page.getByTestId('satellite-result')).toContainText('Photo: nothing there');
-  await fastForward(page, 1_000);
-  await expect(page.getByTestId('team-panel')).toContainText('Moving to F4');
 });
 
 test('a fighter in ORION-3\u2019s picture opens its square\u2019s strikes at the square; there\u2019s no Strike button (ILI-1250, ILI-1308)', async ({ page }) => {
@@ -141,7 +126,7 @@ test('over a square it has already shot, no Reposition and no Rescan: the shots 
 
 test('standing by, ORION-3 names the next square ahead with no imagery (ILI-1272)', async ({ page, isMobile }) => {
   await start(page, '?debug');
-  await page.waitForFunction(() => window.game?.get().team.holdFor);
+  await running(page);
   if (isMobile) await page.getByTestId('tab-orion').click();
   await expect(page.getByTestId('orion-placeholder')).toHaveText('Standing by over G5 · no imagery of F4 ahead');
 });

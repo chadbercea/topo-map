@@ -1,5 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test';
-import { freeze, start } from './helpers';
+import { askResupply, freeze, start, running } from './helpers';
 
 // The medium tier (ILI-1213): a fold open either way, a tablet, a phone on its side. The map
 // on the left, the panels in a rail on the right behind tabs; a picked square shows in
@@ -19,7 +19,7 @@ for (const [name, width, height] of SIZES) {
     test.skip(isMobile, 'sets its own viewport');
     await page.setViewportSize({ width, height });
     await start(page, '?debug');
-    await page.waitForFunction(() => window.game?.get().team.holdFor);
+    await running(page);
     await freeze(page);
     await expect(page.locator('.hud')).toHaveAttribute('data-tier', 'medium');
 
@@ -34,6 +34,7 @@ for (const [name, width, height] of SIZES) {
     await expect(page.getByTestId('team-panel')).toBeHidden();
 
     // ALPHA's flag is at its marker in the open map, not parked at the map's foot.
+    await askResupply(page); // ALPHA's one question (ILI-1315)
     await expect(page.getByTestId('comms')).toHaveAttribute('data-pinned', 'true');
 
     // Open E3 with the checkpoint found: ORION-3's tab comes forward with the square in it, and

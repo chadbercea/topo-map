@@ -22,7 +22,8 @@ describe('the exfil sequence (ILI-1264)', () => {
 
   it('waits while anyone is still in the square', () => {
     const s0 = until(walking(), (x) => x.mission.phase === 'exfil');
-    const enemy = { ...s0, contacts: [{ id: 'x', square: 'B1', status: 'revealed', units: [0], label: 'fighters' }] } as unknown as GameState;
+    // ALPHA has taken this one on (ILI-1315), so it goes in rather than around.
+    const enemy = { ...s0, team: { ...s0.team, decisions: { ...s0.team.decisions, B1: 'attack' } }, contacts: [{ id: 'x', square: 'B1', status: 'revealed', units: [0], strength: 1, label: 'fighters' }] } as unknown as GameState;
     // Take ALPHA's fight out of it: only the square being occupied should hold the bird.
     let s = enemy;
     for (let t = 0; t < 300_000 && !inC(s); t += 100) s = run({ ...s, team: { ...s.team, fight: null } }, 100);

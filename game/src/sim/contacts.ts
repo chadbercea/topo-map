@@ -2,12 +2,12 @@ import { COLS, parseSquare, ROWS, squareAt, squareId, type SquareId } from '../m
 import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
-import { TREE, treeCall } from './responses';
 import { pass } from './sites';
 import { isMissionPoint } from './mission';
 import { sendResupply } from './support';
 import { nextRandom } from './firefight';
 import { missionDef } from './script';
+import { LOADOUT } from './team';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -107,63 +107,85 @@ export function reveal(s: GameState, squares: SquareId[], by: string): GameState
 
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
-// The team stops short of the next square on its route if nobody has imaged it, or if a
-// found contact sits there that HQ hasn't decided about, and radios for a call.
+// ALPHA decides for itself (ILI-1315, decision logic ILI-1312). It doesn't ask HQ what to do:
+// HQ changes the ground (scans, strikes, intel), ALPHA reads it and radios what it's doing.
+// A contact HQ has found on the square it's heading into gets weighed: take it, hold short for
+// HQ to soften it (twenty seconds, then go around), or go around. A square nobody imaged it
+// just walks into if the intel gauge lets it (intel.ts), and finds out (ILI-1309). The exfil
+// always has a way out: a fight ALPHA won't take there sends it to the alternate exfil.
+export const TAKE_AT = 0.6; // their strength over ours at or under this: take the fight
+export const AVOID_ABOVE = 1; // over this: go around; between the two: soften it first
+export const SOFTEN_MS = 20_000;
+
+// Their strength over ALPHA's: fighters weighted by how hard they are, against operators
+// still up, weighted by the ammo they've got left, halved when the meds are gone.
+export function odds(s: GameState, c: Contact): number {
+  const up = s.team.operators.filter((o) => o.health > 0);
+  if (!up.length) return Infinity;
+  const ammo = up.reduce((n, o) => n + Math.min(1, o.ammo / LOADOUT[o.role].ammo), 0) / up.length;
+  const meds = up.some((o) => o.meds > 0) ? 1 : 0.5;
+  return (c.units.length * c.strength) / (up.length * ammo * meds);
+}
+
 export const approachSystem: System = (s) => {
   const { team } = s;
   const next = team.route[team.waypoint];
-  if (team.holdFor) return clearedHold(s);
   if (!next || team.holdFor || team.fight || team.treating || s.minigame?.status === 'active') return s;
   if (squareAt(team.position.x, team.position.y) === next) return s; // already there
-  const decided = team.decisions[next];
-  const have = new Set(s.comms.messages.map((m) => m.id));
-
   const contact = contactIn(s, next);
-  if (contact?.status === 'revealed' && decided !== 'attack' && decided !== 'push') {
-    const id = `contact-call-${contact.id}${contact.observed ? '-observed' : ''}`;
-    if (have.has(id)) return s;
-    const node = contact.observed ? 'contact-observed' : 'contact';
-    return holdOn(s, { node, id, square: next, label: contact.label, eventId: `contact-${contact.id}` });
-  }
-  if (!s.map.scanned.includes(next) && !decided) {
-    const id = `unimaged-${next}-${team.waypoint}`;
-    if (have.has(id)) return s;
-    return holdOn(s, { node: 'unimaged', id, square: next });
-  }
+  if (contact?.status === 'revealed' && team.decisions[next] !== 'attack') return assess(s, next, contact);
+  // Held short of a contact that HQ's support has since wiped out: it moves through.
+  if (team.waitFor?.square === next && !contact)
+    return decideOn(say(s, `clear-${next}-${s.elapsedMs}`, `Targets in ${next} are down. Moving through.`), next, 'push');
   return s;
 };
 
+function assess(s: GameState, square: SquareId, c: Contact): GameState {
+  const r = odds(s, c);
+  const waiting = s.team.waitFor?.square === square ? s.team.waitFor : null;
+  const what = `Contact in ${square}, ${c.label}.`;
+  if (r <= TAKE_AT) return decideOn(say(s, `take-${c.id}-${s.elapsedMs}`, waiting ? `That did it. Moving in on ${square}.` : `${what} We'll take them.`), square, 'attack');
+  if (r <= AVOID_ABOVE) {
+    if (!waiting) return say({ ...s, team: { ...s.team, waitFor: { square, untilMs: s.elapsedMs + SOFTEN_MS } } }, `soften-${c.id}-${s.elapsedMs}`, `${what} Too many to walk into. Soften them up and we'll go.`);
+    if (s.elapsedMs < waiting.untilMs) return s;
+    return goAround(s, square, `No change in ${square}.`);
+  }
+  return goAround(s, square, `${what} Not taking that.`);
+}
+
+// It won't take the fight: around it, or out by the alternate exfil. The crash site it can't
+// skip: it goes in.
+function goAround(s: GameState, square: SquareId, why: string): GameState {
+  const cleared = { ...s, team: { ...s.team, waitFor: null } };
+  if (square === s.mission.c) {
+    const next = divertExfil(cleared, square);
+    if (next.mission.c !== square) return say(next, `divert-${s.elapsedMs}`, `${why} Swinging wide to the alternate exfil at ${next.mission.c}.`);
+  }
+  if (isMissionPoint(s, square)) return decideOn(say(cleared, `go-${s.elapsedMs}`, `${why} It's the crash site: we're going in.`), square, 'attack');
+  const i = s.team.route.indexOf(square, s.team.waypoint);
+  // Only ALPHA's route changes: the contact stays where it is, live, for HQ to hit if it likes.
+  const next = { ...detour(cleared, square), contacts: cleared.contacts, events: cleared.events };
+  const via = next.team.route[i];
+  return via && via !== square ? say(next, `around-${s.elapsedMs}`, `${why} Going around via ${via}.`) : decideOn(say(cleared, `through-${s.elapsedMs}`, `${why} No way around: going through.`), square, 'attack');
+}
+
+const decideOn = (s: GameState, square: SquareId, d: Decision): GameState => ({ ...s, team: { ...s.team, waitFor: null, decisions: { ...s.team.decisions, [square]: d } } });
+
+// What ALPHA tells HQ: its decision, not a question.
+const say = (s: GameState, id: string, text: string): GameState => ({ ...s, comms: { ...s.comms, messages: [...s.comms.messages, radio(s, s.team.callsign, id, text)] } });
+
 // Moving in blind pays out where the player can see it (ILI-1309): the moment ALPHA reaches a
-// square HQ sent it into blind, the square is known ground, and the map stamps what it found
+// square nobody had imaged, the square is known ground, and the map stamps what it found
 // there, clear or contact (MapScene). On the instruments, not over the radio.
 export const blindSystem: System = (s) => {
   const here = squareAt(s.team.position.x, s.team.position.y);
-  if (!here || s.team.decisions[here] !== 'blind' || s.map.blind.some((b) => b.square === here)) return s;
+  if (!here || s.map.scanned.includes(here) || s.map.blind.some((b) => b.square === here)) return s;
   const found = !!contactIn(s, here);
   return {
     ...s,
     map: { ...s.map, scanned: [...new Set([...s.map.scanned, here])], blind: [...s.map.blind, { square: here, atMs: s.elapsedMs, found }] },
   };
 };
-
-// ALPHA's hold about a contact that support has since wiped out turns into an all clear
-// (ILI-1277): the same call, so it stays the one ALPHA waits on.
-function clearedHold(s: GameState): GameState {
-  const m = s.comms.messages.find((x) => x.id === s.team.holdFor);
-  if (!m?.square || m.status !== 'new' || (m.node !== 'contact' && m.node !== 'contact-observed') || contactIn(s, m.square)) return s;
-  const n = TREE['contact-cleared'];
-  const cleared = { ...m, node: 'contact-cleared', text: n.text({ square: m.square }), responses: n.responses };
-  return { ...s, comms: { ...s.comms, messages: s.comms.messages.map((x) => (x === m ? cleared : x)) } };
-}
-
-function holdOn(s: GameState, c: { node: string; id: string; square: SquareId; label?: string; eventId?: string }): GameState {
-  const m = treeCall(s, c.id, c.node, c.square, c.eventId, c.label);
-  return {
-    ...s,
-    team: { ...s.team, holdFor: m.id, activity: `Holding short of ${c.square}` },
-    comms: { ...s.comms, minimized: false, messages: [...s.comms.messages, m] },
-  };
-}
 
 // The effects HQ's answers have on a contact or an unimaged square.
 export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'pass' | 'resupply' | 'divert';

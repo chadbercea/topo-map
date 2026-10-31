@@ -31,49 +31,13 @@ export type CallNode = {
 
 // The tree's wording.
 export const TREE: Record<string, CallNode> = {
-  unimaged: {
-    text: ({ square }) => `Holding short of ${square}. No imagery on it. Look at it first, or do we move in blind?`,
-    responses: [
-      { id: 'send', label: 'Look at it', requires: { capability: 'imagery' }, look: true, reply: 'Standing by for the look.' },
-      { id: 'blind', label: 'Move in blind', effect: 'blind', reply: 'Copy, moving in blind.' },
-    ],
-  },
-  contact: {
-    text: ({ square, label }) => `Contact in ${square}, ${label}, on our route. Hold and watch, attack, or go around?`,
-    responses: [
-      { id: 'observe', label: 'Hold and watch', effect: 'observe', reply: 'Copy, eyes on. Give us a few.', follow: 'contact-observed' },
-      { id: 'attack', label: 'Attack', effect: 'attack', reply: 'Moving in hard.' },
-      { id: 'avoid', label: 'Go around', effect: 'avoid', reply: 'Going around.' },
-    ],
-  },
-  // The exfil is cut (ILI-1192): an enemy salvage convoy sits on it, hauling loot off the
-  // wreck. Hit it for the haul, or take the long way out to the alternate exfil.
-  'exfil-cut': {
-    text: ({ square, label }) => `Got eyes on a salvage convoy parked on our exfil at ${square}, loaded with loot off the wreck. Hit them for the haul, or we pull out to ${label}?`,
-    responses: [
-      { id: 'engage', label: 'Hit the convoy', effect: 'attack', reply: 'Copy. Going in for the haul.' },
-      { id: 'divert', label: 'Move exfil', effect: 'divert', reply: 'Copy, swinging wide to the alternate exfil.' },
-    ],
-  },
+  // ALPHA decides the rest itself and says so (ILI-1315): resupply is the one thing it asks.
   // The team running low or combat ineffective (support.ts): one resupply bird covers both.
   resupply: {
     text: ({ label }) => `${label}. We need a resupply bird.`,
     responses: [
       { id: 'resupply', label: `Send resupply ($${RESUPPLY_COST.toLocaleString('en-US')})`, requires: { budget: RESUPPLY_COST }, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
       { id: 'push', label: 'Move on without', effect: 'pass', reply: 'Understood. Moving with what we have.' },
-    ],
-  },
-  // Support took the contact out while ALPHA held for a decision (ILI-1277): nothing left to
-  // attack or go around.
-  'contact-cleared': {
-    text: ({ square }) => `Targets in ${square} are down. All clear to move through?`,
-    responses: [{ id: 'clear', label: 'All clear', effect: 'push', reply: 'Copy, moving through.' }],
-  },
-  'contact-observed': {
-    text: ({ square, label }) => `Eyes on ${square}: ${label}, dug in, not moving. Target's painted for you. Hit it, or go around?`,
-    responses: [
-      { id: 'attack', label: 'Attack', effect: 'attack', reply: 'Moving in hard.' },
-      { id: 'avoid', label: 'Go around', effect: 'avoid', reply: 'Going around.' },
     ],
   },
 };
