@@ -44,17 +44,17 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(sat.getByTestId('orion-placeholder')).toHaveCount(0);
   const picture = sat.getByTestId('satellite-inset');
   await expect(picture).toBeVisible();
-  await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveCount(3);
+  await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveCount(2); // Photo and Video: no burst (ILI-1314)
   await expect(sat.getByTestId('look-here')).toHaveCount(0); // the shots took its place
-  await sat.getByTestId('capture-burst').click();
+  await sat.getByTestId('capture-video').click();
   await expect(sat).toHaveAttribute('data-state', 'capturing');
   await expect(picture).toHaveAttribute('data-state', 'capturing');
-  await fastForward(page, 6_100);
+  await fastForward(page, 15_100);
 
   // What it saw stays in the panel; the find is on the card, the strikes beside it.
-  await expect(sat.getByTestId('satellite-result')).toContainText('Burst: 5 fighters, unaware');
+  await expect(sat.getByTestId('satellite-result')).toContainText(/Video: 5 fighters/);
   await expect(sat.getByTestId('satellite-inset')).toHaveCount(1); // the picture stays up
-  await expect(page.getByTestId('comms-feed')).toContainText('E3 collection complete (burst): 5 fighters, unaware');
+  await expect(page.getByTestId('comms-feed')).toContainText(/E3 collection complete \(video\): 5 fighters.*Analysts: live feed to ALPHA/);
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
   // The strikes aren't ORION-3's: they're at the square, in its anchor on the map (ILI-1302, ILI-1308).

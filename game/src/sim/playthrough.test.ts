@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { initialState, MISSION_MS } from './state';
 import { createStore } from './store';
+import { fed } from './testkit';
 
 // Whole missions under simple HQ strategies, to catch the team getting stuck anywhere.
 function play(strategy: 'sharp' | 'silent') {
-  const store = createStore(initialState());
+  const store = createStore(fed(initialState())); // fed: these test the route, not the gauge (ILI-1314)
   for (let t = 0; t < MISSION_MS && store.get().team.waypoint < store.get().team.route.length; t += 100) {
     store.tick(100);
     if (strategy === 'silent') continue;

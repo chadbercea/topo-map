@@ -2,11 +2,14 @@ import { METRES_PER_UNIT, squareCenter } from '../map/grid';
 import { heightAt, theater } from '../map/terrain';
 import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
+import { moving } from './intel';
 import { footfall } from './noise';
 
 // The team moves on its own (GDD: the player never controls it), waypoint to waypoint. Each
 // leg follows the ground (paths.ts, ILI-1191): roads, stream banks, the easy way up. Climbing
 // slows it.
+
+const STARVED = 'Holding · needs intel';
 
 export const BASE_SPEED = 7.2; // world units per second on flat ground (a square in ~28 s, ~2.6 km/h in game time)
 const PROBE = 10; // world units ahead used to measure the slope
@@ -22,6 +25,8 @@ export const movementSystem: System = (s, dt) => {
   const target = team.route[team.waypoint];
   const goal = target && squareCenter(target);
   if (!goal || team.holdFor || team.fight || team.treating || s.elapsedMs < team.holdUntilMs) return s; // holding, fighting or treating
+  // Out of intel (ILI-1314): it holds where it is until HQ feeds the gauge again.
+  if (!moving(s)) return team.activity === STARVED ? s : { ...s, team: { ...team, activity: STARVED } };
 
   // A new leg: work out the way there from where ALPHA stands.
   const path = team.pathTo === target && team.path.length ? team.path : findPath(team.position, target, legSquares(team.position));
