@@ -2,10 +2,9 @@ import * as THREE from 'three';
 import { mountWire, type WireSpec } from './wireScene';
 
 // The team navigating, in 3D: a lensatic compass lying open. A round body with its bezel ring
-// and ticks, the floating dial inside it with the north arrow; the cover hinged at the far edge
-// and standing up, its sighting wire down the middle of the window; at the near edge the rear
-// sight with its lens, folded up, and the thumb loop folded out under it. The body lies flat in
-// x and z, the cover at -z, the user's side at +z. In the HUD's line language (wireScene);
+// and ticks, the floating dial inside it with the north arrow; at the near edge the rear sight
+// with its lens, folded up, and the thumb loop folded out under it. No cover: standing up, its
+// window read as a toilet seat (ILI-1293). The body lies flat in x and z, the user's side at +z. In the HUD's line language (wireScene);
 // loaded on demand like the other scenes.
 export type GearState = 'on';
 
@@ -41,8 +40,8 @@ const H = 0.16; // its height
 const COMPASS: WireSpec<GearState> = {
   looks: { on: { color: '--accent', opacity: 0.85, spin: 0.25 } },
   fov: 30,
-  eye: [0, 1.9, 3.7],
-  target: [0, 0.12, 0],
+  eye: [0, 1.6, 3.0],
+  target: [0, -0.1, 0], // centred on the body, with no cover standing over it
   roll: 0.06,
   rest: -0.75,
   build: ({ root, edges, lines }) => {
@@ -76,18 +75,6 @@ const COMPASS: WireSpec<GearState> = {
     dial.push(0, dy, -0.3, 0.1, dy, 0.02, 0.1, dy, 0.02, 0, dy, -0.06, 0, dy, -0.06, -0.1, dy, 0.02, -0.1, dy, 0.02, 0, dy, -0.3); // the arrow's head
     dial.push(0, dy, -0.06, 0, dy, 0.28); // its tail
     lines(dial, kit);
-
-    // The cover, hinged at the far edge and standing up, leaning back a touch: a frame round its
-    // window, the sighting wire down the middle.
-    const cover = new THREE.Group();
-    cover.position.set(0, H, -R - 0.02);
-    cover.rotation.x = -0.2;
-    kit.add(cover);
-    const CW = 0.5; // half its width
-    const CH = 0.9; // its height
-    edges(slab([-CW, 0, CW, 0, CW, CH, -CW, CH], 0.03, [[-CW + 0.1, 0.12, CW - 0.1, 0.12, CW - 0.1, CH - 0.1, -CW + 0.1, CH - 0.1]]), 0, 0, 0, 1, cover);
-    lines([0, 0.12, 0.017, 0, CH - 0.1, 0.017], cover);
-    edges(new THREE.CylinderGeometry(0.035, 0.035, 0.5, 6), 0, 0, 0, 1, cover).rotation.z = Math.PI / 2; // the hinge
 
     // The rear sight at the near edge, folded up: a narrow plate with the sighting notch cut in
     // its top and the round lens below it.
