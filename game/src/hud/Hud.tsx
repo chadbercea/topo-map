@@ -34,7 +34,7 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 // theater. Top left MISSION · BLACK BOX, the clock and the mission in one panel; under it COMMS,
 // HQ's one feed (ILI-1225). The map fills the middle, the mini game floating at its foot. Down
 // the whole right side ENVIRONMENT, a HUD readout (ILI-1218), over ORION-3 (ILI-1219). Along
-// the bottom TEAM, and when ALPHA calls, its call box slides out of TEAM's right end (ILI-1255). A square HQ picks, on the map or named in COMMS, shows in ORION-3's
+// the bottom ALPHA's box, then TEAM (ILI-1255, ILI-1313). A square HQ picks, on the map or named in COMMS, shows in ORION-3's
 // panel, its details and Reposition (ILI-1228, ILI-1250), and what HQ can call in on it floats beside it (the
 // action panel). When ALPHA needs something its ask pops up beside its marker (AskWindow). On
 // a fold or tablet the mission floats over the map's corner and COMMS, ORION-3 and TEAM share a
@@ -113,9 +113,10 @@ export function Hud() {
             <EnvWidget slim />
           </div>
         )}
+        {/* ALPHA's box on the left, then the team's table (ILI-1313). */}
         <div className="slot-team">
-          <TeamPanel />
           <CallBox />
+          <TeamPanel />
         </div>
       </div>
       <div className="slot-satcom" ref={satcomSlot}>

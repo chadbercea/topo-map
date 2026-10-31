@@ -13,7 +13,7 @@ const LOAD = {
   ifak: () => import('./ifakScene'),
 } satisfies Record<Gear, unknown>;
 
-// ALPHA's box on TEAM's right end (ILI-1255, ILI-1256). Always up. With no call it's in the
+// ALPHA's box, left of TEAM's table (ILI-1255, ILI-1256, ILI-1313). Always up. With no call it's in the
 // HUD's base colour, with the team's gear in 3D for what it's doing (Gear) and the RELAY-7 link
 // idle beside it. When ALPHA needs HQ the whole box turns the flag's orange, the gear gives way
 // to the SATCOM backpack turning quicker, and the box opens the ask (the flag on the map says
