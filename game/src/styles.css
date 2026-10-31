@@ -778,6 +778,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion .o-picture .o-ping { --c: #e5484d; position: absolute; width: 26px; height: 26px; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 1px solid transparent; border-radius: 50%; background: none; cursor: pointer; }
 .orion .o-picture .o-ping[data-kind='request'] { --c: #f2c14e; }
 .orion .o-picture .o-ping[data-kind='signal'] { --c: #8fb8ff; }
+.orion .o-picture .o-ping[data-kind='building'] { --c: #f2c14e; }
 .orion .o-picture .o-ping span { position: absolute; right: calc(100% + 4px); top: 50%; transform: translateY(-50%); white-space: nowrap; padding: 2px 6px; font-size: 10px; letter-spacing: 0.06em; color: var(--c); background: rgba(11, 15, 13, 0.9); border: 1px solid var(--c); opacity: 0; pointer-events: none; transition: opacity 120ms ease-out; }
 .orion .o-picture .o-ping:hover, .orion .o-picture .o-ping:focus-visible { border-color: var(--c); background: none; outline: none; }
 .orion .o-picture .o-ping:hover span, .orion .o-picture .o-ping:focus-visible span { opacity: 1; }

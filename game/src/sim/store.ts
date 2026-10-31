@@ -8,6 +8,7 @@ import { launch } from './air';
 import { callSniper } from './sniper';
 import { unlock, unlockedWeapons, weaponBlocked, type Weapon } from './ordnance';
 import { PER_CALL } from './prices';
+import { sendToSearch } from './buildings';
 import { spend } from './sites';
 import { sendResupply } from './support';
 import { jam, startIntercept, tune } from './signal';
@@ -54,6 +55,8 @@ export function createStore(initial: GameState = initialState()) {
     restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state)) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked))),
     // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
     setOpening: (opening: number, unlocked: readonly Weapon[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked))),
+    // Send ALPHA to search a building a scan turned up (ILI-1316).
+    search: (square: string) => set(sendToSearch(state, square)),
     // Buy a capability (ILI-1316).
     unlock: (w: Weapon) => set(unlock(state, w)),
     // Tuning: start over with a different mission length (1 to 30 minutes).

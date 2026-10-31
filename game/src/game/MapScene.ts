@@ -22,7 +22,7 @@ const TEAM = 0xf2c14e; // the team stands out from the map in amber
 // The team's formation, in gaps: along the heading (forward +), across it. Point man first.
 const WEDGE: [number, number][] = [[1.4, 0], [0.4, -1], [0.4, 1], [-0.7, -0.5], [-0.8, 0.6]];
 const PING_MS = [2300, 3100, 2700, 3700, 4300]; // each operator's own beat
-const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff } as const;
+const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff, building: 0xf2c14e } as const;
 const WATER = 0x5fa8d3;
 const FLASH_MS = 2_500; // a new event's square flashes this long, in mission time
 const BLIND_MS = 4_000; // a square moved into blind shows what ALPHA found this long (ILI-1309)
