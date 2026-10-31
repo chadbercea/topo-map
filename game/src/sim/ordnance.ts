@@ -4,6 +4,8 @@ import { eyesOn } from './imagery';
 import { countdown } from './gameTime';
 import type { Message } from './comms';
 import type { System } from './systems';
+import { LEVELS, UNLOCK } from './prices';
+import { spend } from './sites';
 
 // Ordnance for strikes (GDD, reworked in ILI-1168): the drone strike is one use, clears the
 // whole square (ILI-1252, drone.ts), and can fire blind; the sniper takes them out itself,
@@ -24,11 +26,30 @@ export const WEAPON = {
   heli: { name: 'Helicopter gun run', cooldownMs: 60_000, runMs: 14_000 }, // air.ts
 } satisfies Record<Weapon, { name: string; cooldownMs: number; runMs: number }>;
 
-export const initialOrdnance = (): Ordnance => ({
-  drone: { unlocked: true, uses: 1, readyAtMs: 0 },
-  sniper: { unlocked: true, uses: null, readyAtMs: 0 }, // a fresh sniper every call (ILI-1253)
-  heli: { unlocked: true, uses: null, readyAtMs: 0 }, // unlocked from the start (ILI-1254)
+// Locked until bought (ILI-1316), and then as many calls as HQ will pay for.
+export const initialOrdnance = (unlocked: readonly Weapon[] = []): Ordnance => ({
+  drone: { unlocked: unlocked.includes('drone'), uses: null, readyAtMs: 0 },
+  sniper: { unlocked: unlocked.includes('sniper'), uses: null, readyAtMs: 0 }, // a fresh sniper every call (ILI-1253)
+  heli: { unlocked: unlocked.includes('heli'), uses: null, readyAtMs: 0 },
 });
+
+export const unlockedWeapons = (s: GameState) => WEAPONS.filter((w) => s.ordnance[w].unlocked);
+
+// Why a capability can't be bought yet, or null if it can (ILI-1316): in order, and only when
+// the balance covers it.
+export function unlockBlocked(s: GameState, w: Weapon): string | null {
+  if (s.ordnance[w].unlocked) return 'Unlocked';
+  const i = LEVELS.indexOf(w);
+  if (i > 0 && !s.ordnance[LEVELS[i - 1]].unlocked) return `After the ${WEAPON[LEVELS[i - 1]].name.toLowerCase()}`;
+  if (s.resources.budget < UNLOCK[w]) return 'Needs the balance in the green';
+  return null;
+}
+
+export function unlock(s: GameState, w: Weapon): GameState {
+  if (unlockBlocked(s, w)) return s;
+  const paid = spend(s, UNLOCK[w]);
+  return { ...paid, ordnance: { ...paid.ordnance, [w]: { ...paid.ordnance[w], unlocked: true } } };
+}
 
 // Weapons that only fire at fighters HQ can see; the drone can guess.
 export const NEEDS_EYES: Record<Weapon, boolean> = { drone: false, sniper: true, heli: true };
@@ -36,7 +57,7 @@ export const NEEDS_EYES: Record<Weapon, boolean> = { drone: false, sniper: true,
 // Why a weapon can't fire right now (at this contact, if given), or null if it can.
 export function weaponBlocked(s: GameState, w: Weapon, c?: Contact): string | null {
   const o = s.ordnance[w];
-  if (!o.unlocked) return 'Unlocks with upgrades';
+  if (!o.unlocked) return 'Locked';
   if (o.uses === 0) return 'Used';
   if (s.elapsedMs < o.readyAtMs) return `Ready in ${countdown(o.readyAtMs - s.elapsedMs)}`; // m:ss, ticking down (ILI-1273)
   if (s.sniper && !s.sniper.done) return 'Busy';

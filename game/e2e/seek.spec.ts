@@ -14,7 +14,7 @@ async function targetE3(page: Page) {
 
 test('the target menu lists every weapon with its state; no ALPHA attacks: HQ changes the odds, ALPHA decides (ILI-1315)', async ({ page }) => {
   await targetE3(page);
-  await expect(page.getByTestId('fire-drone')).toContainText('1 use');
+  await expect(page.getByTestId('fire-drone')).toContainText('Ready'); // as many calls as HQ pays for (ILI-1316)
   await expect(page.getByTestId('fire-sniper')).toContainText('Ready');
   await expect(page.getByTestId('fire-heli')).toBeEnabled(); // unlocked from the start (ILI-1254)
   await expect(page.getByTestId('fire-heli')).toContainText('Ready');

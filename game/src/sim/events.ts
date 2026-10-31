@@ -4,7 +4,7 @@ import type { System } from './systems';
 // Things that happen on the map and want the player's attention. Each one sits on a grid
 // square; tapping its marker opens it, and later it routes to a decision point or mini game.
 
-export type EventKind = 'contact' | 'request' | 'site' | 'signal'; // site: a kill site; signal: enemy radio traffic
+export type EventKind = 'contact' | 'request' | 'site' | 'signal' | 'building'; // site: a kill site; signal: enemy radio traffic; building: worth a search (ILI-1316)
 export type EventStatus = 'new' | 'seen' | 'resolved';
 
 export type MapEvent = {

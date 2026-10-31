@@ -2,11 +2,12 @@
 import { initialState, ROUTE, type GameState } from './state';
 import { createStore } from './store';
 import { step } from './systems';
+import { initialOrdnance, WEAPONS } from './ordnance';
 import { LINK_MS } from './comms';
 
 // The sim's tests run with ALPHA's intel gauge pinned full, unless they're about the gauge
 // (intel.test.ts): keeping the team fed is a game of its own (ILI-1314).
-export const fed = (s: GameState): GameState => ({ ...s, intel: { ...s.intel, base: 100 } });
+export const fed = (s: GameState): GameState => ({ ...s, intel: { ...s.intel, base: 100 }, ordnance: initialOrdnance(WEAPONS) }); // and every capability open (ILI-1316)
 
 export const run = (s: GameState, ms: number) => {
   for (let t = 0; t < ms; t += 100) s = step(s, 100);

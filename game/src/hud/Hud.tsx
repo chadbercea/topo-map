@@ -19,6 +19,7 @@ import { PauseMenu } from './PauseMenu';
 import { Intro } from './Intro';
 import { firstBoot, useIntro } from './intro';
 import { WrapUp } from './WrapUp';
+import { AbilityBar } from './AbilityBar';
 import { useFlash, useUnseen } from './attention';
 import { currentCall } from '../sim/comms';
 
@@ -103,6 +104,7 @@ export function Hud() {
           <MiniGamePanel />
           <ExfilPanel />
         </div>
+        <AbilityBar />
       </div>
       <div className="slot-orion" data-overlay="orion" ref={orionSlot}>
         <OrionPanel />
