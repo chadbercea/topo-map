@@ -17,7 +17,7 @@ import type { Contact, Decision } from './contacts';
 import { BLACK_BOX } from './missions/blackBox';
 import type { MissionDef } from './script';
 import type { Inbound } from './support';
-import { initialOrdnance, type Ordnance } from './ordnance';
+import { initialOrdnance, type Ordnance, type Weapon } from './ordnance';
 import { initialMission, type Mission } from './mission';
 import { initialStream, type Stream } from './stream';
 
@@ -97,8 +97,9 @@ export const MISSION_MS = MISSION.durationMs; // GDD started at six minutes; ten
 
 // missionMs: the mission's length, the script's ten minutes unless tuned (?minutes=). This is
 // how the game opens: live, ALPHA on the ground, the clock running.
-// opening: Castle House's balance coming into the mission, carried from the last (ILI-1316).
-export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS, opening = 0): GameState {
+// opening: Castle House's balance coming into the mission, carried from the last; unlocked:
+// the capabilities it carries in (ILI-1316).
+export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS, opening = 0, unlocked: readonly Weapon[] = []): GameState {
   const operators = roster();
   return {
     tick: 0,
@@ -141,7 +142,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     satellite: initialSatellite(ROUTE[0]),
     imagery: {},
     capabilities: ['imagery'],
-    ordnance: initialOrdnance(),
+    ordnance: initialOrdnance(unlocked),
     noise: 0,
     script: { mission: MISSION.id, fired: [] },
     flags: {},

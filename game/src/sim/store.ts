@@ -6,7 +6,9 @@ import { cancelLook, capture, closeLook, lookAt, lookSquare, slewMs, type Captur
 import { abortMiniGame } from './minigame';
 import { launch } from './air';
 import { callSniper } from './sniper';
-import { weaponBlocked, type Weapon } from './ordnance';
+import { unlock, unlockedWeapons, weaponBlocked, type Weapon } from './ordnance';
+import { PER_CALL } from './prices';
+import { spend } from './sites';
 import { sendResupply } from './support';
 import { jam, startIntercept, tune } from './signal';
 import { step } from './systems';
@@ -49,9 +51,11 @@ export function createStore(initial: GameState = initialState()) {
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
     // No saves in the MVP: retry and restart both start the mission over, live.
     // A new mission opens on the balance HQ carries in (ILI-1316): the last one's, unless given.
-    restart: (opening = state.resources.ledger.opening) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening))),
+    restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state)) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked))),
     // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
-    setOpening: (opening: number) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening))),
+    setOpening: (opening: number, unlocked: readonly Weapon[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked))),
+    // Buy a capability (ILI-1316).
+    unlock: (w: Weapon) => set(unlock(state, w)),
     // Tuning: start over with a different mission length (1 to 30 minutes).
     setMissionLength: (minutes: number) =>
       set(keepBase(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000)))),
@@ -90,7 +94,9 @@ export function createStore(initial: GameState = initialState()) {
       const c = state.contacts.find((x) => x.id === contactId);
       if (!c || weaponBlocked(state, weapon, c)) return;
       // No mini games: the support does it itself (ILI-1252, ILI-1253, ILI-1254).
-      set(weapon === 'sniper' ? callSniper(state, contactId) : launch(state, weapon, contactId));
+      // Every call that goes out costs (ILI-1316), into the red if need be.
+      const called = weapon === 'sniper' ? callSniper(state, contactId) : launch(state, weapon, contactId);
+      set(called === state ? state : spend(called, PER_CALL[weapon]));
     },
     lookAt: (square: string) => set(task(state, square)),
     // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first

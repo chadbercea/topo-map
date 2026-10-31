@@ -16,6 +16,13 @@ export const RESUPPLY_COST = 40_000;
 export const CASUALTY_PENALTY = 100_000; // per operator down, at the end
 export const BANKRUPT_AT = -4_000_000; // the PMC's credit line: below this it's shut down
 
+// Capabilities (ILI-1316): none to start. Each is bought in order, sniper, drone, heli, once
+// the balance can cover it; then every call costs, into the red if HQ likes. Unlocks carry to
+// the next mission only if it ends in the green.
+export const UNLOCK = { sniper: 250_000, drone: 750_000, heli: 1_500_000 } as const;
+export const PER_CALL = { sniper: 10_000, drone: 150_000, heli: 625_000 } as const;
+export const LEVELS = ['sniper', 'drone', 'heli'] as const;
+
 // Where the mission's money went, for the P&L.
 export type Ledger = { opening: number; deploy: number; escrow: number; field: number; spent: number };
 export const openLedger = (opening: number): Ledger => ({ opening, deploy: -DEPLOY, escrow: 0, field: 0, spent: 0 });

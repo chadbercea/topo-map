@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { eyesOn } from './imagery';
 import { WEAPON, weaponBlocked } from './ordnance';
+import { PER_CALL } from './prices';
 import type { GameState } from './state';
 import { createStore } from './store';
 import { run, walking } from './testkit';
@@ -30,10 +31,14 @@ describe('ordnance', () => {
     expect(weaponBlocked(s, 'heli', s.contacts[0])).toBeNull();
   });
 
-  it('the drone is one use; the heli comes back after its cooldown', () => {
+  it('the drone can be called again once it\u2019s back, at a price each time; the heli comes back after its cooldown', () => {
     const drone = createStore(found());
+    const before = drone.get().resources.budget;
     drone.fire('t', 'drone');
-    expect(weaponBlocked(drone.get(), 'drone')).toBe('Used');
+    expect(drone.get().resources.budget).toBe(before - PER_CALL.drone); // every call costs (ILI-1316)
+    expect(weaponBlocked(drone.get(), 'drone')).toMatch(/^Ready in/); // on its run
+    drone.set(run(drone.get(), WEAPON.drone.runMs + 100));
+    expect(weaponBlocked(drone.get(), 'drone')).toBeNull(); // no limit on calls
     const store = createStore(found());
     store.fire('t', 'heli');
     expect(weaponBlocked(store.get(), 'heli')).toMatch(/^Ready in \d+:\d\d$/); // ticking down, m:ss (ILI-1273)
