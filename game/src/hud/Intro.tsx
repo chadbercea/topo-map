@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Castle, OrionSpot } from './castleScene'; // types only: the scene loads lazily
+import type { Castle, Spots } from './castleScene'; // types only: the scene loads lazily
 import { intro, LINE_MS, LOGIN_LINES, useIntro, WIPE_MS, type Stage } from './intro';
 import { MapViews } from './MapViews';
 import { game, useGame } from '../sim/store';
@@ -33,7 +33,7 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
   const back = useRef<HTMLDivElement>(null);
   const front = useRef<HTMLDivElement>(null);
   const castle = useRef<Castle | null>(null);
-  const [spot, setSpot] = useState<OrionSpot | null>(null);
+  const [spots, setSpots] = useState<Spots | null>(null);
   const [flat, setFlat] = useState(false); // no WebGL: a still mark, and ORION-3 at a fixed spot
   const [sheet, setSheet] = useState<'about' | 'settings' | null>(null);
   const wiping = stage === 'wipe';
@@ -46,7 +46,7 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
     let gone = false;
     import('./castleScene').then(({ mountCastle }) => {
       if (gone || !back.current || !front.current) return;
-      castle.current = mountCastle(back.current, front.current, setSpot, navigator.webdriver === true);
+      castle.current = mountCastle(back.current, front.current, setSpots, navigator.webdriver === true);
       if (!castle.current) setFlat(true);
       else if (intro.get() !== 'title') castle.current.focus();
     });
@@ -63,7 +63,7 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
     return () => clearTimeout(t);
   }, [title]);
 
-  const at = flat ? { x: innerWidth * 0.72, y: innerHeight * 0.3, visible: true } : spot;
+  const at = flat ? { x: innerWidth * 0.72, y: innerHeight * 0.3, visible: true } : spots?.orion;
   return (
     <div className="castle" data-stage={stage} data-wiping={wiping || undefined}>
       <div ref={back} className="castle-scene castle-back" />
@@ -95,6 +95,14 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
           <span className="castle-label">ORION-3 · uplink ready</span>
         </button>
       )}
+      {/* The rest of the constellation: not in service yet. */}
+      {!wiping &&
+        !sheet &&
+        spots?.others.map((o, i) => (
+          <button key={i} className="castle-sat" style={{ left: o.x, top: o.y }} hidden={!o.visible} data-testid="intro-sat" aria-label="Coming soon">
+            <span className="castle-label">Coming Soon</span>
+          </button>
+        ))}
       {wiping && <span className="castle-wipe" aria-hidden />}
     </div>
   );

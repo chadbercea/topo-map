@@ -14,6 +14,7 @@ const GLOBE_R = 3.4;
 const GLOBE_AT = new THREE.Vector3(0, -2.2, -2.5);
 
 export type OrionSpot = { x: number; y: number; visible: boolean };
+export type Spots = { orion: OrionSpot; others: OrionSpot[] }; // the others: coming soon
 
 const FOCUS_MS = 900;
 const ROOK_OUT_MS = 320;
@@ -21,7 +22,7 @@ const ease = (k: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
 
 export type Castle = { stop(): void; focus(): void };
 
-export function mountCastle(back: HTMLElement, front: HTMLElement, onOrion: (p: OrionSpot) => void, still: boolean): Castle | null {
+export function mountCastle(back: HTMLElement, front: HTMLElement, onSpots: (p: Spots) => void, still: boolean): Castle | null {
   const renderers: THREE.WebGLRenderer[] = [];
   try {
     for (const host of [back, front]) {
@@ -110,9 +111,16 @@ export function mountCastle(back: HTMLElement, front: HTMLElement, onOrion: (p: 
   const orionOrbit = orbit(4.3, -1.2, 0.16); // its near side rides high over the globe
   const orion = satellite(orange, 1.2);
   orionOrbit.add(orion);
-  const otherOrbit = orbit(4.9, 1.38, -0.42);
-  const other = satellite(dim, 1);
-  otherOrbit.add(other);
+  // The rest of the constellation, not yet in service: each laps its own orbit. The last rides
+  // close to ORION-3's, so it passes through the close-up now and then.
+  const others = [
+    { r: 4.9, speed: 0.16, from: 4, orbit: orbit(4.9, 1.38, -0.42) },
+    { r: 5.2, speed: -0.12, from: 1, orbit: orbit(5.2, -1.02, 0.34) },
+  ].map((o) => {
+    const sat = satellite(dim, 1);
+    o.orbit.add(sat);
+    return { ...o, sat };
+  });
 
   // The rook: a lathed body, and six merlons round its top.
   const rook = new THREE.Group();
@@ -175,13 +183,15 @@ export function mountCastle(back: HTMLElement, front: HTMLElement, onOrion: (p: 
     rook.rotation.y = 0.5 + t * 0.35;
     globe.rotation.y = t * 0.05;
     // ORION-3 drifts to and fro along the high, near arc of its orbit, clear of the rook, so it's
-    // always there to pick; the other one laps.
+    // always there to pick; the others lap.
     const oa = Math.PI / 2 - 0.75 + 0.35 * Math.sin(t * 0.08); // up and to the right of the rook
     orion.position.set(Math.cos(oa) * 4.3, 0, Math.sin(oa) * 4.3);
     orion.rotation.y = -oa;
-    const ob = 4 + t * 0.16;
-    other.position.set(Math.cos(ob) * 4.9, 0, Math.sin(ob) * 4.9);
-    other.rotation.y = -ob;
+    for (const o of others) {
+      const a = o.from + t * o.speed;
+      o.sat.position.set(Math.cos(a) * o.r, 0, Math.sin(a) * o.r);
+      o.sat.rotation.y = -a;
+    }
     // The camera: at home over the rook, or flying in to sit off ORION-3's shoulder, the
     // globe's limb curving away under it.
     orion.getWorldPosition(world);
@@ -197,9 +207,13 @@ export function mountCastle(back: HTMLElement, front: HTMLElement, onOrion: (p: 
     rook.scale.setScalar(Math.max(0.01, r));
     renderers[0].render(scene, camera);
     renderers[1].render(fore, camera);
-    const hidden = occluded(world);
-    const p = world.clone().project(camera);
-    onOrion({ x: ((p.x + 1) / 2) * host.clientWidth, y: ((1 - p.y) / 2) * host.clientHeight, visible: !hidden && p.z < 1 });
+    const spot = (at: THREE.Vector3): OrionSpot => {
+      const p = at.clone().project(camera);
+      const x = ((p.x + 1) / 2) * host.clientWidth;
+      const y = ((1 - p.y) / 2) * host.clientHeight;
+      return { x, y, visible: !occluded(at) && p.z < 1 && x > 0 && y > 0 && x < host.clientWidth && y < host.clientHeight };
+    };
+    onSpots({ orion: spot(world), others: others.map((o) => spot(o.sat.getWorldPosition(new THREE.Vector3()))) });
   };
   raf = requestAnimationFrame(frame);
 
