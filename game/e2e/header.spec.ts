@@ -14,7 +14,7 @@ test('the mission panel: the deadline, the race, what to do, what needs HQ (ILI-
   await expect(race).toHaveAttribute('data-behind', 'false');
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
-  await expect(page.getByTestId('needs-hq')).toHaveText('ALPHA waiting on your call'); // only the most pressing
+  await expect(page.getByTestId('needs-hq')).toHaveText('ALPHA waiting on your decision'); // only the most pressing
   await fastForward(page, 15_000);
   await expect(page.getByTestId('clock')).toHaveText(/^9:4[0-5]$/);
 
@@ -32,7 +32,7 @@ test("the need line goes where it points: ALPHA's call, or the square (ILI-1271)
   await start(page, '?debug');
   await page.waitForFunction(() => window.game?.get().team.holdFor);
   const need = page.getByTestId('needs-hq');
-  await expect(need).toHaveText('ALPHA waiting on your call');
+  await expect(need).toHaveText('ALPHA waiting on your decision');
   await need.click();
   await expect(page.getByTestId('comms-text')).toBeVisible(); // the call, open
   // Nothing waiting, unimaged ground ahead: the line picks that square.
