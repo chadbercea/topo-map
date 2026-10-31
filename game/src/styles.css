@@ -185,12 +185,7 @@ html, body {
 .anchor-leader line { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 3; opacity: 0.85; }
 .anchor-leader circle, .anchor-leader polygon { fill: var(--accent); }
 .anchor-leader text { fill: var(--accent); font-size: 11px; letter-spacing: 0.1em; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
-/* The square's anchor (ILI-1302): Get eyes on it, its strikes, what else is going on there. */
-.square-card .sc-eyes { padding: 8px 10px; border-bottom: 1px solid var(--line); }
-.square-card .eyes-on { width: 100%; min-height: 44px; display: grid; justify-items: center; gap: 2px; font-size: 12px; letter-spacing: 0.12em; color: var(--accent); border-color: var(--accent); }
-.square-card .eyes-on small { color: var(--dim); text-transform: none; letter-spacing: 0.02em; font-size: 10px; }
-.square-card .eyes-on:disabled { opacity: 1; color: var(--ink); border-color: var(--line); }
-.square-card .eyes-on:hover:not(:disabled) small { color: inherit; }
+/* The square's anchor (ILI-1302, ILI-1308): its strikes, what's hitting it, what else is going on there. */
 .square-card .sc-strikes { --kind: #e5484d; }
 .square-card .sc-marked { margin: 0; padding: 6px 10px 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #e5484d; border-top: 1px solid var(--line); }
 .square-card .sc-actions .ap-head { display: none; } /* the anchor's header already names the square */

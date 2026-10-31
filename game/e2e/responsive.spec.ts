@@ -2,8 +2,8 @@ import { expect, test, type Locator } from '@playwright/test';
 import { freeze, start } from './helpers';
 
 // The medium tier (ILI-1213): a fold open either way, a tablet, a phone on its side. The map
-// on the left, the panels in a rail on the right behind tabs; a picked square's anchor floats
-// over the map beside it, with its strikes (ILI-1302).
+// on the left, the panels in a rail on the right behind tabs; a picked square shows in
+// ORION-3's tab, its actions floating over the map (ILI-1228).
 const SIZES = [
   ['fold upright', 750, 832],
   ['fold sideways', 832, 750],
@@ -15,7 +15,7 @@ const box = async (l: Locator) => (await l.boundingBox())!;
 const inside = (b: { x: number; y: number; width: number; height: number }, w: number, h: number) => b.x >= 0 && b.y >= 0 && b.x + b.width <= w + 0.5 && b.y + b.height <= h + 0.5;
 
 for (const [name, width, height] of SIZES) {
-  test(`${name} (${width}×${height}): the map and a side rail; a picked square's anchor over the map`, async ({ page, isMobile }) => {
+  test(`${name} (${width}×${height}): the map and a side rail; a picked square is in ORION-3's tab, its actions over the map`, async ({ page, isMobile }) => {
     test.skip(isMobile, 'sets its own viewport');
     await page.setViewportSize({ width, height });
     await start(page, '?debug');
@@ -36,26 +36,30 @@ for (const [name, width, height] of SIZES) {
     // ALPHA's flag is at its marker in the open map, not parked at the map's foot.
     await expect(page.getByTestId('comms')).toHaveAttribute('data-pinned', 'true');
 
-    // Open E3 with the checkpoint found: its anchor floats over the map, its strikes in it,
-    // inside the screen.
+    // Open E3 with the checkpoint found: ORION-3's tab comes forward with the square in it, and
+    // what HQ can do about it floats over the map, both inside the screen.
     await page.evaluate(() => {
       const g = window.game;
+      g.selectSquare('E3');
       g.lookAt('E3');
       for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
       g.capture('photo');
-      g.selectSquare('E3');
     });
+    await expect(page.locator('.hud')).toHaveAttribute('data-tab', 'orion');
     const card = page.getByTestId('square-card');
     await expect(card).toHaveAttribute('data-square', 'E3');
     const c = await box(card);
-    expect(c.x + c.width).toBeLessThanOrEqual(rail.x + 1); // over the map, not in the rail
-    const menu = card.getByTestId('strike-menu');
+    expect(c.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
+    // Its strikes open from a fighter in ORION-3's picture (ILI-1250).
+    await page.getByTestId('target-pin').first().click();
+    const menu = page.getByTestId('strike-menu');
     await menu.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
     await expect(menu.getByTestId('fire-sniper')).toBeVisible();
     expect(inside(await box(menu.getByTestId('fire-sniper')), width, height)).toBe(true);
 
     await card.getByRole('button', { name: 'Close' }).click();
     await expect(card).toHaveCount(0);
+    await expect(page.getByTestId('satellite')).toBeVisible();
   });
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, slewMs } from '../sim/satellite';
+import { CAPTURE } from '../sim/satellite';
 import { freshness, targets } from '../sim/imagery';
 import { squareAt } from '../map/grid';
 import { TargetMenu } from './TargetMenu';
@@ -18,13 +18,13 @@ import type { GameState } from '../sim/state';
 
 const ANCHOR_W = 300; // the anchor's width beside its square
 
-// The square's anchor (ILI-1278, ILI-1302): everything HQ can do to the square it picked, and
-// everything known about it, pinned beside that square on the map, so it stays tied to its
-// ground however many things are going on and wherever ORION-3 is looking. Get eyes on it
-// (ORION-3 slews there), its fighters and every way to strike them, anything else going on
-// there (a signal, a request), and the square's facts. ORION-3's own panel only shows where the
-// satellite is looking. Beside the square on the side away from ALPHA and clear of the other
-// panels; on a phone, a strip along the foot of the map.
+// The square's anchor (ILI-1278, ILI-1302, ILI-1308): the contextual menu for the square HQ
+// picked, pinned beside it on the map, so what's done there stays tied to its ground however
+// many things are going on. Only what HQ can *do* to the square: its fighters and every way to
+// strike them, the sniper, drone and heli at work on it, anything else going on there (a
+// signal, a request). It only opens when there's something to act on. What's known of the
+// square, and Reposition, are ORION-3's (OrionPanel). Beside the square on the side away from
+// ALPHA and clear of the other panels; on a phone, a strip along the foot of the map.
 export function SquareCard() {
   const s = useGame((x) => x);
   const square = s.minigame ? null : s.map.selected;
@@ -59,7 +59,7 @@ export function SquareCard() {
 
   const area = getMapRect();
   if (!area) return null;
-  if (!square) return <Busy s={s} area={area} picked={null} />;
+  if (!square || !anchored(s, square)) return <Busy s={s} area={area} picked={null} />;
   const at: Placed = tier === 'compact' ? strip(area, actHeight) : beside(square, area, actHeight, s.team.position, ANCHOR_W);
   return (
     <>
@@ -68,15 +68,15 @@ export function SquareCard() {
       <section
         ref={actRef}
         className="square-card anchor"
-        data-testid="square-card"
+        data-testid="square-anchor"
         data-overlay="actions"
         data-square={square}
         data-side={at.side}
         style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight }}
         role="group"
-        aria-label={`Square ${square}`}
+        aria-label={`Act on ${square}`}
       >
-        <Card s={s} square={square} />
+        <AnchorBody s={s} square={square} />
       </section>
     </>
   );
@@ -227,51 +227,32 @@ const SLACK = 32; // px a measured height may shrink by before the panel moves f
 const settle = (was: number, now: number) => (now > was || was - now > SLACK ? now : was);
 
 
-// The anchor's contents (ILI-1302): the square and its status, Get eyes on it, its fighters and
-// their strikes, anything else going on there, then its facts.
-export function Card({ s, square }: { s: GameState; square: string }) {
-  const sat = s.satellite;
+// Anything to act on in this square: a contact to strike, a strike at work on it, a signal or
+// a request (ILI-1308). Nothing else opens the anchor.
+export function anchored(s: GameState, square: string) {
   const now = s.elapsedMs;
-  const working = sat.aim === square && sat.state !== 'idle'; // ORION-3 is on this square
-  const result = sat.state === 'idle' && sat.result?.square === square ? sat.result : null;
-  const g = ground(s, square)!;
-  const wx = weather(s);
-  const snap = s.imagery[square];
-  const seen = snap ? freshness(snap, now) : null;
-  const found = s.contacts.filter((c) => c.square === square && c.status === 'revealed');
+  const air = [s.drone, s.heli].some((r) => r && r.square === square && !airGone(r, now));
+  const sniper = !!s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now);
+  return air || sniper || hasActions(s, square) || s.events.some((e) => e.square === square && strikeable(e) && e.status !== 'resolved');
+}
+
+// The anchor's contents (ILI-1302, ILI-1308): the square, what's hitting it, its fighters and
+// every way to strike them, then anything else going on there.
+function AnchorBody({ s, square }: { s: GameState; square: string }) {
   const marked = targets(s).filter((t) => squareAt(t.x, t.y) === square);
   const strikes = s.events.filter((e) => e.square === square && strikeable(e) && e.status !== 'resolved');
-  const status = working
-    ? sat.state === 'slewing'
-      ? `ORION-3 ${countdown(sat.arriveMs - now)} away`
-      : sat.state === 'onStation'
-        ? 'ORION-3 on station'
-        : `ORION-3 ${CAPTURE[sat.mode!].label.toLowerCase()} · ${gameSpan(sat.captureUntilMs - now)}`
-    : snap
-      ? `imaged ${zulu(snap.atMs)} · ${seen}`
-      : 'no imagery';
-  const close = () => {
-    if (sat.state === 'slewing' && sat.aim === square) game.cancelLook();
-    game.closeSquare();
-  };
-
   return (
     <>
-      <header className="sc-head" data-state={working ? sat.state : result ? 'result' : 'selected'}>
+      <header className="sc-head">
         <b>{square}</b>
-        <span className="sc-status" data-testid="square-status">
-          {status}
-        </span>
-        <button className="x" onClick={close} aria-label="Close">
+        <span className="sc-status">act on</span>
+        <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
           ×
         </button>
       </header>
 
-      <EyesOn s={s} square={square} />
-
-      {/* What's hitting this square: OVERWATCH (ILI-1303), not ORION-3, which only watches. */}
+      {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304). */}
       <SniperPanel square={square} />
-      {/* REAPER-1 and HAMMER-2 on their way to this square, and over it (ILI-1304). */}
       <AirPanel weapon="drone" square={square} />
       <AirPanel weapon="heli" square={square} />
 
@@ -298,6 +279,47 @@ export function Card({ s, square }: { s: GameState; square: string }) {
           <Actions s={s} square={square} />
         </section>
       )}
+    </>
+  );
+}
+
+// A square's details (ILI-1203, ILI-1220), in ORION-3's panel (ILI-1228, ILI-1308): its
+// status and what's known of it. Reposition is ORION-3's button, under its picture.
+export function Card({ s, square }: { s: GameState; square: string }) {
+  const sat = s.satellite;
+  const now = s.elapsedMs;
+  const working = sat.aim === square && sat.state !== 'idle'; // ORION-3 is on this square
+  const result = sat.state === 'idle' && sat.result?.square === square ? sat.result : null;
+  const g = ground(s, square)!;
+  const wx = weather(s);
+  const snap = s.imagery[square];
+  const seen = snap ? freshness(snap, now) : null;
+  const found = s.contacts.filter((c) => c.square === square && c.status === 'revealed');
+  const status = working
+    ? sat.state === 'slewing'
+      ? `ORION-3 ${countdown(sat.arriveMs - now)} away`
+      : sat.state === 'onStation'
+        ? 'ORION-3 on station'
+        : `ORION-3 ${CAPTURE[sat.mode!].label.toLowerCase()} · ${gameSpan(sat.captureUntilMs - now)}`
+    : snap
+      ? `imaged ${zulu(snap.atMs)} · ${seen}`
+      : 'no imagery';
+  const close = () => {
+    if (sat.state === 'slewing' && sat.aim === square) game.cancelLook();
+    game.closeSquare();
+  };
+
+  return (
+    <>
+      <header className="sc-head" data-state={working ? sat.state : result ? 'result' : 'selected'}>
+        <b>{square}</b>
+        <span className="sc-status" data-testid="square-status">
+          {status}
+        </span>
+        <button className="x" onClick={close} aria-label="Close">
+          ×
+        </button>
+      </header>
 
       <div className="sc-body">
         {/* The one home for a square's details (ILI-1220): the clock widget no longer repeats them. */}
@@ -323,36 +345,6 @@ export function Card({ s, square }: { s: GameState; square: string }) {
         </dl>
       </div>
     </>
-  );
-}
-
-// Get eyes on the square (ILI-1278 decision 2): what was Reposition in ORION-3's panel, said as
-// what it does. Under it, when ORION-3 would be on station; once it's there, the shot is in
-// ORION-3's panel.
-function EyesOn({ s, square }: { s: GameState; square: string }) {
-  const sat = s.satellite;
-  const now = s.elapsedMs;
-  const tied = s.minigame?.status === 'active';
-  const here = sat.aim === square;
-  const away = slewMs(s, square);
-  const [label, sub, can] = tied
-    ? [`Get eyes on ${square}`, 'ORION-3 · tied up by the intercept', false]
-    : here && sat.state === 'slewing'
-      ? [`ORION-3 on its way`, `on station in ${countdown(sat.arriveMs - now)}`, false]
-      : here && sat.state === 'capturing'
-        ? [`ORION-3 looking at ${square}`, gameSpan(sat.captureUntilMs - now), false]
-        : here && (sat.state === 'onStation' || away === 0)
-          ? [`ORION-3 is over ${square}`, 'Photo, Burst or Video in its panel', false]
-          : sat.state === 'capturing'
-            ? [`Get eyes on ${square}`, `ORION-3 · busy over ${sat.aim}`, false]
-            : [`Get eyes on ${square}`, `ORION-3 · on station in ${countdown(away)}`, true];
-  return (
-    <div className="sc-eyes">
-      <button className="eyes-on" disabled={!can} onClick={() => game.lookAt(square)} data-testid="look-here">
-        {label}
-        <small>{sub}</small>
-      </button>
-    </div>
   );
 }
 

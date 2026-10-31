@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, describe, orionSquare, satelliteStatus, type CaptureMode } from '../sim/satellite';
+import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, slewMs, type CaptureMode } from '../sim/satellite';
 import { freshness, targets } from '../sim/imagery';
 import { nextBlind } from '../sim/progress';
 import { CELL, squareAt, squareCenter } from '../map/grid';
@@ -9,14 +9,16 @@ import { bus, EV } from '../game/events';
 import { OrionAvatar } from './OrionAvatar';
 import { useTier } from './tier';
 import { EnvWidget } from './EnvWidget';
+import { Card } from './SquareCard';
 
 const MODES: CaptureMode[] = ['photo', 'burst', 'video'];
 
-// ORION-3, the imaging satellite (ILI-1219): the big panel down the right. It only ever shows
-// where the satellite is looking (ILI-1278, ILI-1302): a square HQ picks opens that square's
-// anchor on the map, and Get eyes on it there tasks ORION-3. Here, the slew counts down to
-// nothing, then the ways to look (photo, burst, video) take the square it's over; a capture
-// runs its time, and what it saw stays in the picture. The
+// ORION-3, the imaging satellite (ILI-1219): the big panel down the right, and everything about
+// looking at a square (ILI-1308). A square HQ picks shows here, its details and Reposition;
+// Reposition tasks ORION-3 (ILI-1250), and it moves with a countdown that runs down to nothing,
+// then, on station, the ways to look (photo, burst, video) take its place; a capture runs its
+// time, and what it saw stays in the picture. What HQ can *do* to the square (its strikes, the
+// sniper, a signal) is in the square's anchor on the map (ILI-1302). The
 // picture has a fixed place at the panel's top (ILI-1229): with no square to show it holds a
 // placeholder, where the Three.js satellite goes (ILI-1196). A strike ties it up. Phaser
 // draws the picture into the frame.
@@ -30,21 +32,24 @@ export function OrionPanel() {
   const live = sat.state === 'onStation' || sat.state === 'capturing';
 
   const result = sat.state === 'idle' ? sat.result : null;
+  const picked = lookSquare(s); // the square HQ is working
   const tier = useTier();
   // The fighters in ORION-3's picture: a tap on one opens their square's anchor, with its
-  // strikes (ILI-1302). Nothing in the picture is a control.
+  // strikes (ILI-1302).
   const marked = square ? targets(s).filter((t) => squareAt(t.x, t.y) === square) : [];
   const pings = square ? s.events.filter((e) => e.square === square && e.status !== 'resolved' && e.kind !== 'site') : [];
   // The larger square while ORION-3 is on it, or what it last saw; else the placeholder (ILI-1229).
-  const showPicture = (!tied && (live || (sat.state === 'idle' && !!square && !!snap)));
+  const showPicture = !tied && (live || (sat.state === 'idle' && !!square && !!snap));
   const blind = nextBlind(s);
   const caption = tied
     ? 'Tied up by the intercept'
     : sat.state === 'slewing'
       ? `On its way to ${sat.aim}`
-      : blind
-        ? `Standing by over ${sat.aim} · no imagery of ${blind} ahead`
-        : `Standing by over ${sat.aim} · pick a square to get eyes on it`;
+      : picked
+        ? `No imagery of ${picked} · Reposition`
+        : blind
+          ? `Standing by over ${sat.aim} · no imagery of ${blind} ahead`
+          : `Standing by over ${sat.aim} · tap a square to task it`;
   const last = Object.values(s.imagery)
     .filter((x) => x.mode !== 'eyes')
     .sort((a, b) => b.atMs - a.atMs)[0];
@@ -70,13 +75,18 @@ export function OrionPanel() {
   const panelRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (panelRef.current) panelRef.current.scrollTop = 0;
-  }, [sat.state]);
+  }, [sat.state, picked]);
 
   const head = tied ? 'tied up' : sat.state === 'idle' ? `over ${sat.aim}` : sat.state === 'slewing' ? `→ ${sat.aim}` : `${sat.aim} · ${sat.state === 'onStation' ? 'on station' : CAPTURE[sat.mode!].label.toLowerCase()}`;
   const travel = Math.max(1, sat.arriveMs - sat.startMs);
   const avatar = tied ? 'tied' : sat.state === 'slewing' ? 'slewing' : 'idle';
   const status = tied ? 'Tied up' : sat.state === 'idle' ? 'Standby' : sat.state === 'slewing' ? 'Repositioning' : sat.state === 'onStation' ? 'On station' : CAPTURE[sat.mode!].label;
   const left = Math.max(0, sat.arriveMs - now);
+  // Reposition, then shoot (ILI-1250): a scan *is* the photo, burst or video, so there's no Scan
+  // step. Until ORION-3 is over the square HQ is working, its one button is a big Reposition;
+  // once it's there, Photo, Burst and Video take its place.
+  const away = picked ? slewMs(s, picked) : 0;
+  const inPosition = live || sat.state === 'capturing' || (sat.state === 'idle' && !!picked && away === 0);
 
   return (
     <section ref={panelRef} className="panel orion" onScroll={() => redraw((n) => n + 1)} data-testid="satellite" data-state={sat.state} aria-label="ORION-3 imaging satellite">
@@ -164,18 +174,24 @@ export function OrionPanel() {
         )}
       </div>
 
-      {/* ORION-3's buttons, always here under the picture (ILI-1230): the ways to look at the
-          square it's over, lit when it can. On station, Photo pulses: it's the next thing to do
-          (ILI-1257). Where it looks is picked at the square's anchor (ILI-1302). */}
+      {/* ORION-3's buttons, always here under the picture (ILI-1230): each lit when it can be used.
+          On station, Photo pulses: it's the next thing to do (ILI-1257). */}
       <div className="o-buttons" data-testid="orion-buttons">
-        <div className="modes" data-testid="capture-modes">
-          {MODES.map((m) => (
-            <button key={m} disabled={tied || sat.state === 'capturing' || sat.state === 'slewing'} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={`${CAPTURE[m].what} · ${sat.aim}`} data-cue={(m === 'photo' && sat.state === 'onStation') || undefined}>
-              {CAPTURE[m].label}
-              <small>{CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
-            </button>
-          ))}
-        </div>
+        {inPosition && !tied ? (
+          <div className="modes" data-testid="capture-modes">
+            {MODES.map((m) => (
+              <button key={m} disabled={sat.state === 'capturing'} onClick={() => game.capture(m)} data-testid={`capture-${m}`} title={CAPTURE[m].what} data-cue={(m === 'photo' && sat.state === 'onStation') || undefined}>
+                {CAPTURE[m].label}
+                <small>{CAPTURE[m].ms ? gameSpan(CAPTURE[m].ms) : 'instant'}</small>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button className="o-reposition" disabled={!picked || tied || sat.state !== 'idle' || satelliteBusy(s)} onClick={() => picked && game.lookAt(picked)} data-testid="look-here">
+            {sat.state === 'slewing' && !tied ? `Repositioning to ${sat.aim}` : 'Reposition'}
+            <small>{tied ? 'tied up by the intercept' : sat.state === 'slewing' ? countdown(left) : picked ? `to ${picked} · ${countdown(away)}` : 'pick a square'}</small>
+          </button>
+        )}
       </div>
 
 
@@ -202,6 +218,13 @@ export function OrionPanel() {
             {CAPTURE[sat.mode!].label} · {gameSpan(sat.captureUntilMs - now)} · {sat.mode === 'video' ? 'live: watch them move' : 'three frames'}
           </span>
         </div>
+      )}
+
+      {/* The square HQ picked: what's known of it (ILI-1203, ILI-1308). */}
+      {picked && !tied && (
+        <section className="square-card o-square" data-testid="square-card" data-square={picked} role="group" aria-label={`Square ${picked}`}>
+          <Card s={s} square={picked} />
+        </section>
       )}
 
       {!tied && sat.state === 'idle' && (
