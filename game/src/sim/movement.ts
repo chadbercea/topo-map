@@ -2,6 +2,7 @@ import { METRES_PER_UNIT, squareCenter } from '../map/grid';
 import { heightAt, theater } from '../map/terrain';
 import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
+import type { Message } from './comms';
 import { moving } from './intel';
 import { speedFactor } from './upgrades';
 import { footfall } from './noise';
@@ -32,7 +33,16 @@ export const movementSystem: System = (s, dt) => {
     return team.activity === activity ? s : { ...s, team: { ...team, activity } };
   }
   // Out of intel (ILI-1314): it holds where it is until HQ feeds the gauge again.
-  if (!moving(s)) return team.activity === STARVED ? s : { ...s, team: { ...team, activity: STARVED } };
+  if (!moving(s)) {
+    if (team.activity === STARVED) return s;
+    const held = { ...s, team: { ...team, activity: STARVED } };
+    // The first time it stalls, it says what it needs (ILI-1318): eyes on the ground ahead. Once
+    // a mission: after that the gauge and the need line say it.
+    if (s.comms.messages.some((m) => m.id === 'needs-intel')) return held;
+    const ahead = team.route.slice(team.waypoint).find((sq) => !s.map.scanned.includes(sq)) ?? target;
+    const line: Message = { id: 'needs-intel', from: team.callsign, text: `Holding. No intel on what's ahead. Get us eyes on ${ahead}.`, atMs: s.elapsedMs, status: 'new', holds: false };
+    return { ...held, comms: { ...held.comms, messages: [...held.comms.messages, line] } };
+  }
 
   // A new leg: work out the way there from where ALPHA stands.
   const path = team.pathTo === target && team.path.length ? team.path : findPath(team.position, target, legSquares(team.position));

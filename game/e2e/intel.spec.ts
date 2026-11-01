@@ -13,6 +13,10 @@ test('the intel gauge: empty, ALPHA holds; a photo feeds it and the bar fills', 
   await expect(bar).toHaveAttribute('data-low', 'true');
   await page.evaluate(() => { for (let t = 0; t < 4_000; t += 100) window.game.tick(100); });
   await expect(page.getByTestId('team-panel')).toContainText('Holding · needs intel');
+  // It says what it needs, and the line under the mission points there (ILI-1318).
+  await expect(page.getByTestId('needs-hq')).toHaveText('ALPHA needs intel: scan ahead at F4');
+  await page.getByTestId('needs-hq').click();
+  await expect.poll(() => page.evaluate(() => window.game.get().map.selected)).toBe('F4');
   await photo(page, 'G5');
   await expect.poll(async () => Number(await bar.getAttribute('aria-valuenow'))).toBeGreaterThan(0);
 });

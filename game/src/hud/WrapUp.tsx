@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { Store } from './Store';
+import { UPGRADES } from '../sim/upgrades';
+import { cantBuy } from './ledger';
 import { intro, introOn } from './intro';
 import { wrapUp } from '../sim/wrapup';
 import { gameClock } from '../sim/gameTime';
@@ -82,7 +84,7 @@ export function WrapUp() {
           </div>
         </dl>
         {w.outcome !== 'bankrupt' && (
-          <button onClick={() => setStore(true)} data-testid="open-store">
+          <button onClick={() => setStore(true)} data-testid="open-store" data-cue={UPGRADES.some((u) => !cantBuy(u.id)) || undefined}>
             Upgrades
           </button>
         )}

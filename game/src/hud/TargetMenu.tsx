@@ -40,7 +40,7 @@ export function TargetMenu({ contactId }: { contactId: string }) {
       {c.status === 'revealed' && (
         <div className="options" aria-label="Strike">
           {WEAPONS.map((w) => (
-            <button key={w} disabled={!!weaponBlocked(state, w, c)} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`}>
+            <button key={w} disabled={!!weaponBlocked(state, w, c)} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`} data-cue={(state.team.waitFor?.square === c.square && !weaponBlocked(state, w, c)) || undefined /* ALPHA asked for this (ILI-1318) */}>
               <span>{WEAPON[w].name}</span>
               <small>{status(w)}</small>
             </button>
