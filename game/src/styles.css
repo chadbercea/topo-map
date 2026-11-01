@@ -848,6 +848,13 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* On station (ILI-1257): Photo is the next thing to do, so it breathes in the accent until taken. */
 .orion .o-buttons .modes button[data-cue] { border-color: var(--accent); color: var(--accent); animation: cue 1.4s ease-in-out infinite; }
 @keyframes cue { 50% { box-shadow: 0 0 0 1px var(--accent), 0 0 12px rgba(53, 208, 165, 0.45); background: rgba(53, 208, 165, 0.1); } }
+/* Teaching through play (ILI-1318): the one control that answers what someone asked for pulses. */
+.target-menu .options button[data-cue] { animation: cue-red 1.4s ease-in-out infinite; }
+@keyframes cue-red { 50% { box-shadow: 0 0 0 1px #e5484d, 0 0 12px rgba(229, 72, 77, 0.45); background: rgba(229, 72, 77, 0.12); } }
+.ability-bar .ab-slot[data-state='buyable'] { animation: cue-gold 1.6s ease-in-out infinite; }
+@keyframes cue-gold { 50% { box-shadow: 0 0 0 1px #f2c14e, 0 0 12px rgba(242, 193, 78, 0.45); } }
+.wrapup button[data-cue] { border-color: #f2c14e; color: #f2c14e; animation: cue-gold 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .target-menu .options button[data-cue], .ability-bar .ab-slot[data-state='buyable'], .wrapup button[data-cue] { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .orion .o-buttons .modes button[data-cue] { animation: none; box-shadow: 0 0 0 1px var(--accent); } }
 /* Not over the square yet (ILI-1250): one big Reposition fills the row; the shots come after. */
 .orion .o-buttons .o-reposition { flex: 1; min-height: 40px; font-size: 13px; letter-spacing: 0.14em; border-color: var(--accent); color: var(--accent); }

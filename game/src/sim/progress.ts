@@ -84,6 +84,13 @@ export function blockers(s: GameState): Blocker[] {
   const calls = waitingCalls(s.comms);
   if (calls.length) out.push({ tone: 'decision', text: `${calls[0].from} waiting on your decision${calls.length > 1 ? ` (+${calls.length - 1})` : ''}`, go: { ask: true } });
   if (s.team.fight) out.push({ tone: 'threat', text: `${s.team.callsign} in contact` });
+  // Teaching through play (ILI-1318): what ALPHA needs from HQ right now, and where.
+  const w = s.team.waitFor;
+  if (w && s.elapsedMs < w.untilMs) out.push({ tone: 'decision', text: `${s.team.callsign} holding short of ${w.square}: soften them up`, go: { square: w.square } });
+  if (s.team.activity === 'Holding · needs intel') {
+    const at = s.team.route.slice(s.team.waypoint).find((sq) => !s.map.scanned.includes(sq)) ?? s.team.route[s.team.waypoint];
+    if (at) out.push({ tone: 'decision', text: `${s.team.callsign} needs intel: scan ahead at ${at}`, go: { square: at } });
+  }
   const ahead = s.team.route.slice(s.team.waypoint);
   const contact = ahead.find((sq) => s.contacts.some((c) => c.square === sq && c.status === 'revealed'));
   if (contact) out.push({ tone: 'threat', text: `Contact on the route at ${contact}`, go: { square: contact } });
