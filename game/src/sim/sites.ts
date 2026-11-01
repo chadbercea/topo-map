@@ -8,7 +8,8 @@ import { feed } from './intel';
 // Confirmed kills earn cash (GDD), and a destroyed contact leaves a kill site. ALPHA sweeps
 // it for documents worth cash as it passes through.
 
-import { BANKRUPT_AT, CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH } from './prices';
+import { bankruptAt } from './upgrades';
+import { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH } from './prices';
 export { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH };
 export const SITE_INTEL = 25; // intel a swept site feeds ALPHA's gauge (ILI-1315)
 
@@ -22,7 +23,7 @@ export const earn = (s: GameState, amount: number, from: 'field' | 'escrow' = 'f
 export const spend = (s: GameState, amount: number): GameState => {
   const { budget, ledger } = s.resources;
   const next = { ...s, resources: { budget: budget - amount, ledger: { ...ledger, spent: ledger.spent - amount } } };
-  return next.resources.budget <= BANKRUPT_AT && !s.bankrupt ? { ...next, bankrupt: true, phase: 'ended' } : next;
+  return next.resources.budget <= bankruptAt(s) && !s.bankrupt ? { ...next, bankrupt: true, phase: 'ended' } : next;
 };
 
 export function markSite(s: GameState, c: Contact): GameState {

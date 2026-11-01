@@ -6,6 +6,7 @@ import type { Message } from './comms';
 import type { System } from './systems';
 import { LEVELS, UNLOCK } from './prices';
 import { spend } from './sites';
+import { cooldownFactor } from './upgrades';
 
 // Ordnance for strikes (GDD, reworked in ILI-1168): the drone strike is one use, clears the
 // whole square (ILI-1252, drone.ts), and can fire blind; the sniper takes them out itself,
@@ -72,7 +73,7 @@ export function spendWeapon(s: GameState, w: Weapon): GameState {
   const o = s.ordnance[w];
   return {
     ...s,
-    ordnance: { ...s.ordnance, [w]: { ...o, uses: o.uses === null ? null : o.uses - 1, readyAtMs: s.elapsedMs + WEAPON[w].runMs + WEAPON[w].cooldownMs } },
+    ordnance: { ...s.ordnance, [w]: { ...o, uses: o.uses === null ? null : o.uses - 1, readyAtMs: s.elapsedMs + WEAPON[w].runMs + WEAPON[w].cooldownMs * cooldownFactor(s) } }, // quick turnaround (ILI-1317)
   };
 }
 

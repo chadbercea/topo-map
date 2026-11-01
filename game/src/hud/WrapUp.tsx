@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { game, useGame } from '../sim/store';
+import { Store } from './Store';
 import { intro, introOn } from './intro';
 import { wrapUp } from '../sim/wrapup';
 import { gameClock } from '../sim/gameTime';
@@ -11,8 +13,16 @@ const clock = (ms: number) => gameClock(ms, Math.floor);
 export function WrapUp() {
   const ended = useGame((s) => s.phase === 'ended');
   const state = useGame((s) => s);
+  const [store, setStore] = useState(false);
   if (!ended) return null;
   const w = wrapUp(state);
+  // The store, between missions (ILI-1317): not for a PMC that's gone bust.
+  if (store && w.outcome !== 'bankrupt')
+    return (
+      <div className="overlay" data-testid="wrapup" data-outcome={w.outcome}>
+        <Store close={() => setStore(false)} />
+      </div>
+    );
   return (
     <div className="overlay" data-testid="wrapup" data-outcome={w.outcome}>
       <section className="panel menu wrapup" role="dialog" aria-label={`After Action Report: ${HEADLINE[w.outcome]}`}>
@@ -71,6 +81,11 @@ export function WrapUp() {
             </dd>
           </div>
         </dl>
+        {w.outcome !== 'bankrupt' && (
+          <button onClick={() => setStore(true)} data-testid="open-store">
+            Upgrades
+          </button>
+        )}
         <button onClick={intro.reboot}>{w.outcome === 'bankrupt' ? 'Start a new PMC' : w.outcome === 'failed' ? 'Retry mission' : 'Play again'}</button>
         <button onClick={introOn ? intro.home : game.exit}>Exit</button>
       </section>

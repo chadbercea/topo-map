@@ -3,6 +3,7 @@ import { heightAt, theater } from '../map/terrain';
 import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
 import { moving } from './intel';
+import { speedFactor } from './upgrades';
 import { footfall } from './noise';
 
 // The team moves on its own (GDD: the player never controls it), waypoint to waypoint. Each
@@ -46,7 +47,7 @@ export const movementSystem: System = (s, dt) => {
 
   const h0 = heightAt(t, x, y);
   const grade = (heightAt(t, x + ux * PROBE, y + uy * PROBE) - h0) / (PROBE * METRES_PER_UNIT);
-  const step = Math.min(dist, (legSpeed(grade) * dt) / 1000);
+  const step = Math.min(dist, (legSpeed(grade) * speedFactor(s) * dt) / 1000); // training (ILI-1317)
   const nx = x + ux * step;
   const ny = y + uy * step;
 

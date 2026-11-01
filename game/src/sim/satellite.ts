@@ -1,5 +1,6 @@
 import { GRADE_LABEL, pushPhoto, pushVideo } from './intel';
 import { maybeBuilding } from './buildings';
+import { slewFactor } from './upgrades';
 import { parseSquare, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import { reveal } from './contacts';
@@ -68,7 +69,7 @@ export function slewMs(s: GameState, square: SquareId): number {
   const to = at(square);
   const d = Math.hypot(to.col - p.col, to.row - p.row);
   if (d < 0.01) return 0;
-  return Math.round((SETTLE_MS + d * SLEW_MS_PER_SQUARE) / 100) * 100;
+  return Math.round(((SETTLE_MS + d * SLEW_MS_PER_SQUARE) * slewFactor(s)) / 100) * 100; // more satellites, faster revisits (ILI-1317)
 }
 
 export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing';

@@ -1,6 +1,7 @@
 import { game, useGame } from '../sim/store';
 import { CALLSIGN, unlockBlocked, WEAPON, weaponBlocked } from '../sim/ordnance';
-import { LEVELS, PER_CALL, UNLOCK } from '../sim/prices';
+import { LEVELS, UNLOCK } from '../sim/prices';
+import { perCall } from '../sim/upgrades';
 
 const SHORT = { sniper: 'Sniper', drone: 'Drone', heli: 'Heli' } as const;
 
@@ -40,7 +41,7 @@ export function AbilityBar() {
           >
             <i>{i + 1}</i>
             <span>{SHORT[w]}</span>
-            <small>{o.unlocked ? (busy && busy.startsWith('Ready in') ? busy : `${cash(PER_CALL[w])} / call`) : `Unlock ${cash(UNLOCK[w])}`}</small>
+            <small>{o.unlocked ? (busy && busy.startsWith('Ready in') ? busy : `${cash(perCall(s, w))} / call`) : `Unlock ${cash(UNLOCK[w])}`}</small>
           </button>
         );
       })}

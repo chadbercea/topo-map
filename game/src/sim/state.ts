@@ -6,7 +6,8 @@ import { squareCenter } from '../map/grid';
 import type { MapEvent, Scheduled } from './events';
 import { initialComms, type Comms } from './comms';
 import { initialIntel, type Intel } from './intel';
-import { DEPLOY, openLedger, type Ledger } from './prices';
+import { openLedger, type Ledger } from './prices';
+import { deployCost, medsFactor } from './upgrades';
 import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
 import type { MiniGame } from './minigame';
@@ -76,6 +77,7 @@ export type GameState = {
   resources: { budget: number; ledger: Ledger }; // the balance now, and where the mission's money went (ILI-1316)
   bankrupt: boolean; // the PMC's credit ran out (ILI-1316)
   searching: string[]; // buildings HQ sent ALPHA to search (ILI-1316)
+  upgrades: string[]; // what the PMC has bought in the store (ILI-1317)
   satellite: Satellite; // ORION-3: where it's looking and what it's doing
   imagery: Record<string, Snapshot>; // the newest look at each square
   capabilities: Capability[]; // what the PMC can offer the team; gates responses
@@ -100,8 +102,8 @@ export const MISSION_MS = MISSION.durationMs; // GDD started at six minutes; ten
 // how the game opens: live, ALPHA on the ground, the clock running.
 // opening: Castle House's balance coming into the mission, carried from the last; unlocked:
 // the capabilities it carries in (ILI-1316).
-export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS, opening = 0, unlocked: readonly Weapon[] = []): GameState {
-  const operators = roster();
+export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS, opening = 0, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []): GameState {
+  const operators = roster().map((o) => ({ ...o, meds: Math.round(o.meds * medsFactor(upgrades)) })); // a field hospital (ILI-1317)
   return {
     tick: 0,
     elapsedMs: 0,
@@ -138,9 +140,10 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     heli: null,
     sniper: null,
     exfil: null,
-    resources: { budget: opening - DEPLOY, ledger: openLedger(opening) },
+    resources: { budget: opening - deployCost(upgrades), ledger: { ...openLedger(opening), deploy: -deployCost(upgrades) } },
     bankrupt: false,
     searching: [],
+    upgrades: [...upgrades],
     satellite: initialSatellite(ROUTE[0]),
     imagery: {},
     capabilities: ['imagery'],

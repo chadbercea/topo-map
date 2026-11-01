@@ -1,4 +1,5 @@
 import type { GameState } from './state';
+import { photoFactor, videos } from './upgrades';
 
 // ALPHA's intel gauge (ILI-1314): what keeps the team moving. The team is autonomous and has
 // its mission; HQ keeps it fed. Every scan goes to the analysts, who push what it was worth to
@@ -25,9 +26,9 @@ export const GRADE_LABEL: Record<Grade, string> = { clear: 'all clear', low: 'lo
 export type Feed = { atMs: number; amount: number };
 // base: a fixed offset that survives a restart (tests and tuning run with the gauge full);
 // floor: video's buff; graded: squares the analysts have already been through.
-export type Intel = { base: number; floor: number; feeds: Feed[]; videoUsed: boolean; graded: string[]; banked: { square: string; amount: number }[] };
+export type Intel = { base: number; floor: number; feeds: Feed[]; videoUsed: boolean; videosShot: number; graded: string[]; banked: { square: string; amount: number }[] };
 
-export const initialIntel = (): Intel => ({ base: 0, floor: 0, feeds: [], videoUsed: false, graded: [], banked: [] });
+export const initialIntel = (): Intel => ({ base: 0, floor: 0, feeds: [], videoUsed: false, videosShot: 0, graded: [], banked: [] });
 
 // The gauge now, 0 to 100: the base and floor, plus every feed still fading.
 export function gauge(s: GameState): number {
@@ -64,7 +65,8 @@ export const ahead = (s: GameState, square: string) => s.team.route.slice(s.team
 export function pushPhoto(s: GameState, square: string, fighters: number): { next: GameState; grade: Grade; banked: boolean } {
   const g = grade(s, square, fighters);
   const banked = ahead(s, square);
-  const next = banked ? { ...s, intel: { ...s.intel, banked: [...s.intel.banked, { square, amount: GRADE_INTEL[g] }] } } : feed(s, GRADE_INTEL[g]);
+  const amount = GRADE_INTEL[g] * photoFactor(s); // more analysts, more out of it (ILI-1317)
+  const next = banked ? { ...s, intel: { ...s.intel, banked: [...s.intel.banked, { square, amount }] } } : feed(s, amount);
   return { next: { ...next, intel: { ...next.intel, graded: [...new Set([...next.intel.graded, square])] } }, grade: g, banked };
 }
 
@@ -82,4 +84,8 @@ export const intelSystem = (s: GameState): GameState => {
 };
 
 // Video: the permanent floor, once a session.
-export const pushVideo = (s: GameState): GameState => ({ ...s, intel: { ...s.intel, floor: Math.max(s.intel.floor, VIDEO_FLOOR), videoUsed: true } });
+// (Twice with a second feed, ILI-1317, each adding to the floor.)
+export const pushVideo = (s: GameState): GameState => {
+  const shot = s.intel.videosShot + 1;
+  return { ...s, intel: { ...s.intel, videosShot: shot, floor: Math.min(GAUGE_MAX, Math.max(s.intel.floor, VIDEO_FLOOR * shot)), videoUsed: shot >= videos(s) } };
+};
