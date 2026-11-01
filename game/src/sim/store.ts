@@ -7,7 +7,7 @@ import { abortMiniGame } from './minigame';
 import { launch } from './air';
 import { callSniper } from './sniper';
 import { unlock, unlockedWeapons, weaponBlocked, type Weapon } from './ordnance';
-import { PER_CALL } from './prices';
+import { perCall } from './upgrades';
 import { sendToSearch } from './buildings';
 import { spend } from './sites';
 import { sendResupply } from './support';
@@ -52,9 +52,9 @@ export function createStore(initial: GameState = initialState()) {
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
     // No saves in the MVP: retry and restart both start the mission over, live.
     // A new mission opens on the balance HQ carries in (ILI-1316): the last one's, unless given.
-    restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state)) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked))),
+    restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state), upgrades: readonly string[] = state.upgrades) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades))),
     // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
-    setOpening: (opening: number, unlocked: readonly Weapon[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked))),
+    setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades))),
     // Send ALPHA to search a building a scan turned up (ILI-1316).
     search: (square: string) => set(sendToSearch(state, square)),
     // Buy a capability (ILI-1316).
@@ -99,7 +99,7 @@ export function createStore(initial: GameState = initialState()) {
       // No mini games: the support does it itself (ILI-1252, ILI-1253, ILI-1254).
       // Every call that goes out costs (ILI-1316), into the red if need be.
       const called = weapon === 'sniper' ? callSniper(state, contactId) : launch(state, weapon, contactId);
-      set(called === state ? state : spend(called, PER_CALL[weapon]));
+      set(called === state ? state : spend(called, perCall(state, weapon)));
     },
     lookAt: (square: string) => set(task(state, square)),
     // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first

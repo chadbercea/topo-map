@@ -441,6 +441,18 @@ html, body {
 .overlay[data-outcome='failed'] .wrapup h2 { color: #e5484d; }
 .overlay[data-outcome='bankrupt'] .wrapup h2, .overlay[data-outcome='bankrupt'] .wrapup .outcome { color: #e5484d; } /* ILI-1316 */
 .wrapup [data-testid='pnl'][data-loss] { color: #e5484d; }
+/* The store (ILI-1317). */
+.store { width: min(560px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; background: var(--bg); gap: 10px; }
+.store .store-balance { margin: 0; color: var(--dim); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+.store .store-balance b { color: var(--accent); font-size: 15px; margin-left: 8px; }
+.store .store-balance b[data-red] { color: #e5484d; }
+.store h3 { margin: 6px 0 2px; font-size: 10px; letter-spacing: 0.14em; color: var(--accent); }
+.store .store-item { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
+.store .store-item b { display: block; color: var(--ink); font-size: 12px; font-weight: 600; }
+.store .store-item small { color: var(--dim); font-size: 11px; }
+.store .store-item button { min-width: 96px; min-height: 36px; }
+.store .store-item button:disabled { opacity: 0.4; cursor: default; } /* can't afford it */
+.store .store-item[data-owned] button { color: var(--accent); border-color: var(--accent); opacity: 1; }
 @media (max-width: 480px) { .wrapup .columns { grid-template-columns: 1fr; } }
 
 /* Shared panel bits */
