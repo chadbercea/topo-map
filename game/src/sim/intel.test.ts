@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { feed, gauge, grade, GRADE_INTEL, MOVE_AT, pushPhoto, VIDEO_FLOOR } from './intel';
+import { feed, gauge, grade, GRADE_INTEL, LOW_AT, pushPhoto, SQUARE_INTEL, VIDEO_INTEL } from './intel';
+import { blockers } from './progress';
 import { run } from './testkit';
 
 // ALPHA's intel gauge (ILI-1314): it moves only while HQ keeps it fed.
@@ -20,34 +21,60 @@ describe('the intel gauge', () => {
     expect(s.team.activity).toBe('Holding · needs intel');
   });
 
-  it('a feed hits the gauge and fades to nothing over ten seconds', () => {
-    let s = feed(initialState(), 30);
-    expect(gauge(s)).toBe(30);
-    s = { ...s, elapsedMs: 5_000 };
-    expect(gauge(s)).toBeCloseTo(15);
-    s = { ...s, elapsedMs: 10_000 };
-    expect(gauge(s)).toBe(0);
+  it('intel is fuel: it holds while ALPHA stands still, and burns only as ALPHA walks (ILI-1341)', () => {
+    const fed = feed(initialState(), 30);
+    expect(gauge(fed)).toBe(30);
+    // Holding for another reason (a call, say): nothing burns.
+    const held = run({ ...fed, team: { ...fed.team, holdUntilMs: 60_000 } }, 30_000);
+    expect(gauge(held)).toBe(30);
+    // Walking burns it.
+    const s0 = feed(blindAhead(), 30);
+    expect(gauge(run(s0, 5_000))).toBeLessThan(30);
   });
 
-  it('the team moves while the gauge is at the threshold or above, and holds once it fades below', () => {
-    const s0 = feed(blindAhead(), 50); // high grade: above 20 for six seconds
+  it('every grade of photo moves ALPHA, even all clear', () => {
+    const s0 = feed(blindAhead(), GRADE_INTEL.clear);
     const moved = run(s0, 3_000);
     expect(moved.team.position).not.toEqual(s0.team.position);
-    const later = run(moved, 5_000); // fed 8 s ago: 10, under the threshold
-    expect(gauge(later)).toBeLessThan(MOVE_AT);
-    const still = run(later, 2_000);
-    expect(still.team.position).toEqual(later.team.position);
   });
 
-  it('video sets a permanent floor, once; a second video is refused', () => {
+  it("a square's worth of intel walks ALPHA about a square, then it holds", () => {
+    const s0 = feed(blindAhead(), SQUARE_INTEL);
+    const s = run(s0, 120_000);
+    expect(gauge(s)).toBe(0);
+    expect(s.team.activity).toBe('Holding · needs intel');
+    const dx = Math.hypot(s.team.position.x - s0.team.position.x, s.team.position.y - s0.team.position.y);
+    expect(dx).toBeGreaterThan(150); // a square is 200 units; paths wind
+    expect(dx).toBeLessThanOrEqual(200);
+  });
+
+  it('running low on the move, the need line goes up before ALPHA stops (ILI-1341)', () => {
+    const s = run(feed(blindAhead(), LOW_AT - 1), 1_000);
+    expect(s.team.activity).toMatch(/^Moving/);
+    expect(blockers(s).some((b) => /low on intel: scan ahead at [A-H]\d/.test(b.text))).toBe(true);
+  });
+
+  it('the stretch after the opening scans: scanning the squares the need line points at keeps ALPHA going (ILI-1341)', () => {
+    // Play it the way the player is told to: when the line says scan, scan where it points.
+    const store = createStore(blindAhead());
+    const start = store.get().team.waypoint;
+    for (let t = 0; t < 300_000; t += 100) {
+      store.tick(100);
+      const need = blockers(store.get()).find((b) => /intel: scan ahead/.test(b.text));
+      const sat = store.get().satellite;
+      if (need?.go?.square && sat.state === 'idle') store.lookAt(need.go.square);
+      if (sat.state === 'onStation') store.capture('photo');
+    }
+    expect(store.get().team.waypoint).toBeGreaterThan(start + 3);
+  });
+
+  it('video is one big fill, once; a second video is refused', () => {
     const store = createStore(blindAhead());
     store.lookAt('G5');
     store.capture('video');
     store.set(run(store.get(), 16_000));
     expect(store.get().intel.videoUsed).toBe(true);
-    expect(gauge(store.get())).toBe(VIDEO_FLOOR);
-    store.set(run(store.get(), 60_000));
-    expect(gauge(store.get())).toBeGreaterThanOrEqual(VIDEO_FLOOR); // it never fades
+    expect(store.get().intel.fuel).toBeGreaterThan(VIDEO_INTEL - SQUARE_INTEL); // less what it has walked since
     store.lookAt('F4');
     store.set(run(store.get(), 20_000));
     store.capture('video');
@@ -77,7 +104,7 @@ describe('the intel gauge', () => {
     const s = run({ ...far.next, intel: { ...far.next.intel, base: 100 } }, 60_000);
     expect(s.team.route[s.team.waypoint]).not.toBe(next);
     expect(s.intel.banked).toHaveLength(0);
-    expect(s.intel.feeds.some((f) => f.amount === 50)).toBe(true); // E3's high grade, paid out
+    expect(s.intel.fuel).toBeGreaterThan(GRADE_INTEL.medium); // E3's high grade paid out, less the walk since
   });
 
   it('banked intel for a square ALPHA no longer goes to (it went around it) pays out at once (ILI-1315)', () => {

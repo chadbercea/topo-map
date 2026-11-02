@@ -6,6 +6,7 @@ import { ammoLevel, LOW, medsLevel } from './support';
 import { squareCenter, type SquareId } from '../map/grid';
 import { BASE_SPEED } from './movement';
 import { RECOVER_MS } from './mission';
+import { gauge, LOW_AT } from './intel';
 
 // Mission progression at a glance (ILI-1173): how far along the route ALPHA is, what it's
 // doing now, and the one thing that presses next. Pure reads of the state, for the HUD.
@@ -87,9 +88,13 @@ export function blockers(s: GameState): Blocker[] {
   // Teaching through play (ILI-1318): what ALPHA needs from HQ right now, and where.
   const w = s.team.waitFor;
   if (w && s.elapsedMs < w.untilMs) out.push({ tone: 'decision', text: `${s.team.callsign} holding short of ${w.square}: soften them up`, go: { square: w.square } });
-  if (s.team.activity === 'Holding · needs intel') {
-    const at = s.team.route.slice(s.team.waypoint).find((sq) => !s.map.scanned.includes(sq)) ?? s.team.route[s.team.waypoint];
-    if (at) out.push({ tone: 'decision', text: `${s.team.callsign} needs intel: scan ahead at ${at}`, go: { square: at } });
+  // Out of intel, or running low on the move (ILI-1341): the line goes up before ALPHA stops,
+  // pointing at the next square on its way the analysts haven't been through.
+  const starved = s.team.activity === 'Holding · needs intel';
+  if (starved || (s.team.activity.startsWith('Moving') && gauge(s) < LOW_AT)) {
+    const route = s.team.route.slice(s.team.waypoint);
+    const at = route.find((sq) => !s.map.scanned.includes(sq) && !s.intel.graded.includes(sq)) ?? route[0];
+    if (at) out.push({ tone: 'decision', text: `${s.team.callsign} ${starved ? 'needs intel' : 'low on intel'}: scan ahead at ${at}`, go: { square: at } });
   }
   const ahead = s.team.route.slice(s.team.waypoint);
   const contact = ahead.find((sq) => s.contacts.some((c) => c.square === sq && c.status === 'revealed'));

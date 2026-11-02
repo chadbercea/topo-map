@@ -1,49 +1,48 @@
 import type { GameState } from './state';
 import { photoFactor, videos } from './upgrades';
+import { CELL } from '../map/grid';
 
 // ALPHA's intel gauge (ILI-1314): what keeps the team moving. The team is autonomous and has
 // its mission; HQ keeps it fed. Every scan goes to the analysts, who push what it was worth to
-// the operators: a photo's intel hits the gauge and decays to nothing over ten seconds, so HQ
-// has to keep scanning; a decoded intercept does the same; video, once, is a permanent floor.
-// ALPHA moves while the gauge is at the threshold or above, and holds below it.
+// the operators.
+// Intel is fuel (ILI-1341): what HQ pushes fills the gauge, and ALPHA burns it by walking, a
+// square's worth of ground for every SQUARE_INTEL. It doesn't fade while ALPHA stands still, so
+// every scan moves the team; it runs dry only as ALPHA covers ground, so HQ has to keep
+// scanning ahead of it. Empty, ALPHA holds.
 // Scanning ahead pays (ILI-1316): a photo of a square further along ALPHA's route than the one
 // it's heading into is banked, and hits the gauge when ALPHA starts the leg into that square;
 // so HQ a few squares ahead keeps the team rolling. The square it's heading into, or one off
 // the route, feeds the gauge at once.
 // Starting values are Claude's picks for Chad to tune by feel.
 
-export const GAUGE_MAX = 100;
-export const MOVE_AT = 20; // the team moves at or above this
-export const DECAY_MS = 10_000; // a feed fades to nothing over this
-export const VIDEO_FLOOR = 40; // video's permanent buff, once a session
+export const GAUGE_MAX = 100; // a full gauge: four squares of walking
+export const SQUARE_INTEL = 25; // intel ALPHA burns crossing one square
+export const LOW_AT = SQUARE_INTEL; // under a square left: HQ is told to scan ahead
+export const VIDEO_INTEL = 60; // video: one big fill, once a session
 export const SIGNAL_INTEL = 35; // a decoded intercept
 
 // What the analysts make of a photo, by what it found there.
 export type Grade = 'clear' | 'low' | 'medium' | 'high';
-export const GRADE_INTEL: Record<Grade, number> = { clear: 10, low: 15, medium: 30, high: 50 };
+export const GRADE_INTEL: Record<Grade, number> = { clear: 12, low: 25, medium: 50, high: 75 }; // half a square to three
 export const GRADE_LABEL: Record<Grade, string> = { clear: 'all clear', low: 'low-grade intel', medium: 'medium-grade intel', high: 'high-grade intel' };
 
-export type Feed = { atMs: number; amount: number };
-// base: a fixed offset that survives a restart (tests and tuning run with the gauge full);
-// floor: video's buff; graded: squares the analysts have already been through.
-export type Intel = { base: number; floor: number; feeds: Feed[]; videoUsed: boolean; videosShot: number; graded: string[]; banked: { square: string; amount: number }[] };
+// base: a fixed offset that survives a restart and never burns (tests and tuning run with the
+// gauge full); fuel: what HQ has pushed and ALPHA hasn't walked off yet; graded: squares the
+// analysts have already been through.
+export type Intel = { base: number; fuel: number; videoUsed: boolean; videosShot: number; graded: string[]; banked: { square: string; amount: number }[] };
 
-export const initialIntel = (): Intel => ({ base: 0, floor: 0, feeds: [], videoUsed: false, videosShot: 0, graded: [], banked: [] });
+export const initialIntel = (): Intel => ({ base: 0, fuel: 0, videoUsed: false, videosShot: 0, graded: [], banked: [] });
 
-// The gauge now, 0 to 100: the base and floor, plus every feed still fading.
-export function gauge(s: GameState): number {
-  const { base, floor, feeds } = s.intel;
-  const live = feeds.reduce((n, f) => n + f.amount * Math.max(0, 1 - (s.elapsedMs - f.atMs) / DECAY_MS), 0);
-  return Math.min(GAUGE_MAX, base + floor + live);
-}
+// The gauge now, 0 to 100.
+export const gauge = (s: GameState): number => Math.min(GAUGE_MAX, s.intel.base + s.intel.fuel);
 
-export const moving = (s: GameState) => gauge(s) >= MOVE_AT;
+export const moving = (s: GameState) => gauge(s) > 0;
 
-// Feed the gauge (a photo's grade, a decoded intercept). Spent feeds drop off as new ones come.
-export function feed(s: GameState, amount: number): GameState {
-  const feeds = [...s.intel.feeds.filter((f) => s.elapsedMs - f.atMs < DECAY_MS), { atMs: s.elapsedMs, amount }];
-  return { ...s, intel: { ...s.intel, feeds } };
-}
+// Feed the gauge (a photo's grade, a decoded intercept), up to full.
+export const feed = (s: GameState, amount: number): GameState => ({ ...s, intel: { ...s.intel, fuel: Math.min(GAUGE_MAX, s.intel.fuel + amount) } });
+
+// ALPHA walked this many world units: the intel it burned.
+export const burn = (s: GameState, units: number): GameState => ({ ...s, intel: { ...s.intel, fuel: Math.max(0, s.intel.fuel - (units / CELL) * SQUARE_INTEL) } });
 
 // The square's worth (RNG, by square): mostly nothing or a lot at low quality, now and then
 // more. Seeded by the mission's seed so a mission replays exactly. Fighters in the picture are
@@ -83,9 +82,9 @@ export const intelSystem = (s: GameState): GameState => {
   return { ...paid, intel: { ...paid.intel, banked: paid.intel.banked.filter((b) => !isDue(b)) } };
 };
 
-// Video: the permanent floor, once a session.
-// (Twice with a second feed, ILI-1317, each adding to the floor.)
+// Video: one big fill, once a session (twice with a second feed, ILI-1317).
 export const pushVideo = (s: GameState): GameState => {
   const shot = s.intel.videosShot + 1;
-  return { ...s, intel: { ...s.intel, videosShot: shot, floor: Math.min(GAUGE_MAX, Math.max(s.intel.floor, VIDEO_FLOOR * shot)), videoUsed: shot >= videos(s) } };
+  const fed = feed(s, VIDEO_INTEL);
+  return { ...fed, intel: { ...fed.intel, videosShot: shot, videoUsed: shot >= videos(s) } };
 };

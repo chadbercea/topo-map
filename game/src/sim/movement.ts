@@ -3,7 +3,7 @@ import { heightAt, theater } from '../map/terrain';
 import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
 import type { Message } from './comms';
-import { moving } from './intel';
+import { burn, moving } from './intel';
 import { speedFactor } from './upgrades';
 import { footfall } from './noise';
 
@@ -67,7 +67,8 @@ export const movementSystem: System = (s, dt) => {
   const waypoint = arrived ? team.waypoint + 1 : team.waypoint;
   const next = team.route[waypoint];
 
-  return {
+  // The ground covered burns intel (ILI-1341).
+  return burn({
     ...s,
     team: {
       ...team,
@@ -78,5 +79,5 @@ export const movementSystem: System = (s, dt) => {
       activity: next ? `Moving to ${next}` : `Holding at ${target}`,
       operators: team.operators.map((o, i) => (o.health > 0 ? { ...o, steps: footfall(i, s.elapsedMs, grade) } : o)), // heard on the move (ILI-1266)
     },
-  };
+  }, step);
 };

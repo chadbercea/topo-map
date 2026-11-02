@@ -73,7 +73,7 @@ describe('ALPHA decides (ILI-1315)', () => {
     const s0 = walking();
     const site = { id: 'site-x', kind: 'site' as const, square: 'G5', title: 'Kill site', atMs: 0, status: 'new' as const };
     const s = run({ ...s0, events: [...s0.events, site] }, 100);
-    expect(s.intel.feeds.some((f) => f.amount === 25)).toBe(true);
+    expect(s.intel.fuel).toBeGreaterThan(20); // 25, less the few metres walked since
     expect(s.comms.messages.some((m) => /intel to keep us moving/.test(m.text))).toBe(true);
   });
 });
