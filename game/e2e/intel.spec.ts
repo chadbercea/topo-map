@@ -20,3 +20,20 @@ test('the intel gauge: empty, ALPHA holds; a photo feeds it and the bar fills', 
   await photo(page, 'G5');
   await expect.poll(async () => Number(await bar.getAttribute('aria-valuenow'))).toBeGreaterThan(0);
 });
+
+// The loop on the bar (ILI-1339): a scan ahead shows as a hollow segment until ALPHA heads
+// into that square; fed, ALPHA walks and the fill runs.
+test('the intel gauge shows banked intel and ALPHA walking it down', async ({ page, isMobile }) => {
+  await start(page, '?debug&gauge');
+  await running(page);
+  await freeze(page);
+  if (isMobile) await page.getByTestId('tab-team').click();
+  const bar = page.getByTestId('intel-gauge');
+  await photo(page, 'E3'); // past F4, the leg ALPHA is on: banked
+  if (isMobile) await page.getByTestId('tab-team').click(); // the scan brought ORION-3 forward (ILI-1340)
+  await expect(page.getByTestId('intel-banked')).toBeVisible();
+  await expect(bar).not.toHaveAttribute('data-walking', 'true');
+  await photo(page, 'F4'); // the square it's heading into: on the gauge now
+  await page.evaluate(() => { for (let t = 0; t < 1_000; t += 100) window.game.tick(100); });
+  await expect(bar).toHaveAttribute('data-walking', 'true');
+});
