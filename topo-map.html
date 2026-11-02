@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Topo Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #04080a;
+    --line: #3fd0c0;
+    --major: #a8fff2;
+    --accent: #ff6a3d;
+    --text: #bdf5ee;
+    --muted: #4f8f88;
+    --side: 236px;
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; color: var(--text);
+    font: 12px/1.45 "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; }
+  #map { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; opacity: 0; transition: opacity .6s;
+    touch-action: none; cursor: crosshair; }
+  #map.ready { opacity: 1; }
+  #minor path { fill: none; stroke: var(--line); stroke-width: .8; vector-effect: non-scaling-stroke; }
+  #major path { fill: none; stroke: var(--major); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+  #minor, #major { transition: opacity .3s; }
+  #map.slicing #minor, #map.slicing #major { opacity: .3; }
+  #river { fill: none; stroke: var(--major); stroke-opacity: .5; stroke-width: 1; stroke-dasharray: 2 5;
+    vector-effect: non-scaling-stroke; }
+  #slice-fill { fill: rgba(63,208,192,.14); stroke: none; }
+  #slice-line { fill: none; stroke: var(--accent); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+  #imagery { opacity: 0; }
+  #prof-line { stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  #prof-g circle { fill: var(--bg); stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+  #prof-g #prof-cursor { fill: var(--accent); stroke: none; }
+
+  .overlay { position: fixed; inset: 0; pointer-events: none; }
+  #grid { background-image:
+      linear-gradient(rgba(63,208,192,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(63,208,192,.06) 1px, transparent 1px);
+    background-size: 80px 80px; background-position: center; }
+  #vignette { background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.7) 100%); }
+
+  .hx, .hy { position: fixed; pointer-events: none; background: rgba(168,255,242,.25); display: none; }
+  .hx { left: 0; right: 0; height: 1px; }
+  .hy { top: 0; bottom: 0; width: 1px; }
+
+  .label { color: var(--muted); font-size: 9px; letter-spacing: .18em; }
+  .accent { color: var(--accent); }
+
+  .marker { position: fixed; pointer-events: none; transform: translate(-50%, -50%); }
+  .marker .ring { width: 12px; height: 12px; border: 1.5px solid var(--accent); border-radius: 50%; }
+  .marker .tag { position: absolute; left: 16px; top: -12px; white-space: nowrap; color: var(--accent); font-size: 10px; }
+
+  /* Map pings: 44px hit area around a small diamond and a static ring. */
+  .ping { position: fixed; width: 44px; height: 44px; transform: translate(-50%, -50%); padding: 0; margin: 0;
+    background: none; border: 0; cursor: pointer; }
+  .ping .core { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px;
+    background: var(--major); transform: rotate(45deg); box-shadow: 0 0 8px rgba(168,255,242,.6); transition: transform .2s, background .2s; }
+  .ping .ring { position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px;
+    border: 1px solid rgba(168,255,242,.45); border-radius: 50%; transition: border-color .2s, transform .2s; }
+  .ping .id { position: absolute; left: 32px; top: 5px; white-space: nowrap; color: var(--major); font-size: 10px; letter-spacing: .14em; }
+  .ping.flip .id { left: auto; right: 32px; }
+  .ping:hover .core, .ping:focus-visible .core { transform: rotate(45deg) scale(1.3); }
+  .ping:hover .ring { transform: scale(1.15); }
+  .ping:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
+  .ping.active .core { background: var(--accent); box-shadow: 0 0 8px rgba(255,106,61,.7); }
+  .ping.active .ring { border-color: var(--accent); }
+  .ping.active .id { color: var(--accent); }
+  .ping.active .id::after { content: attr(data-name); }
+
+  /* Frosted panels that size to their content. */
+  .side { position: fixed; top: 16px; width: var(--side); max-height: calc(100vh - 32px); box-sizing: border-box;
+    padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 14px; overflow: auto; scrollbar-width: none;
+    background: linear-gradient(180deg, rgba(8,20,22,.5), rgba(4,10,12,.38));
+    -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+    border: 1px solid rgba(63,208,192,.2); box-shadow: inset 0 1px 0 rgba(168,255,242,.08), 0 10px 40px rgba(0,0,0,.35); }
+  .side::before, .side::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--line); }
+  .side::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+  .side::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+  #left { left: 16px; }
+  #right { right: 16px; }
+  .sect { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 9px;
+    letter-spacing: .2em; padding-bottom: 6px; border-bottom: 1px solid rgba(63,208,192,.18); }
+  .title { font-size: 26px; font-weight: 600; letter-spacing: .08em; line-height: 1.05; margin: 4px 0 2px; color: var(--major); }
+  .tiny { font-size: 10px; letter-spacing: .08em; }
+  .hint { font-size: 9px; letter-spacing: .1em; color: var(--muted); line-height: 1.5; margin-top: -6px; }
+
+  #contacts { list-style: none; margin: -6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .contact { display: grid; grid-template-columns: 18px 1fr; column-gap: 8px; width: 100%; padding: 7px 6px 7px 4px;
+    font: inherit; text-align: left; color: var(--text); background: none; border: 0; border-left: 2px solid transparent;
+    cursor: pointer; transition: background .2s, border-color .2s; }
+  .contact:hover { background: rgba(63,208,192,.07); }
+  .contact:focus-visible { outline: 1px dashed var(--major); outline-offset: -1px; }
+  .contact .dot { grid-row: span 2; position: relative; width: 18px; height: 18px; align-self: center; }
+  .contact .dot::before { content: ""; position: absolute; left: 6px; top: 6px; width: 6px; height: 6px;
+    background: var(--major); transform: rotate(45deg); }
+  .contact .dot::after { content: ""; position: absolute; inset: 1px; border: 1px solid rgba(168,255,242,.45); border-radius: 50%; }
+  .contact .nm { font-size: 11px; letter-spacing: .08em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .contact .nm b { font-weight: 400; color: var(--muted); margin-right: 6px; }
+  .contact .tl { font-size: 9px; letter-spacing: .1em; color: var(--muted); white-space: nowrap; }
+  .contact .xt { grid-column: 2; font-size: 9px; letter-spacing: .1em; color: var(--text); display: none; margin-top: 4px; line-height: 1.6; }
+  .contact.active { border-left-color: var(--accent); background: rgba(255,106,61,.07); }
+  .contact.active .nm, .contact.active .nm b { color: var(--accent); }
+  .contact.active .dot::before { background: var(--accent); }
+  .contact.active .dot::after { border-color: var(--accent); }
+  .contact.active .xt { display: block; }
+
+  .scale { display: flex; align-items: center; gap: 8px; font-size: 10px; }
+  .scale span { white-space: nowrap; }
+  .scale i { display: block; height: 5px; border: 1px solid var(--major); border-top: 0; }
+
+  .tele { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: -6px 0 0; font-size: 10px; }
+  .tele dt { color: var(--muted); font-size: 9px; letter-spacing: .16em; align-self: center; }
+  .tele dd { margin: 0; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  .ctl { display: flex; flex-direction: column; gap: 6px; margin-top: -6px; }
+  .ctl .val { display: flex; justify-content: space-between; font-size: 10px; font-variant-numeric: tabular-nums; }
+  .ctl .val span:last-child { color: var(--muted); }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 16px; margin: 0; background: none; cursor: pointer; }
+  input[type=range]::-webkit-slider-runnable-track { height: 2px; background: rgba(63,208,192,.25); }
+  input[type=range]::-moz-range-track { height: 2px; background: rgba(63,208,192,.25); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; margin-top: -4px;
+    background: var(--major); transform: rotate(45deg); border: 0; }
+  input[type=range]::-moz-range-thumb { width: 8px; height: 8px; background: var(--major); transform: rotate(45deg); border: 0; border-radius: 0; }
+  input[type=range]:disabled { opacity: .35; cursor: default; }
+  input[type=range]:focus-visible { outline: 1px dashed var(--major); outline-offset: 2px; }
+  .toggle { font: inherit; font-size: 9px; letter-spacing: .16em; color: var(--muted); background: none;
+    border: 1px solid rgba(63,208,192,.3); padding: 2px 6px; cursor: pointer; }
+  .toggle[aria-pressed=true] { color: var(--accent); border-color: var(--accent); }
+  .credit { font-size: 8px; letter-spacing: .08em; color: var(--muted); }
+  .retry { font: inherit; font-size: 10px; color: var(--text); background: none; border: 1px solid var(--accent);
+    padding: 4px 10px; margin-top: 6px; cursor: pointer; letter-spacing: .1em; }
+  .play { display: inline-block; margin-top: 10px; text-decoration: none; }
+
+  /* Elevation profile: bottom-center panel between the side panels. */
+  #profile { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    width: min(640px, calc(100vw - 2 * var(--side) - 64px)); top: auto; display: none; gap: 8px; }
+  #profile.open { display: flex; }
+  #profile .stats { display: flex; gap: 16px; font-size: 10px; flex-wrap: wrap; }
+  #profile .stats b { font-weight: 400; color: var(--muted); font-size: 9px; letter-spacing: .16em; margin-right: 6px; }
+  #prof-chart { display: block; width: 100%; height: 120px; overflow: visible; cursor: crosshair; touch-action: none; }
+  #prof-chart .area { fill: rgba(63,208,192,.12); }
+  #prof-chart .ln { fill: none; stroke: var(--major); stroke-width: 1.2; }
+  #prof-chart .ax { stroke: rgba(63,208,192,.2); }
+  #prof-chart text { fill: var(--muted); font: 9px "JetBrains Mono", monospace; letter-spacing: .1em; }
+  #prof-chart .lo, #prof-chart .hi { fill: var(--accent); }
+  #prof-chart .cur line { stroke: var(--accent); }
+  #prof-chart .cur circle { fill: var(--accent); }
+  #prof-chart .cur text { fill: var(--text); }
+  #prof-close { font: inherit; font-size: 9px; letter-spacing: .16em; color: var(--muted); background: none; border: 0; cursor: pointer; padding: 0; }
+  #prof-close:hover { color: var(--major); }
+
+  @media (max-width: 760px) {
+    #right { top: 10px; left: 10px; right: 10px; width: auto; padding: 10px 12px; gap: 10px; }
+    #right .info { display: none; }
+    #right { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "sh ih" "sc ic"; gap: 8px 16px; }
+    .g-sh { grid-area: sh; } .g-sc { grid-area: sc; } .g-ih { grid-area: ih; } .g-ic { grid-area: ic; }
+    .ctl { margin-top: 0; }
+    #left { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 46vh; padding: 12px 14px 14px; gap: 10px;
+      border-width: 1px 0 0; }
+    #left .head .label:first-child, #left #coords, #left .scale { display: none; }
+    .title { font-size: 18px; margin: 0; }
+    #contacts { flex-direction: row; overflow-x: auto; overflow-y: hidden; gap: 6px; margin: -4px -14px 0; padding: 0 14px;
+      scrollbar-width: none; }
+    #contacts li { flex: 0 0 auto; }
+    .contact { width: auto; min-width: 158px; border-left: 0; border-top: 2px solid transparent; background: rgba(63,208,192,.05); }
+    .contact.active { border-top-color: var(--accent); }
+    .ping.active .id::after { content: none; }
+    #profile { top: 10px; bottom: auto; left: 10px; right: 10px; width: auto; transform: none; z-index: 2; }
+  }
+</style>
+</head>
+<body>
+<svg id="map" preserveAspectRatio="xMidYMid slice" aria-label="Topographic contour map of Twin Falls, Idaho. Drag across the map to draw an elevation profile.">
+  <defs>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- Greyscale the imagery, then tint it toward the teal palette. -->
+    <filter id="tint" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values=".17 .33 .06 0 0  .27 .53 .1 0 .01  .26 .5 .09 0 .02  0 0 0 1 0"/>
+    </filter>
+  </defs>
+  <g id="imagery" filter="url(#tint)"></g>
+  <path id="slice-fill"></path>
+  <g id="minor"></g>
+  <g id="major" filter="url(#glow)"></g>
+  <path id="river"></path>
+  <path id="slice-line"></path>
+  <g id="prof-g" display="none">
+    <line id="prof-line"></line>
+    <circle id="prof-a"></circle><circle id="prof-b"></circle><circle id="prof-cursor" display="none"></circle>
+  </g>
+</svg>
+<div id="grid" class="overlay"></div>
+<div class="hx"></div><div class="hy"></div>
+<div id="markers"></div>
+<div id="vignette" class="overlay"></div>
+<div id="pings"></div>
+
+<aside id="left" class="side" aria-label="Points of interest">
+  <div class="head">
+    <div class="label">TOPO SURVEY // SNAKE RIVER</div>
+    <div class="title">TWIN FALLS</div>
+    <div class="label">SNAKE RIVER CANYON · IDAHO</div>
+    <div id="coords" class="tiny"></div>
+    <div id="status" class="tiny accent" style="margin-top:8px">LOADING ELEVATION DATA…</div>
+    <a class="retry play" href="ground-truth.html">▶ PLAY GROUND TRUTH</a>
+    <a class="retry play" href="war-room.html">▶ PLAY WAR ROOM</a>
+  </div>
+  <div class="sect"><span>CONTACTS</span><span>05 TRACKED</span></div>
+  <ol id="contacts"></ol>
+  <div class="scale"><i id="scalebar"></i><span id="scaletext"></span></div>
+</aside>
+
+<aside id="right" class="side" aria-label="Survey data and layers">
+  <div class="sect info"><span>SURVEY</span></div>
+  <dl class="tele info">
+    <dt>ELEV MIN</dt><dd id="t-min">—</dd>
+    <dt>ELEV MAX</dt><dd id="t-max">—</dd>
+    <dt>INTERVAL</dt><dd id="t-int">—</dd>
+    <dt>RIVER</dt><dd id="t-river">—</dd>
+  </dl>
+  <div class="sect info"><span>CURSOR</span></div>
+  <dl class="tele info">
+    <dt>LAT</dt><dd id="c-lat">—</dd>
+    <dt>LON</dt><dd id="c-lon">—</dd>
+    <dt>ELEV</dt><dd id="c-elev">—</dd>
+  </dl>
+  <div class="sect info"><span>PROFILE</span></div>
+  <div class="hint info">DRAG ACROSS THE MAP TO CUT A CROSS-SECTION</div>
+  <div class="sect g-sh"><span>HEIGHT SLICE</span><button id="slice-toggle" class="toggle" aria-pressed="false">OFF</button></div>
+  <div class="ctl g-sc">
+    <div class="val"><span id="slice-val">—</span><span id="slice-area"></span></div>
+    <input id="slice" type="range" step="5" disabled aria-label="Slice elevation">
+  </div>
+  <div class="sect g-ih"><span>IMAGERY</span><span id="img-val">0%</span></div>
+  <div class="ctl g-ic">
+    <input id="img" type="range" min="0" max="100" value="0" aria-label="Satellite imagery opacity">
+    <div class="credit">IMAGERY © ESRI, MAXAR, EARTHSTAR GEOGRAPHICS</div>
+  </div>
+</aside>
+
+<aside id="profile" class="side" aria-label="Elevation profile" aria-live="polite">
+  <div class="sect"><span>ELEVATION PROFILE · A → B</span><button id="prof-close">[ ESC ] CLEAR</button></div>
+  <div class="stats" id="prof-stats"></div>
+  <svg id="prof-chart"></svg>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+// Elevation: AWS Terrain Tiles (Mapzen terrarium encoding), public and CORS-enabled.
+const TILE_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium";
+// Imagery: Esri World Imagery, loaded only once the imagery slider leaves zero.
+const IMAGERY_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile";
+const LOC = { lat: 42.5940, lon: -114.4060, step: 5 };
+const CALM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const POIS = [
+  { name: "PERRINE BRIDGE", kind: "STRUCTURE", lat: 42.6005, lon: -114.4552 },
+  { name: "SHOSHONE FALLS", kind: "WATERFALL", lat: 42.5952, lon: -114.4009 },
+  { name: "KNIEVEL JUMP SITE", kind: "HISTORIC SITE", lat: 42.5945, lon: -114.4170 },
+  { name: "PILLAR FALLS", kind: "GEOLOGY", lat: 42.5992, lon: -114.4385 },
+  { name: "TWIN FALLS", kind: "WATERFALL", lat: 42.5880, lon: -114.3567 },
+];
+
+const $ = id => document.getElementById(id);
+const svg = $("map");
+let state = null;
+let cam = null, tween = null;
+let active = -1;
+let prof = null, drag = null;
+
+const lon2tile = (lon, z) => (lon + 180) / 360 * 2 ** z;
+const lat2tile = (lat, z) => { const r = lat * Math.PI / 180; return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * 2 ** z; };
+function pix2lonlat(px, py, z) {
+  const n = 256 * 2 ** z;
+  return [px / n * 360 - 180, Math.atan(Math.sinh(Math.PI * (1 - 2 * py / n))) * 180 / Math.PI];
+}
+const fmtLat = v => `${Math.abs(v).toFixed(4)}°${v >= 0 ? "N" : "S"}`;
+const fmtLon = v => `${Math.abs(v).toFixed(4)}°${v >= 0 ? "E" : "W"}`;
+const fmtM = v => `${Math.round(v).toLocaleString()} m`;
+const fmtKm = m => m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
+const pad = (n, w = 2) => String(n).padStart(w, "0");
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const ease = t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+
+function loadImg(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// Pixel window sized to the viewport aspect, centered exactly on the location.
+// Landscape screens get zoom 13 so the POIs spread out; portrait needs zoom 12 to fit them all.
+function tileWindow() {
+  const z = innerWidth >= innerHeight ? 13 : 12;
+  const rows = 3, cols = Math.max(3, Math.min(7, Math.ceil(rows * innerWidth / innerHeight)));
+  const W = cols * 256, H = rows * 256;
+  const ox = Math.round(lon2tile(LOC.lon, z) * 256 - W / 2);
+  const oy = Math.round(lat2tile(LOC.lat, z) * 256 - H / 2);
+  const ds = Math.max(1, Math.ceil(Math.sqrt(W * H / 320000)));
+  return { z, cols, W, H, ox, oy, ds, gw: Math.floor(W / ds), gh: Math.floor(H / ds) };
+}
+
+async function fetchElevation() {
+  const { z, cols, W, H, ox, oy, ds, gw, gh } = tileWindow();
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const jobs = [];
+  for (let ty = Math.floor(oy / 256); ty * 256 < oy + H; ty++) for (let tx = Math.floor(ox / 256); tx * 256 < ox + W; tx++) {
+    jobs.push(loadImg(`${TILE_URL}/${z}/${tx}/${ty}.png`).then(img => ctx.drawImage(img, tx * 256 - ox, ty * 256 - oy)));
+  }
+  await Promise.all(jobs);
+  const px = ctx.getImageData(0, 0, W, H).data;
+  const values = new Float64Array(gw * gh);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+    const i = ((y * ds) * W + x * ds) * 4;
+    values[y * gw + x] = px[i] * 256 + px[i + 1] + px[i + 2] / 256 - 32768;
+  }
+  return { values, z, cols, W, H, gw, gh, ds, ox, oy };
+}
+
+const toGrid = (lat, lon) => [(lon2tile(lon, state.z) * 256 - state.ox) / state.ds, (lat2tile(lat, state.z) * 256 - state.oy) / state.ds];
+const sample = ([gx, gy]) => state.values[clamp(Math.round(gy), 0, state.gh - 1) * state.gw + clamp(Math.round(gx), 0, state.gw - 1)];
+const mPerGrid = () => 40075016 * Math.cos(LOC.lat * Math.PI / 180) / (256 * 2 ** state.z) * state.ds;
+
+// Bilinear elevation for smooth profiles.
+function sampleBi(gx, gy) {
+  const { values: v, gw, gh } = state;
+  const x = clamp(gx, 0, gw - 1.001), y = clamp(gy, 0, gh - 1.001);
+  const x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0;
+  const a = v[y0 * gw + x0], b = v[y0 * gw + x0 + 1], c = v[(y0 + 1) * gw + x0], d = v[(y0 + 1) * gw + x0 + 1];
+  return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+}
+
+function render(d) {
+  const { gw, gh } = d;
+  d3.blur2({ data: d.values, width: gw, height: gh }, 1);
+  let min = Infinity, max = -Infinity, maxI = 0;
+  for (let i = 0; i < d.values.length; i++) {
+    const v = d.values[i];
+    if (v < min) min = v;
+    if (v > max) { max = v; maxI = i; }
+  }
+  const step = LOC.step;
+  const thresholds = d3.range(Math.ceil(min / step) * step, max, step);
+  const contours = d3.contours().size([gw, gh]).thresholds(thresholds)(d.values);
+  const isMajor = v => Math.abs(v / (step * 5) - Math.round(v / (step * 5))) < 1e-6;
+  const opacity = v => 0.25 + 0.75 * (v - min) / (max - min || 1);
+  const path = d3.geoPath();
+
+  d3.select("#minor").selectAll("path").data(contours.filter(c => !isMajor(c.value)))
+    .join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value) * 0.7);
+  d3.select("#major").selectAll("path").data(contours.filter(c => isMajor(c.value)))
+    .join("path").attr("d", path).attr("stroke-opacity", c => opacity(c.value));
+
+  state = { ...d, min, max, peak: [maxI % gw, Math.floor(maxI / gw)], imagery: false };
+  cam = { cx: gw / 2, cy: gh / 2, k: 1 };
+  tween = null;
+  active = -1;
+  clearProfile();
+  $("imagery").innerHTML = "";
+  applyCam();
+
+  $("t-min").textContent = fmtM(min);
+  $("t-max").textContent = fmtM(max);
+  $("t-int").textContent = `${step} m / ${step * 5} m`;
+  $("status").textContent = "LIVE ELEVATION";
+  svg.classList.add("ready");
+
+  const s = $("slice");
+  s.min = Math.ceil(min / step) * step; s.max = Math.floor(max / step) * step;
+  s.value = Math.round((min + (max - min) * 0.35) / step) * step;
+  updateSlice();
+  updateImagery();
+
+  buildPings();
+  traceRiver();
+  placeMarkers();
+}
+
+// ---------- River: least-cost path through the elevation grid, east edge to west edge ----------
+function traceRiver() {
+  const { values, gw, gh, min } = state, N = gw * gh;
+  const cost = new Float64Array(N);
+  for (let i = 0; i < N; i++) cost[i] = (values[i] - min + 1) ** 2.5;
+  const dist = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1);
+  const hk = [], hv = [];
+  const push = (k, v) => {
+    let i = hk.length; hk.push(k); hv.push(v);
+    while (i > 0) { const p = (i - 1) >> 1; if (hk[p] <= k) break; hk[i] = hk[p]; hv[i] = hv[p]; i = p; }
+    hk[i] = k; hv[i] = v;
+  };
+  const pop = () => {
+    const v = hv[0], k = hk.pop(), last = hv.pop(), n = hk.length;
+    if (n) {
+      let i = 0;
+      for (;;) {
+        let c = 2 * i + 1; if (c >= n) break;
+        if (c + 1 < n && hk[c + 1] < hk[c]) c++;
+        if (hk[c] >= k) break;
+        hk[i] = hk[c]; hv[i] = hv[c]; i = c;
+      }
+      hk[i] = k; hv[i] = last;
+    }
+    return v;
+  };
+  // Sources: east edge plus the eastern quarter of top/bottom edges. Targets: the mirror on the west.
+  const edge = gw >> 2;
+  const isSource = (x, y) => x === gw - 1 || ((y === 0 || y === gh - 1) && x >= gw - edge);
+  const isTarget = (x, y) => x === 0 || ((y === 0 || y === gh - 1) && x < edge);
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) if (isSource(x, y)) {
+    const i = y * gw + x; dist[i] = cost[i]; push(cost[i], i);
+  }
+  let end = -1;
+  while (hk.length) {
+    const d0 = hk[0], i = pop();
+    if (d0 > dist[i]) continue;
+    const x = i % gw, y = (i / gw) | 0;
+    if (isTarget(x, y)) { end = i; break; }
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      if (!dx && !dy) continue;
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= gw || ny >= gh) continue;
+      const j = ny * gw + nx, nd = d0 + cost[j] * (dx && dy ? Math.SQRT2 : 1);
+      if (nd < dist[j]) { dist[j] = nd; prev[j] = i; push(nd, j); }
+    }
+  }
+  if (end < 0) return;
+  const raw = [];
+  for (let i = end; i >= 0; i = prev[i]) raw.push([i % gw, (i / gw) | 0]);
+  const W = 6, pts = [];
+  for (let i = 0; i < raw.length; i += 2) {
+    let sx = 0, sy = 0, n = 0;
+    for (let j = Math.max(0, i - W); j <= Math.min(raw.length - 1, i + W); j++) { sx += raw[j][0]; sy += raw[j][1]; n++; }
+    pts.push([sx / n + .5, sy / n + .5]);
+  }
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+  $("river").setAttribute("d", "M" + pts.map(p => p.map(v => v.toFixed(1)).join(",")).join("L"));
+  $("t-river").textContent = `${(len * mPerGrid() / 1000).toFixed(1)} km`;
+}
+
+// ---------- Height slice: land above the chosen elevation ----------
+function updateSlice() {
+  const on = $("slice-toggle").getAttribute("aria-pressed") === "true";
+  const h = +$("slice").value;
+  $("slice").disabled = !on;
+  svg.classList.toggle("slicing", on);
+  $("slice-val").textContent = on ? `≥ ${fmtM(h)}` : "—";
+  if (!on || !state) {
+    $("slice-fill").removeAttribute("d"); $("slice-line").removeAttribute("d"); $("slice-area").textContent = "";
+    return;
+  }
+  const [c] = d3.contours().size([state.gw, state.gh]).thresholds([h])(state.values);
+  const d = d3.geoPath()(c) || "";
+  $("slice-fill").setAttribute("d", d);
+  $("slice-line").setAttribute("d", d);
+  let above = 0;
+  for (const v of state.values) if (v >= h) above++;
+  $("slice-area").textContent = `${Math.round(above / state.values.length * 100)}% AREA`;
+}
+$("slice-toggle").addEventListener("click", e => {
+  const b = e.currentTarget, on = b.getAttribute("aria-pressed") !== "true";
+  b.setAttribute("aria-pressed", on); b.textContent = on ? "ON" : "OFF";
+  updateSlice();
+});
+$("slice").addEventListener("input", updateSlice);
+
+// ---------- Imagery: Esri tiles one zoom deeper than the grid, tinted by an SVG filter ----------
+function updateImagery() {
+  const pct = +$("img").value;
+  $("img-val").textContent = `${pct}%`;
+  $("imagery").style.opacity = pct / 100;
+  if (!pct || !state || state.imagery) return;
+  state.imagery = true;
+  const z = state.z + 1, { ox, oy, W, H, ds } = state, half = 128 / ds;
+  const tiles = [];
+  for (let ty = Math.floor(oy * 2 / 256); ty * 256 < (oy + H) * 2; ty++) for (let tx = Math.floor(ox * 2 / 256); tx * 256 < (ox + W) * 2; tx++) {
+    tiles.push(`<image href="${IMAGERY_URL}/${z}/${ty}/${tx}" x="${(tx * 128 - ox) / ds}" y="${(ty * 128 - oy) / ds}"
+      width="${half + .5 / ds}" height="${half + .5 / ds}" preserveAspectRatio="none"/>`);
+  }
+  $("imagery").innerHTML = tiles.join("");
+}
+$("img").addEventListener("input", updateImagery);
+
+// ---------- Elevation profile: drag A → B across the map ----------
+function screenToGrid(x, y) {
+  const m = svg.getScreenCTM();
+  return [(x - m.e) / m.a, (y - m.f) / m.d];
+}
+
+function setProfile(a, b) {
+  const N = 240, mpg = mPerGrid();
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]) * mpg;
+  const pts = d3.range(N + 1).map(i => {
+    const t = i / N, gx = a[0] + (b[0] - a[0]) * t, gy = a[1] + (b[1] - a[1]) * t;
+    return { t, d: t * len, z: sampleBi(gx, gy), gx, gy };
+  });
+  let grade = 0;
+  for (let i = 1; i < pts.length; i++) grade = Math.max(grade, Math.abs(pts[i].z - pts[i - 1].z) / ((pts[i].d - pts[i - 1].d) || 1));
+  prof = { a, b, len, pts, grade };
+
+  $("prof-g").removeAttribute("display");
+  const line = $("prof-line");
+  line.setAttribute("x1", a[0]); line.setAttribute("y1", a[1]); line.setAttribute("x2", b[0]); line.setAttribute("y2", b[1]);
+  $("prof-a").setAttribute("cx", a[0]); $("prof-a").setAttribute("cy", a[1]);
+  $("prof-b").setAttribute("cx", b[0]); $("prof-b").setAttribute("cy", b[1]);
+  sizeProfileDots();
+  $("profile").classList.add("open");
+  drawProfile();
+}
+
+function drawProfile(hover = null) {
+  if (!prof) return;
+  const el = $("prof-chart"), W = el.clientWidth, H = 120, m = { l: 34, r: 8, t: 12, b: 16 };
+  const zs = prof.pts.map(p => p.z), lo = d3.min(zs), hi = d3.max(zs), padZ = Math.max(5, (hi - lo) * 0.15);
+  const x = d3.scaleLinear([0, prof.len], [m.l, W - m.r]);
+  const y = d3.scaleLinear([lo - padZ, hi + padZ], [H - m.b, m.t]);
+  const area = d3.area().x(p => x(p.d)).y0(H - m.b).y1(p => y(p.z))(prof.pts);
+  const line = d3.line().x(p => x(p.d)).y(p => y(p.z))(prof.pts);
+  const loP = prof.pts[zs.indexOf(lo)], hiP = prof.pts[zs.indexOf(hi)];
+  const tag = (p, cls, txt, dy) => {
+    const tx = clamp(x(p.d), m.l + 30, W - m.r - 30);
+    return `<circle class="${cls}" cx="${x(p.d)}" cy="${y(p.z)}" r="2.5"/>
+      <text class="${cls}" x="${tx}" y="${y(p.z) + dy}" text-anchor="middle">${txt}</text>`;
+  };
+  let cur = "";
+  if (hover) {
+    const cx = x(hover.d), anchor = cx > W - 90 ? "end" : "start", off = anchor === "end" ? -6 : 6;
+    cur = `<g class="cur"><line x1="${cx}" x2="${cx}" y1="${m.t}" y2="${H - m.b}"/>
+      <circle cx="${cx}" cy="${y(hover.z)}" r="3"/>
+      <text x="${cx + off}" y="${m.t + 8}" text-anchor="${anchor}">${fmtM(hover.z)} · ${fmtKm(hover.d)}</text></g>`;
+  }
+  el.innerHTML = `
+    <line class="ax" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>
+    <text x="${m.l - 6}" y="${y(hi) + 3}" text-anchor="end">${Math.round(hi)}</text>
+    <text x="${m.l - 6}" y="${y(lo) + 3}" text-anchor="end">${Math.round(lo)}</text>
+    <text x="${m.l}" y="${H - 2}">A</text>
+    <text x="${W - m.r}" y="${H - 2}" text-anchor="end">B · ${fmtKm(prof.len)}</text>
+    <path class="area" d="${area}"/><path class="ln" d="${line}"/>
+    ${tag(hiP, "hi", `▲ ${fmtM(hi)}`, -7)}${tag(loP, "lo", `▼ ${fmtM(lo)}`, 13)}
+    ${cur}`;
+  $("prof-stats").innerHTML = `<span><b>DIST</b>${fmtKm(prof.len)}</span><span><b>RELIEF</b>${fmtM(hi - lo)}</span>
+    <span><b>MAX GRADE</b>${Math.round(prof.grade * 100)}%</span>`;
+}
+
+function sizeProfileDots() {
+  const r = 4 / svg.getScreenCTM().a;
+  for (const id of ["prof-a", "prof-b", "prof-cursor"]) $(id).setAttribute("r", r);
+}
+
+function clearProfile() {
+  prof = null;
+  $("prof-g").setAttribute("display", "none");
+  $("profile").classList.remove("open");
+}
+
+$("prof-chart").addEventListener("pointermove", e => {
+  if (!prof) return;
+  const r = e.currentTarget.getBoundingClientRect(), t = clamp((e.clientX - r.left - 34) / (r.width - 42), 0, 1);
+  const p = prof.pts[Math.round(t * (prof.pts.length - 1))];
+  drawProfile(p);
+  const c = $("prof-cursor");
+  c.removeAttribute("display"); c.setAttribute("cx", p.gx); c.setAttribute("cy", p.gy);
+});
+$("prof-chart").addEventListener("pointerleave", () => { drawProfile(); $("prof-cursor").setAttribute("display", "none"); });
+$("prof-close").addEventListener("click", clearProfile);
+
+// A drag on the map draws a profile; a short tap clears the selection instead.
+svg.addEventListener("pointerdown", e => {
+  if (!state || e.button !== 0) return;
+  drag = { x: e.clientX, y: e.clientY, a: screenToGrid(e.clientX, e.clientY), moved: false };
+  svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener("pointerup", () => {
+  if (drag && !drag.moved) deselect();
+  drag = null;
+});
+
+// ---------- Camera: the map's viewBox ----------
+function applyCam() {
+  const w = state.gw / cam.k, h = state.gh / cam.k;
+  svg.setAttribute("viewBox", `${cam.cx - w / 2} ${cam.cy - h / 2} ${w} ${h}`);
+  placeMarkers();
+  sizeProfileDots();
+}
+
+const baseScale = () => Math.max(innerWidth / state.gw, innerHeight / state.gh);
+const homeCam = () => ({ cx: state.gw / 2, cy: state.gh / 2, k: 1 });
+
+// Zoom on a POI and park it in the open space between the panels.
+function poiCam(i) {
+  const k = 1.8, s = baseScale() * k, mobile = innerWidth <= 760;
+  const tx = innerWidth / 2, ty = mobile ? (innerHeight - $("left").offsetHeight) / 2 : innerHeight / 2;
+  const [gx, gy] = toGrid(POIS[i].lat, POIS[i].lon);
+  const hw = innerWidth / (2 * s), hh = innerHeight / (2 * s);
+  return {
+    cx: clamp(gx - (tx - innerWidth / 2) / s, hw, state.gw - hw),
+    cy: clamp(gy - (ty - innerHeight / 2) / s, hh, state.gh - hh),
+    k,
+  };
+}
+
+function flyTo(target, ms = 1100) {
+  if (!state) return;
+  if (CALM) { cam = target; tween = null; applyCam(); return; }
+  const start = !tween;
+  tween = { from: { ...cam }, to: target, t0: performance.now(), ms };
+  if (start) requestAnimationFrame(step);
+}
+
+function step(now) {
+  if (!tween) return;
+  const t = Math.min(1, (now - tween.t0) / tween.ms), e = ease(t), { from, to } = tween;
+  // Interpolate zoom in log space so the motion feels even.
+  cam = { cx: from.cx + (to.cx - from.cx) * e, cy: from.cy + (to.cy - from.cy) * e, k: from.k * (to.k / from.k) ** e };
+  applyCam();
+  if (t < 1) requestAnimationFrame(step); else tween = null;
+}
+
+// ---------- Pings, contact list & markers ----------
+function toScreen(gx, gy) {
+  const m = svg.getScreenCTM();
+  return [m.a * gx + m.e, m.d * gy + m.f];
+}
+
+function contactTelemetry(i) {
+  const p = POIS[i], g = toGrid(p.lat, p.lon), c = toGrid(LOC.lat, LOC.lon);
+  const dx = g[0] - c[0], dy = g[1] - c[1];
+  return {
+    elev: fmtM(sample(g)),
+    range: `${(Math.hypot(dx, dy) * mPerGrid() / 1000).toFixed(2)} km`,
+    brg: `${pad(Math.round((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360), 3)}°`,
+  };
+}
+
+function buildPings() {
+  $("pings").innerHTML = POIS.map((p, i) => `
+    <button class="ping" data-i="${i}" aria-label="${p.name}">
+      <span class="ring"></span><span class="core"></span>
+      <span class="id" data-name=" · ${p.name}">POI-${pad(i + 1)}</span>
+    </button>`).join("");
+  $("contacts").innerHTML = POIS.map((p, i) => {
+    const t = contactTelemetry(i);
+    return `<li><button class="contact" data-i="${i}">
+      <span class="dot"></span>
+      <span class="nm"><b>${pad(i + 1)}</b>${p.name}</span>
+      <span class="tl">${t.elev} · ${t.range} · ${t.brg}</span>
+      <span class="xt">${p.kind}<br>${fmtLat(p.lat)} ${fmtLon(p.lon)}</span>
+    </button></li>`;
+  }).join("");
+  document.querySelectorAll(".ping, .contact").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation();
+    +b.dataset.i === active && b.classList.contains("contact") ? deselect() : select(+b.dataset.i);
+  }));
+}
+
+function placeMarkers() {
+  if (!state) return;
+  const [px, py] = toScreen(...state.peak);
+  if (!$("markers").firstElementChild) {
+    $("markers").innerHTML = `<div class="marker"><div class="ring"></div><div class="tag"></div></div>`;
+  }
+  const peak = $("markers").firstElementChild;
+  peak.style.left = `${px}px`; peak.style.top = `${py}px`;
+  peak.querySelector(".tag").textContent = `▲ ${fmtM(state.max)}`;
+  $("pings").querySelectorAll(".ping").forEach(b => {
+    const p = POIS[+b.dataset.i];
+    const [x, y] = toScreen(...toGrid(p.lat, p.lon));
+    b.style.left = `${x}px`; b.style.top = `${y}px`;
+    b.classList.toggle("flip", x > innerWidth - (b.classList.contains("active") && innerWidth > 760 ? 260 : 100));
+  });
+
+  // Scale bar: ground metres per screen pixel at this latitude.
+  const mPerPx = mPerGrid() / svg.getScreenCTM().a;
+  const p = 10 ** Math.floor(Math.log10(mPerPx * 140));
+  const dist = [10, 5, 2.5, 2, 1].map(m => m * p).find(v => v <= mPerPx * 140);
+  $("scalebar").style.width = `${dist / mPerPx}px`;
+  $("scaletext").textContent = dist >= 1000 ? `${dist / 1000} km` : `${dist} m`;
+}
+
+function select(i) {
+  active = i;
+  document.querySelectorAll(".ping, .contact").forEach(b => b.classList.toggle("active", +b.dataset.i === i));
+  document.querySelector(`.contact[data-i="${i}"]`).scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  flyTo(poiCam(i));
+}
+
+function deselect() {
+  if (active < 0) return;
+  active = -1;
+  document.querySelectorAll(".ping, .contact").forEach(b => b.classList.remove("active"));
+  flyTo(homeCam());
+}
+
+// ---------- Cursor readout & profile dragging ----------
+svg.addEventListener("pointermove", e => {
+  if (!state) return;
+  const [gx, gy] = screenToGrid(e.clientX, e.clientY);
+  if (drag) {
+    if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) drag.moved = true;
+    if (drag.moved) setProfile(drag.a, [clamp(gx, 0, state.gw - 1), clamp(gy, 0, state.gh - 1)]);
+  }
+  if (gx < 0 || gy < 0 || gx >= state.gw || gy >= state.gh) return;
+  const [lon, lat] = pix2lonlat(state.ox + gx * state.ds, state.oy + gy * state.ds, state.z);
+  $("c-lat").textContent = fmtLat(lat);
+  $("c-lon").textContent = fmtLon(lon);
+  $("c-elev").textContent = fmtM(sample([gx, gy]));
+  document.querySelector(".hx").style.cssText = `display:block;top:${e.clientY}px`;
+  document.querySelector(".hy").style.cssText = `display:block;left:${e.clientX}px`;
+});
+svg.addEventListener("pointerleave", () => {
+  document.querySelector(".hx").style.display = document.querySelector(".hy").style.display = "none";
+});
+addEventListener("keydown", e => { if (e.key === "Escape") { clearProfile(); deselect(); } });
+
+async function load() {
+  $("coords").textContent = `${fmtLat(LOC.lat)} ${fmtLon(LOC.lon)}`;
+  $("status").textContent = "LOADING ELEVATION DATA…";
+  try {
+    render(await fetchElevation());
+  } catch {
+    $("status").innerHTML = `ELEVATION FEED UNREACHABLE<br><button class="retry" onclick="load()">RETRY</button>`;
+  }
+}
+
+// Re-fetch when the viewport shape changes enough to need a different tile window.
+let resizeTimer;
+addEventListener("resize", () => {
+  if (state) { deselect(); cam = homeCam(); tween = null; applyCam(); drawProfile(); }
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (state) { const w = tileWindow(); if (w.cols !== state.cols || w.z !== state.z) load(); } }, 300);
+});
+load();
+</script>
+</body>
+</html>
