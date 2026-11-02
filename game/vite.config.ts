@@ -11,6 +11,8 @@ export default defineConfig({
     // Phaser is one large module; keep it in its own chunk so app code stays small.
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
+      // The game, and its design system at /game/design/ (ILI-1324).
+      input: { main: 'index.html', design: 'design/index.html' },
       output: { manualChunks: (id) => (id.includes('node_modules/phaser') ? 'phaser' : undefined) },
     },
   },

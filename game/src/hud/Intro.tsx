@@ -169,6 +169,7 @@ function Sheet({ which, close }: { which: 'about' | 'settings'; close: () => voi
           <p>From this terminal you work one team on the ground: one satellite overhead, one ordnance net, one radio link. You see what ORION-3 sees, you decide what gets hit, and the team lives with what you decide.</p>
           <p className="credit">PMC War Room · a game by Chad Bercea</p>
           <a href="../">Portfolio</a>
+          <a href="design/">Design system</a>
           <button ref={done} onClick={close}>
             Back
           </button>
