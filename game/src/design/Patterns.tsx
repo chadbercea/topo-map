@@ -45,13 +45,14 @@ export function Patterns() {
             </div>
           </div>
         </Spec>
-        <Spec name="The intel gauge" rule="An orange bar by the team's name, a tick a square from empty. Intel is fuel: photos fill it, ALPHA burns it walking, a square per tick's worth; empty, it holds. Scanning further along the route banks intel for when ALPHA heads into that square; video is one big fill, once (ILI-1314, ILI-1319, ILI-1341).">
+        <Spec name="The intel gauge" rule="An orange bar by the team's name, a tick a square from empty. Intel is fuel: photos fill it, ALPHA burns it walking, a square per tick's worth; empty, it holds. The fill's stripes march while ALPHA walks it down and the bar flashes as intel lands. Scanning further along the route banks intel, a hollow segment past the fill, until ALPHA heads into that square; video is one big fill, once (ILI-1314, ILI-1319, ILI-1339, ILI-1341).">
           <section className="panel team ds-static">
             <h2>
               <span className="callsign">ALPHA TEAM</span>
-              <span className="intel-gauge" role="meter" aria-label="Intel">
+              <span className="intel-gauge" role="meter" aria-label="Intel" data-walking data-banked>
                 <i style={{ width: '46%' }} />
-                <b style={{ left: '20%' }} />
+                <s style={{ left: '46%', width: '30%' }} />
+                <b style={{ left: '25%' }} />
               </span>
               <span className="activity">Moving to F4</span>
             </h2>

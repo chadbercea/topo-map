@@ -1078,11 +1078,21 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    TEAM in its tab. On a call the whole box opens the ask. */
 .slot-team { display: flex; align-items: stretch; gap: 0; }
 /* ALPHA's intel gauge (ILI-1314): a short orange bar by the team's name; the tick is where it moves. */
-.team .intel-gauge { position: relative; flex: 0 0 64px; height: 6px; border: 1px solid rgba(255, 138, 42, 0.5); align-self: center; }
-.team .intel-gauge i { position: absolute; left: 0; top: 0; bottom: 0; background: #ff8a2a; transition: width 200ms linear; }
-.team .intel-gauge b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--ink); opacity: 0.6; }
-.team .intel-gauge[data-low] { border-color: rgba(255, 138, 42, 0.9); animation: blink 1.4s steps(2) infinite; }
-@media (prefers-reduced-motion: reduce) { .team .intel-gauge i { transition: none; } .team .intel-gauge[data-low] { animation: none; } }
+/* The intel gauge (ILI-1314; the loop on the bar, ILI-1339): solid fill is intel ALPHA can walk
+   on, a hollow segment is intel banked for a square ahead, the fill's stripes march while ALPHA
+   walks it down, and the bar flashes as intel lands. */
+.intel-gauge { position: relative; flex: 0 0 96px; height: 8px; border: 1px solid rgba(255, 138, 42, 0.5); align-self: center; }
+.intel-gauge i { position: absolute; left: 0; top: 0; bottom: 0; background: #ff8a2a; transition: width 200ms linear; }
+.intel-gauge[data-walking] i { background: repeating-linear-gradient(-45deg, #ff8a2a 0 4px, #c9620f 4px 8px); background-size: 11.3px 100%; animation: intel-burn 0.8s linear infinite; }
+@keyframes intel-burn { to { background-position: -11.3px 0; } }
+.intel-gauge s { position: absolute; top: 0; bottom: 0; border: 1px dashed #ff8a2a; box-sizing: border-box; text-decoration: none; transition: left 200ms linear, width 200ms linear; }
+.intel-gauge b { position: absolute; top: -3px; bottom: -3px; width: 1px; background: var(--ink); opacity: 0.6; }
+.intel-gauge[data-low] { border-color: rgba(255, 138, 42, 0.9); animation: blink 1.4s steps(2) infinite; }
+.intel-gauge[data-empty] { border-color: #ff8a2a; }
+.intel-gauge[data-fed] { animation: intel-fed 700ms ease-out; }
+.intel-gauge[data-fed] i { box-shadow: 0 0 8px 1px #ff8a2a; }
+@keyframes intel-fed { from { border-color: #fff; box-shadow: 0 0 10px 2px rgba(255, 138, 42, 0.8); } to { box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) { .intel-gauge i, .intel-gauge s { transition: none; } .intel-gauge[data-low], .intel-gauge[data-fed], .intel-gauge[data-walking] i { animation: none; } }
 .slot-team > .team { flex: 1 0 auto; min-width: 0; }
 /* With no call (ILI-1256) the box is in the HUD's base colour with the team's gear; on a call
    the whole box turns the flag's orange, with a sweep across it as it does. */
