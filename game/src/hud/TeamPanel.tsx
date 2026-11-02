@@ -1,7 +1,6 @@
 import { useGame } from '../sim/store';
 import { OperatorRow } from './OperatorRow';
 import { Recentre } from './Recentre';
-import { IntelGauge } from './IntelGauge';
 
 // The team panel (ILI-1123, bottom right since ILI-1186): every operator's heartbeat,
 // status, noise (ILI-1222), ammo and meds, always on screen, with what the team is doing over
@@ -20,7 +19,6 @@ export function TeamPanel() {
         <span className="callsign" data-testid="team-title">
           {callsign} TEAM
         </span>
-        <IntelGauge />
         <span className="activity">{activity}</span>
         {alerted && ( // the enemy knows a PMC is here; each operator's noise is on their row
           <b className="alerted" data-testid="alerted">

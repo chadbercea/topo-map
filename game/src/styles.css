@@ -732,6 +732,8 @@ html, body {
 .mission .race-marks li[data-passed='true']::before { background: #f2c14e; }
 @media (prefers-reduced-motion: reduce) { .mission .race-time > span, .mission .race-route > span { transition: none; } }
 .mission .objective { margin: 0; color: #f2c14e; font-size: 12px; }
+.mission .m-intel { display: flex; align-items: center; gap: 8px; }
+.mission .m-intel .intel-gauge { flex: 1 1 auto; max-width: 160px; }
 .mission .need { margin: 0; justify-self: start; max-width: 100%; padding: 0 6px; font-size: 10px; border: 1px solid var(--line); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mission .need:not([data-tone]) { border-color: transparent; color: var(--dim); padding: 0; }
 .mission .need[data-tone='decision'] { border-color: #f2c14e; color: #f2c14e; }
@@ -924,8 +926,10 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
      objective waits for a wider screen. */
   .hud { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
   .slot-widget { grid-area: widget; }
-  .mission { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'title head' 'race race' 'need need'; align-items: center; gap: 3px 10px; padding: 4px 8px 6px; }
+  .mission { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'title head' 'race race' 'intel need'; align-items: center; gap: 3px 10px; padding: 4px 8px 6px; }
   .mission .m-title { grid-area: title; }
+  .mission .m-intel { grid-area: intel; gap: 6px; }
+  .mission .m-intel .intel-gauge { flex: 0 0 72px; }
   .mission .m-head { grid-area: head; padding: 0; border: none; background: none; justify-self: end; }
   .mission .race { grid-area: race; }
   .mission .m-label, .mission .objective { display: none; }
