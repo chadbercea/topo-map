@@ -23,14 +23,14 @@ test('the intel gauge: empty, ALPHA holds; a photo feeds it and the bar fills', 
 
 // The loop on the bar (ILI-1339): a scan ahead shows as a hollow segment until ALPHA heads
 // into that square; fed, ALPHA walks and the fill runs.
-test('the intel gauge shows banked intel and ALPHA walking it down', async ({ page, isMobile }) => {
+test('the intel gauge shows banked intel and ALPHA walking it down', async ({ page }) => {
   await start(page, '?debug&gauge');
   await running(page);
   await freeze(page);
-  if (isMobile) await page.getByTestId('tab-team').click();
   const bar = page.getByTestId('intel-gauge');
   await photo(page, 'E3'); // past F4, the leg ALPHA is on: banked
-  if (isMobile) await page.getByTestId('tab-team').click(); // the scan brought ORION-3 forward (ILI-1340)
+  // The scan brought ORION-3 forward on a phone; the gauge is with the mission, in view anyway (ILI-1340).
+  await expect(bar).toBeInViewport();
   await expect(page.getByTestId('intel-banked')).toBeVisible();
   await expect(bar).not.toHaveAttribute('data-walking', 'true');
   await photo(page, 'F4'); // the square it's heading into: on the gauge now

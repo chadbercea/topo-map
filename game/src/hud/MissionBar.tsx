@@ -2,6 +2,7 @@ import { game, useGame } from '../sim/store';
 import { bus, EV } from '../game/events';
 import { blockers, nextUp, race, type Blocker } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
+import { IntelGauge } from './IntelGauge';
 
 // The contract window counts down real minutes, M:SS, rounding up (ILI-1251): ten minutes reads
 // 10:00.
@@ -14,7 +15,8 @@ export const clock = (ms: number) => {
 // drives the game, so the clock comes first and big, with pause beside it. Under it the race:
 // time left drains on the top bar, ALPHA's walk A → B → C fills the one below on the same
 // scale, so a glance says whether the team will make it. When the walk left needs more than the
-// time left, the route bar goes red. Then the objective, and the one thing that needs HQ most.
+// time left, the route bar goes red. Then the objective, ALPHA's intel gauge, and the one thing
+// that needs HQ most.
 // One unit of time on the panel, real minutes; the Zulu stamps live on ENVIRONMENT.
 export function MissionPanel() {
   const s = useGame((x) => x);
@@ -65,6 +67,12 @@ export function MissionPanel() {
         ◆ {objectiveText(mission)}
         {recovering}
       </p>
+      {/* ALPHA's intel gauge lives with the mission (ILI-1340): on screen at every size, whatever
+          tab is open, beside the line that says where to scan. */}
+      <div className="m-intel">
+        <span className="m-label">{s.team.callsign} intel</span>
+        <IntelGauge />
+      </div>
       {need && 'go' in need && need.go ? (
         // A tap goes to what it's about (ILI-1271): the square on the map, or ALPHA's call.
         <button className="need" data-testid="needs-hq" data-tone={need.tone} onClick={() => go(need.go!)}>
