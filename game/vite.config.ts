@@ -12,7 +12,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 2000,
     rollupOptions: {
       // The game, and its design system at /game/design/ (ILI-1324).
-      input: { main: 'index.html', design: 'design/index.html' },
+      input: { main: 'index.html', design: 'design/index.html', site: 'castle-house/index.html' },
       output: { manualChunks: (id) => (id.includes('node_modules/phaser') ? 'phaser' : undefined) },
     },
   },

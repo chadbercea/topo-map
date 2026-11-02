@@ -1,4 +1,4 @@
-site
+/site
 .vercel
 .env*
 .claude/settings.local.json
