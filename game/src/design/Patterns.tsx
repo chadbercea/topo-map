@@ -45,7 +45,7 @@ export function Patterns() {
             </div>
           </div>
         </Spec>
-        <Spec name="The intel gauge" rule="An orange bar by the team's name, a tick where it moves. Photos feed it and fade over 10 s; scanning further along the route banks intel for when ALPHA heads into that square; video is a floor, once (ILI-1314, ILI-1319).">
+        <Spec name="The intel gauge" rule="An orange bar by the team's name, a tick a square from empty. Intel is fuel: photos fill it, ALPHA burns it walking, a square per tick's worth; empty, it holds. Scanning further along the route banks intel for when ALPHA heads into that square; video is one big fill, once (ILI-1314, ILI-1319, ILI-1341).">
           <section className="panel team ds-static">
             <h2>
               <span className="callsign">ALPHA TEAM</span>

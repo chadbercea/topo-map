@@ -1,7 +1,7 @@
 import { useGame } from '../sim/store';
 import { OperatorRow } from './OperatorRow';
 import { Recentre } from './Recentre';
-import { gauge, MOVE_AT } from '../sim/intel';
+import { gauge, LOW_AT } from '../sim/intel';
 
 // The team panel (ILI-1123, bottom right since ILI-1186): every operator's heartbeat,
 // status, noise (ILI-1222), ammo and meds, always on screen, with what the team is doing over
@@ -22,10 +22,10 @@ export function TeamPanel() {
           {callsign} TEAM
         </span>
         {/* The intel gauge (ILI-1314): what keeps ALPHA moving. A bar, not a number; the tick
-            is where it starts to move. */}
-        <span className="intel-gauge" role="meter" aria-label="Intel" aria-valuemin={0} aria-valuemax={100} aria-valuenow={intel} data-testid="intel-gauge" data-low={intel < MOVE_AT || undefined}>
+            is a square from empty, where HQ is told to scan ahead (ILI-1341). */}
+        <span className="intel-gauge" role="meter" aria-label="Intel" aria-valuemin={0} aria-valuemax={100} aria-valuenow={intel} data-testid="intel-gauge" data-low={intel < LOW_AT || undefined}>
           <i style={{ width: `${intel}%` }} />
-          <b style={{ left: `${MOVE_AT}%` }} />
+          <b style={{ left: `${LOW_AT}%` }} />
         </span>
         <span className="activity">{activity}</span>
         {alerted && ( // the enemy knows a PMC is here; each operator's noise is on their row
