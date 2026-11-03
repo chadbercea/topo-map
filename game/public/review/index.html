@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>War Room Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+/* The review hub (ILI-1345): one page that points at everything up for review. Same working-sheet
+   look as the wireframe page. */
+:root {
+  --bg: #f3f4f1; --paper: #fbfbf9; --ink: #1d2320; --dim: #5f6a64; --line: #c9cec9;
+  --box: #e6e9e5; --accent: #d9661f; --hq: #2f6f8f; --ok: #3d7a4a;
+  --display: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+  --body: 'Source Sans 3', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #141816; --paper: #1b201d; --ink: #e3e7e3; --dim: #98a39d; --line: #333b36;
+  --box: #252b28; --accent: #f08a45; --hq: #6fb1d1; --ok: #7cc28b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #141816; --paper: #1b201d; --ink: #e3e7e3; --dim: #98a39d; --line: #333b36;
+  --box: #252b28; --accent: #f08a45; --hq: #6fb1d1; --ok: #7cc28b; color-scheme: dark }
+
+html { color-scheme: light; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px; }
+main { max-width: 1000px; margin: 0 auto; display: grid; gap: 44px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h1 { font-size: 40px; line-height: 1.05; }
+h2 { font-size: 24px; }
+h3 { font-size: 18px; line-height: 1.2; }
+p { margin: 0; max-width: 68ch; }
+a { color: inherit; }
+.eyebrow { font: 600 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+header, section { display: grid; gap: 14px; }
+header .lede, .sect-head p { color: var(--dim); }
+.sect-head { display: grid; gap: 4px; }
+
+.decide { display: grid; gap: 12px; }
+.ask { background: var(--paper); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: 6px; padding: 16px 18px; display: grid; gap: 10px; }
+.ask .meta { font: 12px var(--mono); color: var(--dim); }
+.ask .opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.ask .opts a { font: 600 13px var(--mono); text-decoration: none; padding: 5px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.ask .opts a:hover, .ask .opts a:focus-visible { border-color: var(--ink); }
+.ask .opts a.pick { border-color: var(--ok); color: var(--ok); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; text-decoration: none; }
+a.card:hover, a.card:focus-visible { border-color: var(--ink); }
+.card p { color: var(--dim); font-size: 15px; }
+.card .where { font: 12px var(--mono); color: var(--dim); }
+.card.lead { border-top: 3px solid var(--hq); }
+
+.list { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.list a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); text-decoration: none; }
+.list a:last-child { border-bottom: 0; }
+.list a:hover, .list a:focus-visible { background: var(--box); }
+.list b { font-family: var(--display); font-size: 17px; }
+.list span { color: var(--dim); font-size: 14px; grid-column: 1; }
+.list code { font: 12px var(--mono); color: var(--dim); grid-column: 2; grid-row: 1 / span 2; align-self: center; text-align: right; }
+.list .tag { font: 600 11px var(--mono); letter-spacing: .08em; color: var(--accent); margin-left: 6px; }
+@media (max-width: 560px) { .list a { grid-template-columns: 1fr; } .list code { grid-column: 1; grid-row: auto; text-align: left; } }
+footer { color: var(--dim); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="eyebrow">ILI-1345 · PMC War Room · review hub · updated 2026-11-03</p>
+  <h1>Everything up for review</h1>
+  <p class="lede">One page that points at every wireframe, the design system and the build. What's waiting on you is first; the rest is reference.</p>
+</header>
+
+<section>
+  <div class="sect-head"><p class="eyebrow">Waiting on you</p><h2>Picks to make</h2></div>
+  <div class="decide">
+    <div class="ask">
+      <p class="meta">ILI-1342 · panels rework · too much reading, panels not organized</p>
+      <h3>Which panel rework gets built?</h3>
+      <p>Four options with a measured reading baseline (about 610 words in the first three minutes). D is your card-stack direction: COMMS becomes a stack of intel and event cards, and ORION-3 shrinks and lifts to scan. Claude's pick is D, with ORION-3 lifting in place.</p>
+      <div class="opts">
+        <a href="../wireframe/#panels-rework">Baseline</a>
+        <a href="../wireframe/#panels-rework">A · Instruments first</a>
+        <a href="../wireframe/#panels-rework">B · Act / Watch</a>
+        <a href="../wireframe/#panels-rework">C · Map is the panel</a>
+        <a class="pick" href="../wireframe/#option-d">D · Card stack ★</a>
+      </div>
+    </div>
+    <div class="ask" style="border-left-color:var(--hq)">
+      <p class="meta">ILI-1337 · intel drives the team · all three fixes merged</p>
+      <h3>Play the intel loop and tell us if it reads</h3>
+      <p>Intel is now fuel ALPHA burns by walking. The gauge sits in the mission panel, flashes when intel lands, shows banked intel as a dashed segment, and runs while ALPHA walks. The numbers are first guesses to tune by feel.</p>
+      <div class="opts"><a href="../">Play the game</a><a href="https://linear.app/iliketobuild/issue/ILI-1337">ILI-1337 in Linear</a></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sect-head"><p class="eyebrow">Start here</p><h2>The main resources</h2></div>
+  <div class="grid">
+    <a class="card lead" href="../wireframe/"><h3>Wireframe and IA</h3><p>Every layout round: panels rework, environment, mission panel, desktop layouts, hierarchy, names.</p><span class="where">/game/wireframe/</span></a>
+    <a class="card lead" href="../design/"><h3>Design system</h3><p>Foundations, controls, the map, motion, patterns, voice and the 3D wireframes, all live.</p><span class="where">/game/design/</span></a>
+    <a class="card lead" href="../"><h3>The game</h3><p>The current build on main. Add <code>?debug</code> for the debug panel.</p><span class="where">/game/</span></a>
+    <a class="card" href="../castle-house/"><h3>Castle House</h3><p>The in-fiction private military company's site.</p><span class="where">/game/castle-house/</span></a>
+    <a class="card" href="../../"><h3>Project overview</h3><p>The portfolio page for PMC War Room, with earlier experiments.</p><span class="where">/</span></a>
+    <a class="card" href="https://github.com/chadbercea/topo-map"><h3>Source</h3><p>The repo, pull requests and CI.</p><span class="where">github.com/chadbercea/topo-map</span></a>
+  </div>
+</section>
+
+<section>
+  <div class="sect-head"><p class="eyebrow">Wireframe page, by section</p><h2>Wireframes</h2><p>Newest first.</p></div>
+  <nav class="list" aria-label="Wireframe sections">
+    <a href="../wireframe/#option-d"><b>Option D · card stack, ORION-3 lifts <span class="tag">NEW</span></b><span>ILI-1344 · 2026-11-03 · COMMS as cards, the never-stuck rule, three ways ORION-3 opens, card copy</span><code>#option-d</code></a>
+    <a href="../wireframe/#panels-rework"><b>Panels rework · options A–C</b><span>ILI-1343 · 2026-11-02 · reading baseline, three ways to cut it, side by side</span><code>#panels-rework</code></a>
+    <a href="../wireframe/#environment"><b>Environment placement</b><span>ILI-1249 · 2026-10-29 · where ENVIRONMENT sits next to ORION-3</span><code>#environment</code></a>
+    <a href="../wireframe/#mission-panel"><b>Mission panel</b><span>ILI-1245 · 2026-10-29 · the countdown and the race</span><code>#mission-panel</code></a>
+    <a href="../wireframe/#options"><b>Desktop layout options</b><span>Rev 5 · 2026-10-28 · the three layouts behind layout A</span><code>#options</code></a>
+    <a href="../wireframe/#ia-idea"><b>Organizing idea</b><span>ILI-1221 · what the screen is for</span><code>#ia-idea</code></a>
+    <a href="../wireframe/#ia-hierarchy"><b>Hierarchy</b><span>ILI-1221 · three ranks</span><code>#ia-hierarchy</code></a>
+    <a href="../wireframe/#ia-wireframes"><b>Desktop, Fold and phone</b><span>ILI-1221 · where each panel goes at each size</span><code>#ia-wireframes</code></a>
+    <a href="../wireframe/#ia-inventory"><b>Inventory</b><span>ILI-1221 · what's on screen, where it is, where it goes</span><code>#ia-inventory</code></a>
+    <a href="../wireframe/#ia-stage"><b>The stage</b><span>ILI-1221 · each moment: where the eye goes, what HQ does</span><code>#ia-stage</code></a>
+    <a href="../wireframe/#ia-names"><b>Nomenclature</b><span>ILI-1221 · one name per thing</span><code>#ia-names</code></a>
+    <a href="../wireframe/#ia-questions"><b>Open questions</b><span>ILI-1221 · the first round's questions</span><code>#ia-questions</code></a>
+  </nav>
+</section>
+
+<section>
+  <div class="sect-head"><p class="eyebrow">Design system, by section</p><h2>Design system</h2></div>
+  <nav class="list" aria-label="Design system sections">
+    <a href="../design/#foundations"><b>Foundations</b><span>Color, type, bars not numbers</span><code>#foundations</code></a>
+    <a href="../design/#controls"><b>Controls</b><span>Few controls, each in one place</span><code>#controls</code></a>
+    <a href="../design/#map"><b>The map</b><span>Grid, contours, marks</span><code>#map</code></a>
+    <a href="../design/#motion"><b>Panels and motion</b><span>How panels power on and off</span><code>#motion</code></a>
+    <a href="../design/#patterns"><b>Patterns</b><span>Including the intel gauge</span><code>#patterns</code></a>
+    <a href="../design/#voice"><b>Voice and comms</b><span>Clipped, specific, feedback on the instruments</span><code>#voice</code></a>
+    <a href="../design/#wireframes"><b>3D wireframes</b><span>Every Three.js object, live</span><code>#wireframes</code></a>
+  </nav>
+</section>
+
+<section>
+  <div class="sect-head"><p class="eyebrow">Tracking</p><h2>Epics in Linear</h2></div>
+  <nav class="list" aria-label="Linear epics">
+    <a href="https://linear.app/iliketobuild/issue/ILI-1342"><b>ILI-1342 · Too much reading, panels not organized</b><span>Open · wireframes ILI-1343, ILI-1344; this page ILI-1345</span><code>epic</code></a>
+    <a href="https://linear.app/iliketobuild/issue/ILI-1337"><b>ILI-1337 · Intel drives the team forward</b><span>Open for your play-test · ILI-1339, ILI-1340, ILI-1341 merged</span><code>epic</code></a>
+    <a href="https://linear.app/iliketobuild/issue/ILI-1184"><b>ILI-1184 · Review game</b><span>The earlier round of review fixes</span><code>epic</code></a>
+  </nav>
+</section>
+
+<footer>Pages here run on the current main build. Older rounds stay on the wireframe page for reference.</footer>
+</main>
+</body>
+</html>
