@@ -10,7 +10,6 @@ import { bus, EV, getAskHidden } from '../game/events';
 import { FeedIcon, type Tier } from './feedIcons';
 
 export const RELAY = 'RELAY-7'; // the comms satellite HQ talks to the team through
-export const ORION = 'ORION-3'; // the imaging satellite: its news is on its own panel, not in COMMS (ILI-1351)
 
 // Whether ALPHA's waiting ask is out of sight on the map (under the square card, or waiting
 // out a mini game): TEAM's call box answers for it then (ILI-1255).
@@ -61,11 +60,9 @@ export function CommsPanel() {
   const newestOpen = all.filter((c) => c.type === 'event' && c.open).at(-1)?.id;
 
   // Notes and every message that isn't an ask card are lines; asks, events and intel are cards.
-  // ORION-3's own lines (slewing, on station, collection complete and the analysts' grade) stay
-  // off: its stepper, the intel cards and the contact cards say all of it (ILI-1351).
   const items: Item[] = [
     ...notes.map((n) => ({ at: n.atMs, o: 0, key: n.id, note: n })),
-    ...comms.messages.filter((m) => m.from !== ORION && !(kindOf(m) === 'call' && !(m.eventId && eventIds.has(m.eventId)))).map((m) => ({ at: m.atMs, o: 0, key: m.id, msg: m })),
+    ...comms.messages.filter((m) => !(kindOf(m) === 'call' && !(m.eventId && eventIds.has(m.eventId)))).map((m) => ({ at: m.atMs, o: 0, key: m.id, msg: m })),
     ...all.filter((c) => c.type !== 'radio' && (openPile || !folded(c))).map((c) => ({ at: c.atMs, o: c.type === 'event' ? 1 : 2, key: c.id, card: c })),
   ].sort((a, b) => a.at - b.at || a.o - b.o);
 

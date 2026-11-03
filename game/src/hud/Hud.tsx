@@ -78,7 +78,7 @@ export function Hud() {
   // ALPHA waiting on HQ lights TEAM's tab whole: its call box is there.
   const tabbed = tier !== 'wide';
   const shown = (t: Tab) => !tabbed || (tab === t && !(tier === 'compact' && sheet === 'peek'));
-  const commsNews = useGame((s) => s.comms.messages.filter((m) => m.from !== 'ORION-3').length + s.stream.items.length + s.intel.pushes.length + s.events.length); // what COMMS shows (ILI-1351)
+  const commsNews = useGame((s) => s.comms.messages.length + s.stream.items.length);
   const orionNews = useGame((s) => `${s.satellite.state}|${s.satellite.aim}|${s.satellite.result ? 'look' : ''}`);
   const calling = useGame((s) => !!currentCall(s.comms));
   const unseen = { satcom: useUnseen(commsNews, shown('satcom')), orion: useUnseen(orionNews, shown('orion')), team: false };
@@ -110,10 +110,11 @@ export function Hud() {
         <OrionPanel />
       </div>
       <div className="slot-bottom">
-        {/* The weather's slim line (ILI-1218); on a wide screen too since ORION-3 docks small (ILI-1350). */}
-        <div className="slot-small" data-testid="small-widgets">
-          <EnvWidget slim />
-        </div>
+        {tier !== 'wide' && (
+          <div className="slot-small" data-testid="small-widgets">
+            <EnvWidget slim />
+          </div>
+        )}
         {/* ALPHA's box on the left, then the team's table (ILI-1313). */}
         <div className="slot-team">
           <CallBox />
