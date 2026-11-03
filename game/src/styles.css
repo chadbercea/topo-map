@@ -1156,6 +1156,16 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* ALPHA's box (ILI-1255, ILI-1256): on TEAM's right end, always up; on a fold or phone over
    TEAM in its tab. On a call the whole box opens the ask. */
 .slot-team { display: flex; align-items: stretch; gap: 0; }
+/* One spacing rule on a wide screen (ILI-1353): a 16 px margin round the screen and a 16 px
+   gutter between every pair of panels, across and down; 12 px inside every panel, so every
+   panel's title sits on the same line; the ability bar 16 px under the map like everything else. */
+@media (min-width: 1200px) {
+  .hud { row-gap: var(--gutter); }
+  .slot-team { gap: var(--gutter); }
+  .hud :is(.mission, .satcom, .call-box, .team) { padding: 12px; }
+  .hud .orion > h2 { padding-top: 12px; }
+  .ability-bar { margin-top: 0; }
+}
 /* ALPHA's intel gauge (ILI-1314): a short orange bar by the team's name; the tick is where it moves. */
 /* The intel gauge (ILI-1314; the loop on the bar, ILI-1339): solid fill is intel ALPHA can walk
    on, a hollow segment is intel banked for a square ahead, the fill's stripes march while ALPHA
