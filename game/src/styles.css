@@ -814,6 +814,29 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion > :not(.o-frame), .orion::after { background: var(--panel); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 8px 12px; }
 .orion::after { content: ''; flex: 1; }
 .orion > .sr-only { padding: 0; }
+/* ORION-3 never scrolls on a wide screen (ILI-1354): the satellite, its weather and the buttons
+   keep their places, and the picture takes the room that's left. What's said about a look sits
+   on the picture as HUD bands: the slew or the capture, or what it saw, along the top; the
+   square HQ picked along the bottom. Nothing under the buttons, so nothing moves as a scan goes on. */
+@media (min-width: 1200px) {
+  .orion { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto minmax(0, 1fr) auto; grid-template-areas: 'head' 'sat' 'env' 'frame' 'buttons'; overflow: hidden; }
+  .orion::after { display: none; }
+  .orion > h2 { grid-area: head; }
+  .orion > .o-satpanel { grid-area: sat; }
+  .orion > .env-stack { grid-area: env; }
+  .orion > .o-frame { grid-area: frame; aspect-ratio: auto; height: 100%; min-height: 0; }
+  .orion > .o-buttons { grid-area: buttons; height: 60px; } /* the same height with Reposition or the shots: nothing shifts */
+  .orion > :is(.o-move, .o-row, .o-facts, .o-square) { grid-area: frame; position: relative; background: rgba(11, 15, 13, 0.82); } /* after the frame in the page, so on top of it; no z-index (it left a black hole in the map, ILI-1354) */
+  .orion > :is(.o-move, .o-row, .o-facts) { align-self: start; margin: 0; }
+  .orion > .o-square { align-self: end; border-top: 1px solid var(--line); }
+  .orion > .o-facts { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; font-size: 11px; }
+  .orion > .o-facts dt { color: var(--dim); text-transform: uppercase; font-size: 9px; letter-spacing: 0.08em; line-height: 16px; }
+  .orion > .o-facts dd { margin: 0; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* The square's details, two to a line. */
+  .orion .o-square .sc-head { padding: 2px 2px 2px 0; border-bottom: none; }
+  .orion .o-square .facts { grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); gap: 0 8px; padding: 0; font-size: 10.5px; }
+  .orion .o-square .facts dd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
 .orion h2 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .orion h2 .where { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; }
 .orion[data-state='slewing'] h2 .where, .orion[data-state='onStation'] h2 .where { color: #f2c14e; }
@@ -821,7 +844,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion .o-picture { position: absolute; inset: 0; overflow: hidden; }
 /* The fighters in the picture (ILI-1250): the square is the picture's height, centred; a ring
    on hover over the dot Phaser draws. */
-.orion .o-targets { position: absolute; top: 0; bottom: 0; left: 50%; aspect-ratio: 1; transform: translateX(-50%); }
+.orion .o-picture { container-type: size; }
+.orion .o-targets { position: absolute; top: 50%; left: 50%; width: min(100cqw, 100cqh); aspect-ratio: 1; transform: translate(-50%, -50%); } /* the square, on the frame's shorter side (ILI-1354) */
 .orion .o-picture .o-target { position: absolute; width: 24px; height: 24px; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 1px solid transparent; border-radius: 50%; background: none; cursor: crosshair; }
 .orion .o-picture .o-target:hover, .orion .o-picture .o-target:focus-visible { border-color: #e5484d; background: rgba(229, 72, 77, 0.18); }
 /* Marked (ILI-1270): each fighter's ring pulses red twice as it comes up, so the picture shows

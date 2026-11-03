@@ -504,9 +504,12 @@ export class MapScene extends Phaser.Scene {
     const id = orionSquare(game.get());
     const sq = id ? parseSquare(id) : null;
     if (!sq || !frame) return void this.inset.setVisible(false);
+    const w = Math.round(frame.width * DPR);
     const h = Math.round(frame.height * DPR);
-    this.inset.setViewport(Math.round(frame.x * DPR), Math.round(frame.y * DPR), Math.round(frame.width * DPR), h).setVisible(true);
-    this.inset.setZoom(h / CELL); // the square fills the height (ILI-1206), a sliver of its neighbours either side
+    this.inset.setViewport(Math.round(frame.x * DPR), Math.round(frame.y * DPR), w, h).setVisible(true);
+    // The square fills the frame's shorter side (ILI-1206, ILI-1354), a sliver of its neighbours
+    // round it: whole in a wide frame or a tall one.
+    this.inset.setZoom(Math.min(w, h) / CELL);
     this.inset.centerOn((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL);
   }
 

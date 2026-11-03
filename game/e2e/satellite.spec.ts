@@ -165,3 +165,39 @@ test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMob
   expect(n).toBeGreaterThan(0);
   await expect(page.getByTestId('square-anchor').getByTestId('fighters-marked')).toHaveText(`${n} ${n === 1 ? 'fighter' : 'fighters'} marked`);
 });
+
+test('ORION-3 never scrolls, and nothing in it moves through a scan; the picture stays up after the shot (ILI-1354)', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'on a phone ORION-3 is a tab in the sheet, which scrolls by design');
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  const look = () =>
+    page.evaluate(() => {
+      const o = document.querySelector('[data-testid=satellite]')!;
+      return { scroll: o.scrollHeight - o.clientHeight, buttons: Math.round(document.querySelector('[data-testid=orion-buttons]')!.getBoundingClientRect().top) };
+    });
+  const seen: { scroll: number; buttons: number }[] = [await look()];
+  await page.evaluate(() => window.game.selectSquare('E3'));
+  seen.push(await look());
+  await page.evaluate(() => {
+    window.game.lookAt('E3');
+    window.game.tick(1000);
+  });
+  seen.push(await look());
+  await page.evaluate(() => {
+    const g = window.game;
+    for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
+    g.capture('video');
+    g.tick(2000);
+  });
+  seen.push(await look());
+  await page.evaluate(() => {
+    for (let t = 0; t < 30_000; t += 100) window.game.tick(100);
+  });
+  seen.push(await look());
+  for (const s of seen) expect(s.scroll).toBe(0);
+  expect(new Set(seen.map((s) => s.buttons)).size).toBe(1); // the buttons never move
+  await expect(page.getByTestId('satellite-inset')).toHaveCount(1); // the zoomed square is still up
+  await expect(page.getByTestId('satellite-result')).toContainText(/Video: 5 fighters/);
+  await expect(page.getByTestId('satellite').getByTestId('square-card')).toHaveAttribute('data-square', 'E3');
+});
