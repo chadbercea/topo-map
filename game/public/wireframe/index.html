@@ -355,6 +355,33 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 @media (prefers-reduced-motion: no-preference) { .rw .c.ev.new { animation: rw-pulse 1.6s ease-in-out infinite; } }
 @keyframes rw-pulse { 50% { outline-color: color-mix(in srgb, var(--hq) 55%, transparent); } }
 @media (max-width: 900px) { .rw .base, .rw .pair { grid-template-columns: 1fr; } .rw .ph { justify-self: center; } .rw .orx { grid-template-columns: 1fr; } }
+
+/* Ability bar placement (ILI-1352), drawn in layout A at 1440 x 900. */
+.ab .screen { grid-template-columns: 22.2fr 51.4fr 26.4fr; }
+.ab .sa { grid-template-rows: auto 1fr 22%; grid-template-areas: 'mission map orion' 'comms map orion' 'bottom bottom orion'; }
+.ab .sa .bottom { display: grid; grid-template-columns: 19fr 27fr 26fr; gap: 1.1%; min-height: 0; align-items: stretch; }
+.ab .bottom > .p { min-height: 0; }
+.ab .sa .hb.tall { font-size: 9px; padding: 3px; gap: 3px; min-height: 0; overflow: hidden; }
+.ab .sa .hb.tall .slot { padding: 2px 4px; }
+.ab .sb { grid-template-rows: auto 1fr auto 22%; grid-template-areas: 'mission map orion' 'comms map orion' 'comms deck orion' 'bottom bottom orion'; }
+.ab .sb .bottom, .ab .sc .bottom { display: grid; grid-template-columns: 19fr 27fr 26fr; gap: 1.1%; min-height: 0; }
+.ab .sc { grid-template-rows: auto 1fr 22%; grid-template-areas: 'mission map orion' 'comms map orion' 'bottom bottom orion'; }
+.ab .deck { grid-area: deck; position: relative; min-height: 46px; border-top: 1px solid var(--line); }
+.ab .hb { display: flex; gap: 4px; padding: 4px; background: var(--paper); border: 2px solid var(--accent); border-radius: 4px; font: 10px/1.2 var(--mono); align-items: stretch; }
+.ab .hb.big { padding: 5px; gap: 5px; font-size: 11px; box-shadow: 0 4px 14px rgb(0 0 0 / .18); }
+.ab .hb .bal { display: grid; align-content: center; padding: 0 8px; border-right: 1px solid var(--line); }
+.ab .hb .bal b { color: var(--accent); }
+.ab .hb .slot { display: grid; grid-template-columns: auto 1fr; gap: 0 6px; align-items: center; padding: 3px 8px; border: 1.5px solid var(--ink); border-radius: 3px; }
+.ab .hb .slot kbd { grid-row: span 2; font: 600 1em var(--mono); border: 1px solid var(--ink); border-radius: 2px; padding: 0 4px; }
+.ab .hb .slot span { color: var(--dim); font-size: .85em; }
+.ab .hb.tall { flex-direction: column; justify-content: space-between; }
+.ab .hb.tall .slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; flex: 1; }
+.ab .hb.tall .bal { border-right: 0; border-bottom: 1px solid var(--line); padding: 2px 4px 4px; display: flex; justify-content: space-between; }
+.ab .float { position: absolute; left: 50%; transform: translateX(-50%); z-index: 2; white-space: nowrap; }
+.ab .centre { position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px dashed var(--accent); opacity: .6; z-index: 1; }
+.ab .centre::after { content: 'screen centre'; position: absolute; top: 2px; left: 4px; font: 9px var(--mono); color: var(--accent); white-space: nowrap; }
+.ab .measured { margin: 0; padding-left: 18px; display: grid; gap: 3px; font: 13px/1.45 var(--mono); }
+
 </style>
 </head>
 <body>
@@ -362,10 +389,63 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 <main>
 <header>
   <p class="mono"><a href="../review/">← Review hub: everything up for review</a></p>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
+
+<section class="opts rw ab" id="ability-bar">
+  <div class="sect-head"><p class="eyebrow">ILI-1352 · Ability bar placement · 2026-11-03 · layout A, 1440 × 900</p><h2>Front and center, in the layout you approved</h2><p>Your note: "I hate the placement of the ability bar. This is supposed to be kind of like a front and center element." The catch, measured: in layout A, ORION-3 runs the full right side, so the bottom row is x 16–1036, and ALPHA and TEAM fill 16–673 of it. A bar dead center on the screen (x 720) would sit on top of TEAM. So each option gives something up.</p></div>
+  <ul class="measured">
+    <li>Today: the bar floats over the map's foot, about 470–905, its own small box, not lined up with anything.</li>
+    <li>The bottom row's right part, 673–1036, is empty.</li>
+  </ul>
+
+  <section class="opt">
+    <div class="opt-head"><p class="eyebrow">Option A</p><h2>In the bottom row, beside TEAM</h2><span class="tag">fills the gap</span></div>
+    <div class="wrap"><div class="screen sa">
+        <div class="p mission" style="grid-area:mission"><b>Black Box · 9:45 ❚❚</b><span>A ━━━━ B ── C</span><span>◆ Recover the black box at D3</span></div>
+        <div class="p" style="grid-area:comms"><b>Comms</b><span>cards and radio</span></div>
+        <div class="p orion" style="grid-area:orion"><b>ORION-3</b><span>satellite · weather</span><div class="pic">picture</div><div class="btns"><em>Photo</em><em>Video</em></div></div>
+        <div class="map"><span class="tag">MAP</span><div class="centre"></div></div>
+        <div class="bottom"><div class="p"><b>ALPHA</b><span>status · intel</span></div><div class="p"><b>Team</b><span>5 rows</span></div><div class="hb big tall" style="height:100%"><div class="bal"><span>BALANCE</span><b>−$400k</b></div><div class="slots"><div class="slot"><kbd>1</kbd>Sniper<span>$10k</span></div><div class="slot"><kbd>2</kbd>Drone<span>$150k</span></div><div class="slot"><kbd>3</kbd>Heli<span>$625k</span></div></div></div></div>
+    </div></div>
+    <ul class="moves"><li>The bar becomes a panel in the bottom row, the same height as ALPHA and TEAM: the balance on top, three big slots under it.</li><li>The map gets its foot back: nothing floats over it.</li></ul>
+    <ul class="plus"><li>Uses the empty right part of the bottom row; lines up with every edge.</li></ul>
+    <ul class="minus"><li>Not on the screen's center line: it sits right of center, under the map.</li></ul>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><p class="eyebrow">Option B</p><h2>A hotbar on the screen's center line, docked under the map</h2><span class="tag pick">my pick</span></div>
+    <div class="wrap"><div class="screen sb">
+        <div class="p mission" style="grid-area:mission"><b>Black Box · 9:45 ❚❚</b><span>A ━━━━ B ── C</span><span>◆ Recover the black box at D3</span></div>
+        <div class="p" style="grid-area:comms"><b>Comms</b><span>cards and radio</span></div>
+        <div class="p orion" style="grid-area:orion"><b>ORION-3</b><span>satellite · weather</span><div class="pic">picture</div><div class="btns"><em>Photo</em><em>Video</em></div></div>
+        <div class="map"><span class="tag">MAP</span><div class="centre"></div></div>
+        <div class="deck"><div class="float" style="top:6px"><div class="hb big"><div class="bal"><span>BALANCE</span><b>−$400k</b></div><div class="slot"><kbd>1</kbd>Sniper<span>$10k / call</span></div><div class="slot"><kbd>2</kbd>Drone<span>$150k / call</span></div><div class="slot"><kbd>3</kbd>Heli<span>$625k / call</span></div></div></div></div>
+        <div class="bottom"><div class="p"><b>ALPHA</b><span>status · intel</span></div><div class="p"><b>Team</b><span>5 rows</span></div><div></div></div>
+    </div></div>
+    <ul class="moves"><li>The map stops a bar's height short; the bar sits in that strip, bigger, on the screen's center line, like a game's hotbar.</li><li>ALPHA and TEAM stay where they are, under it.</li></ul>
+    <ul class="plus"><li>The most literal "front and center": the eye lands on it, and it's never over the map.</li></ul>
+    <ul class="minus"><li>The map is about 60 px shorter. The bottom row's right part stays empty (the spacing pass, ILI-1353, can let TEAM's table use it).</li></ul>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><p class="eyebrow">Option C</p><h2>Top center, between the mission and ORION-3</h2></div>
+    <div class="wrap"><div class="screen sc">
+        <div class="p mission" style="grid-area:mission"><b>Black Box · 9:45 ❚❚</b><span>A ━━━━ B ── C</span><span>◆ Recover the black box at D3</span></div>
+        <div class="p" style="grid-area:comms"><b>Comms</b><span>cards and radio</span></div>
+        <div class="p orion" style="grid-area:orion"><b>ORION-3</b><span>satellite · weather</span><div class="pic">picture</div><div class="btns"><em>Photo</em><em>Video</em></div></div>
+        <div class="map"><span class="tag">MAP</span><div class="centre"></div><div class="float" style="top:8px"><div class="hb big"><div class="bal"><span>BALANCE</span><b>−$400k</b></div><div class="slot"><kbd>1</kbd>Sniper<span>$10k / call</span></div><div class="slot"><kbd>2</kbd>Drone<span>$150k / call</span></div><div class="slot"><kbd>3</kbd>Heli<span>$625k / call</span></div></div></div></div>
+        <div class="bottom"><div class="p"><b>ALPHA</b><span>status · intel</span></div><div class="p"><b>Team</b><span>5 rows</span></div><div></div></div>
+    </div></div>
+    <ul class="moves"><li>The bar moves to the top edge of the map, on the screen's center line, level with the clock.</li></ul>
+    <ul class="plus"><li>Reads with the clock and the money as one "what I have" line across the top.</li></ul>
+    <ul class="minus"><li>Over the map's top edge, where the crash site and contacts often are.</li></ul>
+  </section>
+
+  <div class="lean"><b>My pick: B.</b><p>It's the only one that's literally front and center without sitting on the map or on TEAM. A is the tidiest if you'd rather keep the map's full height. On a phone all three stay as today: full width above the tabs.</p></div>
+</section>
 
 <section class="opts rw" id="panels-rework">
   <div class="sect-head"><p class="eyebrow">ILI-1342 · ILI-1343 · Panels rework · 2026-11-02 · desktop 1440 × 900 and phone 390 × 844</p><h2>Too much reading, and the panels don't feel organized</h2><p>Player feedback: "they don't like all the reading and feel like the panels are not organized." First the count of what the player reads today, then three ways to cut it. All three keep bars not numbers, feedback on the instruments rather than the radio, the square's menu for actions only, and no briefing.</p></div>
