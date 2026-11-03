@@ -20,7 +20,8 @@ test('the mission panel: the deadline, the race, what to do, what needs HQ (ILI-
 
   if (isMobile) return; // the ground and weather wait for a wider screen
   await expect(page.getByTestId('conditions')).toContainText('High cloud');
-  await expect(page.getByTestId('cloud-tile')).not.toHaveAttribute('data-warn', /./); // 60%: clear enough
+  // The weather is the slim line along the bottom at every size since ORION-3 docks small (ILI-1350).
+  await expect(page.getByTestId('small-widgets').getByTestId('conditions')).toBeVisible();
   // A square's ground is on its card, not in the widget (ILI-1220).
   await expect(page.getByTestId('ground')).toHaveCount(0);
   await page.evaluate(() => window.game.selectSquare('E2'));

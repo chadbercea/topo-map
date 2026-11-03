@@ -128,7 +128,7 @@ test('standing by, ORION-3 names the next square ahead with no imagery (ILI-1272
   await start(page, '?debug');
   await running(page);
   if (isMobile) await page.getByTestId('tab-orion').click();
-  await expect(page.getByTestId('orion-placeholder')).toHaveText('Standing by over G5 · no imagery of F4 ahead');
+  await expect(page.getByTestId('satellite')).toContainText('Standing by over G5 · no imagery of F4 ahead');
 });
 
 test("a slew counts down in ORION-3's frame, then the photo (ILI-1269)", async ({ page, isMobile }) => {

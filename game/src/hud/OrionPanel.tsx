@@ -8,10 +8,14 @@ import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
 import { OrionAvatar } from './OrionAvatar';
 import { useTier } from './tier';
-import { EnvWidget } from './EnvWidget';
 import { Card } from './SquareCard';
 
 const MODES: CaptureMode[] = ['photo', 'video']; // no burst (ILI-1314)
+
+// Docked on a wide screen (option D, ILI-1350): after the shot is graded, the lifted panel holds
+// this long in mission time so HQ sees what it got, then settles back to its small self.
+export const SETTLE_MS = 5_000;
+const STEPS = ['Move', 'On station', 'Shot', 'Graded'] as const;
 
 // ORION-3, the imaging satellite (ILI-1219): the big panel down the right, and everything about
 // looking at a square (ILI-1308). A square HQ picks shows here, its details and Reposition;
@@ -34,10 +38,28 @@ export function OrionPanel() {
   const result = sat.state === 'idle' ? sat.result : null;
   const picked = lookSquare(s); // the square HQ is working
   const tier = useTier();
+  // Docked small over the map's corner on a wide screen (ILI-1350); it lifts while ORION-3 is
+  // working, or HQ is working a square, and settles a moment after the shot is graded. On a fold
+  // or phone it's a tab in the sheet, which rises on its own.
+  const docked = tier === 'wide';
+  const [opened, setOpened] = useState(false); // HQ opened it by hand
+  const [dropped, setDropped] = useState(''); // HQ settled it by hand, for this square and look
   // The fighters in ORION-3's picture: a tap on one opens their square's anchor, with its
   // strikes (ILI-1302).
   const marked = square ? targets(s).filter((t) => squareAt(t.x, t.y) === square) : [];
   const pings = square ? s.events.filter((e) => e.square === square && e.status !== 'resolved' && e.kind !== 'site') : [];
+  const lastLook = Object.values(s.imagery)
+    .filter((x) => x.mode !== 'eyes')
+    .sort((a, b) => b.atMs - a.atMs)[0];
+  const graded = sat.state === 'idle' && !!sat.result;
+  const here = `${picked ?? ''}|${graded ? `${sat.result!.square}@${lastLook?.atMs}` : ''}`;
+  // Three ways to sit, docked (ILI-1350): at rest, the stepper and a line; with a square picked,
+  // its details and Reposition, still narrow; lifted (scanning, or just graded, or opened by hand),
+  // wider and raised, the picture and the shots.
+  const fresh = graded && !!lastLook && now - lastLook.atMs < SETTLE_MS && dropped !== here;
+  const mode: 'rest' | 'square' | 'lift' = !docked ? 'lift' : tied ? 'rest' : sat.state !== 'idle' || opened || fresh ? 'lift' : s.map.selected ? 'square' : 'rest'; // a square HQ has picked on the map
+  const lifted = mode !== 'rest';
+  const step = sat.state === 'slewing' ? 0 : sat.state === 'onStation' ? 1 : sat.state === 'capturing' ? 2 : graded ? 3 : -1;
   // The larger square while ORION-3 is on it, or what it last saw; else the placeholder (ILI-1229).
   const showPicture = !tied && (live || (sat.state === 'idle' && !!square && !!snap));
   const blind = nextBlind(s);
@@ -88,8 +110,43 @@ export function OrionPanel() {
   const away = picked ? slewMs(s, picked) : 0;
   const inPosition = live || sat.state === 'capturing' || (sat.state === 'idle' && !!picked && away === 0);
 
+  const steps = (
+    <ol className="o-steps" data-testid="orion-steps" aria-label="ORION-3's look">
+      {STEPS.map((label, i) => (
+        <li key={label} data-step={i < step ? 'done' : i === step ? 'on' : undefined} aria-current={i === step ? 'step' : undefined}>
+          {label}
+        </li>
+      ))}
+    </ol>
+  );
+
+  if (!lifted)
+    return (
+      <section className="panel orion" data-testid="satellite" data-state={sat.state} data-docked aria-label="ORION-3 imaging satellite">
+        <h2>
+          <span>ORION-3</span>
+          <span className="where">{head}</span>
+        </h2>
+        <p className="sr-only" data-testid="satellite-status">
+          {tied ? 'ORION-3 · tied up' : satelliteStatus(s)}
+        </p>
+        <div className="o-rest">
+          {steps}
+          <span className="o-caption">{graded && sat.result ? `${sat.result.square} · ${describe(sat.result)}` : caption}</span>
+          <button type="button" className="o-open" onClick={() => setOpened(true)} data-testid="orion-open">
+            Open ▾
+          </button>
+        </div>
+      </section>
+    );
+
   return (
-    <section ref={panelRef} className="panel orion" onScroll={() => redraw((n) => n + 1)} data-testid="satellite" data-state={sat.state} aria-label="ORION-3 imaging satellite">
+    <section
+      ref={panelRef}
+      className="panel orion"
+      onScroll={() => redraw((n) => n + 1)}
+      onAnimationEnd={() => redraw((n) => n + 1)} // lifted into place: measure the picture again
+      data-testid="satellite" data-state={sat.state} data-docked={docked || undefined} data-lift={(docked && mode === 'lift') || undefined} data-mode={docked ? mode : undefined} data-imaged={(!!snap && snap.mode !== 'eyes') || undefined} aria-label="ORION-3 imaging satellite">
       <h2>
         <span>ORION-3</span>
         <span className="where">
@@ -99,6 +156,20 @@ export function OrionPanel() {
       <p className="sr-only" data-testid="satellite-status">
         {tied ? 'ORION-3 · tied up' : satelliteStatus(s)}
       </p>
+      {docked && steps}
+      {docked && mode === 'lift' && sat.state === 'idle' && (
+        <button
+          type="button"
+          className="o-open"
+          onClick={() => {
+            setOpened(false);
+            setDropped(here);
+          }}
+          data-testid="orion-settle"
+        >
+          Settle ▴
+        </button>
+      )}
 
       {/* ORION-3 itself, always on screen above the picture (ILI-1235): the 3D satellite and its
           telemetry. */}
@@ -120,9 +191,6 @@ export function OrionPanel() {
         </dl>
       </div>
 
-      {/* The AO's weather, three and three under the satellite it limits (ILI-1249); on a fold
-          or phone it's the slim line along the bottom. */}
-      {tier === 'wide' && <EnvWidget />}
 
       {/* The image area: always here, always the same size (ILI-1229). */}
       <div className="o-frame">
