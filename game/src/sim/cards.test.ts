@@ -96,7 +96,7 @@ describe('the stack', () => {
   });
 
   it('cards keep the order they came in', () => {
-    let s = blindAhead();
+    let s = fed(blindAhead()); // fed: no imagery request (ILI-1349) in the way
     s = pushPhoto(s, s.team.route[s.team.waypoint], 0).next;
     s = run(s, 5_000);
     s = withEvent(s, { id: 'signal-x', kind: 'signal', square: 'C2' });
