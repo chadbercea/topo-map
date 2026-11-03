@@ -11,7 +11,7 @@ test('walking blind into the hidden checkpoint is an ambush; the team panel goes
     for (let i = 0; i < 3000 && !g.get().team.fight; i++) g.tick(100);
   });
   const panel = page.getByTestId('team-panel');
-  await expect(page.getByTestId('call-state')).toHaveText(/Engaged in E3/); // said once, in ALPHA's box (ILI-1351)
+  await expect(panel).toContainText('Engaged in E3');
   const log = await page.evaluate(() => window.game.get().comms.messages.map((m) => m.text));
   expect(log).toContain('Ambush in E3! Returning fire.');
   await expect(panel).toHaveAttribute('data-fight', 'true'); // the team panel goes red

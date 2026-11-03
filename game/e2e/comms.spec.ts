@@ -9,7 +9,7 @@ test('ALPHA doesn’t ask about unimaged ground: it walks on, and nothing waits 
   await running(page);
   await fastForward(page, 3_000);
   await expect(page.getByTestId('comms')).toHaveCount(0); // no ask beside ALPHA's marker
-  await expect(page.getByTestId('call-state')).toHaveText('Moving to F4');
+  await expect(page.getByTestId('team-panel')).toContainText('Moving to F4');
 });
 
 test('ALPHA’s ask flags at its marker and opens on a click; answering closes it, and the comms log keeps both sides', async ({ page }) => {

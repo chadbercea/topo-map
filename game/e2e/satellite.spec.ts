@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start, untilOnStation, hasEvent, photo, worldToScreen, running } from './helpers';
 
-test('pick a square, Reposition: ORION-3 moves, then on station the shots take its place (ILI-1219, ILI-1250)', async ({ page, isMobile }) => {
+test('pick a square, Reposition: ORION-3 moves, then on station the shots take its place (ILI-1219, ILI-1250)', async ({ page }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -27,19 +27,12 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   // but Cancel. On a fold or phone its tab comes forward.
   const moving = page.getByTestId('orion-repositioning');
   await expect(moving).toBeVisible();
+  await expect(moving).toContainText(/Repositioning to E3 · \d+:\d\d/);
+  await expect(sat.getByTestId('orion-placeholder')).toContainText('On station over E3 in'); // counting down in the frame (ILI-1269)
+  // The button row keeps its place under the picture: Reposition, unlit while it moves.
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
-  if (isMobile) {
-    await expect(moving).toContainText(/Repositioning to E3 · \d+:\d\d/);
-    await expect(sat.getByTestId('orion-placeholder')).toContainText('On station over E3 in'); // counting down in the frame (ILI-1269)
-    // The button row keeps its place under the picture: Reposition, unlit while it moves.
-    await expect(sat.getByTestId('look-here')).toBeDisabled();
-    await expect(sat.getByTestId('look-here')).toContainText('Repositioning to E3');
-  } else {
-    // Docked, said once (ILI-1351): the stepper on Move, the time in the frame, no button row.
-    await expect(page.getByTestId('orion-steps').locator('[aria-current="step"]')).toHaveText('Move');
-    await expect(sat.getByTestId('orion-placeholder')).toHaveText(/^On station in\s*\d+:\d\d$/);
-    await expect(sat.getByTestId('orion-buttons')).toBeHidden();
-  }
+  await expect(sat.getByTestId('look-here')).toBeDisabled();
+  await expect(sat.getByTestId('look-here')).toContainText('Repositioning to E3');
   await expect(sat.getByRole('button', { name: 'Cancel' })).toHaveCount(0); // no Cancel
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
   await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+:\d\d away/); // the square, in the same panel (ILI-1228)
@@ -61,9 +54,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   // What it saw stays in the panel; the find is on the card, the strikes beside it.
   await expect(sat.getByTestId('satellite-result')).toContainText(/Video: 5 fighters/);
   await expect(sat.getByTestId('satellite-inset')).toHaveCount(1); // the picture stays up
-  // In COMMS it's an intel card, not ORION-3's readout (ILI-1351).
-  await expect(page.getByTestId('comms-feed')).not.toContainText('collection complete');
-  await expect(page.getByTestId('intel-card').filter({ hasText: 'live feed' })).toContainText('IMINT E3');
+  await expect(page.getByTestId('comms-feed')).toContainText(/E3 collection complete \(video\): 5 fighters.*Analysts: live feed to ALPHA/);
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
   // The strikes aren't ORION-3's: they're at the square, in its anchor on the map (ILI-1302, ILI-1308).
@@ -137,7 +128,7 @@ test('standing by, ORION-3 names the next square ahead with no imagery (ILI-1272
   await start(page, '?debug');
   await running(page);
   if (isMobile) await page.getByTestId('tab-orion').click();
-  await expect(page.getByTestId('satellite')).toContainText('Standing by over G5 · no imagery of F4 ahead');
+  await expect(page.getByTestId('orion-placeholder')).toHaveText('Standing by over G5 · no imagery of F4 ahead');
 });
 
 test("a slew counts down in ORION-3's frame, then the photo (ILI-1269)", async ({ page, isMobile }) => {
@@ -154,9 +145,7 @@ test("a slew counts down in ORION-3's frame, then the photo (ILI-1269)", async (
   const first = await eta.textContent();
   await page.evaluate(() => window.game.tick(2000));
   await expect(eta).not.toHaveText(first!);
-  // What's next: in words on a phone; docked, the stepper's next step is Shot (ILI-1351).
-  if (isMobile) await expect(page.getByTestId('orion-placeholder')).toContainText('then take the photo');
-  else await expect(page.getByTestId('orion-steps')).toContainText('Shot');
+  await expect(page.getByTestId('orion-placeholder')).toContainText('then take the photo');
 });
 
 test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMobile }) => {
