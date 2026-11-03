@@ -42,13 +42,15 @@ html, body {
   /* The war room, layout A (ILI-1226): the mission and COMMS down the left, the map in the
      middle with the mini game at its foot, ORION-3 down the whole right side, and along the
      bottom the small widgets and TEAM. */
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto auto;
+  /* Option D (ILI-1350): no ORION-3 column; it docks small over the map's top-right corner and
+     lifts when HQ works a square. */
   grid-template-areas:
-    'mission map orion'
-    'satcom map orion'
-    'satcom band orion'
-    'bottom bottom orion';
+    'mission map'
+    'satcom map'
+    'satcom band'
+    'bottom bottom';
 }
 
 /* RELAY-7, the comms satellite (ILI-1195, ILI-1199), down the left: its name on
@@ -56,8 +58,30 @@ html, body {
 .satcom h2 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
 .satcom h2 .status { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 
-.slot-orion { grid-area: orion; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: var(--gutter); } /* the whole right side: ORION-3, Environment inside it (ILI-1219, ILI-1249) */
-.slot-orion > .orion { flex: 1; }
+/* ORION-3 docked on the map's top-right corner (option D, ILI-1350): small at rest, square and
+   stepper; lifted, it grows over the map with a shadow, and settles back after the shot. */
+.slot-orion { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+@media (min-width: 1200px) {
+  .slot-orion { grid-area: map; justify-self: end; align-self: start; z-index: 3; width: 320px; max-height: 100%; margin: 8px 8px 0 0; }
+  .slot-orion:has(.orion[data-lift]) { width: min(380px, 46%); }
+  .slot-orion > .orion { min-height: 0; overflow: hidden; }
+  .orion[data-docked] .o-satpanel { display: none; } /* the stepper says what it's doing */
+  .orion[data-docked] .o-frame { aspect-ratio: 4 / 3; }
+  .orion[data-mode='square']:not([data-imaged]) .o-frame { display: none; } /* a square picked, never imaged, no look under way: its details only */
+  .slot-orion > .orion[data-mode='square'] { overflow-y: auto; }
+  .slot-orion > .orion[data-lift] { overflow-y: auto; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), 0 3px 10px rgba(0, 0, 0, 0.45); transform: translateY(-3px); animation: o-lift 220ms ease-out; }
+}
+.orion[data-docked]:not([data-lift]) { gap: 6px; }
+.orion .o-rest { display: grid; gap: 6px; }
+.orion .o-rest .o-caption { color: var(--dim); font-size: 11px; }
+.orion .o-open { all: unset; cursor: pointer; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.orion .o-open:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.orion .o-steps { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.orion .o-steps li { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: center; font-size: 9.5px; letter-spacing: 0; padding: 3px 1px; border: 1px solid rgba(207, 232, 220, 0.18); color: var(--dim); white-space: nowrap; }
+.orion .o-steps li[data-step='done'] { border-color: var(--accent); color: var(--accent); }
+.orion .o-steps li[data-step='on'] { border-color: var(--accent); background: var(--accent); color: #0b0f0d; }
+@keyframes o-lift { from { transform: translateY(4px); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); opacity: 0.85; } }
+@media (prefers-reduced-motion: reduce) { .slot-orion > .orion[data-lift] { animation: none; transform: none; } }
 /* Along the bottom (ILI-1226): TEAM. Environment went up over ORION-3 (ILI-1218). */
 .slot-bottom { grid-area: bottom; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gutter); align-items: stretch; }
 .slot-small { min-width: 0; display: grid; }

@@ -13,7 +13,6 @@ export function MapArea() {
     const el = ref.current!;
     const stream = document.querySelector('.slot-satcom'); // the left column (COMMS, ILI-1225)
     const bottom = document.querySelector('.slot-bottom'); // the small widgets and TEAM (wide)
-    const orion = document.querySelector('.slot-orion'); // ORION-3 down the right (wide)
     const small = document.querySelector('.slot-small'); // the small widgets' line (fold, phone)
     const tabs = document.querySelector('.dock-tabs');
     const widget = document.querySelector('.slot-widget');
@@ -31,12 +30,13 @@ export function MapArea() {
       const coverTop = t === 'compact' ? Math.max(widget?.getBoundingClientRect().bottom ?? 0, small?.getBoundingClientRect().bottom ?? 0) : 0;
       // The side rail (medium) and ORION-3's column (wide) are columns of their own: the grid
       // stops at their edge.
-      const coverRight = t === 'medium' ? tabs?.getBoundingClientRect().left : t === 'wide' ? orion?.getBoundingClientRect().left : undefined;
+      // ORION-3 docks over the map's corner on a wide screen (ILI-1350), so the map runs under it.
+      const coverRight = t === 'medium' ? tabs?.getBoundingClientRect().left : undefined;
       bus.emit(EV.mapRect, { x, y, width, height, coverLeft, coverTop, coverBottom: foot || undefined, coverRight });
     };
     const ro = new ResizeObserver(report);
     ro.observe(el);
-    for (const other of [stream, bottom, orion, small, tabs, widget]) if (other) ro.observe(other);
+    for (const other of [stream, bottom, small, tabs, widget]) if (other) ro.observe(other);
     tiers.forEach((q) => q.addEventListener('change', report));
     report();
     return () => {

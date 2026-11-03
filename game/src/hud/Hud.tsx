@@ -110,11 +110,10 @@ export function Hud() {
         <OrionPanel />
       </div>
       <div className="slot-bottom">
-        {tier !== 'wide' && (
-          <div className="slot-small" data-testid="small-widgets">
-            <EnvWidget slim />
-          </div>
-        )}
+        {/* The weather's slim line (ILI-1218); on a wide screen too since ORION-3 docks small (ILI-1350). */}
+        <div className="slot-small" data-testid="small-widgets">
+          <EnvWidget slim />
+        </div>
         {/* ALPHA's box on the left, then the team's table (ILI-1313). */}
         <div className="slot-team">
           <CallBox />
