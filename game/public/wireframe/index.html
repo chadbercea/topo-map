@@ -249,16 +249,236 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .col .mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; }
 .col .mini i { font-style: normal; font-size: 10px; text-align: center; border: 1px solid var(--line); border-radius: 3px; padding: 2px 0; }
 .col .mini i.hot { border-color: var(--accent); color: var(--accent); }
+
+/* Panels rework (ILI-1343): less reading, organized by job. Reuses the .opts screen language. */
+:root { --pick: var(--ok); }
+.rw .base { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.rw .wbar { display: grid; grid-template-columns: 7.5em 1fr 3.2em; gap: 4px 10px; align-items: center; font: 13px var(--mono); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+.rw .wbar i { display: block; height: 10px; border-radius: 2px; background: var(--ink); }
+.rw .wbar i.hot { background: var(--accent); }
+.rw .wbar span:nth-child(3n) { text-align: right; font-variant-numeric: tabular-nums; }
+.rw .wbar .tot { font-weight: 600; border-top: 1px solid var(--line); padding-top: 4px; }
+.rw .echo { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 6px; font-size: 14px; }
+.rw .echo ol { margin: 0; padding-left: 22px; display: grid; gap: 2px; font: 12px var(--mono); }
+.rw .echo b { font-family: var(--display); font-size: 17px; }
+.rw .pair { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 16px; align-items: start; }
+.rw .screen { min-width: 600px; }
+.rw .ra { grid-template-columns: 22.2fr 45.6fr 27.8fr; grid-template-rows: auto 1fr 22%; grid-template-areas: 'mission map orion' 'comms map orion' 'bottom bottom orion'; }
+.rw .ra .bottom { grid-template-columns: 1fr 2.4fr; }
+.rw .rb { grid-template-columns: 22.2fr 45.6fr 27.8fr; grid-template-rows: auto 1fr auto 22%; grid-template-areas: 'mission map orion' 'needs map orion' 'needs strip orion' 'bottom bottom orion'; }
+.rw .rb .bottom { grid-template-columns: 1fr; }
+.rw .rc { grid-template-columns: 1fr 17%; grid-template-rows: auto 1fr; grid-template-areas: 'top top' 'map orion'; }
+.rw .p.needs { grid-area: needs; border: 2px solid var(--accent); gap: 5px; }
+.rw .p.needs > b { color: var(--accent); }
+.rw .card { background: var(--paper); border: 1.5px solid var(--accent); border-radius: 3px; padding: 3px 6px; display: flex; justify-content: space-between; gap: 6px; font-size: 10px; }
+.rw .card.calm { border-color: var(--line); color: var(--dim); }
+.rw .card em { font-style: normal; font-weight: 600; }
+.rw .p.strip { grid-area: strip; background: transparent; border: 1px dashed var(--line); display: flex; justify-content: space-between; gap: 8px; padding: 3px 8px; }
+.rw .p.top { grid-area: top; display: flex; gap: 14px; align-items: center; border-top: 3px solid var(--ink); padding: 4px 8px; }
+.rw .gbar { display: inline-block; width: 70px; height: 7px; border: 1px solid var(--accent); position: relative; vertical-align: middle; }
+.rw .gbar::before { content: ''; position: absolute; inset: 0 55% 0 0; background: var(--accent); }
+.rw .gbar.sm { width: 34px; height: 5px; }
+.rw .steps { display: flex; gap: 2px; font-size: 9px; }
+.rw .steps em { font-style: normal; flex: 1; text-align: center; padding: 2px 0; border: 1px solid var(--line); border-radius: 2px; color: var(--dim); }
+.rw .steps em.on { border-color: var(--hq); background: var(--hq); color: var(--paper); }
+.rw .steps em.done { border-color: var(--hq); color: var(--hq); }
+.rw .pin { position: absolute; font: 600 10px var(--mono); padding: 1px 5px; border-radius: 10px; background: var(--paper); border: 1.5px solid var(--ink); white-space: nowrap; }
+.rw .pin.hot { border-color: var(--accent); color: var(--accent); }
+.rw .pin.hq { border-color: var(--hq); color: var(--hq); }
+.rw .toast { position: absolute; left: 3%; bottom: 4%; width: 44%; display: grid; gap: 3px; }
+.rw .toast span { background: var(--paper); border-left: 3px solid var(--ink); padding: 2px 6px; font-size: 10px; color: var(--ink); }
+.rw .toast span.fade { opacity: .45; }
+/* phone frames, 390 × 844 at about half size */
+.rw .ph { width: 200px; aspect-ratio: 390 / 844; box-sizing: border-box; border: 2px solid var(--ink); border-radius: 14px; background: var(--paper); padding: 6px; display: grid; gap: 4px; font: 9px/1.25 var(--mono); }
+.rw .ph .p { background: var(--box); border-radius: 3px; padding: 3px 5px; display: grid; gap: 1px; min-width: 0; overflow: hidden; }
+.rw .ph .p b { font: 700 10px var(--display); letter-spacing: .06em; text-transform: uppercase; }
+.rw .ph .p span { color: var(--dim); }
+.rw .ph .map { grid-area: auto; position: relative; border: 1px solid var(--line); border-radius: 3px; background-color: var(--paper); background-image: repeating-linear-gradient(0deg, transparent 0 17px, var(--line) 17px 18px), repeating-linear-gradient(90deg, transparent 0 17px, var(--line) 17px 18px); }
+.rw .ph .tabs { display: flex; gap: 2px; }
+.rw .ph .tabs em { flex: 1; font-style: normal; text-align: center; font-size: 8px; padding: 2px 0; border: 1px solid var(--line); border-radius: 2px; }
+.rw .ph .tabs em.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.rw .ph .card, .rw .ph .pin, .rw .ph .toast span { font-size: 8px; }
+.rw .ph-cap { font: 11px var(--mono); color: var(--dim); text-align: center; }
+.rw .moves { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.rw .est { font: 600 13px var(--mono); }
+.rw .est i { font-style: normal; color: var(--ok); }
+@media (max-width: 900px) { .rw .base, .rw .pair { grid-template-columns: 1fr; } .rw .ph { justify-self: center; } }
 </style>
 </head>
 <body>
 
 <main>
 <header>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 5 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
+
+<section class="opts rw" id="panels-rework">
+  <div class="sect-head"><p class="eyebrow">ILI-1342 · ILI-1343 · Panels rework · 2026-11-02 · desktop 1440 × 900 and phone 390 × 844</p><h2>Too much reading, and the panels don't feel organized</h2><p>Player feedback: "they don't like all the reading and feel like the panels are not organized." First the count of what the player reads today, then three ways to cut it. All three keep bars not numbers, feedback on the instruments rather than the radio, the square's menu for actions only, and no briefing.</p></div>
+
+  <section class="opt">
+    <div class="opt-head"><p class="eyebrow">Baseline</p><h2>About 610 words in the first three minutes</h2></div>
+    <div class="base">
+      <div class="wbar" aria-label="Words read per panel, first three minutes">
+        <span>COMMS</span><i class="hot" style="width:100%"></i><span>278</span>
+        <span>ORION-3</span><i class="hot" style="width:73%"></i><span>203</span>
+        <span>Mission</span><i style="width:22%"></i><span>62</span>
+        <span>TEAM</span><i style="width:8%"></i><span>21</span>
+        <span>Env</span><i style="width:7%"></i><span>19</span>
+        <span>ALPHA box</span><i style="width:5%"></i><span>14</span>
+        <span>Ability bar</span><i style="width:4%"></i><span>11</span>
+        <span class="tot">Total</span><span class="tot"></span><span class="tot">608</span>
+      </div>
+      <div class="echo">
+        <b>One fact, seven times</b>
+        <p>ORION-3 heading to F4, as one move puts it on screen:</p>
+        <ol>
+          <li>→ F4 · 0540Z</li>
+          <li>ORION-3 to F4 · 0:05</li>
+          <li>STATUS Repositioning · HEADING F4 · ETA 0:05</li>
+          <li>ON STATION OVER F4 IN</li>
+          <li>REPOSITIONING TO F4</li>
+          <li>ORION-3 0:05 AWAY</li>
+          <li>COMMS: Slewing to F4. On station in 0:05.</li>
+        </ol>
+        <p>The same goes for what ALPHA is doing: TEAM's header, ALPHA's box and the line under the mission all say "Holding · needs intel". COMMS and ORION-3 are 80% of the reading, and most of it repeats an instrument.</p>
+      </div>
+    </div>
+    <p class="mono" style="color:var(--dim)">Measured with the game running at 1440 × 900: a scripted player scans where the line says and answers each call. Every distinct line each panel showed was counted once, with ticking numbers collapsed.</p>
+  </section>
+
+  <!-- A -->
+  <section class="opt">
+    <div class="opt-head"><p class="eyebrow">Option A</p><h2>Instruments first</h2><span class="tag">smallest change</span></div>
+    <p>Layout A stays where it is. Every line that repeats an instrument goes; the instrument says it once.</p>
+    <div class="pair">
+      <div class="wrap"><div class="screen ra">
+        <div class="p mission" style="grid-area:mission"><b>Black Box · 9:45 ❚❚</b><span>A ━━━━ B ── C</span><span>ALPHA intel <i class="gbar sm"></i></span><span>scan ahead at D3 ›</span></div>
+        <div class="p" style="grid-area:comms"><b>Comms · radio only</b><span>ALPHA: Holding. Eyes on F4.</span><span>HQ: Contact on the map.</span><span style="opacity:.5">no ORION-3 chatter, no analysts</span></div>
+        <div class="map"><span class="tag">MAP</span>
+          <div class="alpha" style="left:60%;top:66%"><i style="left:8px;top:0"></i><i style="left:2px;top:5px"></i><i style="left:14px;top:5px"></i><i style="left:0;top:10px"></i><i style="left:17px;top:10px"></i></div>
+          <div class="ov" style="left:40%;top:16%;width:30%"><b>E3 · actions</b><span>strike · listen</span></div>
+        </div>
+        <div class="p orion" style="grid-area:orion"><b>ORION-3 · E3</b>
+          <div class="steps"><em class="done">Move</em><em class="on">On station</em><em>Shot</em><em>Graded</em></div>
+          <div class="pic">zoomed view</div><span>E3 · 5 fighters · high grade</span><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
+        <div class="bottom"><div class="p"><b>ALPHA</b><span>Moving to F4</span></div><div class="p"><b>Team</b><span>5 rows · bars</span></div></div>
+      </div></div>
+      <div><div class="ph" style="grid-template-rows:auto 1fr auto auto 34%">
+        <div class="p"><b>Black Box 9:45</b><span>A ━━ B ── C · intel <i class="gbar sm"></i></span></div>
+        <div class="map"></div>
+        <div class="p"><span>scan ahead at D3 ›</span></div>
+        <div class="tabs"><em>Comms</em><em class="on">ORION-3</em><em>Team</em></div>
+        <div class="p"><b>ORION-3 · E3</b><div class="steps"><em class="done">Move</em><em class="on">Stn</em><em>Shot</em><em>Gr</em></div><span>zoomed view</span></div>
+      </div><p class="ph-cap">phone: same tabs, quieter</p></div>
+    </div>
+    <div class="facts">
+      <ul class="moves">
+        <li>ORION-3's seven ways of saying it's moving become one stepper: <b>Move → On station → Shot → Graded</b>.</li>
+        <li>COMMS keeps only the radio: ALPHA's and HQ's own lines. Slewing, on station, collection complete and the analysts' grades go.</li>
+        <li>ALPHA's status is said once, in its box. TEAM's header loses it.</li>
+      </ul>
+      <p class="est">≈ 270 words · <i>−55%</i></p>
+      <ul class="plus"><li>The smallest build: nothing moves, so nothing breaks on phone.</li></ul>
+      <ul class="minus"><li>It doesn't fix "not organized": what needs HQ is still spread across five places.</li></ul>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="opt">
+    <div class="opt-head"><p class="eyebrow">Option B</p><h2>Act / Watch</h2><span class="tag pick">my pick</span></div>
+    <p>Panels grouped by job, not by system. One column on the left is everything that needs you, as short cards with the most urgent on top. The rest is to watch.</p>
+    <div class="pair">
+      <div class="wrap"><div class="screen rb">
+        <div class="p mission" style="grid-area:mission"><b>Black Box · 9:45 ❚❚</b><span>A ━━━━ B ── C</span><span>ALPHA intel <i class="gbar"></i></span></div>
+        <div class="p needs"><b>Needs you</b>
+          <div class="card"><em>Scan ahead</em><span>D3 ›</span></div>
+          <div class="card"><em>Contact · checkpoint</em><span>E3 ›</span></div>
+          <div class="card"><em>ALPHA asks · resupply</em><span>yes / no</span></div>
+          <div class="card calm"><span>Radio traffic near C2</span><span>listen ›</span></div>
+        </div>
+        <div class="map"><span class="tag">MAP</span>
+          <div class="alpha" style="left:60%;top:66%"><i style="left:8px;top:0"></i><i style="left:2px;top:5px"></i><i style="left:14px;top:5px"></i><i style="left:0;top:10px"></i><i style="left:17px;top:10px"></i></div>
+          <div class="ov" style="left:40%;top:16%;width:30%"><b>E3 · actions</b><span>strike · listen</span></div>
+        </div>
+        <div class="p strip"><span>ALPHA: Holding. Eyes on F4.</span><span>log ▾</span></div>
+        <div class="p orion" style="grid-area:orion"><b>ORION-3 · E3</b>
+          <div class="steps"><em class="done">Move</em><em class="on">On station</em><em>Shot</em><em>Graded</em></div>
+          <div class="pic">zoomed view</div><div class="btns"><em>Photo</em><em>Burst</em><em>Video</em></div></div>
+        <div class="bottom"><div class="p"><b>ALPHA · Moving to F4</b><span>5 operators · heartbeat · ammo · meds · noise bars</span></div></div>
+      </div></div>
+      <div><div class="ph" style="grid-template-rows:auto 1fr auto auto 30%">
+        <div class="p"><b>Black Box 9:45</b><span>A ━━ B ── C · intel <i class="gbar sm"></i></span></div>
+        <div class="map"></div>
+        <div class="card"><em>Scan ahead</em><span>D3 › +2</span></div>
+        <div class="tabs"><em class="on">ORION-3</em><em>ALPHA</em><em>Log</em></div>
+        <div class="p"><b>ORION-3 · D3</b><div class="steps"><em class="on">Move</em><em>Stn</em><em>Shot</em><em>Gr</em></div><span>zoomed view</span></div>
+      </div><p class="ph-cap">phone: the top card, "+2" opens the rest</p></div>
+    </div>
+    <div class="facts">
+      <ul class="moves">
+        <li>The needs-HQ line, ALPHA's call box flag, tab dots, contact alerts and HQ's hints all become cards in <b>Needs you</b>. A card says the thing in 2–4 words; tapping it goes there.</li>
+        <li>COMMS shrinks to a one-line strip under the map showing the last radio line; ▾ opens the log for history.</li>
+        <li>ALPHA's box and TEAM merge into one ALPHA panel: status once, then the operators' rows.</li>
+        <li>ORION-3 gets Option A's stepper, plus the room the old COMMS column had.</li>
+      </ul>
+      <p class="est">≈ 200 words · <i>−65%</i></p>
+      <ul class="plus"><li>Answers "not organized" head on: one place to look for what to do next.</li><li>The phone gets the same idea as one card over the tabs.</li></ul>
+      <ul class="minus"><li>A real rework of COMMS, the call box and TEAM: three or four issues.</li><li>The prologue intel lines (IMINT, SIGINT, HUMINT) lose their stage and move to the log.</li></ul>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="opt">
+    <div class="opt-head"><p class="eyebrow">Option C</p><h2>The map is the panel</h2><span class="tag">biggest change</span></div>
+    <p>The panels shrink to edges, and what you need to know sits where it happens on the map.</p>
+    <div class="pair">
+      <div class="wrap"><div class="screen rc">
+        <div class="p top"><b>Black Box 9:45 ❚❚</b><span>A ━━━━ B ── C</span><span>intel <i class="gbar"></i></span></div>
+        <div class="map"><span class="tag">MAP</span>
+          <div class="alpha" style="left:58%;top:66%"><i style="left:8px;top:0"></i><i style="left:2px;top:5px"></i><i style="left:14px;top:5px"></i><i style="left:0;top:10px"></i><i style="left:17px;top:10px"></i></div>
+          <span class="pin" style="left:62%;top:58%">ALPHA · moving <i class="gbar sm"></i></span>
+          <span class="pin hot" style="left:30%;top:20%">✕ checkpoint</span>
+          <span class="pin hq" style="left:18%;top:42%">◎ scan D3</span>
+          <span class="pin" style="left:44%;top:8%">◆ black box</span>
+          <div class="toast"><span>ALPHA: Holding. Eyes on F4.</span><span class="fade">HQ: Contact on the map.</span></div>
+        </div>
+        <div class="p orion" style="grid-area:orion"><b>ORION-3</b><div class="steps"><em class="on">Stn</em></div><div class="pic">view</div><div class="btns"><em>Photo</em></div><span>TEAM ▸</span></div>
+      </div></div>
+      <div><div class="ph" style="grid-template-rows:auto 1fr auto">
+        <div class="p"><b>9:45</b><span>A ━━ B ── C · intel <i class="gbar sm"></i></span></div>
+        <div class="map"><span class="pin hq" style="left:12%;top:30%">◎ D3</span><span class="pin hot" style="left:46%;top:18%">✕ E3</span><span class="pin" style="left:44%;top:66%">ALPHA</span></div>
+        <div class="tabs"><em>ORION-3</em><em>ALPHA</em><em>Log</em></div>
+      </div><p class="ph-cap">phone: almost all map</p></div>
+    </div>
+    <div class="facts">
+      <ul class="moves">
+        <li>Mission, clock, race and intel bar become one thin strip along the top.</li>
+        <li>ALPHA's status and intel ride with the team on the map; contacts, the scan-ahead square and the objective are pins.</li>
+        <li>Radio lines show briefly over the map's corner, then fade to the log.</li>
+        <li>ORION-3 is a narrow strip that opens wide when tasked. TEAM is a drawer.</li>
+      </ul>
+      <p class="est">≈ 120 words · <i>−80%</i></p>
+      <ul class="plus"><li>The least reading: you look at the map, not panels.</li></ul>
+      <ul class="minus"><li>The biggest rebuild, and the map gets busy with pins.</li><li>Operator detail hides in a drawer; ORION-3 loses the big panel you approved in layout A.</li></ul>
+    </div>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><p class="eyebrow">Side by side</p><h2>What each one gives</h2></div>
+    <div class="compare"><table>
+      <thead><tr><th></th><th>A · Instruments first</th><th>B · Act / Watch</th><th>C · Map is the panel</th></tr></thead>
+      <tbody>
+        <tr><td>Words, first 3 min</td><td>≈ 270 (−55%)</td><td>≈ 200 (−65%)</td><td>≈ 120 (−80%)</td></tr>
+        <tr><td>Fixes "not organized"</td><td>No</td><td>Yes: one Needs you column</td><td>Yes: it's all on the map</td></tr>
+        <tr><td>Layout A kept</td><td>Yes</td><td>Mostly: COMMS's column becomes Needs you</td><td>No</td></tr>
+        <tr><td>Size of the build</td><td>Small: 2 issues</td><td>Medium: 4 issues</td><td>Large: 6+ issues</td></tr>
+      </tbody>
+    </table></div>
+    <div class="lean"><b>My pick: B, with A's cuts inside it.</b><p>A's cuts are worth doing whichever you pick: the ORION-3 stepper and radio-only COMMS. B adds the one thing players are missing, a single place that says what to do next. C cuts the most words, but it trades the ORION-3 panel you approved for a busier map.</p></div>
+  </section>
+</section>
 
 <section id="environment">
   <div class="sect-head"><p class="eyebrow">ILI-1249 · Environment placement · 2026-10-29 · right column, ~70% scale</p><h2>Where ENVIRONMENT sits next to ORION-3</h2><p>Your demo note (04:38–05:22): ENVIRONMENT is "perfect", but the open question is whether it should sit under ORION-3, or become "a tiny six-stack widget, three and three, immediately underneath the satellite" so the whole panel is ORION-3's. One fact matters here: the sim already defines when cloud blinds ORION-3 (<code>imageryOk</code>: 80% or more). It isn't wired up yet, and Black Box's cloud tops out at 60%, but the weather is the satellite's business.</p></div>
