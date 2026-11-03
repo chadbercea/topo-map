@@ -91,7 +91,7 @@ export function Controls() {
         <Spec name="The need line" rule="Under the mission: the one most pressing thing. Gold for a decision, red for a threat. A tap goes to what it's about.">
           <div className="mission ds-mission">
             <button className="need" data-tone="decision">
-              ALPHA needs intel: scan ahead at F4
+              ALPHA requests imagery of F4
             </button>
             <button className="need" data-tone="threat">
               Contact on the route at E3

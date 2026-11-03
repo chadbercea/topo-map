@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { Scheduled } from './events';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { run } from './testkit';
+import { fed, run } from './testkit';
 
 const SCHEDULE: Scheduled[] = [{ atMs: 2_000, id: 'x', event: { id: 'x', kind: 'contact', square: 'B4', title: 'Test' } }];
-const scheduled = (): GameState => ({ ...initialState(), schedule: SCHEDULE });
+const scheduled = (): GameState => ({ ...fed(initialState()), schedule: SCHEDULE }); // fed: no imagery request (ILI-1349) in the way
 
 describe('events', () => {
   it('appear on schedule as new, once each', () => {

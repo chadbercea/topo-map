@@ -14,9 +14,9 @@ describe('teaching through play', () => {
     expect(run(s, 10_000).comms.messages.filter((m) => m.id === 'needs-intel')).toHaveLength(1);
   });
 
-  it('stalled, the need line says to scan ahead, and points at the square', () => {
+  it('stalled, ALPHA requests imagery and the need line points at the square (ILI-1349)', () => {
     const s = run(initialState(), 1_000);
-    expect(blockers(s)[0]).toEqual({ tone: 'decision', text: 'ALPHA needs intel: scan ahead at F4', go: { square: 'F4' } });
+    expect(blockers(s)[0]).toEqual({ tone: 'decision', text: 'ALPHA requests imagery of F4', go: { square: 'F4' } });
   });
 
   it('holding short for HQ to soften a contact, the need line points at it', () => {

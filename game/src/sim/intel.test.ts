@@ -48,10 +48,10 @@ describe('the intel gauge', () => {
     expect(dx).toBeLessThanOrEqual(200);
   });
 
-  it('running low on the move, the need line goes up before ALPHA stops (ILI-1341)', () => {
+  it('running low on the move, ALPHA requests imagery before it stops (ILI-1341, ILI-1349)', () => {
     const s = run(feed(blindAhead(), LOW_AT - 1), 1_000);
     expect(s.team.activity).toMatch(/^Moving/);
-    expect(blockers(s).some((b) => /low on intel: scan ahead at [A-H]\d/.test(b.text))).toBe(true);
+    expect(blockers(s).some((b) => /ALPHA requests imagery of [A-H]\d/.test(b.text))).toBe(true);
   });
 
   it('the stretch after the opening scans: scanning the squares the need line points at keeps ALPHA going (ILI-1341)', () => {
@@ -60,7 +60,7 @@ describe('the intel gauge', () => {
     const start = store.get().team.waypoint;
     for (let t = 0; t < 300_000; t += 100) {
       store.tick(100);
-      const need = blockers(store.get()).find((b) => /intel: scan ahead/.test(b.text));
+      const need = blockers(store.get()).find((b) => /requests imagery of/.test(b.text));
       const sat = store.get().satellite;
       if (need?.go?.square && sat.state === 'idle') store.lookAt(need.go.square);
       if (sat.state === 'onStation') store.capture('photo');
