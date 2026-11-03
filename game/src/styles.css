@@ -646,6 +646,40 @@ html, body {
 .c-strip[data-state='sending'] .c-telemetry dd { color: #f2c14e; }
 .c-strip[data-state='tied'] .c-telemetry dd { color: var(--dim); }
 .satcom .thread .awaiting { color: #ff8a2a; font-size: 10px; }
+
+/* COMMS as a card stack (option D, ILI-1347). Intel cards are small and run into ALPHA's gauge,
+   then fold into the pile at the top; event cards stand out and wait for HQ. */
+.satcom .thread li.c-card { display: flex; align-items: center; gap: 6px; padding: 0; border-left: 0; }
+.satcom .thread li.c-card .f-ic { padding-top: 0; }
+.satcom .thread .c-intel { padding: 2px 6px; border: 1px solid rgba(207, 232, 220, 0.24); border-radius: 3px; font-size: 11px; color: var(--dim); background: rgba(207, 232, 220, 0.03); animation: c-land 260ms ease-out both; }
+.satcom .thread .c-intel .body { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.satcom .thread .c-intel .to { font-style: normal; font-size: 10px; color: var(--accent); white-space: nowrap; animation: c-feed 900ms ease-out 200ms both; }
+.satcom .thread .c-intel[data-fed='false'] { border-style: dashed; }
+.satcom .thread .c-intel[data-fed='false'] .to { color: var(--dim); animation: none; }
+.satcom .thread li.c-pile { position: sticky; top: 0; z-index: 1; padding: 0; border-left: 0; display: block; margin-bottom: 4px; background: rgba(11, 15, 13, 0.96); }
+.satcom .thread .c-pile button { all: unset; box-sizing: border-box; cursor: pointer; width: 100%; display: flex; justify-content: space-between; gap: 6px; padding: 2px 6px; font-size: 11px; color: var(--dim); border: 1px dashed rgba(207, 232, 220, 0.22); border-radius: 3px;
+  box-shadow: 0 2px 0 -1px rgba(11, 15, 13, 1), 0 2px 0 0 rgba(207, 232, 220, 0.18), 0 4px 0 -1px rgba(11, 15, 13, 1), 0 4px 0 0 rgba(207, 232, 220, 0.12); }
+.satcom .thread .c-pile i { font-style: normal; color: var(--accent); }
+.satcom .thread .c-pile button:focus-visible, .satcom .thread .c-event .c-open:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+.satcom .thread .c-event { border-radius: 3px; animation: c-land 300ms ease-out both; }
+.satcom .thread li.c-event[data-tier] { background: transparent; border-left: 0; color: var(--ink); }
+.satcom .thread .c-event .c-open { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 6px; padding: 5px 8px; cursor: default;
+  background: rgba(20, 28, 24, 0.95); border: 1.5px solid var(--tier, var(--accent)); border-left-width: 4px; border-radius: 3px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45); }
+.satcom .thread .c-event button.c-open { cursor: pointer; }
+.satcom .thread .c-event button.c-open:hover { background: rgba(30, 40, 35, 0.98); }
+.satcom .thread .c-event .body { flex: 1; min-width: 0; }
+.satcom .thread .c-event .body b { color: var(--tier); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+.satcom .thread .c-event .sq { color: var(--ink); font-weight: 600; }
+.satcom .thread .c-event .go { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tier); white-space: nowrap; }
+.satcom .thread .c-event[data-open='false'] { opacity: 0.5; animation: none; }
+.satcom .thread .c-event[data-open='false'] .c-open { padding: 2px 6px; border-width: 1px; border-left-width: 3px; box-shadow: none; background: transparent; }
+.satcom .thread .c-event[data-open='false'] .body { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+.satcom .thread .c-event[data-newest] .c-open { outline: 2px solid color-mix(in srgb, var(--tier) 30%, transparent); outline-offset: 1px; }
+@keyframes c-land { from { opacity: 0; transform: translateX(-10px); } }
+@keyframes c-feed { 0% { opacity: 0; transform: translateX(-8px); } 60% { opacity: 1; transform: translateX(3px); text-shadow: 0 0 6px var(--accent); } 100% { transform: none; } }
+@keyframes c-pulse { 50% { outline-color: color-mix(in srgb, var(--tier) 70%, transparent); } }
+@media (prefers-reduced-motion: no-preference) { .satcom .thread .c-event[data-newest] .c-open { animation: c-pulse 1.6s ease-in-out infinite; } }
+@media (prefers-reduced-motion: reduce) { .satcom .thread .c-intel, .satcom .thread .c-intel .to, .satcom .thread .c-event { animation: none; } }
 .comms {
   display: grid;
   gap: 6px;
