@@ -87,3 +87,34 @@ test('the ability bar is a hotbar on the screen’s center line, under the map, 
   expect(bar.x + bar.width).toBeLessThanOrEqual(orion.x); // clear of ORION-3
   await expect(page.getByTestId('ability-drone')).not.toContainText('…');
 });
+
+test('one spacing rule: a 16 px margin and gutter everywhere, and every panel title on one line (ILI-1353)', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'a phone stacks a sheet; this is the wide layout');
+  await start(page);
+  await page.waitForTimeout(500);
+  const view = page.viewportSize()!;
+  const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
+  const [mission, comms, orion, alpha, team, map, bar] = await Promise.all(['mission-strip', 'satcom', 'satellite', 'call-box', 'team-panel', 'map-area', 'ability-bar'].map(box));
+  const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
+  // The margin round the screen.
+  near(mission.x, 16); near(mission.y, 16); near(orion.y, 16);
+  near(view.width - (orion.x + orion.width), 16); near(view.height - (orion.y + orion.height), 16); near(view.height - (team.y + team.height), 16);
+  // The gutter, down and across.
+  near(comms.y - (mission.y + mission.height), 16);
+  near(alpha.y - (comms.y + comms.height), 16);
+  near(team.x - (alpha.x + alpha.width), 16);
+  near(map.x - (comms.x + comms.width), 16);
+  near(orion.x - (map.x + map.width), 16);
+  near(bar.y - (map.y + map.height), 16);
+  near(bar.y + bar.height, comms.y + comms.height); // the hotbar's foot lines up with COMMS's
+  // Every panel's title the same distance in from its top edge.
+  const inset = await page.evaluate(() =>
+    ['mission-strip', 'satcom', 'satellite', 'call-box', 'team-panel'].map((id) => {
+      const p = document.querySelector(`[data-testid=${id}]`)!;
+      const h = p.querySelector('h2')!;
+      const pad = parseFloat(getComputedStyle(h).paddingTop);
+      return Math.round(h.getBoundingClientRect().top + pad - p.getBoundingClientRect().top);
+    }),
+  );
+  expect(new Set(inset).size, `title insets ${inset}`).toBe(1);
+});
