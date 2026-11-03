@@ -71,3 +71,19 @@ test('layout A: mission and COMMS down the left, ENVIRONMENT over ORION-3 down t
   expect(team.x + team.width).toBeLessThanOrEqual(orion.x);
   await expect(page.getByTestId('resources')).toHaveCount(0); // no Logistics panel (ILI-1231)
 });
+
+test('the ability bar is a hotbar on the screen’s center line, under the map, clear of the panels (ILI-1352)', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'on a phone it runs the width of the screen, over the map’s foot');
+  await start(page);
+  await page.waitForTimeout(500);
+  const view = page.viewportSize()!;
+  const bar = (await page.getByTestId('ability-bar').boundingBox())!;
+  const map = (await page.getByTestId('map-area').boundingBox())!;
+  const orion = (await page.getByTestId('satellite').boundingBox())!;
+  const team = (await page.getByTestId('team-panel').boundingBox())!;
+  expect(Math.abs(bar.x + bar.width / 2 - view.width / 2)).toBeLessThanOrEqual(2); // dead center
+  expect(bar.y).toBeGreaterThanOrEqual(map.y + map.height - 1); // under the map, not over it
+  expect(bar.y + bar.height).toBeLessThanOrEqual(team.y); // over the bottom row
+  expect(bar.x + bar.width).toBeLessThanOrEqual(orion.x); // clear of ORION-3
+  await expect(page.getByTestId('ability-drone')).not.toContainText('…');
+});
