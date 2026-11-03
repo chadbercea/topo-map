@@ -1161,6 +1161,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @keyframes intel-fed { from { border-color: #fff; box-shadow: 0 0 10px 2px rgba(255, 138, 42, 0.8); } to { box-shadow: none; } }
 @media (prefers-reduced-motion: reduce) { .intel-gauge i, .intel-gauge s { transition: none; } .intel-gauge[data-low], .intel-gauge[data-fed], .intel-gauge[data-walking] i { animation: none; } }
 .slot-team > .team { flex: 1 0 auto; min-width: 0; }
+/* One strip (ILI-1351): ALPHA's box and its team's rows share a frame, a hairline between. */
+.slot-team > .call-box:not([data-call]) { border-right-color: rgba(53, 208, 165, 0.15); }
+.slot-team > .call-box + .team { border-left: 0; }
 /* With no call (ILI-1256) the box is in the HUD's base colour with the team's gear; on a call
    the whole box turns the flag's orange, with a sweep across it as it does. */
 .call-box { --comms: var(--accent); position: relative; flex: 0 1 300px; min-width: 200px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 6px; transition: border-color 200ms ease-out; }

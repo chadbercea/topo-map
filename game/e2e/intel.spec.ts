@@ -12,7 +12,7 @@ test('the intel gauge: empty, ALPHA holds; a photo feeds it and the bar fills', 
   await expect(bar).toHaveAttribute('aria-valuenow', '0');
   await expect(bar).toHaveAttribute('data-low', 'true');
   await page.evaluate(() => { for (let t = 0; t < 4_000; t += 100) window.game.tick(100); });
-  await expect(page.getByTestId('team-panel')).toContainText('Holding · needs intel');
+  await expect(page.getByTestId('call-state')).toHaveText('Holding · needs intel');
   // It asks HQ for imagery (ILI-1349): a card in COMMS, and the line under the mission points there.
   await expect(page.getByTestId('needs-hq')).toHaveText('ALPHA requests imagery of F4');
   if (isMobile) await page.getByTestId('tab-satcom').click();
