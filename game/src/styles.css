@@ -670,6 +670,11 @@ html, body {
 .satcom .thread .c-event .body { flex: 1; min-width: 0; }
 .satcom .thread .c-event .body b { color: var(--tier); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
 .satcom .thread .c-event .sq { color: var(--ink); font-weight: 600; }
+.satcom .thread .c-event div.c-open { flex-wrap: wrap; }
+.satcom .thread .c-answers { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0 0 18px; }
+.satcom .thread .c-answers button { font: inherit; font-size: 11px; letter-spacing: 0.04em; color: #0b0f0d; background: var(--tier); border: 1px solid var(--tier); border-radius: 2px; min-height: 28px; padding: 0 10px; cursor: pointer; }
+.satcom .thread .c-answers button:disabled { background: transparent; color: var(--dim); border-color: var(--dim); cursor: not-allowed; }
+.satcom .thread .c-answers button:focus-visible { outline: 1px solid var(--ink); outline-offset: 2px; }
 .satcom .thread .c-event .go { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tier); white-space: nowrap; }
 .satcom .thread .c-event[data-open='false'] { opacity: 0.5; animation: none; }
 .satcom .thread .c-event[data-open='false'] .c-open { padding: 2px 6px; border-width: 1px; border-left-width: 3px; box-shadow: none; background: transparent; }
