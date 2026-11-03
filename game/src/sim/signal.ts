@@ -104,7 +104,7 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
   const c = g.contactId ? next.contacts.find((x) => x.id === g.contactId) : undefined;
   if (where && c?.status === 'hidden') next = reveal(next, [c.square], 'SIGINT');
   if (plan) {
-    next = feed({ ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } }, SIGNAL_INTEL); // decoded, it feeds ALPHA's gauge (ILI-1314)
+    next = feed({ ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } }, SIGNAL_INTEL, { source: 'SIGINT', square: m.square }); // decoded, it feeds ALPHA's gauge (ILI-1314)
     if (c) next = { ...next, contacts: next.contacts.map((x) => (x.id === c.id ? { ...x, planKnown: true } : x)) };
   }
   const report: Message = {

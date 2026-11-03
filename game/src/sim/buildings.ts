@@ -70,7 +70,7 @@ export const buildingSystem: System = (s) => {
   if (s.elapsedMs < team.holdUntilMs) return s;
   // Done: what it found, paid on the spot, and the intel.
   const find = findIn(s, here);
-  const paid = feed(earn(s, find.cash), BUILDING_INTEL);
+  const paid = feed(earn(s, find.cash), BUILDING_INTEL, { source: 'ALPHA', square: here });
   return {
     ...paid,
     searching: paid.searching.filter((sq) => sq !== here),
