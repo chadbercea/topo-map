@@ -566,7 +566,7 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
         <li>ALPHA's box and TEAM merge into one strip under the map, as in B.</li>
       </ul>
       <div class="rule"><b>The never-stuck rule</b><p>When ALPHA's gauge gets near the low tick, ALPHA always sends an imagery request card for the next square on its route nobody has scanned. It replaces today's "low on intel: scan ahead at X" line. There's always at least one card you can act on, and it says where.</p></div>
-      <p class="est">≈ 180 words · <i>−70%</i> <span style="color:var(--dim);font-weight:400">(estimate: cards are 2–5 words, radio lines stay)</span></p>
+      <p class="est">Built (ILI-1346 to ILI-1351) and measured: 393 words · <i>−31%</i> <span style="color:var(--dim);font-weight:400">(the estimate was ≈ 180; see the recount below)</span></p>
       <ul class="plus"><li>One place to look and act, and it's a panel players already know.</li><li>The loop is visible: routine cards fly into the gauge, event cards are the game.</li><li>ORION-3 keeps its own panel, just smaller until it's needed.</li></ul>
       <ul class="minus"><li>COMMS becomes a new component (cards, pile, folding), and every event in the game needs a card.</li><li>The never-stuck rule is a new rule in the game logic, not just a UI change.</li></ul>
     </div>
@@ -615,12 +615,33 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
     </table></div>
   </section>
 
+  <section class="opt" id="recount">
+    <div class="opt-head"><p class="eyebrow">ILI-1351 · Recount · 2026-11-03 · 1440 × 900</p><h2>D as built: 572 words down to 393, while the game gets further</h2></div>
+    <div class="base">
+      <div class="wbar" style="grid-template-columns: 9.5em 1fr 5.5em" aria-label="Words read per panel, first three minutes, before and after D">
+        <span>ORION-3 before</span><i class="hot" style="width:64%"></i><span>178</span>
+        <span>ORION-3 after</span><i style="width:19%"></i><span>52</span>
+        <span>COMMS before</span><i class="hot" style="width:100%"></i><span>278</span>
+        <span>COMMS after</span><i style="width:80%"></i><span>223</span>
+        <span>Mission</span><i style="width:21%"></i><span>62 → 58</span>
+        <span>ALPHA + TEAM</span><i style="width:15%"></i><span>35 → 41</span>
+        <span class="tot">Total</span><span class="tot"></span><span class="tot">572 → 393</span>
+      </div>
+      <div class="echo">
+        <b>Not like for like, in D's favour</b>
+        <p>The same script ran on both builds: scan where ALPHA asks, answer every call, for three minutes. Before D, ALPHA stalled and never left the first leg ("Moving to F4" the whole time). After D it reached the crash site, and on the way met the checkpoint, a foot patrol, a building and enemy radio traffic, with five imagery requests. So D shows far more of the mission in fewer words.</p>
+        <p>ORION-3 says each thing once now: the stepper, and the time in the frame. Its lines are out of COMMS. What's left in COMMS is ALPHA's and HQ's radio (you asked to keep it), the analysts' three notes from before the mission (≈ 45 words), and the cards. The next cut, if you want one: HQ lines that repeat a card ("Contact on the map. Tap it to hit it…", "Picking up enemy radio traffic near C2. Listen in?").</p>
+      </div>
+    </div>
+    <p class="mono" style="color:var(--dim)">Lines counted once per panel, ticking numbers collapsed, screen-reader-only text left out, in both builds (main before D at bfd91de, and D6).</p>
+  </section>
+
   <section class="opt">
     <div class="opt-head"><p class="eyebrow">Side by side</p><h2>What each one gives</h2></div>
     <div class="compare"><table>
       <thead><tr><th></th><th>A · Instruments first</th><th>B · Act / Watch</th><th>C · Map is the panel</th><th>D · Card stack</th></tr></thead>
       <tbody>
-        <tr><td>Words, first 3 min</td><td>≈ 270 (−55%)</td><td>≈ 200 (−65%)</td><td>≈ 120 (−80%)</td><td>≈ 180 (−70%)</td></tr>
+        <tr><td>Words, first 3 min</td><td>≈ 270 (−55%)</td><td>≈ 200 (−65%)</td><td>≈ 120 (−80%)</td><td>393 measured (−31%), while playing three times as far</td></tr>
         <tr><td>Fixes "not organized"</td><td>No</td><td>Yes: one Needs you column</td><td>Yes: it's all on the map</td><td>Yes: COMMS is where you act</td></tr>
         <tr><td>Layout A kept</td><td>Yes</td><td>Mostly: COMMS's column becomes Needs you</td><td>No</td><td>Yes: ORION-3 gets smaller, map gets wider</td></tr>
         <tr><td>Size of the build</td><td>Small: 2 issues</td><td>Medium: 4 issues</td><td>Large: 6+ issues</td><td>Medium-large: 5 issues</td></tr>

@@ -23,7 +23,7 @@ test('panels leave a clear space between them (where a strike closes in)', async
 test('the team panel shows what the team is doing', async ({ page }) => {
   await start(page);
   await expect(page.getByTestId('team-title')).toHaveText('ALPHA TEAM'); // ILI-1248
-  await expect(page.getByTestId('team-panel')).toContainText(/Moving to F4|Holding · needs intel/); // it sets off on its own (ILI-1315)
+  await expect(page.getByTestId('call-state')).toHaveText(/Moving to F4|Holding · needs intel/); // it sets off on its own (ILI-1315); said once, in ALPHA's box (ILI-1351)
 });
 
 test('layout D: mission and COMMS down the left, ORION-3 docked small on the map’s corner, the weather and TEAM along the bottom (ILI-1226, ILI-1350)', async ({ page, isMobile }) => {

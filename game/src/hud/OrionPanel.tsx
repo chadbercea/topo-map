@@ -229,11 +229,12 @@ export function OrionPanel() {
             {!tied && sat.state === 'slewing' ? (
               // The slew counted down in the frame (ILI-1269): how long to wait, and what's next.
               <>
-                <small className="o-eta-k">On station over {sat.aim} in</small>
+                {/* Docked, the stepper says it's moving and what's next (ILI-1351): just the time. */}
+                <small className="o-eta-k">{docked ? 'On station in' : `On station over ${sat.aim} in`}</small>
                 <b className="o-eta" data-testid="orion-eta">
                   {countdown(left)}
                 </b>
-                <small className="o-eta-k">then take the photo</small>
+                {!docked && <small className="o-eta-k">then take the photo</small>}
               </>
             ) : (
               <span className="o-caption">{caption}</span>
@@ -244,7 +245,7 @@ export function OrionPanel() {
 
       {/* ORION-3's buttons, always here under the picture (ILI-1230): each lit when it can be used.
           On station, Photo pulses: it's the next thing to do (ILI-1257). */}
-      <div className="o-buttons" data-testid="orion-buttons">
+      <div className="o-buttons" data-testid="orion-buttons" hidden={(docked && sat.state === 'slewing') || undefined}>
         {inPosition && !tied ? (
           <div className="modes" data-testid="capture-modes">
             {MODES.map((m) => (
@@ -270,9 +271,11 @@ export function OrionPanel() {
           <span className="decay" role="progressbar" aria-label="ORION-3 repositioning" aria-valuenow={Math.round((left / travel) * 100)}>
             <span style={{ width: `${(left / travel) * 100}%` }} />
           </span>
-          <p className="o-line">
-            Repositioning to {sat.aim} · <b>{countdown(left)}</b>
-          </p>
+          {!docked && (
+            <p className="o-line">
+              Repositioning to {sat.aim} · <b>{countdown(left)}</b>
+            </p>
+          )}
         </div>
       )}
 
@@ -290,7 +293,8 @@ export function OrionPanel() {
       )}
 
       {/* The square HQ picked: what's known of it (ILI-1203, ILI-1308). */}
-      {picked && !tied && (
+      {/* Docked, only a square HQ picked on the map, not one ORION-3 is just passing over (ILI-1351). */}
+      {picked && !tied && (!docked || s.map.selected === picked) && (
         <section className="square-card o-square" data-testid="square-card" data-square={picked} role="group" aria-label={`Square ${picked}`}>
           <Card s={s} square={picked} />
         </section>
