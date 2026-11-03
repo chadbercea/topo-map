@@ -4,6 +4,7 @@ import { kindOf, sending, type Comms, type Message } from '../sim/comms';
 import { cards, type Card, type EventCardKind } from '../sim/cards';
 import type { GameState } from '../sim/state';
 import { classify, EVENT_LABEL } from '../sim/stream';
+import { blocked } from '../sim/responses';
 import { gameClock } from '../sim/gameTime';
 import { bus, EV, getAskHidden } from '../game/events';
 import { FeedIcon, type Tier } from './feedIcons';
@@ -138,15 +139,34 @@ function IntelCard({ c }: { c: Extract<Card, { type: 'intel' }> }) {
 }
 
 const EVENT_TIER: Record<EventCardKind, Tier> = { contact: 'alert', signal: 'sigint', request: 'intel', building: 'humint', ask: 'comms' };
-const EVENT_GO: Record<EventCardKind, string> = { contact: 'Actions', signal: 'Listen', request: 'Open', building: 'Search', ask: '' };
+const EVENT_GO: Record<EventCardKind, string> = { contact: 'Actions', signal: 'Listen', request: 'Scan', building: 'Search', ask: '' };
 
-// An event card: what wants HQ. Tapping it opens its square on the map (its mini game comes
-// with ILI-1348). ALPHA's ask carries its words and HQ's answer, as the line did.
+// What tapping an event card does (ILI-1348): it starts the thing it's about, the mini game we
+// already have. Each one opens the event too (marked seen, its square picked), so the map and
+// ORION-3 show where it is.
+function act(c: Extract<Card, { type: 'event' }>) {
+  if (c.eventId) game.openEvent(c.eventId);
+  switch (c.kind) {
+    case 'signal':
+      return c.eventId && game.intercept(c.eventId); // Listen, on the map
+    case 'request':
+      return c.square && game.lookAt(c.square); // ORION-3 to the square for the shot
+    case 'building':
+      return c.square && game.search(c.square); // ALPHA detours to search it
+    default:
+      return; // a contact: its actions open beside the square
+  }
+}
+
+// An event card: what wants HQ. Tapping it starts what it's about (act). ALPHA's ask carries its
+// words, and HQ answers it right on the card; it shows HQ's answer going up the link, as the
+// line did.
 function EventCard({ c, newest, m, comms }: { c: Extract<Card, { type: 'event' }>; newest: boolean; m?: Message; comms: Comms }) {
   const tier = EVENT_TIER[c.kind];
   const head = c.kind === 'ask' ? `${m?.from ?? 'ALPHA'} asks` : EVENT_LABEL[c.kind as Exclude<EventCardKind, 'ask'>];
   const out = m ? sending(comms, m.id) : undefined;
   const label = (id: string | null | undefined) => (id ? m?.responses?.find((r) => r.id === id)?.label : 'Copy');
+  const answering = c.kind === 'ask' && c.open && !out && m;
   const body = (
     <>
       <FeedIcon tier={tier} />
@@ -160,7 +180,7 @@ function EventCard({ c, newest, m, comms }: { c: Extract<Card, { type: 'event' }
             HQ › {label(out.responseId)} · sending
           </span>
         )}
-        {c.open && c.kind === 'ask' && !out && <span className="awaiting"> · waiting on HQ</span>}
+        {answering && <span className="awaiting"> · waiting on HQ</span>}
       </span>
       {c.open && EVENT_GO[c.kind] && (
         <span className="go" aria-hidden>
@@ -170,15 +190,42 @@ function EventCard({ c, newest, m, comms }: { c: Extract<Card, { type: 'event' }
     </>
   );
   return (
-    <li className="c-card c-event" data-tier={tier} data-kind={c.kind} data-open={c.open} data-newest={newest || undefined} data-waiting={c.kind === 'ask' && c.open && !out} data-testid="event-card-stack">
-      {c.square && c.open ? (
-        <button type="button" className="c-open" aria-label={`${head} ${c.square}: ${m ? m.text : c.title}`} onClick={() => game.selectSquare(c.square!)}>
+    <li className="c-card c-event" data-tier={tier} data-kind={c.kind} data-open={c.open} data-newest={newest || undefined} data-waiting={!!answering} data-testid="event-card-stack">
+      {c.open && c.kind !== 'ask' ? (
+        <button type="button" className="c-open" aria-label={`${head} ${c.square ?? ''}: ${c.title}`} onClick={() => act(c)} data-testid="card-act">
           {body}
         </button>
       ) : (
-        <div className="c-open">{body}</div>
+        <div className="c-open">
+          {body}
+          {answering && <AskAnswers m={m} />}
+        </div>
       )}
     </li>
+  );
+}
+
+// HQ's answers to ALPHA's ask, on its card: the response tree's options, or a plain Copy.
+function AskAnswers({ m }: { m: Message }) {
+  const s = useGame((x) => x);
+  const options = m.responses ?? [];
+  return (
+    <span className="c-answers" data-testid="card-responses">
+      {options.length ? (
+        options.map((r) => {
+          const why = blocked(s, r);
+          return (
+            <button key={r.id} type="button" disabled={!!why} title={why ?? undefined} onClick={() => game.respond(m.id, r.id)}>
+              {r.label}
+            </button>
+          );
+        })
+      ) : (
+        <button type="button" onClick={() => game.confirmCall(m.id)}>
+          Copy
+        </button>
+      )}
+    </span>
   );
 }
 
