@@ -1,6 +1,6 @@
 import type { GameState } from './state';
 import { kindOf, sending } from './comms';
-import type { Grade, PushSource } from './intel';
+import type { Grade, Push, PushSource } from './intel';
 import type { EventKind } from './events';
 
 // COMMS as a card stack (option D, ILI-1342; the sim side is ILI-1346). Everything that reaches
@@ -15,7 +15,7 @@ import type { EventKind } from './events';
 export type EventCardKind = Exclude<EventKind, 'site'> | 'ask';
 
 export type Card =
-  | { type: 'intel'; id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; fed: boolean }
+  | { type: 'intel'; id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; fed: boolean; fedMs?: number }
   | { type: 'event'; id: string; atMs: number; kind: EventCardKind; square?: string; title: string; open: boolean; eventId?: string; messageId?: string }
   | { type: 'radio'; id: string; atMs: number; from: string; text: string };
 
@@ -23,9 +23,12 @@ export type Card =
 // up as an intel card.
 const asksHq = (kind: EventKind): kind is Exclude<EventKind, 'site'> => kind !== 'site';
 
-export function cards(s: GameState): Card[] {
+// Only what the stack reads, so the HUD can build it from the slices it already holds.
+export type CardSource = Pick<GameState, 'events' | 'comms' | 'searching'> & { team: { callsign: string }; intel: { pushes: Push[] } };
+
+export function cards(s: CardSource): Card[] {
   const call = s.team.callsign;
-  const intel: Card[] = s.intel.pushes.map((p) => ({ type: 'intel', id: `card-${p.id}`, atMs: p.atMs, source: p.source, square: p.square, grade: p.grade, fed: p.state === 'fed' }));
+  const intel: Card[] = s.intel.pushes.map((p) => ({ type: 'intel', id: `card-${p.id}`, atMs: p.atMs, source: p.source, square: p.square, grade: p.grade, fed: p.state === 'fed', fedMs: p.fedMs }));
 
   const events: Card[] = s.events.flatMap((e) => {
     if (!asksHq(e.kind)) return [];
@@ -51,4 +54,4 @@ export function cards(s: GameState): Card[] {
 }
 
 // Event cards still waiting on HQ, oldest first.
-export const openCards = (s: GameState) => cards(s).filter((c): c is Extract<Card, { type: 'event' }> => c.type === 'event' && c.open);
+export const openCards = (s: CardSource) => cards(s).filter((c): c is Extract<Card, { type: 'event' }> => c.type === 'event' && c.open);
