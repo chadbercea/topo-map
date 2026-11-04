@@ -404,7 +404,7 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 <main>
 <header>
   <p class="mono"><a href="../review/">← Review hub: everything up for review</a></p>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03 · ILI-1358 step 2 added</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
@@ -497,6 +497,78 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
   </ol>
   <p><b>For step 2:</b> the build has Photo, Burst and Video. Your loop names two outputs, image and live feed. Where Burst fits is a step 2 question.</p>
 </section>
+
+<section class="ia2" id="ia2-groups">
+  <div class="sect-head">
+    <p class="eyebrow">ILI-1358 · IA v2 · step 2 of 4 · principles, ranks, groups · 2026-11-03</p>
+    <h2>The screen is a common operating picture. HQ runs the intel cycle on it.</h2>
+    <p>Your note: "I want to keep driving towards my panel and game vision." This step turns your step 1 calls and your research (ISR feeds, Maven and Gotham, the intel cycle, MIL-STD-2525) into rules, then ranks and groups everything from the inventory. There are no layouts yet; those are step 3. Mark up anything that isn't your vision.</p>
+  </div>
+
+  <h3>A · Five rules, from your research</h3>
+  <ol class="finds">
+    <li><b>The canvas is the common operating picture.</b> Anything that has a place is drawn on the grid as a layer: ALPHA and its route, contacts, ORION-3's footprint and its slew, imagery requests, strikes in flight, the resupply bird, the mission's set of squares. Panels hold only what has no place. <i>Maven: one fused globe, with feeds as layers.</i></li>
+    <li><b>Every contact gets one symbol and one ID, the same everywhere.</b> It's drawn in MIL-STD-2525 style: a red diamond for hostile, blue for ALPHA, yellow for unknown, solid when present and dashed when it's an old report. The same symbol and ID (say H-03) appear on the canvas, in ORION-3's feed, in the square's menu and on its card. <i>Maven's stable IDs; your symbology page, using milsymbol.</i></li>
+    <li><b>The feed carries its own telemetry.</b> ORION-3's picture shows its readouts on the picture, the way drone video does: square, time, PHOTO or LIVE, cloud, and the grade once the analysts have it. There are no tables stacked under the picture. <i>FMV with a telemetry overlay. This is also your no-scroll rule.</i></li>
+    <li><b>Targets move through stages.</b> A contact is <i>reported</i> (a dashed symbol from HUMINT or SIGINT), then <i>imaged</i> (ORION-3 has seen it), then <i>graded</i> (the analysts have marked it, which opens the square's menu), then <i>struck</i>, then <i>assessed</i>. The symbol shows the stage, so the canvas tells you where each target stands. <i>Maven's targeting board, drawn on the map instead of in columns.</i></li>
+    <li><b>The game loop is the intel cycle, and HQ is the analyst.</b> The cycle is the backbone, so the screen should make the current step obvious. <i>The intelligence cycle and PED.</i></li>
+  </ol>
+
+  <div class="scroll"><table>
+    <thead><tr><th>Cycle step</th><th>In the game</th><th>Who</th><th>Where it shows</th></tr></thead>
+    <tbody>
+      <tr><td class="name">Tasking</td><td>ALPHA requests imagery of a square, or you pick one yourself</td><td>ALPHA or HQ</td><td>A request marker on the square; a card in the queue</td></tr>
+      <tr><td class="name">Collection</td><td>You move ORION-3 there and take a photo or run live video</td><td>HQ, by hand</td><td>The footprint and slew on the canvas; the feed in ORION-3</td></tr>
+      <tr><td class="name">Processing</td><td>The analysts grade what was seen and mark the contacts</td><td>The game</td><td>Telemetry on the feed; symbols go solid on the canvas</td></tr>
+      <tr><td class="name">Dissemination</td><td>The intel goes to ALPHA, and the gauge fills</td><td>The game</td><td>The intel gauge</td></tr>
+      <tr><td class="name">Action</td><td>Strike the graded square, or let ALPHA push through</td><td>HQ</td><td>The square's menu</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>B · Ranks</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Rank</th><th>What</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td class="name">1 · Canvas</td><td>The grid, edge to edge, with every layer from rule 1</td><td>It's where everything is, and where you tap</td></tr>
+      <tr><td class="name">1 · ORION-3</td><td>The feed, Photo and Video, Reposition</td><td>Your call: scanning is the core loop</td></tr>
+      <tr><td class="name">1 · Square menu</td><td>The tight strike menu on the graded square</td><td>Your call: the hotbar and the strike menu, now one thing</td></tr>
+      <tr><td class="name">2 · Instruments</td><td>The contract window, the intel gauge, ALPHA's state</td><td>Always glanced at, never pressed</td></tr>
+      <tr><td class="name">2 · Queue</td><td>What needs you: requests, signals, ALPHA's asks</td><td>Tasking, the first step of the cycle</td></tr>
+      <tr><td class="name">3 · On demand</td><td>The operators' detail, square facts, environment, the radio log, budget history</td><td>Read when you want; folded away otherwise</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>C · Groups</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Group</th><th>Holds</th><th>Takes over from</th></tr></thead>
+    <tbody>
+      <tr><td class="name">Canvas</td><td>Every placed thing, with symbols and stages. The mission's squares are outlined, and the grid runs past them.</td><td>The map; the need chip's "where"; ORION-3's standby line</td></tr>
+      <tr><td class="name">ORION-3</td><td>The feed with its telemetry; Photo, Video, Reposition. Cloud sits in the telemetry because weather is what blinds the satellite. Square facts open on demand over the feed.</td><td>ORION-3's header, the satellite block, the LAST LOOK rows, the environment six-stack, the square facts table</td></tr>
+      <tr><td class="name">Square menu</td><td>The balance; Sniper, Drone, Heli with prices and readiness; Listen or Jam when the square has a signal; Resupply when ALPHA is there. Tiny, dense, on the square.</td><td>The hotbar, the strike menu, the signal buttons</td></tr>
+      <tr><td class="name">Instruments</td><td>The contract window and its phases, the objective, the intel gauge, ALPHA's one-line state</td><td>The Black Box panel, ALPHA's box (gauge and status), TEAM's title</td></tr>
+      <tr><td class="name">Queue</td><td>One card per thing that needs you, oldest at the top, each named by its square and symbol. Tap a card and the canvas goes there.</td><td>The COMMS event cards, the need chip, HQ's "tap it" lines</td></tr>
+      <tr><td class="name">Team</td><td>The operators: heartbeat, status, the four bars. Folded to one line until someone is hurt or in contact.</td><td>The TEAM panel</td></tr>
+      <tr><td class="name">Log</td><td>ALPHA's and HQ's radio lines and the analysts' reports, as a record. Folded to its newest line.</td><td>The COMMS thread, the intel pile</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Cut</h3>
+  <ul class="finds">
+    <li>The hotbar as a separate bar (your call)</li>
+    <li>The radio link block in ALPHA's box (link, latency, traffic, the avatar): rated "rarely"</li>
+    <li>Every repeat from step 1: the second ALPHA status, the second "over E3", both LAST LOOK rows, three of the four places a need shows</li>
+    <li>ORION-3's progress chatter in the log: the feed shows it</li>
+  </ul>
+
+  <h3>For you to call</h3>
+  <ol class="finds">
+    <li><b>The queue and the log:</b> option D put them in one stack. Should they split, with the queue as things to do and the log as the record?</li>
+    <li><b>Symbols:</b> real MIL-STD-2525 symbols through milsymbol, or our own icons drawn in its spirit (shape for side, a dashed frame for old reports)?</li>
+    <li><b>The intel gauge:</b> with the clock as a mission instrument, or with ALPHA, since it's what ALPHA burns?</li>
+    <li><b>Anything here that isn't your vision,</b> especially in the groups table.</li>
+  </ol>
+</section>
+
 
 <section class="opts rw ab" id="ability-bar">
   <div class="sect-head"><p class="eyebrow">ILI-1352 · Ability bar placement · 2026-11-03 · layout A, 1440 × 900</p><h2>Front and center, in the layout you approved</h2><p>Your note: "I hate the placement of the ability bar. This is supposed to be kind of like a front and center element." The catch, measured: in layout A, ORION-3 runs the full right side, so the bottom row is x 16–1036, and ALPHA and TEAM fill 16–673 of it. A bar dead center on the screen (x 720) would sit on top of TEAM. So each option gives something up.</p></div>
