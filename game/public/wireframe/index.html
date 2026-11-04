@@ -382,6 +382,21 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .ab .centre::after { content: 'screen centre'; position: absolute; top: 2px; left: 4px; font: 9px var(--mono); color: var(--accent); white-space: nowrap; }
 .ab .measured { margin: 0; padding-left: 18px; display: grid; gap: 3px; font: 13px/1.45 var(--mono); }
 
+/* ILI-1357 · IA v2 */
+.ia2 .steps { margin: 0; padding-left: 22px; display: grid; gap: 4px; max-width: 76ch; }
+.ia2 .steps li.now { font-weight: 700; }
+.ia2 .shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0; }
+.ia2 .shots figure { margin: 0; display: grid; gap: 6px; }
+.ia2 .shots img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; display: block; }
+.ia2 .shots figcaption { font: 13px/1.4 var(--mono); color: var(--dim); }
+.ia2 .f { font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 3px; border: 1px solid var(--line); white-space: nowrap; }
+.ia2 .f.always { border-color: var(--accent); color: var(--accent); }
+.ia2 .f.act { border-color: var(--hq); color: var(--hq); }
+.ia2 tr.grp td { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); background: var(--box); }
+.ia2 .finds { margin: 0; padding-left: 22px; display: grid; gap: 10px; max-width: 76ch; }
+.ia2 .finds b { font-weight: 700; }
+@media (max-width: 700px) { .ia2 .shots { grid-template-columns: minmax(0, 1fr); } }
+
 </style>
 </head>
 <body>
@@ -389,10 +404,89 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 <main>
 <header>
   <p class="mono"><a href="../review/">← Review hub: everything up for review</a></p>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
+
+<section class="ia2" id="ia2">
+  <div class="sect-head">
+    <p class="eyebrow">ILI-1357 · IA v2 · step 1 of 4 · inventory · 2026-11-03 · the build on main, 1440 × 900</p>
+    <h2>Back to IA: everything on screen, and how often you need it</h2>
+    <p>Your note: "There is no clear and obvious solution, we need to design one. Which means we need to take this back to IA." Since the 10-28 pass (further down this page), placement has been fixed one panel at a time. That pass also came before the COMMS cards, the hotbar, the intel gauge in ALPHA's box and imagery requests. So this round starts from what's in the game now, and nothing gets built until a whole-screen drawing is picked.</p>
+  </div>
+  <ol class="steps">
+    <li class="now">Inventory: every thing on screen, the question it answers, how often you need it, and whether you act on it or only read it. (This section.)</li>
+    <li>Ranks and groups: what's front and center, and which things share a panel. Built from your corrections to the ratings below.</li>
+    <li>Whole-screen layouts at desktop, Fold and phone. Several drafts, side by side. You pick one, and that drawing becomes the spec.</li>
+    <li>Build to the spec, one panel per issue. Each one is checked against the drawing with a screenshot before it reaches you.</li>
+  </ol>
+
+  <div class="shots">
+    <figure><img src="ia2/1-quiet.jpg" alt="The game 20 seconds in: ALPHA walking, ORION-3 on standby" loading="lazy"><figcaption>Quiet watch, 0:20. ALPHA walking; ORION-3 on standby with an empty picture.</figcaption></figure>
+    <figure><img src="ia2/3-onstation.jpg" alt="ORION-3 on station over a square, picture up" loading="lazy"><figcaption>Scan, on station. The picture is up, and the capture buttons are at ORION-3's foot.</figcaption></figure>
+    <figure><img src="ia2/6-strike.jpg" alt="A contact card open: the square's action menu at the top of the map" loading="lazy"><figcaption>Contact. The card is at COMMS's foot (left), the strike menu is over the map (top) and the picture is far right.</figcaption></figure>
+    <figure><img src="ia2/4-result.jpg" alt="After the photo: the SIGNAL card and the team in contact" loading="lazy"><figcaption>After the photo. A SIGNAL card is waiting, ALPHA is in contact, and TEAM turns red.</figcaption></figure>
+  </div>
+
+  <h3>The inventory</h3>
+  <p><span class="f always">Always</span> means your eye comes back every few seconds. <span class="f">When it changes</span> means you need it at a moment. <span class="f">On demand</span> means you look when you want to. <span class="f act">Act</span> means you press something there.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Thing</th><th>Answers</th><th>How often</th><th>Act / read</th><th>Where it is now</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="5">Things you press</td></tr>
+      <tr><td class="name">Map</td><td>Where is everyone, and what's where?</td><td><span class="f always">Always</span></td><td><span class="f act">Act</span> tap a square or marker</td><td>Centre</td></tr>
+      <tr><td class="name">Event cards</td><td>What needs me? (contact, signal, imagery request, ALPHA's ask)</td><td><span class="f">When it changes</span></td><td><span class="f act">Act</span></td><td>Foot of COMMS, far left</td></tr>
+      <tr><td class="name">Hotbar</td><td>What can I spend, and on what? (balance, Sniper, Drone, Heli)</td><td><span class="f">When there's a target</span></td><td><span class="f act">Act</span></td><td>Under the map, on the screen's centre line</td></tr>
+      <tr><td class="name">Square's action menu</td><td>What can I hit here? (Drone strike, Sniper, Helicopter gun run)</td><td><span class="f">When a contact is open</span></td><td><span class="f act">Act</span></td><td>Floats beside the square, wherever it is on the map</td></tr>
+      <tr><td class="name">Mini game</td><td>Strike, listen, search, played out</td><td><span class="f">While playing</span></td><td><span class="f act">Act</span></td><td>Over the map's foot</td></tr>
+      <tr><td class="name">ORION-3 picture</td><td>What's in the square?</td><td><span class="f">During a scan</span></td><td>Read</td><td>ORION-3, middle, far right</td></tr>
+      <tr><td class="name">Capture / Reposition</td><td>Take the picture, or move the satellite</td><td><span class="f">During a scan</span></td><td><span class="f act">Act</span></td><td>ORION-3, foot, far right</td></tr>
+      <tr><td class="name">Need chip</td><td>What's holding ALPHA up? ("No imagery ahead at F4 ›")</td><td><span class="f">When it changes</span></td><td><span class="f act">Act</span> tap</td><td>Black Box, top left</td></tr>
+      <tr><td class="name">Pause</td><td>Stop the clock</td><td><span class="f">On demand</span></td><td><span class="f act">Act</span></td><td>Black Box, top left</td></tr>
+
+      <tr class="grp"><td colspan="5">Things you glance at</td></tr>
+      <tr><td class="name">Contract window</td><td>How long is left?</td><td><span class="f always">Always</span></td><td>Read</td><td>Black Box, top left</td></tr>
+      <tr><td class="name">Intel gauge</td><td>Is ALPHA fed, or about to stop?</td><td><span class="f always">Always</span></td><td>Read</td><td>ALPHA's box, bottom left</td></tr>
+      <tr><td class="name">Phase bar, objective</td><td>How far along, and what's the goal now?</td><td><span class="f">When it changes</span></td><td>Read</td><td>Black Box, top left</td></tr>
+      <tr><td class="name">ALPHA's status</td><td>What's ALPHA doing? ("Moving to F4")</td><td><span class="f">When it changes</span></td><td>Read</td><td>ALPHA's box <em>and</em> TEAM's title</td></tr>
+      <tr><td class="name">Operators</td><td>Are they alright? (heartbeat, status, four bars)</td><td><span class="f">When in contact</span></td><td>Read</td><td>TEAM, bottom</td></tr>
+      <tr><td class="name">ORION-3 state</td><td>Where's the satellite, and is it free?</td><td><span class="f">When it changes</span></td><td>Read</td><td>ORION-3 header <em>and</em> the satellite's block</td></tr>
+
+      <tr class="grp"><td colspan="5">Things you read when you want to</td></tr>
+      <tr><td class="name">COMMS thread</td><td>What's been said? (background intel, ALPHA, ORION-3's progress, HQ)</td><td><span class="f">On demand</span></td><td>Read</td><td>COMMS, left, 55 to 95 words on screen</td></tr>
+      <tr><td class="name">Intel cards, pile</td><td>What fed the gauge? ("3 intel fed → gauge")</td><td><span class="f">On demand</span></td><td>Read</td><td>COMMS, left</td></tr>
+      <tr><td class="name">Square facts</td><td>What's this place? (elevation, slope, features, weather, imagery, contacts)</td><td><span class="f">On demand</span></td><td>Read</td><td>ORION-3, foot</td></tr>
+      <tr><td class="name">Environment</td><td>What's the weather doing?</td><td><span class="f">On demand</span></td><td>Read</td><td>ORION-3, under the satellite</td></tr>
+      <tr><td class="name">Radio link</td><td>Is the radio up? (link, latency, traffic, avatar)</td><td><span class="f">Rarely</span></td><td>Read</td><td>ALPHA's box, bottom left</td></tr>
+      <tr><td class="name">Pause menu, wrap-up</td><td>Settings; how did it go?</td><td><span class="f">Start and end</span></td><td><span class="f act">Act</span></td><td>Overlay</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>What it shows</h3>
+  <ol class="finds">
+    <li><b>The things you press are spread across the whole screen.</b> One strike in the third shot goes like this: the card at COMMS's foot (far left), then the menu at the top of the map, with the picture to check at the far right. On top of that are the hotbar under the map and the need chip at the top left. Nothing marks one place where you act.</li>
+    <li><b>The strike buttons exist twice, under different names.</b> The hotbar has Sniper, Drone and Heli. The square's menu has Drone strike, Sniper and Helicopter gun run.</li>
+    <li><b>The things you watch all the time sit in three corners:</b> the clock top left, the intel gauge bottom left, the map in the centre.</li>
+    <li><b>The same thing is said in several places.</b>
+      <ul>
+        <li>ALPHA's status shows twice: in ALPHA's box and in TEAM's title.</li>
+        <li>"Over E3" shows twice: in ORION-3's header and in its OVER row.</li>
+        <li>LAST LOOK shows twice in ORION-3. In the fourth shot one says "—" and the other "none yet", while the SAW line above them reports the photo just taken.</li>
+        <li>A need can show four times: the Black Box chip, ORION-3's standby line, the event card, and HQ's line in COMMS ("Contact on the map. Tap it…").</li>
+      </ul>
+    </li>
+    <li><b>Space doesn't follow use.</b> ORION-3 holds about a quarter of the screen, full height, and is busy only during a scan. COMMS, ALPHA's radio block and the environment, all read on demand, take about as much room as everything you press put together.</li>
+    <li><b>One to check:</b> the hotbar shows the balance as −$400k at the start, in red. Is starting in debt meant to be there?</li>
+  </ol>
+
+  <h3>For you to call</h3>
+  <ol class="finds">
+    <li>Are the ratings right? Two I'm least sure of: is the scan the core loop, so ORION-3 is "always", or an occasional tool? And is the hotbar always in your hands, or only when there's a target?</li>
+    <li>Should the hotbar and the square's menu become one thing, where the hotbar fires on the open square?</li>
+    <li>If one thing goes in the middle of the screen besides the map, what is it: what needs you now (the event card), the hotbar, or ORION-3's picture?</li>
+  </ol>
+</section>
 
 <section class="opts rw ab" id="ability-bar">
   <div class="sect-head"><p class="eyebrow">ILI-1352 · Ability bar placement · 2026-11-03 · layout A, 1440 × 900</p><h2>Front and center, in the layout you approved</h2><p>Your note: "I hate the placement of the ability bar. This is supposed to be kind of like a front and center element." The catch, measured: in layout A, ORION-3 runs the full right side, so the bottom row is x 16–1036, and ALPHA and TEAM fill 16–673 of it. A bar dead center on the screen (x 720) would sit on top of TEAM. So each option gives something up.</p></div>
