@@ -31,12 +31,48 @@ export const GRADE_LABEL: Record<Grade, string> = { clear: 'all clear', low: 'lo
 // analysts have already been through.
 export type Intel = { base: number; fuel: number; videoUsed: boolean; videosShot: number; graded: string[]; banked: { square: string; amount: number }[]; pushes: Push[] };
 
-// Every push of intel to ALPHA, in order (ILI-1346): what COMMS shows as routine intel cards.
-// A banked push turns fed when it pays out. source: who produced it (IMINT for ORION-3's looks,
-// SIGINT for a decode, ALPHA for what the team found itself).
+// Every push of intel to ALPHA, in order (ILI-1346). A banked push turns fed when it pays out.
+// source: who produced it (IMINT for ORION-3's looks, SIGINT for a decode, ALPHA for what the
+// team found itself). items: what the push says, as intel reports (ILI-1362).
 export type PushSource = 'IMINT' | 'SIGINT' | 'ALPHA';
-export type Push = { id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; amount: number; state: 'fed' | 'banked'; fedMs?: number };
-export type PushFrom = { source: PushSource; square?: string; grade?: Grade | 'video' };
+export type Push = { id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; amount: number; state: 'fed' | 'banked'; fedMs?: number; items?: IntelItem[] };
+export type PushFrom = { source: PushSource; square?: string; grade?: Grade | 'video'; items?: IntelItem[] };
+
+// The five types of intel (ILI-1362): the five real intelligence disciplines. Every ORION-3
+// scan brings in at least one report, and which types turn up is random (seeded, so a mission
+// replays exactly). A quiet square still brings in a "nothing here" report: real, low-level
+// intel, and it still fills the gauge. A hot one can bring in three at once.
+export const INT_KINDS = ['GEOINT', 'SIGINT', 'HUMINT', 'MASINT', 'OSINT'] as const;
+export type IntKind = (typeof INT_KINDS)[number];
+export type Heat = 'quiet' | 'some' | 'hot';
+export type IntelItem = { kind: IntKind; heat: Heat; text: string };
+
+const REPORT: Record<IntKind, Record<Heat, string>> = {
+  GEOINT: { quiet: 'nothing moving in the picture', some: 'fresh tracks, a vehicle came through', hot: 'armed men in the open' },
+  SIGINT: { quiet: 'no traffic on their nets', some: 'a burst of radio traffic, then quiet', hot: 'radio traffic, they’re calling for help' },
+  HUMINT: { quiet: 'locals say nothing unusual', some: 'a shepherd saw a truck pass', hot: 'a local says fighters came through at dawn' },
+  MASINT: { quiet: 'no heat signatures', some: 'one heat signature, could be an animal', hot: 'heat signatures, several, close together' },
+  OSINT: { quiet: 'nothing posted from here', some: 'a photo from here, two days old', hot: 'a post shows armed men here today' },
+};
+
+const HEAT: Record<Grade | 'video', Heat> = { clear: 'quiet', low: 'some', medium: 'some', high: 'hot', video: 'some' };
+const COUNT: Record<Grade | 'video', number> = { clear: 1, low: 1, medium: 2, high: 3, video: 2 };
+
+// The reports a look brings in: one to three, of different random types.
+export function reports(s: GameState, square: string, grade: Grade | 'video', fighters = 0): IntelItem[] {
+  let h = (s.rng ^ Math.imul(s.intel.pushes.length + 1, 0x9e3779b1)) >>> 0;
+  for (const ch of square) h = Math.imul(h ^ ch.charCodeAt(0), 2654435761) >>> 0;
+  const kinds: IntKind[] = [...INT_KINDS];
+  const out: IntelItem[] = [];
+  for (let i = 0; i < COUNT[grade]; i++) {
+    h = Math.imul(h ^ (h >>> 15), 2246822519) >>> 0;
+    const kind = kinds.splice(h % kinds.length, 1)[0];
+    const heat = HEAT[grade];
+    const text = kind === 'GEOINT' && fighters ? `${fighters} armed in the picture` : REPORT[kind][heat];
+    out.push({ kind, heat, text });
+  }
+  return out;
+}
 
 export const initialIntel = (): Intel => ({ base: 0, fuel: 0, videoUsed: false, videosShot: 0, graded: [], banked: [], pushes: [] });
 
@@ -81,7 +117,7 @@ export function pushPhoto(s: GameState, square: string, fighters: number): { nex
   const g = grade(s, square, fighters);
   const banked = ahead(s, square);
   const amount = GRADE_INTEL[g] * photoFactor(s); // more analysts, more out of it (ILI-1317)
-  const from: PushFrom = { source: 'IMINT', square, grade: g };
+  const from: PushFrom = { source: 'IMINT', square, grade: g, items: reports(s, square, g, fighters) };
   const next = banked ? record({ ...s, intel: { ...s.intel, banked: [...s.intel.banked, { square, amount }] } }, from, amount, 'banked') : feed(s, amount, from);
   return { next: { ...next, intel: { ...next.intel, graded: [...new Set([...next.intel.graded, square])] } }, grade: g, banked };
 }
@@ -105,6 +141,6 @@ export const intelSystem = (s: GameState): GameState => {
 // Video: one big fill, once a session (twice with a second feed, ILI-1317).
 export const pushVideo = (s: GameState): GameState => {
   const shot = s.intel.videosShot + 1;
-  const fed = feed(s, VIDEO_INTEL, { source: 'IMINT', square: s.satellite.aim, grade: 'video' });
+  const fed = feed(s, VIDEO_INTEL, { source: 'IMINT', square: s.satellite.aim, grade: 'video', items: reports(s, s.satellite.aim ?? '', 'video') });
   return { ...fed, intel: { ...fed.intel, videosShot: shot, videoUsed: shot >= videos(s) } };
 };

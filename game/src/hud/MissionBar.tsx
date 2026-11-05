@@ -3,7 +3,6 @@ import { bus, EV } from '../game/events';
 import { blockers, nextUp, race, type Blocker } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import { IntelGauge } from './IntelGauge';
-import { useTier } from './tier';
 
 // The contract window counts down real minutes, M:SS, rounding up (ILI-1251): ten minutes reads
 // 10:00.
@@ -21,7 +20,6 @@ export const clock = (ms: number) => {
 // One unit of time on the panel, real minutes; the Zulu stamps live on ENVIRONMENT.
 export function MissionPanel() {
   const s = useGame((x) => x);
-  const tier = useTier();
   const { timer, phase, tick, mission } = s;
   const remaining = timer.remainingMs;
   const warn = remaining <= 60_000 ? 'red' : remaining <= 300_000 ? 'amber' : undefined;
@@ -69,14 +67,12 @@ export function MissionPanel() {
         ◆ {objectiveText(mission)}
         {recovering}
       </p>
-      {/* The panel is the timer (ILI-1245, ILI-1355): ALPHA's intel gauge is in ALPHA's box. On a
-          phone that box is behind a tab, so the gauge rides the top line there (ILI-1340). */}
-      {tier === 'compact' && (
-        <div className="m-intel">
-          <span className="m-label">{s.team.callsign} intel</span>
-          <IntelGauge />
-        </div>
-      )}
+      {/* ALPHA's intel gauge sits with the clock (IA v2 draft A, ILI-1363): both are what you
+          glance at to know if the mission is on track. */}
+      <div className="m-intel">
+        <span className="m-label">{s.team.callsign} intel</span>
+        <IntelGauge />
+      </div>
       {need && 'go' in need && need.go ? (
         // A tap goes to what it's about (ILI-1271): the square on the map, or ALPHA's call.
         <button className="need" data-testid="needs-hq" data-tone={need.tone} onClick={() => go(need.go!)}>

@@ -1,37 +1,31 @@
 import { expect, test } from '@playwright/test';
 import { askResupply, fastForward, freeze, photo, running, start } from './helpers';
 
-// COMMS as a card stack (option D, ILI-1347): intel lands as small cards that run into ALPHA's
-// gauge and fold into a pile; what wants HQ is an event card that waits for it.
+// COMMS as a card stack (option D, ILI-1347): what wants HQ is an event card that waits for it.
+// Intel lands in INTEL under ORION-3 (IA v2 draft A, ILI-1363).
 
-test('a photo lands in COMMS as an intel card, then folds into the pile', async ({ page, isMobile }) => {
+test('a photo lands in INTEL under ORION-3 as typed reports, not in COMMS (ILI-1363)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
   await photo(page, 'F4'); // the square ALPHA is heading into: fed at once
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  const card = page.getByTestId('intel-card');
-  await expect(card).toHaveCount(1);
-  await expect(card).toContainText('IMINT');
-  await expect(card).toContainText('F4');
-  await expect(card).toContainText('→ gauge');
-  await fastForward(page, 7_000);
+  if (isMobile) await page.getByTestId('tab-orion').click();
+  const items = page.getByTestId('intel-item');
+  await expect(items.first()).toBeVisible();
+  await expect(items.first()).toContainText('F4');
+  await expect(items.first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
+  await expect(page.getByTestId('intel-latest')).toContainText('from F4');
   await expect(page.getByTestId('intel-card')).toHaveCount(0);
-  const pile = page.getByTestId('intel-pile');
-  await expect(pile).toContainText('1 intel fed');
-  await pile.getByRole('button').click();
-  await expect(page.getByTestId('intel-card')).toHaveCount(1);
 });
 
-test('a photo further along the route waits as a banked card', async ({ page, isMobile }) => {
+test('a photo further along the route shows as banked intel', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
   await photo(page, 'E3');
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  const card = page.getByTestId('intel-card');
-  await expect(card).toHaveAttribute('data-fed', 'false');
-  await expect(card).toContainText('banked · E3');
+  if (isMobile) await page.getByTestId('tab-orion').click();
+  await expect(page.getByTestId('intel-item').first()).toHaveAttribute('data-banked', 'true');
+  await expect(page.getByTestId('intel-item').first()).toContainText('banked');
 });
 
 test('an event is a card that waits; tapping radio traffic starts Listen, and answered it goes dim (ILI-1348)', async ({ page, isMobile }) => {

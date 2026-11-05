@@ -1162,7 +1162,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @media (min-width: 1200px) {
   .hud { row-gap: var(--gutter); }
   .slot-team { gap: var(--gutter); }
-  .hud :is(.mission, .satcom, .call-box, .team) { padding: 12px; }
+  .hud :is(.mission, .satcom, .call-box, .team, .intel-panel) { padding: 12px; }
   .hud .orion > h2 { padding-top: 12px; }
   .ability-bar { margin-top: 0; }
 }
@@ -1491,3 +1491,22 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .title-sheet a { color: var(--accent); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
 @media (max-width: 420px) { .title-menu button { min-width: 0; flex: 1; padding: 0 8px; letter-spacing: 0.14em; } .title-menu { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .castle-back { transition: none; } .castle-mark[data-leaving] { animation: none; opacity: 0; } }
+
+/* INTEL (ILI-1361, IA v2 draft A, ILI-1363): under ORION-3's picture, where each scan's intel
+   lands. One line per report, tagged with its type (ILI-1362). A fixed number of rows, so the
+   panel never scrolls or changes size and ORION-3 above it holds still. */
+.intel-panel { flex: none; display: grid; grid-template-rows: auto calc(var(--rows) * 20px) 14px; gap: 2px; }
+.intel-panel h2 { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.intel-panel h2 .status { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.intel-panel ol { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-rows: 20px; align-content: start; overflow: hidden; }
+.intel-panel li { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 11px; color: var(--ink); }
+.intel-panel li[data-fresh] { animation: c-land 260ms ease-out both; }
+.intel-panel li[data-heat='quiet'] { color: var(--dim); }
+.intel-panel .int { flex: 0 0 52px; font-style: normal; font-size: 9px; letter-spacing: 0.06em; text-align: center; padding: 0 3px; border: 1px solid rgba(207, 232, 220, 0.3); border-radius: 2px; color: var(--dim); }
+.intel-panel li[data-heat='some'] .int { border-color: rgba(255, 138, 42, 0.6); color: #ff8a2a; }
+.intel-panel li[data-heat='hot'] .int { border-color: #ff4d3d; color: #ff4d3d; }
+.intel-panel .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.intel-panel .txt b { font-weight: 600; color: var(--accent); }
+.intel-panel em { font-style: normal; font-size: 9px; color: var(--dim); border: 1px dashed var(--dim); padding: 0 3px; border-radius: 2px; }
+.intel-panel .earlier { font-size: 10px; color: var(--dim); }
+@media (prefers-reduced-motion: reduce) { .intel-panel li[data-fresh] { animation: none; } }

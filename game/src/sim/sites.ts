@@ -40,7 +40,7 @@ export const siteSystem: System = (s) => {
   const here = squareAt(team.position.x, team.position.y);
   const site = s.events.find((e) => e.kind === 'site' && e.square === here && e.status !== 'resolved');
   if (!site) return s;
-  const next = feed(earn(s, SEARCH_CASH), SITE_INTEL, { source: 'ALPHA', square: site.square }); // what it found feeds its own gauge (ILI-1315)
+  const next = feed(earn(s, SEARCH_CASH), SITE_INTEL, { source: 'ALPHA', square: site.square, items: [{ kind: 'HUMINT', heat: 'some', text: `${s.team.callsign} swept the site` }] }); // what it found feeds its own gauge (ILI-1315)
   const found: Message = {
     id: `search-${site.id}`,
     from: team.callsign,

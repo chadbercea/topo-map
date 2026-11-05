@@ -6,8 +6,6 @@ import { WireAvatar } from './OrionAvatar';
 import { Backpack } from './AskWindow';
 import { useAskHidden } from './CommsPanel';
 import { gearFor, type Gear } from './commsLink';
-import { IntelGauge } from './IntelGauge';
-import { useTier } from './tier';
 
 const LOAD = {
   map: () => import('./mapScene'),
@@ -34,7 +32,6 @@ export function CallBox() {
   });
   const playing = useGame((s) => s.minigame?.status === 'active');
   const hidden = useAskHidden();
-  const tier = useTier();
   const live = !!call || !!out;
 
   const who = call?.from ?? callsign;
@@ -57,13 +54,6 @@ export function CallBox() {
           {call ? (playing ? 'Holding' : 'Incoming') : out ? `${out} · sending` : activity}
         </span>
       </h2>
-      {/* ALPHA's intel gauge, with ALPHA (ILI-1355); on a phone it rides the mission's top line. */}
-      {tier !== 'compact' && (
-        <div className="cb-intel">
-          <span>Intel</span>
-          <IntelGauge />
-        </div>
-      )}
       <CommsStrip showGear={!live} gear={<WireAvatar key={gear} state="on" fallback={null} load={LOAD[gear]} className="c-terminal c-gear" />} />
       {call && !playing && (
         <button className="cb-hit" onClick={() => bus.emit(EV.openAsk)} data-testid="answer-alpha" aria-label={`Answer ${who}`}>

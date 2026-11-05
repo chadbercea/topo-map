@@ -26,16 +26,13 @@ export function useAskHidden() {
 // COMMS (ILI-1199, ILI-1225, ILI-1255): HQ's one feed, through RELAY-7.
 // Option D (ILI-1347): it's a stack of cards, in the order things came in, with the radio
 // lines between them (sim/cards.ts):
-// - intel cards: routine, small. Each lands, runs into ALPHA's gauge, and after a moment folds
-//   into the pile at the top ("N intel fed → gauge"); banked intel waits as a dashed card until
-//   ALPHA heads into its square;
+// - intel lands in INTEL under ORION-3 now, not here (IA v2 draft A, ILI-1363);
 // - event cards: what wants HQ (a contact, radio traffic, a building, a request, ALPHA asking).
 //   They stand out, never expire, and the newest open one pulses; answered, they shrink to a dim
 //   line. Tapping one opens its square on the map;
 // - lines: ALPHA's and HQ's words, and the other callsigns' reports, as before.
 // ALPHA's ask is answered at its flag on the map or from TEAM's call box (CallBox). An answer
 // takes a moment to reach the team (ILI-1209): it shows as sending until ALPHA reads it back.
-export const FOLD_MS = 6_000; // a fed intel card stays out this long, then folds into the pile
 
 type Item =
   | { at: number; o: number; key: string; note: GameState['stream']['items'][number] }
@@ -49,21 +46,17 @@ export function CommsPanel() {
   const events = useGame((s) => s.events);
   const pushes = useGame((s) => s.intel.pushes);
   const searching = useGame((s) => s.searching);
-  const now = useGame((s) => Math.floor(s.elapsedMs / 500) * 500); // folds on the half second
-  const [openPile, setOpenPile] = useState(false);
   const log = useRef<HTMLOListElement>(null);
 
   const all = useMemo(() => cards({ team: { callsign }, comms, events, intel: { pushes }, searching }), [callsign, comms, events, pushes, searching]);
   const eventIds = new Set(events.map((e) => e.id));
-  const folded = (c: Card) => c.type === 'intel' && c.fed && (c.fedMs ?? c.atMs) + FOLD_MS <= now;
-  const pile = all.filter(folded);
   const newestOpen = all.filter((c) => c.type === 'event' && c.open).at(-1)?.id;
 
   // Notes and every message that isn't an ask card are lines; asks, events and intel are cards.
   const items: Item[] = [
     ...notes.map((n) => ({ at: n.atMs, o: 0, key: n.id, note: n })),
     ...comms.messages.filter((m) => !(kindOf(m) === 'call' && !(m.eventId && eventIds.has(m.eventId)))).map((m) => ({ at: m.atMs, o: 0, key: m.id, msg: m })),
-    ...all.filter((c) => c.type !== 'radio' && (openPile || !folded(c))).map((c) => ({ at: c.atMs, o: c.type === 'event' ? 1 : 2, key: c.id, card: c })),
+    ...all.filter((c) => c.type === 'event').map((c) => ({ at: c.atMs, o: c.type === 'event' ? 1 : 2, key: c.id, card: c })),
   ].sort((a, b) => a.at - b.at || a.o - b.o);
 
   // Keep the newest card in view: as things land, and when the list comes into view (a phone's
@@ -93,21 +86,10 @@ export function CommsPanel() {
         </span>
       </h2>
       <ol className="thread" ref={log} role="log" aria-live="polite" data-testid="comms-feed">
-        {pile.length > 0 && (
-          <li className="c-pile" data-testid="intel-pile">
-            <button type="button" aria-expanded={openPile} onClick={() => setOpenPile((o) => !o)}>
-              <span>
-                {pile.length} intel fed
-              </span>
-              <i>→ gauge {openPile ? '▾' : '▸'}</i>
-            </button>
-          </li>
-        )}
         {items.map((it) => {
           if ('note' in it) return <NoteLine key={it.key} n={it.note} />;
           if ('msg' in it) return <MessageLine key={it.key} m={it.msg} callsign={callsign} comms={comms} />;
           const c = it.card;
-          if (c.type === 'intel') return <IntelCard key={it.key} c={c} />;
           if (c.type === 'event') {
             const m = c.messageId ? comms.messages.find((x) => x.id === c.messageId) : undefined;
             return <EventCard key={it.key} c={c} newest={c.id === newestOpen} m={m} comms={comms} />;
@@ -116,25 +98,6 @@ export function CommsPanel() {
         })}
       </ol>
     </section>
-  );
-}
-
-const GRADE: Record<string, string> = { clear: 'all clear', low: 'low grade', medium: 'medium grade', high: 'high grade', video: 'live feed' };
-const SOURCE_TIER: Record<string, Tier> = { IMINT: 'sat', SIGINT: 'sigint', ALPHA: 'intel' };
-
-// A routine intel card: who produced it, where, what it was worth; it runs into the gauge.
-function IntelCard({ c }: { c: Extract<Card, { type: 'intel' }> }) {
-  const tier = SOURCE_TIER[c.source];
-  const what = c.source === 'ALPHA' ? 'found on the ground' : c.grade ? GRADE[c.grade] : 'intel';
-  return (
-    <li className="c-card c-intel" data-tier={tier} data-fed={c.fed} data-testid="intel-card">
-      <FeedIcon tier={tier} />
-      <span className="body">
-        <b>{c.source}</b> {c.square && `${c.square} · `}
-        {what}
-      </span>
-      <i className="to">{c.fed ? '→ gauge' : `banked · ${c.square}`}</i>
-    </li>
   );
 }
 
