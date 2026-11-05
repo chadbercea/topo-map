@@ -10,6 +10,7 @@ import { useTier } from './tier';
 import { MissionPanel } from './MissionBar';
 import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
+import { IntelPanel } from './IntelPanel';
 import { CommsPanel } from './CommsPanel';
 import { AskWindow } from './AskWindow';
 import { useAskHidden } from './CommsPanel';
@@ -108,6 +109,7 @@ export function Hud() {
       </div>
       <div className="slot-orion" data-overlay="orion" ref={orionSlot}>
         <OrionPanel />
+        <IntelPanel />
       </div>
       <div className="slot-bottom">
         {tier !== 'wide' && (

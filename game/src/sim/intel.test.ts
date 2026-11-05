@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { feed, gauge, grade, GRADE_INTEL, LOW_AT, pushPhoto, SQUARE_INTEL, VIDEO_INTEL } from './intel';
+import { feed, gauge, grade, GRADE_INTEL, INT_KINDS, LOW_AT, pushPhoto, reports, SQUARE_INTEL, VIDEO_INTEL } from './intel';
 import { blockers } from './progress';
 import { run } from './testkit';
 
@@ -123,5 +123,32 @@ describe('the intel gauge', () => {
     store.capture('photo');
     expect(gauge(store.get())).toBeGreaterThan(0);
     expect(store.get().comms.messages.at(-1)?.text).toMatch(/Analysts: (all clear|[a-z]+-grade intel) pushed to ALPHA\./);
+  });
+});
+
+// The five types of intel (ILI-1362): every look brings in at least one report, of a random
+// type; a quiet square says so, and a hot one can bring in three.
+describe('intel reports', () => {
+  it('a quiet square brings in one "nothing here" report', () => {
+    const s = initialState();
+    const r = reports(s, 'C4', 'clear');
+    expect(r).toHaveLength(1);
+    expect(r[0].heat).toBe('quiet');
+    expect(INT_KINDS).toContain(r[0].kind);
+  });
+  it('a hot square brings in three reports, all different types', () => {
+    const r = reports(initialState(), 'E3', 'high', 3);
+    expect(r).toHaveLength(3);
+    expect(new Set(r.map((x) => x.kind)).size).toBe(3);
+    expect(r.every((x) => x.heat === 'hot')).toBe(true);
+  });
+  it('the types vary from square to square', () => {
+    const s = initialState();
+    const kinds = new Set(['A1', 'B2', 'C3', 'D4', 'E5', 'F6', 'G7', 'H8'].map((q) => reports(s, q, 'clear')[0].kind));
+    expect(kinds.size).toBeGreaterThan(2);
+  });
+  it('a photo push carries its reports', () => {
+    const { next } = pushPhoto(initialState(), 'F4', 0);
+    expect(next.intel.pushes.at(-1)!.items!.length).toBeGreaterThan(0);
   });
 });
