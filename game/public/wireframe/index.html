@@ -397,6 +397,73 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .ia2 .finds b { font-weight: 700; }
 @media (max-width: 700px) { .ia2 .shots { grid-template-columns: minmax(0, 1fr); } }
 
+/* IA v2 step 3: whole-screen drafts. Each screen is the canvas (a grid, edge to edge) with panels placed on it in % of the screen. */
+.ia3 { --hostile: #c83a3a; --unknown: #b8901c; --blue: #2f6f8f; }
+.ia3 .legend3 { display: flex; gap: 16px; flex-wrap: wrap; font: 12px var(--mono); color: var(--dim); }
+.ia3 .legend3 span { display: inline-flex; align-items: center; gap: 6px; }
+.ia3 .legend3 i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: var(--paper); border: 1px solid var(--line); }
+.ia3 .legend3 .r1 { border-top: 3px solid var(--accent); }
+.ia3 .legend3 .r2 { border-top: 3px solid var(--hq); }
+.ia3 .legend3 .r3 { border-style: dashed; }
+.ia3 .draft { display: grid; gap: 14px; padding-top: 22px; border-top: 1px solid var(--line); }
+.ia3 .draft-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ia3 .draft-head .tag { font: 600 12px var(--mono); letter-spacing: .1em; padding: 2px 8px; border-radius: 3px; border: 1px solid var(--line); color: var(--dim); }
+.ia3 .draft-head .tag.pick { border-color: var(--ok); color: var(--ok); }
+.ia3 .small-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .5fr) minmax(0, 1.1fr); gap: 18px; align-items: start; }
+.ia3 figure { margin: 0; display: grid; gap: 6px; }
+.ia3 figcaption { font: 12px var(--mono); color: var(--dim); }
+.ia3 .scr { position: relative; container-type: inline-size; overflow: hidden; border: 2px solid var(--ink); border-radius: 8px;
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 3.2cqw 3.2cqw; }
+.ia3 .scr.d { aspect-ratio: 1440 / 900; }
+.ia3 .scr.f { aspect-ratio: 884 / 1104; background-size: 5.2cqw 5.2cqw; }
+.ia3 .scr.ph { aspect-ratio: 390 / 844; background-size: 11.5cqw 11.5cqw; }
+.ia3 .ao { position: absolute; border: 2px solid color-mix(in srgb, var(--hq) 55%, transparent); border-radius: 2px; }
+.ia3 .ao::after { content: 'AO'; position: absolute; left: 3px; top: 1px; font: 700 clamp(7px, 1cqw, 11px) var(--display); letter-spacing: .08em; color: var(--hq); }
+.ia3 .fp { position: absolute; border: 2px dashed var(--accent); }
+.ia3 .sym { position: absolute; width: clamp(6px, 1cqw, 12px); aspect-ratio: 1; transform: translate(-50%, -50%) rotate(45deg); background: var(--hostile); }
+.ia3 .sym.u { background: transparent; border: 1.5px dashed var(--unknown); }
+.ia3 .sym.a { transform: translate(-50%, -50%); width: clamp(9px, 1.5cqw, 18px); aspect-ratio: 3 / 2; background: var(--blue); border-radius: 1px; }
+.ia3 .route { position: absolute; border-top: 2px dotted var(--blue); transform-origin: 0 0; }
+.ia3 .p { position: absolute; box-sizing: border-box; display: flex; flex-direction: column; gap: .3em; padding: .45em .55em; overflow: hidden;
+  background: color-mix(in srgb, var(--paper) 94%, transparent); border: 1px solid var(--line); border-radius: 4px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / .12); font: clamp(6px, 1cqw, 12px)/1.3 var(--mono); }
+.ia3 .scr.f .p { font-size: clamp(6px, 1.9cqw, 11px); }
+.ia3 .scr.ph .p { font-size: clamp(6px, 3.4cqw, 11px); }
+.ia3 .p > b { font: 700 1.05em var(--display); letter-spacing: .07em; text-transform: uppercase; }
+.ia3 .p span { color: var(--dim); }
+.ia3 .p.r1 { border-top: 3px solid var(--accent); }
+.ia3 .p.r1 > b { color: var(--accent); }
+.ia3 .p.r2 { border-top: 3px solid var(--hq); }
+.ia3 .p.r2 > b { color: var(--hq); }
+.ia3 .p.r3 { border-style: dashed; color: var(--dim); }
+.ia3 .p .row { display: flex; justify-content: space-between; gap: .6em; white-space: nowrap; }
+.ia3 .bar { display: inline-block; vertical-align: middle; width: 5em; height: .55em; border: 1px solid var(--ink); border-radius: 1px; background: linear-gradient(90deg, var(--ink) var(--v, 60%), transparent 0); }
+.ia3 .feed { position: relative; flex: 1; min-height: 3em; border-radius: 2px; background: #1d2320; color: #cfd8d2;
+  background-image: repeating-linear-gradient(45deg, #26302b 0 6px, transparent 6px 12px); }
+.ia3 .feed > i { position: absolute; font-style: normal; font-size: .9em; color: #cfd8d2; }
+.ia3 .feed .tl { left: .4em; top: .3em; } .ia3 .feed .tr { right: .4em; top: .3em; color: #f08a45; }
+.ia3 .feed .bl { left: .4em; bottom: .3em; } .ia3 .feed .br { right: .4em; bottom: .3em; }
+.ia3 .feed .sym { width: .8em; }
+.ia3 .btns { display: flex; gap: .4em; flex-wrap: wrap; }
+.ia3 .btns em { font-style: normal; padding: .1em .45em; border: 1px solid var(--ink); border-radius: 2px; }
+.ia3 .btns em.ghost { border-color: var(--line); color: var(--dim); }
+.ia3 .card { border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 2px; padding: .2em .4em; background: var(--paper); }
+.ia3 .card.log { border-left-color: var(--line); color: var(--dim); }
+.ia3 .it { display: flex; gap: .45em; align-items: baseline; white-space: nowrap; }
+.ia3 .it.quiet { color: var(--dim); }
+.ia3 .int { font-style: normal; font-weight: 600; font-size: .85em; padding: 0 .3em; border: 1px solid currentColor; border-radius: 2px; letter-spacing: .04em; }
+.ia3 .it:not(.quiet) .int { color: var(--hostile); }
+.ia3 .pin { position: absolute; transform: translate(-50%, -100%); font: 600 clamp(6px, .85cqw, 10px) var(--mono); padding: 0 .3em; border-radius: 2px; background: var(--paper); border: 1px solid var(--hostile); color: var(--hostile); white-space: nowrap; }
+.ia3 .pin.quiet { border-color: var(--line); color: var(--dim); }
+.ia3 .scr.f .pin { font-size: clamp(6px, 1.6cqw, 10px); }
+.ia3 .scr.ph .pin { font-size: clamp(6px, 2.8cqw, 10px); }
+.ia3 .ring { position: absolute; transform: translate(-50%, -50%); width: 3.2cqw; aspect-ratio: 1; border: 2px solid var(--accent); border-radius: 50%; }
+.ia3 .finds { margin: 0; padding-left: 22px; display: grid; gap: 8px; max-width: 76ch; }
+.ia3 .lean { background: var(--paper); border: 1px solid var(--ok); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; }
+@media (max-width: 860px) { .ia3 .small-row { grid-template-columns: minmax(0, 1fr) minmax(0, .6fr); } .ia3 .small-row .notes { grid-column: 1 / -1; } }
+
 </style>
 </head>
 <body>
@@ -404,7 +471,7 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 <main>
 <header>
   <p class="mono"><a href="../review/">← Review hub: everything up for review</a></p>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03 · ILI-1358 step 2 added</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03 · ILI-1358 step 2 added · ILI-1363 step 3 added 2026-11-05</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
@@ -565,6 +632,220 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
     <li><b>Symbols:</b> real MIL-STD-2525 symbols through milsymbol, or our own icons drawn in its spirit (shape for side, a dashed frame for old reports)?</li>
     <li><b>The intel gauge:</b> with the clock as a mission instrument, or with ALPHA, since it's what ALPHA burns?</li>
     <li><b>Anything here that isn't your vision,</b> especially in the groups table.</li>
+  </ol>
+</section>
+
+<section class="ia3" id="ia3">
+  <div class="sect-head">
+    <p class="eyebrow">ILI-1363 · IA v2 · step 3 of 4 · whole-screen drafts · 2026-11-05 · desktop 1440 × 900, Fold 884 × 1104, phone 390 × 844</p>
+    <h2>Three whole screens. You pick one, and it becomes the spec.</h2>
+    <p>Each draft lays out step 2's groups on the canvas: ORION-3, the square menu, the instruments, the queue, the intel panel (ILI-1361), team and log. Every screen shows the same moment. ORION-3 has just photographed E3, there are three hostiles, and intel is pouring in. Your intel rules (ILI-1362) apply in all three: every scan brings in at least one item of one of the five types, which type is random, and a quiet square still brings in a "nothing here" report that fills the gauge. The drafts differ in where intel lands, and they answer two of step 2's open calls in different ways.</p>
+  </div>
+  <div class="legend3">
+    <span><i class="r1"></i>rank 1, you press it</span>
+    <span><i class="r2"></i>rank 2, you glance at it</span>
+    <span><i class="r3"></i>rank 3, folded until you open it</span>
+    <span><i style="background:#c83a3a;transform:rotate(45deg);width:9px;height:9px;border:0"></i>hostile, solid when imaged</span>
+    <span><i style="border:1.5px dashed #b8901c;transform:rotate(45deg);width:8px;height:8px;background:none"></i>reported, not yet imaged</span>
+    <span><i style="background:#2f6f8f;border:0"></i>ALPHA</span>
+  </div>
+  <p>Held in all three: the canvas runs edge to edge and panels sit on it. ORION-3 is a fixed size and never scrolls. The square menu is the only place you strike. Gauges are bars. There's no briefing. The intel panel shows a fixed number of items, and older ones fold into a count, so it never scrolls either.</p>
+
+  <!-- ============ DRAFT A ============ -->
+  <div class="draft">
+    <div class="draft-head"><p class="eyebrow">Draft A</p><h2>Read it left to right: tasking, then collection, then intel</h2><span class="tag pick">my pick</span></div>
+    <p>The left side is what the mission needs: the instruments and the queue. The right side is the satellite: ORION-3, with the intel panel directly under it, so each scan's intel lands right under the picture that produced it. <b>The queue and the log are split. The intel gauge sits with the clock.</b></p>
+    <figure>
+      <div class="scr d">
+        <div class="ao" style="left:27%;top:13%;width:38%;height:72%"></div>
+        <div class="route" style="left:38%;top:72%;width:9%;transform:rotate(-62deg)"></div>
+        <i class="sym a" style="left:38%;top:72%"></i>
+        <div class="fp" style="left:44%;top:30%;width:4.6%;height:7.4%"></div>
+        <i class="sym" style="left:45.5%;top:32.5%"></i><i class="sym" style="left:47%;top:34.5%"></i><i class="sym" style="left:45.8%;top:35.8%"></i>
+        <i class="sym u" style="left:56%;top:52%"></i>
+        <div class="p r1" style="left:49.6%;top:27%;width:12.5%"><b>E3 · H-01 to 03</b><div class="row"><span>$12.4M</span></div><div class="row">Sniper $40k <span>ready</span></div><div class="row">Drone $90k <span>ready</span></div><div class="row">Heli $150k <span>2:10</span></div></div>
+
+        <div class="p r2" style="left:1.1%;top:1.8%;width:22%"><b>Black Box · 41:27 ❚❚</b><div class="row"><span>phase 2 of 3</span><span>●●○</span></div><span>next: get eyes on E3</span><div class="row">Intel <i class="bar" style="--v:62%"></i></div><span>ALPHA · holding short of E3</span></div>
+        <div class="p r1" style="left:1.1%;top:23%;width:22%;height:40%"><b>Needs you · 3</b><div class="card">E3 · H-01 to 03 · contact</div><div class="card">F4 · ALPHA asks for imagery</div><div class="card">D5 · signal · listen or jam</div></div>
+        <div class="p r3" style="left:1.1%;bottom:12%;width:22%"><b>Team · 5 ok</b></div>
+        <div class="p r3" style="left:1.1%;bottom:2%;width:22%"><b>Log</b><span>ALPHA: holding, eyes on the treeline</span></div>
+
+        <div class="p r1" style="right:1.1%;top:1.8%;width:31%;height:52%"><b>ORION-3 · E3</b><div class="feed"><i class="tl">E3 · 0614Z</i><i class="tr">PHOTO</i><i class="bl">cloud 20%</i><i class="br">graded · 3 H</i><i class="sym" style="left:44%;top:42%"></i><i class="sym" style="left:52%;top:50%"></i><i class="sym" style="left:46%;top:58%"></i></div><div class="btns"><em>Photo</em><em>Video</em><em class="ghost">Reposition</em></div></div>
+        <div class="p r2" style="right:1.1%;top:56%;width:31%;height:30%"><b>Intel · +3 from E3</b><div class="it"><em class="int">GEOINT</em>E3 · three hostiles, armed</div><div class="it"><em class="int">SIGINT</em>E3 · radio traffic, calling a QRF</div><div class="it"><em class="int">HUMINT</em>E3 · a local says they came at dawn</div><div class="it quiet"><em class="int">OSINT</em>C4 · nothing here</div><span>+ 6 earlier</span></div>
+      </div>
+      <figcaption>Desktop · 1440 × 900</figcaption>
+    </figure>
+    <div class="small-row">
+      <figure>
+        <div class="scr f">
+          <div class="ao" style="left:6%;top:30%;width:52%;height:60%"></div>
+          <i class="sym a" style="left:22%;top:80%"></i>
+          <div class="fp" style="left:28%;top:47%;width:8%;height:6.4%"></div>
+          <i class="sym" style="left:31%;top:49%"></i><i class="sym" style="left:33%;top:51.5%"></i>
+          <i class="sym u" style="left:44%;top:68%"></i>
+          <div class="p r1" style="left:28%;top:54%;width:21%"><b>E3</b><div class="row">Sniper <span>ready</span></div><div class="row">Drone <span>ready</span></div><div class="row">Heli <span>2:10</span></div></div>
+          <div class="p r2" style="left:2%;top:1.5%;width:96%"><div class="row"><b>Black Box · 41:27 ❚❚ ●●○</b><span>Intel <i class="bar" style="--v:62%"></i></span></div><span>next: get eyes on E3 · ALPHA holding</span></div>
+          <div class="p r1" style="left:2%;top:11%;width:38%;height:17%"><b>Needs you · 3</b><div class="card">E3 · contact</div><div class="card">F4 · imagery</div></div>
+          <div class="p r1" style="right:2%;top:11%;width:56%;height:33%"><b>ORION-3 · E3</b><div class="feed"><i class="tl">E3</i><i class="tr">PHOTO</i><i class="br">3 H</i></div><div class="btns"><em>Photo</em><em>Video</em><em class="ghost">Repos.</em></div></div>
+          <div class="p r2" style="right:2%;top:45.5%;width:37%;height:22%"><b>Intel · +3</b><div class="it"><em class="int">GEO</em>E3 · 3 hostiles</div><div class="it"><em class="int">SIG</em>E3 · QRF</div><div class="it quiet"><em class="int">OSI</em>C4 · nothing</div></div>
+          <div class="p r3" style="left:2%;bottom:1.5%;width:47%"><b>Team · 5 ok</b></div>
+          <div class="p r3" style="right:2%;bottom:1.5%;width:47%"><b>Log</b></div>
+        </div>
+        <figcaption>Fold · 884 × 1104</figcaption>
+      </figure>
+      <figure>
+        <div class="scr ph">
+          <div class="ao" style="left:8%;top:12%;width:84%;height:40%"></div>
+          <i class="sym a" style="left:30%;top:46%"></i>
+          <div class="fp" style="left:40%;top:22%;width:16%;height:7%"></div>
+          <i class="sym" style="left:46%;top:25%"></i><i class="sym" style="left:50%;top:27%"></i>
+          <div class="p r1" style="left:57%;top:20%;width:40%"><b>E3</b><div class="row">Sniper <span>ok</span></div><div class="row">Drone <span>ok</span></div></div>
+          <div class="p r2" style="left:0;top:0;right:0;border-radius:0"><div class="row"><b>41:27 ●●○</b><i class="bar" style="--v:62%;width:4em"></i></div></div>
+          <div class="p r1" style="left:3%;top:6.5%;width:40%"><b>Needs you · 3 ▸</b></div>
+          <div class="p r1" style="left:0;right:0;bottom:0;height:46%;border-radius:8px 8px 0 0"><b>ORION-3 · E3</b><div class="feed"><i class="tr">PHOTO</i><i class="br">3 H</i></div><div class="btns"><em>Photo</em><em>Video</em></div><div class="it"><em class="int">GEO</em>E3 · 3 hostiles</div><div class="it"><em class="int">SIG</em>E3 · QRF</div><span>Team · Log ▾</span></div>
+        </div>
+        <figcaption>Phone · 390 × 844</figcaption>
+      </figure>
+      <div class="notes"><ul>
+        <li><b>Desktop:</b> the instruments and queue are on the left. ORION-3 is on the right with intel under it. Team and log fold to one line each.</li>
+        <li><b>Fold:</b> the instruments become one line across the top. The queue goes top left, and ORION-3 with intel under it goes top right. The canvas gets the lower half.</li>
+        <li><b>Phone:</b> the queue folds to a count you tap. ORION-3 is the bottom sheet, with its newest intel lines under the picture. Team and log are inside the sheet.</li>
+        <li><b>Why it's my pick:</b> the screen reads in the order of the intel cycle, and a scan's result is never more than a few centimetres from the picture it came from.</li>
+        <li><b>Costs:</b> two columns of panels cover the canvas's edges on desktop.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <!-- ============ DRAFT B ============ -->
+  <div class="draft">
+    <div class="draft-head"><p class="eyebrow">Draft B</p><h2>One stack: intel, asks and radio in a single stream</h2><span class="tag">option D, grown up</span></div>
+    <p>Everything that arrives goes into one stack on the left. Cards that need you are pinned at the top. Under them, intel and radio lines run in the order they came in. ORION-3 floats on the right. The clock is a slim bar across the top, and the intel gauge rides on ALPHA's symbol on the canvas. <b>The queue and the log are one stack. The intel gauge sits with ALPHA.</b></p>
+    <figure>
+      <div class="scr d">
+        <div class="ao" style="left:29%;top:13%;width:36%;height:72%"></div>
+        <div class="route" style="left:40%;top:72%;width:9%;transform:rotate(-62deg)"></div>
+        <i class="sym a" style="left:40%;top:72%"></i>
+        <div class="p r2" style="left:41.5%;top:74%;width:10%"><b>ALPHA</b><span>holding</span><i class="bar" style="--v:62%"></i></div>
+        <div class="fp" style="left:46%;top:30%;width:4.6%;height:7.4%"></div>
+        <i class="sym" style="left:47.5%;top:32.5%"></i><i class="sym" style="left:49%;top:34.5%"></i><i class="sym" style="left:47.8%;top:35.8%"></i>
+        <i class="sym u" style="left:58%;top:52%"></i>
+        <div class="p r1" style="left:51.6%;top:27%;width:12.5%"><b>E3 · H-01 to 03</b><div class="row"><span>$12.4M</span></div><div class="row">Sniper $40k <span>ready</span></div><div class="row">Drone $90k <span>ready</span></div><div class="row">Heli $150k <span>2:10</span></div></div>
+
+        <div class="p r2" style="left:30%;top:1.8%;width:36%"><div class="row"><b>Black Box · 41:27 ❚❚</b><span>●●○ · next: get eyes on E3</span></div></div>
+        <div class="p r1" style="left:1.1%;top:1.8%;width:25%;height:96%"><b>Stack</b><div class="card">E3 · H-01 to 03 · contact</div><div class="card">F4 · ALPHA asks for imagery</div><div class="card">D5 · signal · listen or jam</div><span>— in order —</span><div class="card log"><div class="it"><em class="int" style="color:#c83a3a">GEOINT</em>E3 · three hostiles</div></div><div class="card log"><div class="it"><em class="int" style="color:#c83a3a">SIGINT</em>E3 · calling a QRF</div></div><div class="card log"><div class="it"><em class="int" style="color:#c83a3a">HUMINT</em>E3 · came at dawn</div></div><div class="card log">ALPHA: holding, eyes on the treeline</div><div class="card log"><div class="it"><em class="int">OSINT</em>C4 · nothing here</div></div><div class="card log">HQ: ORION-3 to E3</div><span>+ 9 earlier</span></div>
+        <div class="p r1" style="right:1.1%;top:1.8%;width:31%;height:56%"><b>ORION-3 · E3</b><div class="feed"><i class="tl">E3 · 0614Z</i><i class="tr">PHOTO</i><i class="bl">cloud 20%</i><i class="br">graded · 3 H</i><i class="sym" style="left:44%;top:42%"></i><i class="sym" style="left:52%;top:50%"></i><i class="sym" style="left:46%;top:58%"></i></div><div class="btns"><em>Photo</em><em>Video</em><em class="ghost">Reposition</em></div></div>
+        <div class="p r3" style="right:1.1%;bottom:2%;width:31%"><b>Team · 5 ok</b></div>
+      </div>
+      <figcaption>Desktop · 1440 × 900</figcaption>
+    </figure>
+    <div class="small-row">
+      <figure>
+        <div class="scr f">
+          <div class="ao" style="left:44%;top:46%;width:52%;height:46%"></div>
+          <i class="sym a" style="left:58%;top:84%"></i>
+          <div class="p r2" style="left:61%;top:82%;width:22%"><b>ALPHA</b><i class="bar" style="--v:62%"></i></div>
+          <div class="fp" style="left:62%;top:56%;width:8%;height:6.4%"></div>
+          <i class="sym" style="left:65%;top:58%"></i><i class="sym" style="left:67%;top:60.5%"></i>
+          <div class="p r1" style="left:72%;top:54%;width:22%"><b>E3</b><div class="row">Sniper <span>ready</span></div><div class="row">Drone <span>ready</span></div></div>
+          <div class="p r2" style="left:2%;top:1.5%;width:96%"><div class="row"><b>41:27 ❚❚ ●●○</b><span>next: get eyes on E3</span></div></div>
+          <div class="p r1" style="left:2%;top:7.5%;width:40%;bottom:1.5%"><b>Stack</b><div class="card">E3 · contact</div><div class="card">F4 · imagery</div><span>— in order —</span><div class="card log"><div class="it"><em class="int" style="color:#c83a3a">GEO</em>E3 · 3 H</div></div><div class="card log"><div class="it"><em class="int" style="color:#c83a3a">SIG</em>E3 · QRF</div></div><div class="card log">ALPHA: holding</div><div class="card log"><div class="it"><em class="int">OSI</em>C4 · nothing</div></div></div>
+          <div class="p r1" style="right:2%;top:7.5%;width:54%;height:36%"><b>ORION-3 · E3</b><div class="feed"><i class="tr">PHOTO</i><i class="br">3 H</i></div><div class="btns"><em>Photo</em><em>Video</em><em class="ghost">Repos.</em></div></div>
+          <div class="p r3" style="right:2%;bottom:1.5%;width:54%"><b>Team · 5 ok</b></div>
+        </div>
+        <figcaption>Fold · 884 × 1104</figcaption>
+      </figure>
+      <figure>
+        <div class="scr ph">
+          <div class="ao" style="left:8%;top:40%;width:84%;height:28%"></div>
+          <i class="sym a" style="left:30%;top:62%"></i>
+          <div class="p r2" style="left:34%;top:60%;width:30%"><i class="bar" style="--v:62%;width:100%"></i></div>
+          <i class="sym" style="left:52%;top:46%"></i><i class="sym" style="left:56%;top:48%"></i>
+          <div class="p r2" style="left:0;top:0;right:0;border-radius:0"><b>41:27 · ●●○</b></div>
+          <div class="p r1" style="left:3%;right:3%;top:5.5%;height:32%"><b>ORION-3 · E3</b><div class="feed"><i class="tr">PHOTO</i><i class="br">3 H</i></div><div class="btns"><em>Photo</em><em>Video</em></div></div>
+          <div class="p r1" style="left:0;right:0;bottom:0;height:30%;border-radius:8px 8px 0 0"><b>Stack · 3 need you</b><div class="card">E3 · contact</div><div class="card log"><div class="it"><em class="int" style="color:#c83a3a">GEO</em>E3 · 3 H</div></div><div class="card log"><div class="it"><em class="int" style="color:#c83a3a">SIG</em>E3 · QRF</div></div></div>
+        </div>
+        <figcaption>Phone · 390 × 844</figcaption>
+      </figure>
+      <div class="notes"><ul>
+        <li><b>Desktop:</b> the stack runs the full left side. ORION-3 is on the right, and the clock is a slim bar between them.</li>
+        <li><b>Fold:</b> the same, with the canvas in the lower right.</li>
+        <li><b>Phone:</b> ORION-3 drops in over the top of the canvas while you scan. The stack is the bottom sheet.</li>
+        <li><b>Gains:</b> one place to read, and the chaos shows as the stack filling up fast. The gauge sits on the thing it feeds.</li>
+        <li><b>Costs:</b> a scan's intel lands far from the picture. "Needs you" and "for the record" share one column again, which option D already showed gets long.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <!-- ============ DRAFT C ============ -->
+  <div class="draft">
+    <div class="draft-head"><p class="eyebrow">Draft C</p><h2>Intel lands on the canvas, at its square</h2><span class="tag">fewest panels</span></div>
+    <p>This takes rule 1 furthest: anything with a place goes on the canvas. Each intel item pins to its square as a small type tag, so you see where the chaos is. The intel panel is a strip along the bottom: a timeline of every item, newest on the right, so nothing is lost. The queue is rings on the squares that need you, with a count in the top strip. <b>The queue lives on the canvas, the log folds into the top strip, and the intel gauge sits with the clock.</b></p>
+    <figure>
+      <div class="scr d">
+        <div class="ao" style="left:16%;top:12%;width:44%;height:70%"></div>
+        <div class="route" style="left:28%;top:70%;width:9%;transform:rotate(-62deg)"></div>
+        <i class="sym a" style="left:28%;top:70%"></i>
+        <div class="fp" style="left:34%;top:30%;width:4.6%;height:7.4%"></div>
+        <i class="sym" style="left:35.5%;top:32.5%"></i><i class="sym" style="left:37%;top:34.5%"></i><i class="sym" style="left:35.8%;top:35.8%"></i>
+        <span class="pin" style="left:36%;top:29%">GEO 3 · SIG · HUM</span>
+        <i class="ring" style="left:36.3%;top:33.7%"></i>
+        <i class="sym u" style="left:52%;top:52%"></i><span class="pin" style="left:52%;top:50%">SIG</span><i class="ring" style="left:52%;top:52%"></i>
+        <span class="pin quiet" style="left:24%;top:24%">OSI · nothing</span>
+        <span class="pin quiet" style="left:54%;top:22%">MAS · nothing</span>
+        <i class="ring" style="left:44%;top:62%"></i>
+        <div class="p r1" style="left:33.5%;top:39%;width:12.5%"><b>E3 · H-01 to 03</b><div class="row"><span>$12.4M</span></div><div class="row">Sniper $40k <span>ready</span></div><div class="row">Drone $90k <span>ready</span></div><div class="row">Heli $150k <span>2:10</span></div></div>
+
+        <div class="p r2" style="left:1.1%;right:1.1%;top:1.8%"><div class="row"><b>Black Box · 41:27 ❚❚</b><span>●●○ · next: get eyes on E3</span><span>Intel <i class="bar" style="--v:62%"></i></span><span>ALPHA holding</span><b style="color:var(--accent)">3 need you ◂ ▸</b><span>Team 5 ok ▾</span><span>Log ▾</span></div></div>
+        <div class="p r2" style="left:1.1%;bottom:2%;width:64%"><b>Intel · newest right</b><div class="row" style="justify-content:flex-start;gap:1.2em"><span class="it quiet"><em class="int">MAS</em>F2 nothing</span><span class="it quiet"><em class="int">OSI</em>C4 nothing</span><span class="it"><em class="int">SIG</em>D5 chatter</span><span class="it"><em class="int">HUM</em>E3 dawn</span><span class="it"><em class="int">SIG</em>E3 QRF</span><span class="it"><em class="int">GEO</em>E3 3 H</span></div></div>
+        <div class="p r1" style="right:1.1%;bottom:2%;width:31%;height:62%"><b>ORION-3 · E3</b><div class="feed"><i class="tl">E3 · 0614Z</i><i class="tr">PHOTO</i><i class="bl">cloud 20%</i><i class="br">graded · 3 H</i><i class="sym" style="left:44%;top:42%"></i><i class="sym" style="left:52%;top:50%"></i><i class="sym" style="left:46%;top:58%"></i></div><div class="btns"><em>Photo</em><em>Video</em><em class="ghost">Reposition</em></div></div>
+      </div>
+      <figcaption>Desktop · 1440 × 900</figcaption>
+    </figure>
+    <div class="small-row">
+      <figure>
+        <div class="scr f">
+          <div class="ao" style="left:6%;top:14%;width:88%;height:38%"></div>
+          <i class="sym a" style="left:22%;top:46%"></i>
+          <i class="sym" style="left:44%;top:26%"></i><i class="sym" style="left:47%;top:28%"></i>
+          <span class="pin" style="left:46%;top:23%">GEO 3 · SIG</span><i class="ring" style="left:45.5%;top:27%"></i>
+          <span class="pin quiet" style="left:20%;top:20%">OSI · nothing</span>
+          <span class="pin" style="left:70%;top:38%">SIG</span><i class="sym u" style="left:70%;top:40%"></i>
+          <div class="p r1" style="left:52%;top:25%;width:22%"><b>E3</b><div class="row">Sniper <span>ready</span></div><div class="row">Drone <span>ready</span></div></div>
+          <div class="p r2" style="left:2%;right:2%;top:1.5%"><div class="row"><b>41:27 ❚❚ ●●○</b><span>Intel <i class="bar" style="--v:62%"></i></span></div><div class="row"><b style="color:var(--accent)">3 need you ◂ ▸</b><span>Team ▾ · Log ▾</span></div></div>
+          <div class="p r1" style="left:2%;right:2%;bottom:10%;height:34%"><b>ORION-3 · E3</b><div class="feed"><i class="tr">PHOTO</i><i class="br">3 H</i></div><div class="btns"><em>Photo</em><em>Video</em><em class="ghost">Repos.</em></div></div>
+          <div class="p r2" style="left:2%;right:2%;bottom:1.5%"><div class="row" style="justify-content:flex-start;gap:1em"><span class="it quiet"><em class="int">OSI</em>C4</span><span class="it"><em class="int">SIG</em>D5</span><span class="it"><em class="int">SIG</em>E3</span><span class="it"><em class="int">GEO</em>E3 3 H</span></div></div>
+        </div>
+        <figcaption>Fold · 884 × 1104</figcaption>
+      </figure>
+      <figure>
+        <div class="scr ph">
+          <div class="ao" style="left:6%;top:12%;width:88%;height:36%"></div>
+          <i class="sym a" style="left:26%;top:42%"></i>
+          <i class="sym" style="left:52%;top:24%"></i><i class="sym" style="left:57%;top:26%"></i>
+          <span class="pin" style="left:54%;top:21%">GEO 3 · SIG</span><i class="ring" style="left:54%;top:25%"></i>
+          <div class="p r2" style="left:0;top:0;right:0;border-radius:0"><div class="row"><b>41:27 ●●○</b><b style="color:var(--accent)">3 ◂ ▸</b></div></div>
+          <div class="p r1" style="left:52%;top:30%;width:44%"><b>E3</b><div class="row">Sniper <span>ok</span></div><div class="row">Drone <span>ok</span></div></div>
+          <div class="p r2" style="left:0;right:0;bottom:37%;border-radius:0"><div class="row" style="justify-content:flex-start;gap:.8em"><span class="it"><em class="int">SIG</em>E3</span><span class="it"><em class="int">GEO</em>E3 3 H</span></div></div>
+          <div class="p r1" style="left:0;right:0;bottom:0;height:36%;border-radius:8px 8px 0 0"><b>ORION-3 · E3</b><div class="feed"><i class="tr">PHOTO</i><i class="br">3 H</i></div><div class="btns"><em>Photo</em><em>Video</em></div></div>
+        </div>
+        <figcaption>Phone · 390 × 844</figcaption>
+      </figure>
+      <div class="notes"><ul>
+        <li><b>Desktop:</b> one strip across the top holds the clock, gauge, ALPHA, the queue's count, and Team and Log as drop-downs. ORION-3 sits bottom right, and the intel timeline runs along the bottom.</li>
+        <li><b>Fold and phone:</b> the same pieces stacked. ORION-3 docks at the bottom, and the timeline sits just above it.</li>
+        <li><b>Gains:</b> the most canvas. The chaos is something you <i>see</i>, with tags piling onto squares, and the ◂ ▸ arrows jump between the squares that need you.</li>
+        <li><b>Costs:</b> tags crowd the canvas when it all kicks off. The queue as rings is the least explicit of the three, and the top strip is dense.</li>
+      </ul></div>
+    </div>
+  </div>
+
+  <div class="lean"><b>My pick: A.</b><p>It answers your intel rules most directly. You scan, and the intel lands right under the picture, so every scan visibly pays out. It also keeps "needs you" and "the record" apart, which option D showed matters. B is the one if you want a single stream to read. C's pins could be added to A later as a canvas layer.</p></div>
+
+  <h3>For you to call</h3>
+  <ol class="finds">
+    <li><b>Pick a draft,</b> or a mix (for example, A with C's pins on the canvas).</li>
+    <li>Your pick also settles two of step 2's open calls. <b>The queue and the log:</b> split in A and C, one stack in B. <b>The intel gauge:</b> with the clock in A and C, on ALPHA in B.</li>
+    <li>Still open from step 2, and it doesn't change the layout: real MIL-STD-2525 symbols, or our own drawn in that style.</li>
   </ol>
 </section>
 
