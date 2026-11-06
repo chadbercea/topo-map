@@ -26,9 +26,9 @@ export function MapArea() {
       // The open map ends at the dock (phone), the small widgets' line (fold, tablet) or the
       // bottom row (wide, ILI-1226).
       const foot = (t === 'compact' ? tabs : t === 'medium' ? small : bottom)?.getBoundingClientRect().top;
-      // On a phone the mission and the small widgets are rows of their own above the map;
-      // on a fold the mission floats over the map's corner and the map runs to the top.
-      const coverTop = t === 'compact' ? Math.max(widget?.getBoundingClientRect().bottom ?? 0, small?.getBoundingClientRect().bottom ?? 0) : 0;
+      // On a phone the small widgets are a row of their own above the map; the timer floats over
+      // the map's corner on every screen (ILI-1392), so the grid runs under it.
+      const coverTop = t === 'compact' ? (small?.getBoundingClientRect().bottom ?? 0) : 0;
       // The side rail (medium) and ORION-3's column (wide) are columns of their own: the grid
       // stops at their edge.
       const coverRight = t === 'medium' ? tabs?.getBoundingClientRect().left : t === 'wide' ? orion?.getBoundingClientRect().left : undefined;

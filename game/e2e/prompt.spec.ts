@@ -17,7 +17,7 @@ test('ALPHA needing intel is a prompt pinned to its square; move ORION-3, then S
   expect(square).toMatch(/^[A-H]\d$/);
   await expect(prompt.getByTestId('prompt-text')).toContainText(`needs intel on ${square}`);
   await expect(prompt.getByTestId('prompt-response')).toHaveText([/^Move ORION-3 here · \d:\d\d$/]); // the move step first (ILI-1397)
-  await expect(page.getByTestId('needs-hq')).not.toContainText('requests imagery'); // not doubled in the mission panel
+  await expect(page.getByTestId('needs-hq')).toHaveCount(0); // no mission panel to double it (ILI-1392)
   await expect(page.getByTestId('event-card-stack').filter({ hasText: 'requests imagery' })).toHaveCount(0); // nor in COMMS
 
   await prompt.getByTestId('prompt-response').click();

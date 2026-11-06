@@ -202,12 +202,8 @@ export class MapScene extends Phaser.Scene {
       this.routeKey = key;
       this.drawRoute();
     }
-    // Exfil can move (ILI-1192): the A/B/C markers follow it.
-    const points = `${st.mission.a}|${st.mission.b}|${st.mission.c}`;
-    if (points !== this.missionKey) {
-      this.missionKey = points;
-      this.drawMission();
-    }
+    // Exfil can move (ILI-1192): the A/B/C markers follow it. Every frame: the objective pulses (ILI-1392).
+    this.drawMission(_time);
     this.drawMarkers(_time);
     this.drawFight(_time);
     this.drawIntel();
@@ -808,19 +804,29 @@ export class MapScene extends Phaser.Scene {
     g.lineStyle((2 * DPR) / this.zoom, TEAL, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
   }
 
-  // The mission's three points: A infil, B crash site, C exfil.
-  private drawMission() {
-    const { a, b, c } = game.get().mission;
+  // The mission's three points: A infil, B crash site, C exfil. The objective is a marker on the
+  // map, not text in a panel (ILI-1392): the point ALPHA is working toward now (the black box,
+  // then the exfil) gets a pulsing diamond and says it's the objective.
+  private drawMission(time = 0) {
+    const { a, b, c, phase } = game.get().mission;
     const g = this.missionGfx.clear();
-    const points: [string, string, string][] = [['A', a, 'INFIL'], ['B', b, 'CRASH SITE'], ['C', c, 'EXFIL']];
+    const goal = phase === 'exfil' || phase === 'complete' ? 'C' : 'B';
+    const points: [string, string, string][] = [['A', a, 'INFIL'], ['B', b, 'BLACK BOX'], ['C', c, 'EXFIL']];
     points.forEach(([letter, sq, name], i) => {
       const p = squareCenter(sq)!;
       const r = (14 * DPR) / this.zoom;
+      const now = letter === goal;
       g.lineStyle((2 * DPR) / this.zoom, TEAM, 0.9).strokeCircle(p.x, p.y, r);
+      if (now) {
+        const k = r * (1.9 + 0.25 * Math.sin(time / 350));
+        const pts = [new Phaser.Math.Vector2(p.x, p.y - k), new Phaser.Math.Vector2(p.x + k, p.y), new Phaser.Math.Vector2(p.x, p.y + k), new Phaser.Math.Vector2(p.x - k, p.y)];
+        g.lineStyle((2 * DPR) / this.zoom, TEAM, 0.95).strokePoints(pts, true);
+        g.fillStyle(TEAM, 0.9).fillCircle(p.x, p.y, r * 0.35);
+      }
       const label = (this.missionLabels[i] ??= this.add
         .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color: '#f2c14e' })
         .setOrigin(0.5, 0));
-      label.setText(`${letter} · ${name}`).setScale(1 / this.zoom).setPosition(p.x, p.y + r * 1.2);
+      label.setText(now ? `OBJECTIVE · ${name}` : `${letter} · ${name}`).setScale(1 / this.zoom).setPosition(p.x, p.y + r * (now ? 2.3 : 1.2));
       this.inset.ignore(label);
     });
   }
@@ -866,7 +872,6 @@ export class MapScene extends Phaser.Scene {
 
   // The route redraws when the team moves, and when a scan or a reveal changes a leg's state.
   private routeKey = '';
-  private missionKey = '';
 
   private lastTeam = { x: NaN, y: NaN };
   private heading = -Math.PI / 2; // the way the team faces, radians; eased toward its next step

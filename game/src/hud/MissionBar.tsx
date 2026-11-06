@@ -1,8 +1,7 @@
 import { game, useGame } from '../sim/store';
-import { bus, EV } from '../game/events';
-import { blockers, nextUp, race, type Blocker } from '../sim/progress';
+import { race } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
-import { IntelGauge } from './IntelGauge';
+import type { GameState } from '../sim/state';
 
 // The contract window counts down real minutes, M:SS, rounding up (ILI-1251): ten minutes reads
 // 10:00.
@@ -11,100 +10,75 @@ export const clock = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
-// MISSION · BLACK BOX (ILI-1226, layout A; reworked as the race, ILI-1245): the contract window
-// drives the game, so the clock comes first and big, with pause beside it. Under it the race:
-// time left drains on the top bar, ALPHA's walk A → B → C fills the one below on the same
-// scale, so a glance says whether the team will make it. When the walk left needs more than the
-// time left, the route bar goes red. Then the objective, ALPHA's intel gauge, and the one thing
-// that needs HQ most.
-// One unit of time on the panel, real minutes; the Zulu stamps live on ENVIRONMENT.
-export function MissionPanel() {
-  const s = useGame((x) => x);
-  const { timer, phase, tick, mission } = s;
+// The mission panel is broken up (ILI-1392). What's left on the HUD is tier one: the clock, small,
+// in the map's corner, named for why it matters (the client's deadline), with pause beside it. The
+// mission's name and objective are the start card and a marker on the map; ALPHA needing intel is
+// a prompt (ILI-1391); the race is in the debrief.
+export function TimerChip() {
+  const timer = useGame((s) => s.timer);
+  const phase = useGame((s) => s.phase);
+  const tick = useGame((s) => s.tick);
+  const mission = useGame((s) => s.mission);
   const remaining = timer.remainingMs;
   const warn = remaining <= 60_000 ? 'red' : remaining <= 300_000 ? 'amber' : undefined;
-  const left = Math.max(0, Math.min(1, remaining / Math.max(1, timer.totalMs)));
-  const r = race(s);
-  const need = needsHq(s);
-  const recovering = mission.phase === 'objective' && mission.recoverUntilMs !== null ? ` · ${clock(mission.recoverUntilMs - s.elapsedMs)}` : '';
-
   return (
-    <section className="panel mission" data-testid="mission-strip" data-phase={phase} data-warn={warn} data-overlay="widget">
-      <h2 className="m-title">{mission.name.replace('Operation ', '').toUpperCase()}</h2>
-      <div className="m-head" data-testid="mission-timer" data-phase={phase}>
-        <div className="m-readout">
-          <span className="m-label">
-            <ClockIcon />
-            Contract window
-          </span>
-          <span className="clock" data-testid="clock" data-warn={warn}>
-            {clock(remaining)}
-          </span>
-        </div>
-        <button className="pause" onClick={game.pause} disabled={phase !== 'running'} aria-label="Pause" data-testid="pause-toggle">
-          ❚❚
-        </button>
-        <span className="sr-only" data-testid="tick">
-          {tick}
-        </span>
-      </div>
-      <div className="race" data-testid="race" data-behind={r.behind}>
-        <span className="race-time" role="progressbar" aria-label="Contract window left" aria-valuenow={Math.round(left * 100)} aria-valuemin={0} aria-valuemax={100}>
-          <span style={{ width: `${left * 100}%` }} />
-        </span>
-        <span className="race-route" role="progressbar" aria-label={`${s.team.callsign}'s route walked`} aria-valuenow={Math.round(r.walked * 100)} aria-valuemin={0} aria-valuemax={100}>
-          <span style={{ width: `${r.walked * 100}%` }} />
-        </span>
-        <ol className="race-marks">
-          {r.marks.map((m) => (
-            <li key={m.key} style={{ left: `${m.at * 100}%` }} data-passed={r.walked >= m.at} title={`${m.key} · ${m.square}`}>
-              {m.key}
-            </li>
-          ))}
-        </ol>
-      </div>
-      <p className="objective" data-testid="objective">
-        ◆ {objectiveText(mission)}
-        {recovering}
-      </p>
-      {/* ALPHA's intel gauge sits with the clock (IA v2 draft A, ILI-1363): both are what you
-          glance at to know if the mission is on track. */}
-      <div className="m-intel">
-        <span className="m-label">{s.team.callsign} intel</span>
-        <IntelGauge />
-      </div>
-      {need && 'go' in need && need.go ? (
-        // A tap goes to what it's about (ILI-1271): the square on the map, or ALPHA's call.
-        <button className="need" data-testid="needs-hq" data-tone={need.tone} onClick={() => go(need.go!)}>
-          {need.text}
-        </button>
-      ) : (
-        <p className="need" data-testid="needs-hq" data-tone={need?.tone}>
-          {need ? need.text : 'Nothing in the way'}
-        </p>
-      )}
+    <section className="timer-chip" data-testid="timer" data-phase={phase} data-warn={warn} data-overlay="widget" aria-label="Client deadline">
+      <span className="t-label">Client deadline</span>
+      <span className="clock" data-testid="clock" data-warn={warn}>
+        {clock(remaining)}
+      </span>
+      <button className="pause" onClick={game.pause} disabled={phase !== 'running'} aria-label="Pause" data-testid="pause-toggle">
+        ❚❚
+      </button>
+      <span className="sr-only" data-testid="tick">
+        {tick}
+      </span>
+      {/* The objective is a marker on the map (ILI-1392); in words, for a screen reader. */}
+      <span className="sr-only" data-testid="objective">
+        {objectiveText(mission)}
+      </span>
     </section>
   );
 }
 
-function go(to: NonNullable<Blocker['go']>) {
-  if (to.square) game.selectSquare(to.square);
-  if (to.ask) bus.emit(EV.openAsk);
+// The mission start card (ILI-1392): the objective in plain words, for a few seconds as the clock
+// starts, then gone. It never takes a click.
+export const START_CARD_MS = 4_000;
+export const startText = (s: GameState) => `Recover the drone's black box at ${s.mission.b}`;
+
+export function StartCard() {
+  const show = useGame((s) => s.phase === 'running' && s.elapsedMs < START_CARD_MS);
+  const text = useGame(startText);
+  const name = useGame((s) => s.mission.name);
+  if (!show) return null;
+  return (
+    <div className="start-card" data-testid="start-card" role="status">
+      <small>{name}</small>
+      <p>{text}</p>
+    </div>
+  );
 }
 
-// The one thing that needs HQ most: what's in the way now, else a threat or resupply on its way.
-function needsHq(s: Parameters<typeof blockers>[0]) {
-  const now = blockers(s)[0];
-  if (now) return now;
-  const next = nextUp(s);
-  if (next.tone === 'objective') return undefined;
-  return { tone: next.tone, text: next.atMs === undefined ? next.text : `${next.text} in ${clock(next.atMs - s.elapsedMs)}` };
+// The race (ILI-1245), for the debrief now (ILI-1392): the contract window used on top, ALPHA's
+// walk A → B → C under it on the same scale.
+export function RaceBar({ s }: { s: GameState }) {
+  const r = race(s);
+  const left = Math.max(0, Math.min(1, s.timer.remainingMs / Math.max(1, s.timer.totalMs)));
+  return (
+    <div className="race" data-testid="race" data-behind={r.behind}>
+      <span className="race-time" role="progressbar" aria-label="Contract window left" aria-valuenow={Math.round(left * 100)} aria-valuemin={0} aria-valuemax={100}>
+        <span style={{ width: `${left * 100}%` }} />
+      </span>
+      <span className="race-route" role="progressbar" aria-label={`${s.team.callsign}'s route walked`} aria-valuenow={Math.round(r.walked * 100)} aria-valuemin={0} aria-valuemax={100}>
+        <span style={{ width: `${r.walked * 100}%` }} />
+      </span>
+      <ol className="race-marks">
+        {r.marks.map((m) => (
+          <li key={m.key} style={{ left: `${m.at * 100}%` }} data-passed={r.walked >= m.at} title={`${m.key} · ${m.square}`}>
+            {m.key}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
 }
-
-// A clock face, in the readout's line style (like ENVIRONMENT's icons).
-const ClockIcon = () => (
-  <svg className="env-icon" viewBox="0 0 16 16" aria-hidden>
-    <circle cx="8" cy="8" r="6" />
-    <path d="M8 4.5V8l2.5 1.5" />
-  </svg>
-);

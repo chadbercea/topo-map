@@ -6,6 +6,7 @@ import { cantBuy } from './ledger';
 import { intro, introOn } from './intro';
 import { wrapUp } from '../sim/wrapup';
 import { gameClock } from '../sim/gameTime';
+import { RaceBar } from './MissionBar';
 
 const HEADLINE = { win: 'MISSION SUCCESS', casualties: 'MISSION COMPLETE · CASUALTIES', failed: 'MISSION FAILED', bankrupt: 'BANKRUPT' } as const;
 const money = (n: number) => `${n < 0 ? '−' : ''}$${Math.abs(n).toLocaleString('en-US')}`;
@@ -42,6 +43,8 @@ export function WrapUp() {
             </li>
           ))}
         </ul>
+        {/* The race (ILI-1392): time used against ALPHA's walk, here in the debrief. */}
+        <RaceBar s={state} />
         <div className="columns">
           <dl>
             <dt>WITH YOUR INTEL</dt>
