@@ -16,6 +16,10 @@ test('tapping a grid square selects it and opens its zoomed view; tapping again 
     await expect(selected).toHaveText('—');
     return;
   }
+  // Tapping it again clears it. (Its menu is flush against its edge, ILI-1397, so it can sit
+  // over a neighbouring square: clear first, then pick the next.)
+  await tap(6, 3);
+  await expect(selected).toHaveText('—');
   await tap(5, 3);
   await expect(selected).toHaveText('F4');
   await tap(5, 3);
