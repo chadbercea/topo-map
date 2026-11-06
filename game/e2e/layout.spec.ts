@@ -26,7 +26,7 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText(/Moving to F4|Holding · needs intel/); // it sets off on its own (ILI-1315)
 });
 
-test('layout A: COMMS down the left, the timer in the map’s corner, ENVIRONMENT over ORION-3 down the right, TEAM along the bottom (ILI-1226, ILI-1218, ILI-1392)', async ({ page, isMobile }) => {
+test('layout A: the map from the left edge with the timer and the comms log button in its corner, ENVIRONMENT over ORION-3 down the right, TEAM along the bottom (ILI-1226, ILI-1218, ILI-1392, ILI-1393)', async ({ page, isMobile }) => {
   await start(page);
   if (isMobile) {
     // One dock, three tabs: COMMS, ORION-3, TEAM; no INTEL (ILI-1225).
@@ -40,15 +40,18 @@ test('layout A: COMMS down the left, the timer in the map’s corner, ENVIRONMEN
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
   const timer = await box('timer');
-  const comms = await box('satcom');
+  const logButton = await box('log-toggle');
   const orion = await box('satellite');
   const env = await box('conditions');
   const team = await box('team-panel');
   const map = await box('map-area');
-  // No mission panel (ILI-1392): COMMS runs the whole left side; the timer is small, in the map's top-left corner.
+  // No mission panel (ILI-1392) and COMMS a closed drawer (ILI-1393): the map runs from the left
+  // edge; the timer is small in its top-left corner, the comms log's button under it.
   await expect(page.getByTestId('mission-strip')).toHaveCount(0);
-  expect(comms.x).toBeLessThan(40);
-  expect(comms.y).toBeLessThan(40);
+  await expect(page.getByTestId('satcom')).toBeHidden();
+  expect(map.x).toBeLessThan(40);
+  expect(logButton.y).toBeGreaterThanOrEqual(timer.y + timer.height);
+  expect(logButton.x - map.x).toBeLessThan(24);
   expect(timer.x - map.x).toBeLessThan(24);
   expect(timer.y - map.y).toBeLessThan(24);
   expect(timer.height).toBeLessThan(56);
@@ -66,7 +69,7 @@ test('layout A: COMMS down the left, the timer in the map’s corner, ENVIRONMEN
   await expect(page.getByTestId('small-widgets')).toHaveCount(0);
   // Along the bottom: ALPHA's box at the left, then TEAM's table (ILI-1313), under COMMS and the map.
   const alpha = await box('call-box');
-  expect(team.y).toBeGreaterThan(comms.y + comms.height - 1);
+  expect(team.y).toBeGreaterThan(map.y + map.height - 1);
   expect(team.y + team.height).toBeGreaterThan(view.height - 40);
   expect(alpha.x).toBeLessThan(40);
   expect(team.x).toBeGreaterThanOrEqual(alpha.x + alpha.width - 1);
@@ -98,21 +101,20 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   await page.waitForTimeout(500);
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
-  const [comms, orion, alpha, team, map, intel] = await Promise.all(['satcom', 'satellite', 'call-box', 'team-panel', 'map-area', 'intel-panel'].map(box));
+  const [orion, alpha, team, map, intel] = await Promise.all(['satellite', 'call-box', 'team-panel', 'map-area', 'intel-panel'].map(box));
   const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
   // The margin round the screen.
-  near(comms.x, 16); near(comms.y, 16); near(orion.y, 16); near(map.y, 16); // no mission panel: COMMS starts at the top (ILI-1392)
+  near(map.x, 16); near(map.y, 16); near(orion.y, 16); // no mission panel (ILI-1392), COMMS a drawer (ILI-1393): the map takes the corner
   near(view.width - (orion.x + orion.width), 16); near(view.height - (intel.y + intel.height), 16); near(view.height - (team.y + team.height), 16);
   // The gutter, down and across.
-  near(alpha.y - (comms.y + comms.height), 16);
+  near(alpha.y - (map.y + map.height), 16);
+  near(alpha.x, 16);
   near(team.x - (alpha.x + alpha.width), 16);
-  near(map.x - (comms.x + comms.width), 16);
   near(orion.x - (map.x + map.width), 16);
   near(intel.y - (orion.y + orion.height), 16); // INTEL under ORION-3 (ILI-1363)
-  near(map.y + map.height, comms.y + comms.height); // the map's foot lines up with COMMS's (ILI-1397: no bar row under it)
   // Every panel's title the same distance in from its top edge.
   const inset = await page.evaluate(() =>
-    ['satcom', 'satellite', 'call-box', 'team-panel', 'intel-panel'].map((id) => {
+    ['satellite', 'call-box', 'team-panel', 'intel-panel'].map((id) => {
       const p = document.querySelector(`[data-testid=${id}]`)!;
       const h = p.querySelector('h2')!;
       const pad = parseFloat(getComputedStyle(h).paddingTop);

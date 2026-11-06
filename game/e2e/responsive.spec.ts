@@ -33,9 +33,9 @@ for (const [name, width, height] of SIZES) {
     await expect(page.getByTestId('satcom')).toBeVisible();
     await expect(page.getByTestId('team-panel')).toBeHidden();
 
-    // ALPHA's flag is at its marker in the open map, not parked at the map's foot.
+    // ALPHA's call is a prompt at its marker in the open map (ILI-1393).
     await askResupply(page); // ALPHA's one question (ILI-1315)
-    await expect(page.getByTestId('comms')).toHaveAttribute('data-pinned', 'true');
+    await expect(page.locator('[data-testid=prompt][data-kind=team-call]')).toBeInViewport();
 
     // Open E3 with the checkpoint found: ORION-3's tab comes forward with the square in it, and
     // what HQ can do about it floats over the map, both inside the screen.

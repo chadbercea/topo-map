@@ -4,7 +4,6 @@ import { kindOf, sending, type Comms, type Message } from '../sim/comms';
 import { cards, type Card, type EventCardKind } from '../sim/cards';
 import type { GameState } from '../sim/state';
 import { classify, EVENT_LABEL } from '../sim/stream';
-import { blocked } from '../sim/responses';
 import { gameClock } from '../sim/gameTime';
 import { bus, EV, getAskHidden } from '../game/events';
 import { FeedIcon, type Tier } from './feedIcons';
@@ -102,28 +101,9 @@ export function CommsPanel() {
 }
 
 const EVENT_TIER: Record<EventCardKind, Tier> = { contact: 'alert', signal: 'sigint', request: 'intel', building: 'humint', ask: 'comms' };
-const EVENT_GO: Record<EventCardKind, string> = { contact: 'Actions', signal: 'Locate', request: 'Scan', building: 'Search', ask: '' };
-
-// What tapping an event card does (ILI-1348): it starts the thing it's about, the mini game we
-// already have. Each one opens the event too (marked seen, its square picked), so the map and
-// ORION-3 show where it is.
-function act(c: Extract<Card, { type: 'event' }>) {
-  if (c.eventId) game.openEvent(c.eventId);
-  switch (c.kind) {
-    case 'signal':
-      return; // its square: the prompt there says how to get in range (ILI-1394)
-    case 'request':
-      return c.square && game.lookAt(c.square); // ORION-3 to the square for the shot
-    case 'building':
-      return c.square && game.search(c.square); // ALPHA detours to search it
-    default:
-      return; // a contact: its actions open beside the square
-  }
-}
-
-// An event card: what wants HQ. Tapping it starts what it's about (act). ALPHA's ask carries its
-// words, and HQ answers it right on the card; it shows HQ's answer going up the link, as the
-// line did.
+// An event card: what came in for HQ, as a record (ILI-1393). The log is history only: no action
+// buttons. What HQ does about it is on the map: the square's menu, or the prompt. ALPHA's ask
+// shows its words and HQ's answer going up the link.
 function EventCard({ c, newest, m, comms }: { c: Extract<Card, { type: 'event' }>; newest: boolean; m?: Message; comms: Comms }) {
   const tier = EVENT_TIER[c.kind];
   const head = c.kind === 'ask' ? `${m?.from ?? 'ALPHA'} asks` : EVENT_LABEL[c.kind as Exclude<EventCardKind, 'ask'>];
@@ -145,50 +125,12 @@ function EventCard({ c, newest, m, comms }: { c: Extract<Card, { type: 'event' }
         )}
         {answering && <span className="awaiting"> · waiting on HQ</span>}
       </span>
-      {c.open && EVENT_GO[c.kind] && (
-        <span className="go" aria-hidden>
-          {EVENT_GO[c.kind]} ›
-        </span>
-      )}
     </>
   );
   return (
     <li className="c-card c-event" data-tier={tier} data-kind={c.kind} data-open={c.open} data-newest={newest || undefined} data-waiting={!!answering} data-testid="event-card-stack">
-      {c.open && c.kind !== 'ask' ? (
-        <button type="button" className="c-open" aria-label={`${head} ${c.square ?? ''}: ${c.title}`} onClick={() => act(c)} data-testid="card-act">
-          {body}
-        </button>
-      ) : (
-        <div className="c-open">
-          {body}
-          {answering && <AskAnswers m={m} />}
-        </div>
-      )}
+      <div className="c-open">{body}</div>
     </li>
-  );
-}
-
-// HQ's answers to ALPHA's ask, on its card: the response tree's options, or a plain Copy.
-function AskAnswers({ m }: { m: Message }) {
-  const s = useGame((x) => x);
-  const options = m.responses ?? [];
-  return (
-    <span className="c-answers" data-testid="card-responses">
-      {options.length ? (
-        options.map((r) => {
-          const why = blocked(s, r);
-          return (
-            <button key={r.id} type="button" disabled={!!why} title={why ?? undefined} onClick={() => game.respond(m.id, r.id)}>
-              {r.label}
-            </button>
-          );
-        })
-      ) : (
-        <button type="button" onClick={() => game.confirmCall(m.id)}>
-          Copy
-        </button>
-      )}
-    </span>
   );
 }
 

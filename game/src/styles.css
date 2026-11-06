@@ -42,13 +42,23 @@ html, body {
   /* The war room, layout A (ILI-1226): the mission and COMMS down the left, the map in the
      middle with the mini game at its foot, ORION-3 down the whole right side, and along the
      bottom the small widgets and TEAM. */
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(300px, 380px);
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
-    'satcom map orion'
-    'satcom map orion'
-    'bottom bottom orion';
+    'map orion'
+    'bottom orion';
 }
+/* COMMS is a log drawer (ILI-1393): tier three, closed by default, over the map's left edge under
+   its button, which sits under the timer. */
+@media (min-width: 1200px) {
+  .slot-satcom { grid-area: map; justify-self: start; align-self: stretch; width: min(340px, 40%); margin: 104px 0 58px 10px; z-index: 6; } /* clear of the toolbox under it */
+  .hud:not([data-log]) .slot-satcom { display: none; }
+  .log-toggle { pointer-events: auto; grid-area: map; justify-self: start; align-self: start; z-index: 5; position: relative; margin: 60px 0 0 10px; display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; font: inherit; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); cursor: pointer; }
+  .log-toggle:hover, .hud[data-log] .log-toggle { border-color: var(--accent); }
+  .log-toggle .tab-dot { position: static; }
+}
+.log-toggle { display: none; }
+@media (min-width: 1200px) { .log-toggle { display: flex; } }
 
 /* RELAY-7, the comms satellite (ILI-1195, ILI-1199), down the left: its name on
    the left of its header, its status on the right. */
@@ -61,7 +71,7 @@ html, body {
 .slot-bottom { grid-area: bottom; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gutter); align-items: stretch; }
 .slot-small { min-width: 0; display: grid; }
 .slot-team { min-width: 0; }
-.slot-satcom { grid-area: satcom; min-width: 0; min-height: 0; display: grid; } /* COMMS runs the left side (ILI-1225) */
+.slot-satcom { min-width: 0; min-height: 0; display: grid; } /* COMMS: a drawer on a wide screen (ILI-1393), a tab on a narrower one */
 .dock-tabs { display: none; }
 
 .slot-widget { grid-area: map; justify-self: start; align-self: start; min-width: 0; position: relative; z-index: 5; margin: 10px 0 0 10px; } /* the timer, in the map's corner (ILI-1392) */

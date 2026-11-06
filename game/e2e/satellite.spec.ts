@@ -104,7 +104,7 @@ test('a fighter on the map opens its strikes too (ILI-1250)', async ({ page, isM
     const seen = window.game.get().imagery.E3!.seen[0];
     return seen.units.map((u) => ({ x: seen.x + ((u % 4) + 0.5) * 50, y: seen.y + (Math.floor(u / 4) + 0.5) * 50 }));
   });
-  // A fighter in open map: the timer sits in the map's corner (ILI-1392).
+  // A fighter in open map: the timer and the log button sit in the map's corner (ILI-1392, ILI-1393).
   let p = await worldToScreen(page, spots[0].x, spots[0].y);
   for (const s of spots) {
     const q = await worldToScreen(page, s.x, s.y);

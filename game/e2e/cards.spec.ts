@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { askResupply, fastForward, freeze, lockOn, photo, running, start } from './helpers';
+import { askResupply, fastForward, freeze, photo, running, start } from './helpers';
 
 // COMMS as a card stack (option D, ILI-1347): what wants HQ is an event card that waits for it.
 // Intel lands in INTEL under ORION-3 (IA v2 draft A, ILI-1363).
@@ -28,77 +28,41 @@ test('a photo further along the route shows as banked intel', async ({ page, isM
   await expect(page.getByTestId('intel-item').first()).toContainText('banked');
 });
 
-test('an event is a card that waits; tapping radio traffic shows it on the map, it never starts Listen, and answered it goes dim (ILI-1348, ILI-1394)', async ({ page, isMobile }) => {
+test('an event is a card that waits, a record only: nothing on it starts anything (ILI-1348, ILI-1393)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
-  await page.evaluate(() => window.game.addEvent({ id: 'traffic-x', kind: 'signal', square: 'C2', title: 'Enemy radio traffic' }));
-  await fastForward(page, 60_000); // it never expires
-  await lockOn(page, 'C2'); // ORION-3 over it, or nothing runs there (ILI-1397)
+  await page.evaluate(() => {
+    window.game.addEvent({ id: 'traffic-x', kind: 'signal', square: 'C2', title: 'Enemy radio traffic' });
+    window.game.addEvent({ id: 'building-G4', kind: 'building', square: 'G4', title: 'A building worth a search' });
+    window.game.addEvent({ id: 'contact-x', kind: 'contact', square: 'F4', title: 'Two technicals' });
+  });
+  await fastForward(page, 60_000); // they never expire
   if (isMobile) await page.getByTestId('tab-satcom').click();
+  else await page.getByTestId('log-toggle').click();
   const card = page.getByTestId('event-card-stack').filter({ hasText: 'Enemy radio traffic' });
   await expect(card).toHaveAttribute('data-open', 'true');
-  await expect(card).toHaveAttribute('data-newest', 'true');
-  await expect(card).toContainText('Locate ›');
-  await card.getByTestId('card-act').click();
-  await expect(page.getByTestId('selected-square')).toHaveText('C2');
-  await expect(page.getByTestId('minigame')).toHaveCount(0); // getting in range starts it (ILI-1394)
+  await expect(page.getByTestId('card-act')).toHaveCount(0);
+  await expect(page.getByTestId('satcom').locator('button')).toHaveCount(0);
   await page.evaluate(() => {
     const s = window.game.get();
-    window.game.set({ ...s, minigame: null, events: s.events.map((e) => (e.id === 'traffic-x' ? { ...e, status: 'resolved' as const } : e)) });
+    window.game.set({ ...s, events: s.events.map((e) => (e.id === 'traffic-x' ? { ...e, status: 'resolved' as const } : e)) });
   });
-  if (isMobile) await page.getByTestId('tab-satcom').click();
   await expect(card).toHaveAttribute('data-open', 'false');
 });
 
-test('an imagery request card sends ORION-3 to its square (ILI-1348)', async ({ page, isMobile }) => {
-  await start(page, '?debug');
-  await running(page);
-  await freeze(page);
-  await page.evaluate(() => window.game.addEvent({ id: 'req-f2', kind: 'request', square: 'F2', title: 'Imagery wanted' }));
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  const card = page.getByTestId('event-card-stack').filter({ hasText: 'Imagery wanted' });
-  await expect(card).toContainText('Scan ›');
-  await card.getByTestId('card-act').click();
-  await expect.poll(() => page.evaluate(() => window.game.get().satellite.aim)).toBe('F2');
-});
-
-test('a building card sends ALPHA to search it, and the card is answered (ILI-1348)', async ({ page, isMobile }) => {
-  await start(page, '?debug');
-  await running(page);
-  await freeze(page);
-  await lockOn(page, 'G4');
-  await page.evaluate(() => window.game.addEvent({ id: 'building-G4', kind: 'building', square: 'G4', title: 'A building worth a search' }));
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  const card = page.getByTestId('event-card-stack').filter({ hasText: 'A building worth a search' });
-  await card.getByTestId('card-act').click();
-  await expect.poll(() => page.evaluate(() => window.game.get().searching)).toEqual(['G4']);
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  await expect(card).toHaveAttribute('data-open', 'false');
-});
-
-test('a contact card opens its square’s strikes (ILI-1348)', async ({ page, isMobile }) => {
-  await start(page, '?debug');
-  await running(page);
-  await freeze(page);
-  await lockOn(page, 'F4');
-  await page.evaluate(() => window.game.addEvent({ id: 'contact-x', kind: 'contact', square: 'F4', title: 'Two technicals' }));
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  await page.getByTestId('event-card-stack').filter({ hasText: 'Two technicals' }).getByTestId('card-act').click();
-  await expect(page.getByTestId('selected-square')).toHaveText('F4');
-  await expect(page.getByTestId('strike-menu').getByTestId('event-card')).toContainText('Two technicals'); // a contact's actions are its strikes
-});
-
-test('ALPHA asking is an event card HQ answers right on it (ILI-1348)', async ({ page, isMobile }) => {
+test('ALPHA asking is a card in the log; HQ answers at the prompt, and the card follows (ILI-1348, ILI-1393)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await askResupply(page);
   await freeze(page);
   if (isMobile) await page.getByTestId('tab-satcom').click();
+  else await page.getByTestId('log-toggle').click();
   const ask = page.getByTestId('event-card-stack').filter({ hasText: 'We need a resupply bird' });
   await expect(ask).toHaveAttribute('data-kind', 'ask');
   await expect(ask).toContainText('ALPHA asks');
   await expect(ask).toContainText('waiting on HQ');
-  await ask.getByTestId('card-responses').getByRole('button', { name: 'Move on without' }).click();
+  await expect(ask.getByTestId('card-responses')).toHaveCount(0);
+  await page.locator('[data-testid=prompt][data-kind=team-call]').getByRole('button', { name: 'Move on without' }).click();
   await expect(ask).toContainText('HQ › Move on without · sending');
   await expect(page.getByTestId('comms')).toHaveCount(0); // the flag came down with it
   await fastForward(page, 2_500);

@@ -20,9 +20,9 @@ test('running low, ALPHA asks for a resupply; the bird flies in and refills them
     });
   });
   await fastForward(page, 300);
-  await openAsk(page);
-  await expect(page.getByTestId('comms-text')).toHaveText('Running low on ammo. We need a resupply bird.');
-  await page.getByTestId('responses').getByRole('button', { name: /Send resupply/ }).click();
+  const ask = await openAsk(page);
+  await expect(ask.getByTestId('prompt-text')).toContainText('Running low on ammo. We need a resupply bird.');
+  await ask.getByRole('button', { name: /Send resupply/ }).click();
   await linked(page);
   // No Logistics panel (ILI-1231): the bird and the bill are in the game's state.
   await expect.poll(() => page.evaluate(() => window.game.get().inbound.length)).toBe(1);
@@ -50,9 +50,9 @@ test('combat ineffective: ALPHA asks for a resupply bird, and replacements arriv
     });
   });
   await fastForward(page, 300);
-  await openAsk(page);
-  await expect(page.getByTestId('comms-text')).toHaveText('Combat ineffective, 2 down. We need a resupply bird.');
-  await page.getByTestId('responses').getByRole('button', { name: /Send resupply/ }).click();
+  const ask = await openAsk(page);
+  await expect(ask.getByTestId('prompt-text')).toContainText('Combat ineffective, 2 down. We need a resupply bird.');
+  await ask.getByRole('button', { name: /Send resupply/ }).click();
   await linked(page);
   await expect.poll(() => page.evaluate(() => window.game.get().inbound.length)).toBe(1);
   await fastForward(page, 33_500);

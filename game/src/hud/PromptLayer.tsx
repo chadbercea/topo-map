@@ -38,8 +38,8 @@ export function PromptLayer() {
   const sq = squareBox(p.square);
   const width = Math.min(W, area.width - 16);
   // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
-  // on a phone a strip along the map's foot), the toolbox and the timer (ILI-1392).
-  const strip = overlaysNamed(['actions', 'toolbox', 'widget']);
+  // on a phone a strip along the map's foot), the toolbox, the timer and the log.
+  const strip = overlaysNamed(['actions', 'toolbox', 'widget', 'logtoggle', 'log']); // the square's menu, the toolbox, the timer (ILI-1392), the log (ILI-1393)
   const at = place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
   const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
   const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 96))) };

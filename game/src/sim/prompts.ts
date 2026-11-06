@@ -2,6 +2,9 @@ import type { GameState } from './state';
 import { openImageryRequest } from './imageryRequest';
 import { lockedOn, satelliteBusy, slewMs } from './satellite';
 import { ANTENNA_MS } from './signal';
+import { currentCall } from './comms';
+import { blocked } from './responses';
+import { squareAt } from '../map/grid';
 import { countdown } from './gameTime';
 
 // The HUD's tiers (ILI-1391). Tier one is always on and tiny (the mission timer, the team's
@@ -12,7 +15,7 @@ import { countdown } from './gameTime';
 // the others wait. A prompt is a map anchor, one line saying what's happening, and one to three
 // responses. It's derived from the game's state, so it goes away the moment it's handled.
 
-export type PromptKind = 'intel-needed' | 'enemy-traffic' | 'intel-ready';
+export type PromptKind = 'intel-needed' | 'enemy-traffic' | 'intel-ready' | 'team-call';
 export type PromptResponse = { id: string; label: string; disabled?: boolean };
 export type Prompt = {
   id: string;
@@ -88,7 +91,17 @@ const enemyTraffic: Source = (s) =>
 const intelReady: Source = (s) =>
   s.decoded.map((d) => ({ id: d.id, kind: 'intel-ready' as const, priority: PRIORITY.intelReady, atMs: d.atMs, square: d.square, text: `Decoded: “${d.text}”`, responses: [{ id: 'send', label: `Send to ${s.team.callsign}` }] }));
 
-const SOURCES: Source[] = [intelNeeded, enemyTraffic, intelReady];
+// ALPHA on the radio (ILI-1393): its call is a prompt pinned to where it is, answered right there.
+// Not in the comms log any more, which is history only.
+const teamCall: Source = (s) => {
+  const m = currentCall(s.comms);
+  if (!m) return [];
+  const responses: PromptResponse[] = m.responses?.length ? m.responses.slice(0, 3).map((r) => ({ id: r.id, label: r.label, disabled: !!blocked(s, r) })) : [{ id: 'copy', label: 'Copy' }];
+  const { x, y } = s.team.position;
+  return [{ id: m.id, kind: 'team-call', priority: PRIORITY.teamRequest, atMs: m.atMs, square: squareAt(x, y) ?? s.team.route[0], text: `${m.from}: “${m.text}”`, responses }];
+};
+
+const SOURCES: Source[] = [intelNeeded, teamCall, enemyTraffic, intelReady];
 
 // Most urgent first: by priority, then the one that's waited longest.
 export const byUrgency = (a: Prompt, b: Prompt) => a.priority - b.priority || a.atMs - b.atMs;

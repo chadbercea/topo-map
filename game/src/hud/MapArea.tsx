@@ -22,7 +22,8 @@ export function MapArea() {
     const report = () => {
       const t = tier();
       const { x, y, width, height } = el.getBoundingClientRect();
-      const coverLeft = stream && t === 'wide' ? stream.getBoundingClientRect().right : 0;
+      // COMMS is a drawer over the map now (ILI-1393): opening it never moves the map.
+      const coverLeft = 0;
       // The open map ends at the dock (phone), the small widgets' line (fold, tablet) or the
       // bottom row (wide, ILI-1226).
       const foot = (t === 'compact' ? tabs : t === 'medium' ? small : bottom)?.getBoundingClientRect().top;
