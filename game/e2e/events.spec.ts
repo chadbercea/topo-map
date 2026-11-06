@@ -22,14 +22,13 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
   await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the event picks its square
 
   if (!isMobile) {
-    // The actions float beside the square: their near edge within a square's width of F4.
-    const anchor = page.getByTestId('square-anchor');
-    const box = (await anchor.boundingBox())!;
+    // The actions float beside the square (any side, ILI-1302): the anchor's nearest point
+    // within a square's width of F4's centre.
+    const box = (await page.getByTestId('square-anchor').boundingBox())!;
     const f4 = await squarePoint(page, 5, 3);
-    const side = await anchor.getAttribute('data-side');
-    const near = side === 'left' ? box.x + box.width : box.x; // the edge that faces the square
-    expect(Math.abs(near - f4.x)).toBeLessThan(160);
-    expect(box.y).toBeLessThan(f4.y + 320); // level with it, or below what keeps it off ALPHA
+    const dx = Math.max(box.x - f4.x, 0, f4.x - (box.x + box.width));
+    const dy = Math.max(box.y - f4.y, 0, f4.y - (box.y + box.height));
+    expect(Math.hypot(dx, dy)).toBeLessThan(160);
   }
 
   await card.getByRole('button', { name: 'Close' }).click();
