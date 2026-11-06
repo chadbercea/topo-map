@@ -23,9 +23,10 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
 
   if (!isMobile) {
     // The actions float beside the square: their near edge within a square's width of F4.
-    const box = (await act.boundingBox())!;
+    const anchor = page.getByTestId('square-anchor');
+    const box = (await anchor.boundingBox())!;
     const f4 = await squarePoint(page, 5, 3);
-    const side = await act.getAttribute('data-side');
+    const side = await anchor.getAttribute('data-side');
     const near = side === 'left' ? box.x + box.width : box.x; // the edge that faces the square
     expect(Math.abs(near - f4.x)).toBeLessThan(160);
     expect(box.y).toBeLessThan(f4.y + 320); // level with it, or below what keeps it off ALPHA
