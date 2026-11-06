@@ -20,6 +20,7 @@ import { Intro } from './Intro';
 import { firstBoot, useIntro } from './intro';
 import { WrapUp } from './WrapUp';
 import { AbilityBar } from './AbilityBar';
+import { PromptLayer } from './PromptLayer';
 import { useFlash, useUnseen } from './attention';
 import { currentCall } from '../sim/comms';
 
@@ -105,6 +106,7 @@ export function Hud() {
       </div>
       <MapArea />
       <SquareCard />
+      <PromptLayer />
       <div className="slot-band">
         <div className="band-cards" data-overlay="band">
           <ExfilPanel />

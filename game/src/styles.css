@@ -1521,3 +1521,19 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .intel-panel em { font-style: normal; font-size: 9px; color: var(--dim); border: 1px dashed var(--dim); padding: 0 3px; border-radius: 2px; }
 .intel-panel .earlier { font-size: 10px; color: var(--dim); }
 @media (prefers-reduced-motion: reduce) { .intel-panel li[data-fresh] { animation: none; } }
+
+/* Tier two (ILI-1391): the one call to action on screen, pinned to its square. The loudest thing
+   on screen: amber, a heavier frame and a glow, over every other panel. */
+.prompt { position: fixed; z-index: 9; display: grid; gap: 8px; padding: 10px 12px; pointer-events: auto; background: var(--bg); border: 2px solid #f2c14e; box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.25), 0 0 24px rgba(242, 193, 78, 0.35); animation: prompt-in 180ms ease-out, prompt-glow 1.6s ease-in-out 180ms infinite alternate; }
+.prompt-text { margin: 0; font-size: 13px; line-height: 1.35; color: var(--ink); }
+.prompt-text b { color: #f2c14e; font-weight: 600; letter-spacing: 0.08em; margin-right: 4px; }
+.prompt-responses { display: flex; flex-wrap: wrap; gap: 6px; }
+.prompt-responses button { flex: 1 1 0; min-height: 40px; padding: 0 12px; font: inherit; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #0b0f0d; background: #f2c14e; border: 1px solid #f2c14e; cursor: pointer; }
+.prompt-responses button:hover, .prompt-responses button:focus-visible { background: #ffd56b; outline: none; }
+.prompt-waiting { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+.prompt-leader { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 8; pointer-events: none; overflow: visible; }
+.prompt-leader line { stroke: #f2c14e; stroke-width: 1.5; }
+.prompt-leader circle { fill: #f2c14e; }
+@keyframes prompt-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes prompt-glow { from { box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.25), 0 0 12px rgba(242, 193, 78, 0.2); } to { box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.4), 0 0 28px rgba(242, 193, 78, 0.45); } }
+@media (prefers-reduced-motion: reduce) { .prompt { animation: none; } }

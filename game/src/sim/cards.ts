@@ -2,6 +2,7 @@ import type { GameState } from './state';
 import { kindOf, sending } from './comms';
 import type { Grade, Push, PushSource } from './intel';
 import type { EventKind } from './events';
+import { isImageryRequest } from './imageryRequest';
 
 // COMMS as a card stack (option D, ILI-1342; the sim side is ILI-1346). Everything that reaches
 // HQ, in the order it came in:
@@ -31,7 +32,8 @@ export function cards(s: CardSource): Card[] {
   const intel: Card[] = s.intel.pushes.map((p) => ({ type: 'intel', id: `card-${p.id}`, atMs: p.atMs, source: p.source, square: p.square, grade: p.grade, fed: p.state === 'fed', fedMs: p.fedMs }));
 
   const events: Card[] = s.events.flatMap((e) => {
-    if (!asksHq(e.kind)) return [];
+    // ALPHA needing intel is a tier two prompt on the map (ILI-1391), not a card.
+    if (!asksHq(e.kind) || isImageryRequest(e)) return [];
     // A building is answered once HQ sends ALPHA in, before the search is done.
     const answered = e.status === 'resolved' || (e.kind === 'building' && s.searching.includes(e.square));
     return [{ type: 'event' as const, id: `card-${e.id}`, atMs: e.atMs, kind: e.kind, square: e.square, title: e.title, open: !answered, eventId: e.id }];

@@ -1,5 +1,4 @@
 import { missionDef } from './script';
-import { openImageryRequest } from './imageryRequest';
 import type { GameState } from './state';
 import { waitingCalls } from './comms';
 import { condition } from './team';
@@ -88,10 +87,7 @@ export function blockers(s: GameState): Blocker[] {
   // Teaching through play (ILI-1318): what ALPHA needs from HQ right now, and where.
   const w = s.team.waitFor;
   if (w && s.elapsedMs < w.untilMs) out.push({ tone: 'decision', text: `${s.team.callsign} holding short of ${w.square}: soften them up`, go: { square: w.square } });
-  // Out of intel, or running low on the move (ILI-1341): ALPHA's imagery request (ILI-1349)
-  // is a card in COMMS; the line says the same thing and points at the square.
-  const req = openImageryRequest(s);
-  if (req) out.push({ tone: 'decision', text: `${s.team.callsign} requests imagery of ${req.square}`, go: { square: req.square } });
+  // ALPHA's imagery request (ILI-1349) isn't here: it's a tier two prompt on the map (ILI-1391).
   const ahead = s.team.route.slice(s.team.waypoint);
   const contact = ahead.find((sq) => s.contacts.some((c) => c.square === sq && c.status === 'revealed'));
   if (contact) out.push({ tone: 'threat', text: `Contact on the route at ${contact}`, go: { square: contact } });
