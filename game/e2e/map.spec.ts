@@ -65,7 +65,7 @@ test('the camera follows ALPHA where the grid runs off the open map, keeping it 
   expect(moved).toBe(true); // desktop too, since layout A narrowed the open map (ILI-1226)
 });
 
-test('WASD pans the map on both axes; Recentre in TEAM (or F) goes back to ALPHA (ILI-1227)', async ({ page, isMobile }) => {
+test('WASD pans the map on both axes; Recentre over the map (or F) goes back to ALPHA (ILI-1227)', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
@@ -75,9 +75,6 @@ test('WASD pans the map on both axes; Recentre in TEAM (or F) goes back to ALPHA
     await page.waitForTimeout(ms);
     await page.keyboard.up(key);
   };
-  if (isMobile) await page.getByTestId('tab-team').click();
-  const team = page.getByTestId('team-panel');
-  const panel = await team.boundingBox();
   await expect(page.getByTestId('recentre')).toHaveCount(0); // on ALPHA: nothing to recentre
   const before = await cam();
   await hold('a', 500);
@@ -85,15 +82,14 @@ test('WASD pans the map on both axes; Recentre in TEAM (or F) goes back to ALPHA
   const after = await cam();
   expect(after.scrollX).toBeLessThan(before.scrollX); // panned left
   expect(after.scrollY).toBeLessThan(before.scrollY); // and up
-  // The button shows in TEAM's title line, and the panel doesn't move or change size.
-  await expect(team.getByTestId('recentre')).toBeVisible();
-  expect(await team.boundingBox()).toEqual(panel);
-  await team.getByTestId('recentre').click();
+  // The button shows over the map's corner (ILI-1396).
+  await expect(page.getByTestId('recentre')).toBeVisible();
+  await page.getByTestId('recentre').click();
   await expect(page.getByTestId('recentre')).toHaveCount(0);
   await expect.poll(async () => Math.abs((await cam()).scrollX - before.scrollX), { timeout: 5_000 }).toBeLessThan(2);
   // F does the same.
   await hold('d', 400);
-  await expect(team.getByTestId('recentre')).toBeVisible();
+  await expect(page.getByTestId('recentre')).toBeVisible();
   await page.keyboard.press('f');
   await expect(page.getByTestId('recentre')).toHaveCount(0);
 });

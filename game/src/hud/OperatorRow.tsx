@@ -85,12 +85,12 @@ function Gauge({ label, icon, value, level, source, name, testId }: { label: str
 // One operator in the team panel (ILI-1248): rank, name and role in even columns; heartbeat and
 // status; then ammo and meds as short bars under their pictures, and how loud they've been moving (ILI-1222) as an
 // orange one, red while it's their weapon (ILI-1266). The row gets a coloured edge when something's wrong: hurt, low or loud.
-export function OperatorRow({ o }: { o: Operator }) {
+export function OperatorRow({ o, highlight }: { o: Operator; highlight?: boolean }) {
   const c = condition(o);
   const levels = [supply(ammoLeft(o)), supply(medsLeft(o)), loudness(o.noise)];
   const flag = c === 'down' ? 'down' : c === 'danger' || levels.includes('out') ? 'danger' : c === 'caution' || levels.includes('low') ? 'caution' : undefined;
   return (
-    <li className="op" data-condition={c} data-flag={flag} data-testid={`op-${o.id}`}>
+    <li className="op" data-condition={c} data-flag={flag} data-highlight={highlight || undefined} data-testid={`op-${o.id}`}>
       <div className="who">
         <RankIcon grade={o.rank.grade} title={o.rank.title} />
         <span className="name">{o.name}</span>

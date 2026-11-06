@@ -16,6 +16,7 @@ export const EV = {
   panned: 'panned', // HQ panned the map by hand, so it stopped following ALPHA (boolean)
   recentre: 'recentre', // back to ALPHA, and follow it again
   overlays: 'overlays', // the square card or its action panel opened, moved, resized or closed
+  openTeam: 'open-team', // open the team drawer, an operator highlighted (ILI-1396)
 } as const;
 
 // World to screen (CSS px) for the map's camera, set by the scene, so a panel can sit next

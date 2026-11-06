@@ -5,6 +5,8 @@ import { ANTENNA_MS } from './signal';
 import { currentCall } from './comms';
 import { blocked } from './responses';
 import { squareAt } from '../map/grid';
+import { ammoLeft, condition } from './team';
+import { LOW } from './support';
 import { countdown } from './gameTime';
 
 // The HUD's tiers (ILI-1391). Tier one is always on and tiny (the mission timer, the team's
@@ -15,7 +17,7 @@ import { countdown } from './gameTime';
 // the others wait. A prompt is a map anchor, one line saying what's happening, and one to three
 // responses. It's derived from the game's state, so it goes away the moment it's handled.
 
-export type PromptKind = 'intel-needed' | 'enemy-traffic' | 'intel-ready' | 'team-call';
+export type PromptKind = 'intel-needed' | 'enemy-traffic' | 'intel-ready' | 'team-call' | 'operator';
 export type PromptResponse = { id: string; label: string; disabled?: boolean };
 export type Prompt = {
   id: string;
@@ -24,6 +26,7 @@ export type Prompt = {
   atMs: number; // when it came up: the older of two at one priority goes first
   square: string; // where it's pinned on the map
   grid?: string; // the grid square a response takes HQ to, when that's not where it's pinned (ILI-1395)
+  operator?: string; // the operator it's about (ILI-1396)
   text: string;
   responses: PromptResponse[]; // one to three
 };
@@ -97,7 +100,28 @@ const teamCall: Source = (s) => {
   return [{ id: m.id, kind: 'team-call', priority: PRIORITY.teamRequest, atMs: m.atMs, square: squareAt(x, y) ?? s.team.route[0], text: `${m.from}: “${m.text}”`, responses }];
 };
 
-const SOURCES: Source[] = [intelNeeded, teamCall, enemyTraffic, intelReady];
+// An operator in trouble (ILI-1396): red health or low ammo, the most urgent thing there is. It
+// opens the team drawer with them highlighted; seen to, it stays down. Down is ALPHA's own call
+// (combat ineffective), and so is low ammo while ALPHA is on the radio asking for a resupply.
+export const operatorTrouble = (s: GameState) => {
+  const calling = !!currentCall(s.comms);
+  return s.team.operators.flatMap((o) => {
+    const c = condition(o);
+    const out: { o: typeof o; key: string; text: string }[] = [];
+    if (c === 'danger') out.push({ o, key: `op-${o.id}-hit`, text: `${o.role} hit, medic needs time` });
+    if (c !== 'down' && !calling && ammoLeft(o) < LOW) out.push({ o, key: `op-${o.id}-ammo`, text: `${o.role} low on ammo` });
+    return out;
+  });
+};
+
+const operatorHurt: Source = (s) => {
+  const { x, y } = s.team.position;
+  return operatorTrouble(s)
+    .filter((t) => !s.acked.includes(t.key))
+    .map((t) => ({ id: t.key, kind: 'operator' as const, priority: PRIORITY.operatorHurt, atMs: 0, square: squareAt(x, y) ?? s.team.route[0], operator: t.o.id, text: t.text, responses: [{ id: 'team', label: 'Open team' }] }));
+};
+
+const SOURCES: Source[] = [operatorHurt, intelNeeded, teamCall, enemyTraffic, intelReady];
 
 // Most urgent first: by priority, then the one that's waited longest.
 export const byUrgency = (a: Prompt, b: Prompt) => a.priority - b.priority || a.atMs - b.atMs;

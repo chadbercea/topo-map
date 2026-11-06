@@ -11,7 +11,9 @@ import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
 import { IntelPanel } from './IntelPanel';
 import { CommsPanel } from './CommsPanel';
-import { TeamPanel } from './TeamPanel';
+import { HeartbeatStrip, TeamPanel } from './TeamPanel';
+import { Recentre } from './Recentre';
+import { bus, EV } from '../game/events';
 import { PauseMenu } from './PauseMenu';
 import { Intro } from './Intro';
 import { firstBoot, useIntro } from './intro';
@@ -38,7 +40,10 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 // TEAM share a rail down the right behind tabs (ILI-1213); on a phone they share a bottom sheet.
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
-  const [tab, setTab] = useState<Tab>('team');
+  // ORION-3 first: the team panel is a drawer now (ILI-1396), closed until HQ opens it.
+  const [tab, setTab] = useState<Tab>('orion');
+  const [teamOpen, setTeamOpen] = useState(false);
+  const [highlight, setHighlight] = useState<string | null>(null);
   // On a wide screen the log is a drawer over the map's left edge, behind one small button (ILI-1393).
   const [log, setLog] = useState(false);
 
@@ -53,7 +58,8 @@ export function Hud() {
   // brings COMMS forward.
   // COMMS is a log drawer now, tier three (ILI-1393): it never opens on its own; news dots its tab.
   // On a phone the dock is a bottom sheet (ILI-1214): peek (just the tabs), half or full.
-  const [sheet, setSheet] = useState<Sheet>('half');
+  // Folded to its tabs to start (ILI-1396): COMMS, ORION-3 and TEAM are drawers, closed until HQ opens one.
+  const [sheet, setSheet] = useState<Sheet>('peek');
   // Tasking ORION-3 brings its panel forward on a fold or phone (ILI-1219).
   // So does picking a square: its details and Reposition are there (ILI-1228, ILI-1308).
   // Keyed on what changed, so a strike ending with a square still picked brings it back too.
@@ -70,8 +76,11 @@ export function Hud() {
   // when they're done.
   const minigame = useGame((s) => s.minigame?.status === 'active');
   const picked = useGame((s) => !!s.map.selected);
+  const busyMap = useRef(false);
   useEffect(() => {
-    if (tier === 'compact') setSheet(minigame || picked ? 'peek' : (h) => (h === 'peek' ? 'half' : h));
+    const busy = minigame || picked;
+    if (tier === 'compact' && busy !== busyMap.current) setSheet(busy ? 'peek' : (h) => (h === 'peek' ? 'half' : h)); // only on a change: it starts folded (ILI-1396)
+    busyMap.current = busy;
   }, [minigame, picked, tier]);
   // News in a panel out of sight dots its tab; a panel in view flashes its frame (ILI-1287).
   // ALPHA waiting on HQ lights TEAM's tab whole: its call box is there.
@@ -90,9 +99,26 @@ export function Hud() {
     setSheet((h) => (h === 'peek' ? 'half' : h));
     setTab(t);
   };
+  // The heartbeat strip opens the team drawer (ILI-1396); an operator prompt opens it with them
+  // highlighted. On a fold or phone the drawer is the TEAM tab.
+  const openTeam = (id: string | null = null) => {
+    setHighlight(id);
+    if (tabbed) pick('team');
+    else setTeamOpen(true);
+  };
+  const toggleTeam = () => {
+    setHighlight(null);
+    if (tabbed) return tab === 'team' && shown('team') ? pick('orion') : pick('team');
+    setTeamOpen((o) => !o);
+  };
+  useEffect(() => {
+    const on = (id: string | null) => openTeam(id);
+    bus.on(EV.openTeam, on);
+    return () => void bus.off(EV.openTeam, on);
+  });
 
   return (
-    <div className="hud" data-boot={boot ? (firstBoot() ? 'first' : 'again') : undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined}>
+    <div className="hud" data-boot={boot ? (firstBoot() ? 'first' : 'again') : undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined} data-team={teamOpen || undefined}>
       <div className="slot-widget">
         <TimerChip />
       </div>
@@ -106,6 +132,8 @@ export function Hud() {
         </div>
       </div>
       <Toolbox />
+      <Recentre />
+      {tabbed && <HeartbeatStrip open={tab === 'team' && shown('team')} onToggle={toggleTeam} />}
       <div className="slot-orion" data-overlay="orion" ref={orionSlot}>
         <OrionPanel />
         <IntelPanel />
@@ -116,9 +144,10 @@ export function Hud() {
             <EnvWidget slim />
           </div>
         )}
-        {/* ALPHA's box on the left, then the team's table (ILI-1313). */}
-        <div className="slot-team">
-          <TeamPanel />
+        {/* The heartbeat strip, tier one; the team panel is its drawer (ILI-1396). */}
+        <div className="slot-team" data-overlay={!tabbed && teamOpen ? 'team' : undefined}>
+          {!tabbed && <HeartbeatStrip open={teamOpen} onToggle={toggleTeam} />}
+          <TeamPanel highlight={highlight} />
         </div>
       </div>
       <div className="slot-satcom" ref={satcomSlot} data-overlay={!tabbed && log ? 'log' : undefined}>

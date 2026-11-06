@@ -3,7 +3,7 @@ import { fastForward, start } from './helpers';
 
 test('the team panel shows every operator: heartbeat, status, ammo and meds, under TEAM (ILI-1223)', async ({ page, isMobile }) => {
   await start(page);
-  if (isMobile) await page.getByTestId('tab-team').click();
+  await page.getByTestId(isMobile ? 'tab-team' : 'heartbeat-strip').click(); // a drawer, closed until opened (ILI-1396)
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
   await expect(page.getByTestId('readout').locator('svg.ecg')).toHaveCount(5);
   // Ammo and meds as pictures, not words (ILI-1265); the meters keep their names.

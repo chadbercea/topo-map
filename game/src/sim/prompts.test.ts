@@ -45,3 +45,19 @@ describe('the prompt queue', () => {
     expect(q.map((x) => x.id)).toEqual(['hurt', 'ask-old', 'ask-new', 'intel']);
   });
 });
+
+// An operator in trouble (ILI-1396): first in the queue, seen to once.
+describe('operator prompts', () => {
+  it('red health is the most urgent prompt; low ammo too; once seen to, it stays down', async () => {
+    const { createStore } = await import('./store');
+    const { initialState } = await import('./state');
+    const s0 = initialState();
+    const hurt = { ...s0, team: { ...s0.team, operators: s0.team.operators.map((o, i) => (i === 1 ? { ...o, health: 10 } : i === 2 ? { ...o, ammo: 0 } : o)) } };
+    const q = promptQueue(hurt);
+    expect(q[0]).toMatchObject({ kind: 'operator', text: `${hurt.team.operators[1].role} hit, medic needs time`, operator: hurt.team.operators[1].id, responses: [{ id: 'team', label: 'Open team' }] });
+    expect(q.some((p) => p.kind === 'operator' && p.text === `${hurt.team.operators[2].role} low on ammo`)).toBe(true);
+    const store = createStore(hurt);
+    store.answerPrompt(q[0].id, 'team');
+    expect(promptQueue(store.get()).some((p) => p.id === q[0].id)).toBe(false);
+  });
+});

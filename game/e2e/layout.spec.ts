@@ -24,6 +24,8 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await start(page);
   await expect(page.getByTestId('team-title')).toHaveText('ALPHA TEAM'); // ILI-1248
   await expect(page.getByTestId('team-panel')).toContainText(/Moving to F4|Holding · needs intel/); // it sets off on its own (ILI-1315)
+  await expect(page.getByTestId('team-panel')).toBeHidden(); // a drawer, closed until HQ opens it (ILI-1396)
+  await expect(page.getByTestId('heartbeat-strip').locator('svg.ecg')).toHaveCount(5); // five heartbeats, tier one
 });
 
 test('layout A: the map from the left edge with the timer and the comms log button in its corner, ENVIRONMENT over ORION-3 down the right, TEAM along the bottom (ILI-1226, ILI-1218, ILI-1392, ILI-1393)', async ({ page, isMobile }) => {
@@ -43,7 +45,7 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   const logButton = await box('log-toggle');
   const orion = await box('satellite');
   const env = await box('conditions');
-  const team = await box('team-panel');
+  const team = await box('heartbeat-strip');
   const map = await box('map-area');
   // No mission panel (ILI-1392) and COMMS a closed drawer (ILI-1393): the map runs from the left
   // edge; the timer is small in its top-left corner, the comms log's button under it.
@@ -67,7 +69,7 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   expect(env.y).toBeGreaterThanOrEqual(sat.y + sat.height - 1);
   await expect(page.getByTestId('satellite').getByTestId('conditions').locator('.env-tile')).toHaveCount(6);
   await expect(page.getByTestId('small-widgets')).toHaveCount(0);
-  // Along the bottom: TEAM's table (ILI-1313), under the map. No ALPHA nav box (ILI-1395).
+  // Along the bottom: the heartbeat strip (ILI-1396), under the map. No ALPHA nav box (ILI-1395).
   await expect(page.getByTestId('call-box')).toHaveCount(0);
   expect(team.y).toBeGreaterThan(map.y + map.height - 1);
   expect(team.y + team.height).toBeGreaterThan(view.height - 40);
@@ -100,7 +102,7 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   await page.waitForTimeout(500);
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
-  const [orion, team, map, intel] = await Promise.all(['satellite', 'team-panel', 'map-area', 'intel-panel'].map(box));
+  const [orion, team, map, intel] = await Promise.all(['satellite', 'heartbeat-strip', 'map-area', 'intel-panel'].map(box));
   const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
   // The margin round the screen.
   near(map.x, 16); near(map.y, 16); near(orion.y, 16); // no mission panel (ILI-1392), COMMS a drawer (ILI-1393): the map takes the corner
@@ -112,7 +114,7 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   near(intel.y - (orion.y + orion.height), 16); // INTEL under ORION-3 (ILI-1363)
   // Every panel's title the same distance in from its top edge.
   const inset = await page.evaluate(() =>
-    ['satellite', 'team-panel', 'intel-panel'].map((id) => {
+    ['satellite', 'intel-panel'].map((id) => {
       const p = document.querySelector(`[data-testid=${id}]`)!;
       const h = p.querySelector('h2')!;
       const pad = parseFloat(getComputedStyle(h).paddingTop);
