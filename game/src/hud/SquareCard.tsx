@@ -214,7 +214,7 @@ function attached(square: string, area: Area, height: number, team: { x: number;
     { x: cx(sq.x), y: cy(sq.y - h), w: width, h, side: 'above' },
   ];
   // The prompt moves out of the menu's way, not the other way round: the menu stays flush with its
-  // square, and the prompt has a leader line to reach its own.
+  // square, and the prompt has a leader line to reach its own (ILI-1393).
   const at = pick(spots, [...obstacles(['card', 'actions', 'flag', 'prompt']), alphaBox(team), sq]);
   return { left: at.x, top: at.y, width, maxHeight, side: at.side };
 }

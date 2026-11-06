@@ -11,7 +11,6 @@ import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
 import { IntelPanel } from './IntelPanel';
 import { CommsPanel } from './CommsPanel';
-import { AskWindow } from './AskWindow';
 import { useAskHidden } from './CommsPanel';
 import { TeamPanel } from './TeamPanel';
 import { CallBox } from './CallBox';
@@ -45,6 +44,9 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
+  // On a wide screen the log is a drawer over the map's left edge, behind one small button (ILI-1393).
+  const [log, setLog] = useState(false);
+
   const askHidden = useAskHidden(); // ALPHA's flag is out of sight: light TEAM's tab, where its call box is (ILI-1255)
   const tier = useTier();
   // The panels power on in turn as the war room comes online (ILI-1281), on the way in and on a
@@ -55,16 +57,9 @@ export function Hud() {
   // on the map itself (ILI-1201), so the dock stays where it is.
   // A new event marks its square on the map, and its report lands in COMMS (ILI-1225): that
   // brings COMMS forward.
-  const fresh = useGame((s) => s.events.filter((e) => e.status === 'new').length);
+  // COMMS is a log drawer now, tier three (ILI-1393): it never opens on its own; news dots its tab.
   // On a phone the dock is a bottom sheet (ILI-1214): peek (just the tabs), half or full.
   const [sheet, setSheet] = useState<Sheet>('half');
-  useEffect(() => {
-    // Not while HQ works a square: ORION-3's panel holds it, and the news can wait (ILI-1228).
-    if (fresh && !lookSquare(game.get())) {
-      setTab('satcom');
-      setSheet((h) => (h === 'peek' ? 'half' : h)); // news opens a peeking sheet
-    }
-  }, [fresh]);
   // Tasking ORION-3 brings its panel forward on a fold or phone (ILI-1219).
   // So does picking a square: its details and Reposition are there (ILI-1228, ILI-1308).
   // Keyed on what changed, so a strike ending with a square still picked brings it back too.
@@ -91,10 +86,10 @@ export function Hud() {
   const commsNews = useGame((s) => s.comms.messages.length + s.stream.items.length);
   const orionNews = useGame((s) => `${s.satellite.state}|${s.satellite.aim}|${s.satellite.result ? 'look' : ''}`);
   const calling = useGame((s) => !!currentCall(s.comms));
-  const unseen = { satcom: useUnseen(commsNews, shown('satcom')), orion: useUnseen(orionNews, shown('orion')), team: false };
+  const unseen = { satcom: useUnseen(commsNews, tabbed ? shown('satcom') : log), orion: useUnseen(orionNews, shown('orion')), team: false };
   const satcomSlot = useRef<HTMLDivElement>(null);
   const orionSlot = useRef<HTMLDivElement>(null);
-  useFlash(satcomSlot, commsNews, shown('satcom'));
+  useFlash(satcomSlot, commsNews, tabbed ? shown('satcom') : log);
   useFlash(orionSlot, orionNews, shown('orion'));
   const pick = (t: Tab) => {
     // A tab always shows its panel: a folded sheet opens. Folding is the handle's job.
@@ -103,7 +98,7 @@ export function Hud() {
   };
 
   return (
-    <div className="hud" data-boot={boot ? (firstBoot() ? 'first' : 'again') : undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined}>
+    <div className="hud" data-boot={boot ? (firstBoot() ? 'first' : 'again') : undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined}>
       <div className="slot-widget">
         <TimerChip />
       </div>
@@ -133,9 +128,15 @@ export function Hud() {
           <TeamPanel />
         </div>
       </div>
-      <div className="slot-satcom" ref={satcomSlot}>
+      <div className="slot-satcom" ref={satcomSlot} data-overlay={!tabbed && log ? 'log' : undefined}>
         <CommsPanel />
       </div>
+      {!tabbed && (
+        <button className="log-toggle" data-overlay="logtoggle" onClick={() => setLog((o) => !o)} aria-expanded={log} data-testid="log-toggle" data-update={unseen.satcom || undefined}>
+          Comms log
+          {unseen.satcom && <span className="tab-dot" aria-hidden />}
+        </button>
+      )}
       {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
       <nav className="dock-tabs" aria-label="Panels">
         {(['satcom', 'orion', 'team'] as const).map((t) => (
@@ -145,7 +146,6 @@ export function Hud() {
           </button>
         ))}
       </nav>
-      <AskWindow />
       {debug && <DebugPanel />}
       <PauseMenu />
       <Intro />

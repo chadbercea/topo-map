@@ -48,6 +48,7 @@ test('a report line that names a square in COMMS opens that square (ILI-1225)', 
     window.game.set({ ...s, comms: { ...s.comms, messages: [...s.comms.messages, { id: 'hq-f2', from: 'HQ', text: 'Imagery wanted at F2.', atMs: s.elapsedMs, status: 'read', holds: false, square: 'F2' }] } });
   });
   if (isMobile) await page.getByTestId('tab-satcom').click();
+  else await page.getByTestId('log-toggle').click(); // the log is a drawer (ILI-1393)
   await page.getByTestId('comms-feed').getByRole('button', { name: 'Imagery wanted at F2.' }).click();
   await expect(page.getByTestId('selected-square')).toHaveText('F2');
   await expect(page.getByTestId('action-panel').getByTestId('event-card')).toContainText('REQUEST · F2');

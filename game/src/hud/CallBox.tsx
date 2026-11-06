@@ -1,6 +1,5 @@
 import { useGame } from '../sim/store';
 import { currentCall, waitingCalls } from '../sim/comms';
-import { bus, EV } from '../game/events';
 import { CommsStrip } from './CommsStrip';
 import { WireAvatar } from './OrionAvatar';
 import { Backpack } from './AskWindow';
@@ -18,7 +17,7 @@ const LOAD = {
 // idle beside it. When ALPHA needs HQ the whole box turns the flag's orange, the gear gives way
 // to the SATCOM backpack turning quicker, and the box opens the ask (the flag on the map says
 // the same, with the same backpack). While HQ's answer is up the link it says so; once ALPHA
-// reads it back the box goes back to the gear.
+// reads it back the box goes back to the gear. HQ answers at the prompt on the map (ILI-1393).
 export function CallBox() {
   const callsign = useGame((s) => s.team.callsign);
   const activity = useGame((s) => s.team.activity);
@@ -55,11 +54,6 @@ export function CallBox() {
         </span>
       </h2>
       <CommsStrip showGear={!live} gear={<WireAvatar key={gear} state="on" fallback={null} load={LOAD[gear]} className="c-terminal c-gear" />} />
-      {call && !playing && (
-        <button className="cb-hit" onClick={() => bus.emit(EV.openAsk)} data-testid="answer-alpha" aria-label={`Answer ${who}`}>
-          <span>Answer ›</span>
-        </button>
-      )}
     </section>
   );
 }
