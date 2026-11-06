@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { askResupply, fastForward, freeze, photo, running, start } from './helpers';
+import { askResupply, fastForward, freeze, lockOn, photo, running, start } from './helpers';
 
 // COMMS as a card stack (option D, ILI-1347): what wants HQ is an event card that waits for it.
 // Intel lands in INTEL under ORION-3 (IA v2 draft A, ILI-1363).
@@ -34,6 +34,7 @@ test('an event is a card that waits; tapping radio traffic starts Listen, and an
   await freeze(page);
   await page.evaluate(() => window.game.addEvent({ id: 'traffic-x', kind: 'signal', square: 'C2', title: 'Enemy radio traffic' }));
   await fastForward(page, 60_000); // it never expires
+  await lockOn(page, 'C2'); // ORION-3 over it, or nothing runs there (ILI-1397)
   if (isMobile) await page.getByTestId('tab-satcom').click();
   const card = page.getByTestId('event-card-stack').filter({ hasText: 'Enemy radio traffic' });
   await expect(card).toHaveAttribute('data-open', 'true');
@@ -65,6 +66,7 @@ test('a building card sends ALPHA to search it, and the card is answered (ILI-13
   await start(page, '?debug');
   await running(page);
   await freeze(page);
+  await lockOn(page, 'G4');
   await page.evaluate(() => window.game.addEvent({ id: 'building-G4', kind: 'building', square: 'G4', title: 'A building worth a search' }));
   if (isMobile) await page.getByTestId('tab-satcom').click();
   const card = page.getByTestId('event-card-stack').filter({ hasText: 'A building worth a search' });
@@ -78,6 +80,7 @@ test('a contact card opens its square’s strikes (ILI-1348)', async ({ page, is
   await start(page, '?debug');
   await running(page);
   await freeze(page);
+  await lockOn(page, 'F4');
   await page.evaluate(() => window.game.addEvent({ id: 'contact-x', kind: 'contact', square: 'F4', title: 'Two technicals' }));
   if (isMobile) await page.getByTestId('tab-satcom').click();
   await page.getByTestId('event-card-stack').filter({ hasText: 'Two technicals' }).getByTestId('card-act').click();

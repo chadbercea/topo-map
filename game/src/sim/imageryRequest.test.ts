@@ -61,8 +61,9 @@ describe('the never-stuck rule', () => {
     for (let t = 0; t < 600_000 && store.get().team.waypoint < crash; t += 100) {
       store.tick(100);
       const s = store.get();
-      const p = activePrompt(s); // answer the prompt on the map: Scan (ILI-1391)
-      if (p?.kind === 'intel-needed' && s.satellite.state === 'idle') store.answerPrompt(p.id, 'scan');
+      const p = activePrompt(s); // answer the prompt on the map: move ORION-3 there, then Scan (ILI-1391, ILI-1397)
+      const r = p?.responses.find((x) => !x.disabled);
+      if (p && r) store.answerPrompt(p.id, r.id);
     }
     expect(store.get().team.waypoint).toBeGreaterThanOrEqual(crash);
   });

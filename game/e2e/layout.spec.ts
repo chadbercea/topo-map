@@ -72,20 +72,22 @@ test('layout A: mission and COMMS down the left, ENVIRONMENT over ORION-3 down t
   await expect(page.getByTestId('resources')).toHaveCount(0); // no Logistics panel (ILI-1231)
 });
 
-test('the ability bar is a hotbar on the screen’s center line, under the map, clear of the panels (ILI-1352)', async ({ page, isMobile }) => {
-  test.skip(isMobile, 'on a phone it runs the width of the screen, over the map’s foot');
+test('no floating action bar: the capabilities are in the toolbox, one small button in the map’s corner (ILI-1397)', async ({ page }) => {
   await start(page);
   await page.waitForTimeout(500);
-  const view = page.viewportSize()!;
-  const bar = (await page.getByTestId('ability-bar').boundingBox())!;
+  await expect(page.getByTestId('ability-bar')).toHaveCount(0);
   const map = (await page.getByTestId('map-area').boundingBox())!;
-  const orion = (await page.getByTestId('satellite').boundingBox())!;
-  const team = (await page.getByTestId('team-panel').boundingBox())!;
-  expect(Math.abs(bar.x + bar.width / 2 - view.width / 2)).toBeLessThanOrEqual(2); // dead center
-  expect(bar.y).toBeGreaterThanOrEqual(map.y + map.height - 1); // under the map, not over it
-  expect(bar.y + bar.height).toBeLessThanOrEqual(team.y); // over the bottom row
-  expect(bar.x + bar.width).toBeLessThanOrEqual(orion.x); // clear of ORION-3
+  const toggle = page.getByTestId('toolbox-toggle');
+  const t = (await toggle.boundingBox())!;
+  expect(t.x).toBeGreaterThanOrEqual(map.x);
+  expect(t.y + t.height).toBeLessThanOrEqual(map.y + map.height);
+  expect(t.x - map.x).toBeLessThan(40); // the bottom-left corner
+  expect(map.y + map.height - (t.y + t.height)).toBeLessThan(40);
+  await toggle.click();
+  await expect(page.getByTestId('ability-bar')).toBeVisible();
   await expect(page.getByTestId('ability-drone')).not.toContainText('…');
+  await toggle.click();
+  await expect(page.getByTestId('ability-bar')).toHaveCount(0);
 });
 
 test('one spacing rule: a 16 px margin and gutter everywhere, and every panel title on one line (ILI-1353)', async ({ page, isMobile }) => {
@@ -94,7 +96,7 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   await page.waitForTimeout(500);
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
-  const [mission, comms, orion, alpha, team, map, bar, intel] = await Promise.all(['mission-strip', 'satcom', 'satellite', 'call-box', 'team-panel', 'map-area', 'ability-bar', 'intel-panel'].map(box));
+  const [mission, comms, orion, alpha, team, map, intel] = await Promise.all(['mission-strip', 'satcom', 'satellite', 'call-box', 'team-panel', 'map-area', 'intel-panel'].map(box));
   const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
   // The margin round the screen.
   near(mission.x, 16); near(mission.y, 16); near(orion.y, 16);
@@ -106,8 +108,7 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   near(map.x - (comms.x + comms.width), 16);
   near(orion.x - (map.x + map.width), 16);
   near(intel.y - (orion.y + orion.height), 16); // INTEL under ORION-3 (ILI-1363)
-  near(bar.y - (map.y + map.height), 16);
-  near(bar.y + bar.height, comms.y + comms.height); // the hotbar's foot lines up with COMMS's
+  near(map.y + map.height, comms.y + comms.height); // the map's foot lines up with COMMS's (ILI-1397: no bar row under it)
   // Every panel's title the same distance in from its top edge.
   const inset = await page.evaluate(() =>
     ['mission-strip', 'satcom', 'satellite', 'call-box', 'team-panel', 'intel-panel'].map((id) => {

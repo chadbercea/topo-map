@@ -1,5 +1,7 @@
 import type { GameState } from './state';
 import { openImageryRequest } from './imageryRequest';
+import { lockedOn, slewMs } from './satellite';
+import { countdown } from './gameTime';
 
 // The HUD's tiers (ILI-1391). Tier one is always on and tiny (the mission timer, the team's
 // heartbeat). Tier three is drawers HQ opens (the team, the comms log, square details). Tier two
@@ -10,7 +12,7 @@ import { openImageryRequest } from './imageryRequest';
 // responses. It's derived from the game's state, so it goes away the moment it's handled.
 
 export type PromptKind = 'intel-needed';
-export type PromptResponse = { id: string; label: string };
+export type PromptResponse = { id: string; label: string; disabled?: boolean };
 export type Prompt = {
   id: string;
   kind: PromptKind;
@@ -41,10 +43,20 @@ const intelNeeded: Source = (s) => {
       atMs: req.atMs,
       square: req.square,
       text: holding ? `${s.team.callsign} is holding: it needs intel on ${req.square} to move` : `${s.team.callsign} is low on intel: it needs a look at ${req.square}`,
-      responses: [{ id: 'scan', label: `Scan ${req.square}` }],
+      responses: [lookResponse(s, req.square)],
     },
   ];
 };
+
+// What getting a look at a square takes right now (ILI-1397): the satellite moves there first,
+// a step the player sees, then the scan.
+function lookResponse(s: GameState, square: string): PromptResponse {
+  const sat = s.satellite;
+  if (lockedOn(s, square)) return sat.state === 'capturing' ? { id: 'scan', label: 'ORION-3 busy', disabled: true } : { id: 'scan', label: `Scan ${square}` };
+  if (sat.state === 'slewing' && sat.aim === square) return { id: 'move', label: `ORION-3 on its way · ${countdown(sat.arriveMs - s.elapsedMs)}`, disabled: true };
+  if (sat.state === 'capturing') return { id: 'move', label: `ORION-3 busy over ${sat.aim}`, disabled: true };
+  return { id: 'move', label: `Move ORION-3 here · ${countdown(slewMs(s, square))}` };
+}
 
 const SOURCES: Source[] = [intelNeeded];
 

@@ -3,7 +3,7 @@ import { weaponBlocked } from './ordnance';
 import { BOLT_MS, FIRST_MS, LEAVE_MS, RUN_MS, sniperGone } from './sniper';
 import { CASH_PER_STRIKE_KILL } from './sites';
 import type { GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 import { run, walking } from './testkit';
 
 // Six fighters in E3 that ORION-3 has just photographed.

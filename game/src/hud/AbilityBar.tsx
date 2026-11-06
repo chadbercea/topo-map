@@ -1,6 +1,5 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useState } from 'react';
 import { game, useGame } from '../sim/store';
-import { useTier } from './tier';
 import { CALLSIGN, unlockBlocked, WEAPON, weaponBlocked } from '../sim/ordnance';
 import { LEVELS, UNLOCK } from '../sim/prices';
 import { perCall } from '../sim/upgrades';
@@ -14,41 +13,17 @@ export const cash = (n: number) => {
   return `${n < 0 ? '−' : ''}$${v}`;
 };
 
-// The ability bar (ILI-1316): along the map's foot, Castle House's balance and its three
-// capabilities in the order they're bought: the sniper contract, the drone, the heli. Locked,
-// each shows its price and, once the balance covers it, buys it; unlocked, what a call costs and
-// whether it's ready. Strikes are still called at their target's square (its anchor).
-// Front and center (ILI-1352, option B): on a wide screen it's a hotbar on the screen's center
-// line, in its own strip under the map. The strip is the map's column, which isn't centered on
-// the screen, so the bar slides over to the center line, as far as the strip lets it.
+// The ability bar (ILI-1316): Castle House's balance and its three capabilities in the order
+// they're bought: the sniper contract, the drone, the heli. Locked, each shows its price and,
+// once the balance covers it, buys it; unlocked, what a call costs and whether it's ready.
+// Strikes are called at their target's square (its menu).
+// No longer floating over the map (ILI-1397): it lives in the toolbox, tier three, behind one
+// small button.
 export function AbilityBar() {
   const s = useGame((x) => x);
   const balance = s.resources.budget;
-  const tier = useTier();
-  const ref = useRef<HTMLElement>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const strip = el?.parentElement;
-    if (!el || !strip) return;
-    const centre = () => {
-      if (tier !== 'wide') return void (el.style.transform = '');
-      const r = strip.getBoundingClientRect();
-      const room = Math.max(0, (r.width - el.offsetWidth) / 2);
-      const shift = innerWidth / 2 - (r.left + r.width / 2);
-      el.style.transform = `translateX(${Math.round(Math.max(-room, Math.min(room, shift)))}px)`;
-    };
-    centre();
-    const ro = new ResizeObserver(centre);
-    ro.observe(strip);
-    ro.observe(el);
-    addEventListener('resize', centre);
-    return () => {
-      ro.disconnect();
-      removeEventListener('resize', centre);
-    };
-  }, [tier]);
   return (
-    <section ref={ref} className="ability-bar" data-testid="ability-bar" aria-label="Capabilities">
+    <section className="ability-bar" data-testid="ability-bar" aria-label="Capabilities">
       <div className="ab-balance" data-red={balance < 0 || undefined}>
         <small>Balance</small>
         <b data-testid="balance">{cash(balance)}</b>
@@ -74,5 +49,21 @@ export function AbilityBar() {
         );
       })}
     </section>
+  );
+}
+
+// The toolbox (ILI-1397): ordnance and support the game hasn't asked for, tier three, behind one
+// small button. It never opens by itself. The button carries the balance, so it's always in view.
+export function Toolbox() {
+  const balance = useGame((s) => s.resources.budget);
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="toolbox" data-open={open || undefined} data-overlay="toolbox">
+      {open && <AbilityBar />}
+      <button className="toolbox-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="toolbox-toggle">
+        <span>Toolbox</span>
+        <b data-red={balance < 0 || undefined}>{cash(balance)}</b>
+      </button>
+    </div>
   );
 }

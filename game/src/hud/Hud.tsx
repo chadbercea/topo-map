@@ -19,7 +19,7 @@ import { PauseMenu } from './PauseMenu';
 import { Intro } from './Intro';
 import { firstBoot, useIntro } from './intro';
 import { WrapUp } from './WrapUp';
-import { AbilityBar } from './AbilityBar';
+import { Toolbox } from './AbilityBar';
 import { PromptLayer } from './PromptLayer';
 import { useFlash, useUnseen } from './attention';
 import { currentCall } from '../sim/comms';
@@ -72,15 +72,18 @@ export function Hud() {
   useEffect(() => {
     if (tasked) {
       setTab('orion');
-      setSheet((h) => (h === 'peek' ? 'half' : h));
+      // On a phone a picked square has the map to itself (below): its menu is the action.
+      setSheet((h) => (h === 'peek' && !(tier === 'compact' && game.get().map.selected) ? 'half' : h));
     }
-  }, [tasked]);
-  // A mini game plays at its square on the map (ILI-1367): on a phone the sheet folds to give
-  // it the map, and comes back half open when it's over.
+  }, [tasked]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A mini game plays at its square on the map (ILI-1367), and a picked square's menu works
+  // there (ILI-1397): on a phone the sheet folds to give them the map, and comes back half open
+  // when they're done.
   const minigame = useGame((s) => s.minigame?.status === 'active');
+  const picked = useGame((s) => !!s.map.selected);
   useEffect(() => {
-    if (tier === 'compact') setSheet(minigame ? 'peek' : (h) => (h === 'peek' ? 'half' : h));
-  }, [minigame, tier]);
+    if (tier === 'compact') setSheet(minigame || picked ? 'peek' : (h) => (h === 'peek' ? 'half' : h));
+  }, [minigame, picked, tier]);
   // News in a panel out of sight dots its tab; a panel in view flashes its frame (ILI-1287).
   // ALPHA waiting on HQ lights TEAM's tab whole: its call box is there.
   const tabbed = tier !== 'wide';
@@ -100,7 +103,7 @@ export function Hud() {
   };
 
   return (
-    <div className="hud" data-boot={boot ? (firstBoot() ? 'first' : 'again') : undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet}>
+    <div className="hud" data-boot={boot ? (firstBoot() ? 'first' : 'again') : undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined}>
       <div className="slot-widget">
         <MissionPanel />
       </div>
@@ -111,8 +114,8 @@ export function Hud() {
         <div className="band-cards" data-overlay="band">
           <ExfilPanel />
         </div>
-        <AbilityBar />
       </div>
+      <Toolbox />
       <div className="slot-orion" data-overlay="orion" ref={orionSlot}>
         <OrionPanel />
         <IntelPanel />

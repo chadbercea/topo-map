@@ -6,7 +6,7 @@ import { fastForward, freeze, running, start } from './helpers';
 
 const fadeIn = (page: import('@playwright/test').Page) => page.waitForTimeout(250);
 
-test('ALPHA needing intel is a prompt pinned to its square; Scan answers it and it goes', async ({ page }) => {
+test('ALPHA needing intel is a prompt pinned to its square; move ORION-3, then Scan answers it and it goes', async ({ page }) => {
   await start(page, '?debug&gauge');
   await running(page);
   await freeze(page);
@@ -16,13 +16,16 @@ test('ALPHA needing intel is a prompt pinned to its square; Scan answers it and 
   const square = await prompt.getAttribute('data-square');
   expect(square).toMatch(/^[A-H]\d$/);
   await expect(prompt.getByTestId('prompt-text')).toContainText(`needs intel on ${square}`);
-  await expect(prompt.getByTestId('prompt-response')).toHaveText([`Scan ${square}`]);
+  await expect(prompt.getByTestId('prompt-response')).toHaveText([/^Move ORION-3 here · \d:\d\d$/]); // the move step first (ILI-1397)
   await expect(page.getByTestId('needs-hq')).not.toContainText('requests imagery'); // not doubled in the mission panel
   await expect(page.getByTestId('event-card-stack').filter({ hasText: 'requests imagery' })).toHaveCount(0); // nor in COMMS
 
   await prompt.getByTestId('prompt-response').click();
   await expect.poll(() => page.evaluate(() => window.game.get().satellite.aim)).toBe(square);
-  await fastForward(page, 60_000);
+  await expect(prompt.getByTestId('prompt-response')).toBeDisabled(); // on its way
+  await fastForward(page, 30_000);
+  await expect(prompt.getByTestId('prompt-response')).toHaveText([`Scan ${square}`]); // locked on
+  await prompt.getByTestId('prompt-response').click();
   await expect.poll(() => page.evaluate((sq) => !!window.game.get().imagery[sq!], square)).toBe(true);
   await fastForward(page, 200);
   await expect(page.getByTestId('prompt').and(page.locator(`[data-square="${square}"]`))).toHaveCount(0);

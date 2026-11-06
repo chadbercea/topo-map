@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { ALERT_AT, ALERT_HARDEN, FADE_PER_S, NOISE, NOISE_PER_ROUND } from './noise';
 import type { GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 import { step } from './systems';
 import { run, walking } from './testkit';
 

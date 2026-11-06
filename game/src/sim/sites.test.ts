@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH } from './sites';
 import type { GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 import { run, walking } from './testkit';
 
 const withContact = (status: 'revealed' | 'hidden' = 'revealed'): GameState => {

@@ -3,7 +3,7 @@ import { eyesOn } from './imagery';
 import { WEAPON, weaponBlocked } from './ordnance';
 import { PER_CALL } from './prices';
 import type { GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 import { run, walking } from './testkit';
 import { DRIFT_MS } from './contacts';
 

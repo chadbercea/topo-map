@@ -4,6 +4,7 @@ import { createStore } from './store';
 import { step } from './systems';
 import { initialOrdnance, WEAPONS } from './ordnance';
 import { LINK_MS } from './comms';
+import { initialSatellite } from './satellite';
 
 // The sim's tests run with ALPHA's intel gauge pinned full, unless they're about the gauge
 // (intel.test.ts): keeping the team fed is a game of its own (ILI-1314).
@@ -53,4 +54,26 @@ export function answer(store: ReturnType<typeof createStore>, id: string, respon
 export function asking(s: GameState = walking()): GameState {
   const ops = s.team.operators.map((o, i) => (i < 2 ? { ...o, health: 0 } : o));
   return run({ ...s, team: { ...s.team, operators: ops } }, 200);
+}
+
+// ORION-3 locked on a square (ILI-1397): nothing runs on a square it isn't over.
+export const lockOn = (s: GameState, square: string): GameState => ({ ...s, satellite: initialSatellite(square) });
+
+// A store for tests about what an action does, not about the satellite's move step: each action
+// on a square first puts ORION-3 over it, as the player would have.
+export function lockedStore(start?: GameState) {
+  const store = createStore(start);
+  const over = (square: string | undefined) => square && store.set(lockOn(store.get(), square));
+  const eventSquare = (id: string) => store.get().events.find((e) => e.id === id)?.square;
+  return {
+    ...store,
+    fire: (contactId: string, w: Parameters<typeof store.fire>[1]) => {
+      over(eventSquare(`contact-${contactId}`) ?? store.get().contacts.find((c) => c.id === contactId)?.square);
+      store.fire(contactId, w);
+    },
+    intercept: (id: string) => (over(eventSquare(id)), store.intercept(id)),
+    jam: (id: string) => (over(eventSquare(id)), store.jam(id)),
+    search: (square: string) => (over(square), store.search(square)),
+    scan: (square: string) => (over(square), store.scan(square)),
+  };
 }

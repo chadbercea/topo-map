@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start, openEvent, hasEvent } from './helpers';
+import { fastForward, freeze, lockOn, start, openEvent, hasEvent } from './helpers';
 
 test('intercept: follow their wave with the slider until the message is through', async ({ page }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
@@ -7,6 +7,7 @@ test('intercept: follow their wave with the slider until the message is through'
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 83_000);
+  await lockOn(page, 'C2'); // ORION-3 over it, or nothing runs there (ILI-1397)
   await openEvent(page, 'signal', 'C2');
   await page.getByRole('button', { name: 'Listen' }).click();
 
@@ -30,12 +31,12 @@ test('intercept: follow their wave with the slider until the message is through'
     }
   });
   // Over: no after-action panel. The decode is a SIGINT report in the stream, and C2's card is
-  // back, where Scan sends ORION-3 to see them.
+  // back, where Scan takes a look at them.
   await expect(panel).toHaveCount(0);
   await expect(page.getByTestId('comms-feed')).toContainText('PATROL AT C2 MOVING TO D3');
   await expect(page.getByTestId('square-card')).toHaveAttribute('data-square', 'C2');
-  await page.getByTestId('look-here').click();
-  await expect(page.getByTestId('satellite')).toContainText('ORION-3 to C2');
+  // ORION-3 is still locked on C2 (ILI-1397): Scan is right there in its menu.
+  await page.getByTestId('square-anchor').getByTestId('scan-square').click();
   await expect.poll(() => hasEvent(page, 'contact', 'C2')).toBe(true);
 });
 
@@ -43,6 +44,7 @@ test('jam instead: the traffic is gone, and HQ says what it costs', async ({ pag
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await fastForward(page, 83_000);
+  await lockOn(page, 'C2'); // ORION-3 over it, or nothing runs there (ILI-1397)
   await openEvent(page, 'signal', 'C2');
   await page.getByRole('button', { name: 'Jam', exact: true }).click();
   await expect(page.getByTestId('event-card')).toHaveCount(0);

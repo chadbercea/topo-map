@@ -19,6 +19,10 @@ export function obstacles(except: string[] = []): Box[] {
     .map((r) => ({ x: r.x, y: r.y, w: r.width, h: r.height }));
 }
 
+// Only the named floating panels on screen now.
+export const overlaysNamed = (names: string[]): Box[] =>
+  names.flatMap((n) => [...document.querySelectorAll<HTMLElement>(`[data-overlay="${n}"]`)]).map((el) => el.getBoundingClientRect()).filter((r) => r.width && r.height).map((r) => ({ x: r.x, y: r.y, w: r.width, h: r.height }));
+
 // ALPHA's five dots on screen (ILI-1210), with a little room around them.
 export function alphaBox(team: { x: number; y: number }): Box | null {
   const p = toScreen(team.x, team.y);

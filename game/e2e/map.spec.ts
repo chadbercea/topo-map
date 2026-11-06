@@ -11,10 +11,15 @@ test('tapping a grid square selects it and opens its zoomed view; tapping again 
   await expect(selected).toHaveText('G4');
   if (isMobile) {
     // On a phone the square's zoomed view and card take most of the map: Close clears it.
-    await page.getByTestId('square-card').getByRole('button', { name: 'Close' }).click();
+    // The sheet folds for it (ILI-1397): the square's menu on the map is what's up.
+    await page.getByTestId('square-anchor').getByRole('button', { name: 'Close' }).click();
     await expect(selected).toHaveText('—');
     return;
   }
+  // Tapping it again clears it. (Its menu is flush against its edge, ILI-1397, so it can sit
+  // over a neighbouring square: clear first, then pick the next.)
+  await tap(6, 3);
+  await expect(selected).toHaveText('—');
   await tap(5, 3);
   await expect(selected).toHaveText('F4');
   await tap(5, 3);

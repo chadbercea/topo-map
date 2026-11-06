@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { squarePoint, start, tapAt } from './helpers';
+import { lockOn, squarePoint, start, tapAt } from './helpers';
 
 test('a new event marks its square on the map; tapping the marker picks it: its details in ORION-3, its actions beside it (ILI-1228)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
+  await lockOn(page, 'F4'); // ORION-3 over F4, so its actions show (ILI-1397)
   await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'F4', title: 'Test contact' }));
   await expect(page.getByTestId('alerts')).toHaveCount(0); // no strip under the header any more
 
@@ -14,6 +15,7 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
 
   // Marker sits in the square's top-right quarter (F4 = col 5, row 3: next to ALPHA, in view).
   await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25, -0.25));
+  if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
   const card = page.getByTestId('square-card');
   const act = page.getByTestId('action-panel');
   await expect(page.getByTestId('satellite').getByTestId('square-card')).toBeVisible(); // in ORION-3's panel
@@ -39,6 +41,7 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
 test('a report line that names a square in COMMS opens that square (ILI-1225)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
+  await lockOn(page, 'F2');
   await page.evaluate(() => window.game.addEvent({ id: 'r', kind: 'request', square: 'F2', title: 'Need imagery' }));
   await page.evaluate(() => {
     const s = window.game.get();

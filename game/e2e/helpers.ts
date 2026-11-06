@@ -138,3 +138,12 @@ export const openEvent = (page: Page, kind: string, square: string) =>
 // A task (map event) of a kind on a square exists.
 export const hasEvent = (page: Page, kind: string, square: string) =>
   page.evaluate(([k, sq]) => window.game.get().events.some((x) => x.kind === k && x.square === sq), [kind, square] as const);
+
+// ORION-3 locked on a square (ILI-1397): nothing runs on a square it isn't over. For tests about
+// what an action does, not the move step.
+export const lockOn = (page: Page, square: string) =>
+  page.evaluate((sq) => {
+    const s = window.game.get();
+    const from = { col: sq.charCodeAt(0) - 65, row: Number(sq.slice(1)) - 1 };
+    window.game.set({ ...s, satellite: { ...s.satellite, state: 'idle', aim: sq, from, startMs: 0, arriveMs: 0, mode: null, callId: null, result: null } });
+  }, square);

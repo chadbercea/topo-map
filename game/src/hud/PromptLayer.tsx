@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { promptQueue } from '../sim/prompts';
-import { alphaBox, pick, squareBox, type Box } from './overlays';
+import { alphaBox, overlaysNamed, pick, squareBox, type Box } from './overlays';
 import { useTier } from './tier';
 
 const W = 280; // the prompt's width on a wide screen
@@ -37,7 +37,11 @@ export function PromptLayer() {
   if (!p || !area) return null;
   const sq = squareBox(p.square);
   const width = Math.min(W, area.width - 16);
-  const at = place(sq, area, width, h || 96, alphaBox(s.team.position));
+  // On a phone the square menu is a strip along the map's foot that never moves: the prompt keeps
+  // clear of it. On a wider screen the menu moves out of the prompt's way instead (ILI-1397).
+  // The toolbox button never moves either.
+  const strip = overlaysNamed(tier === 'compact' ? ['actions', 'toolbox'] : ['toolbox']);
+  const at = place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
   const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
   const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 96))) };
 
@@ -66,7 +70,7 @@ export function PromptLayer() {
         </p>
         <div className="prompt-responses">
           {p.responses.map((r) => (
-            <button key={r.id} onClick={() => game.answerPrompt(p.id, r.id)} data-testid="prompt-response">
+            <button key={r.id} onClick={() => game.answerPrompt(p.id, r.id)} disabled={r.disabled} data-response={r.id} data-testid="prompt-response">
               {r.label}
             </button>
           ))}
@@ -82,7 +86,7 @@ export function PromptLayer() {
 }
 
 // Above its square, else below, else either side; kept inside the open map and off ALPHA.
-function place(sq: Box | null, area: { x: number; y: number; width: number; height: number }, w: number, h: number, alpha: Box | null): Box {
+function place(sq: Box | null, area: { x: number; y: number; width: number; height: number }, w: number, h: number, avoid: (Box | null)[]): Box {
   const clampX = (x: number) => Math.max(area.x + 8, Math.min(x, area.x + area.width - 8 - w));
   const clampY = (y: number) => Math.max(area.y + 8, Math.min(y, area.y + area.height - 8 - h));
   if (!sq) return { x: clampX(area.x + (area.width - w) / 2), y: area.y + 8, w, h };
@@ -94,5 +98,5 @@ function place(sq: Box | null, area: { x: number; y: number; width: number; heig
     { x: clampX(sq.x + sq.w + GAP), y: clampY(cy), w, h },
     { x: clampX(sq.x - GAP - w), y: clampY(cy), w, h },
   ];
-  return pick(spots, [alpha, sq]);
+  return pick(spots, [...avoid, sq]);
 }
