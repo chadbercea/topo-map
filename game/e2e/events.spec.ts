@@ -23,12 +23,12 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
 
   if (!isMobile) {
     // The actions float beside the square (any side, ILI-1302): the anchor's nearest point
-    // within a square's width of F4's centre.
+    // within a square's width of F4's centre, plus room for the marker's label it keeps clear of.
     const box = (await page.getByTestId('square-anchor').boundingBox())!;
     const f4 = await squarePoint(page, 5, 3);
     const dx = Math.max(box.x - f4.x, 0, f4.x - (box.x + box.width));
     const dy = Math.max(box.y - f4.y, 0, f4.y - (box.y + box.height));
-    expect(Math.hypot(dx, dy)).toBeLessThan(160);
+    expect(Math.hypot(dx, dy)).toBeLessThan(220);
   }
 
   await card.getByRole('button', { name: 'Close' }).click();
