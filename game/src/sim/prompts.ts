@@ -1,6 +1,6 @@
 import type { GameState } from './state';
 import { openImageryRequest } from './imageryRequest';
-import { lockedOn, satelliteBusy, slewMs } from './satellite';
+import { lockedOn, satelliteBusy, satName, slewMs } from './satellite';
 import { ANTENNA_MS } from './signal';
 import { currentCall } from './comms';
 import { blocked } from './responses';
@@ -74,13 +74,13 @@ const enemyTraffic: Source = (s) =>
       const responses: PromptResponse[] = l
         ? [
             l.via === 'satellite'
-              ? { id: 'satellite', label: sat.state === 'slewing' ? `ORION-3 on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : 'ORION-3 in range', disabled: true }
+              ? { id: 'satellite', label: sat.state === 'slewing' ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `${satName(s)} in range`, disabled: true }
               : { id: 'antenna', label: `Antenna up in ${countdown(l.readyMs - s.elapsedMs)}`, disabled: true },
           ]
         : [
             satelliteBusy(s)
-              ? { id: 'satellite', label: 'ORION-3 busy', disabled: true }
-              : { id: 'satellite', label: lockedOn(s, e.square) ? 'ORION-3 listens · off ALPHA’s route' : `ORION-3 · ${countdown(slewMs(s, e.square))} there, off ALPHA’s route` },
+              ? { id: 'satellite', label: `${satName(s)} busy`, disabled: true }
+              : { id: 'satellite', label: lockedOn(s, e.square) ? `${satName(s)} listens · off ${s.team.callsign}’s route` : `${satName(s)} · ${countdown(slewMs(s, e.square))} there, off ${s.team.callsign}’s route` },
             { id: 'antenna', label: `ALPHA sets up antenna · holds ${countdown(ANTENNA_MS)}`, disabled: !!s.listen },
           ];
       return { id: e.id, kind: 'enemy-traffic' as const, priority: PRIORITY.enemyTraffic, atMs: e.atMs, square: e.square, text: l ? `Getting in range of their traffic near ${e.square}` : `Enemy radio traffic near ${e.square}. Get an asset in range to listen`, responses };

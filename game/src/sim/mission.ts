@@ -13,6 +13,7 @@ import { callExfil, flyExfil, squareClear } from './exfil';
 export type MissionPhase = 'infil' | 'objective' | 'exfil' | 'complete';
 export type Mission = {
   name: string;
+  satellite: string; // the imaging satellite's name, from the mission's config (ILI-1401)
   a: SquareId; // infil
   b: SquareId; // the crash site
   c: SquareId; // exfil
@@ -23,8 +24,9 @@ export type Mission = {
 
 export const RECOVER_MS = 33_000;
 
-export const initialMission = (route: SquareId[]): Mission => ({
+export const initialMission = (route: SquareId[], satellite: string): Mission => ({
   name: 'Operation Black Box',
+  satellite,
   a: route[0],
   b: route[3],
   c: route[route.length - 1],

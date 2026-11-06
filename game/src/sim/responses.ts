@@ -1,7 +1,7 @@
 import type { GameState } from './state';
 import type { Message } from './comms';
 import type { Effect } from './contacts';
-import { satelliteBusy } from './satellite';
+import { satelliteBusy, satName } from './satellite';
 import { RESUPPLY_COST } from './prices';
 
 // The response tree for radio calls (GDD: answer through a menu tree; options depend on
@@ -65,7 +65,7 @@ export function blocked(s: GameState, r: Response): string | null {
   const need = r.requires;
   if (!need) return null;
   if (need.capability && !s.capabilities.includes(need.capability)) return need.capability === 'strike' ? 'Not unlocked' : 'Unavailable';
-  if (need.capability === 'imagery' && satelliteBusy(s)) return 'ORION-3 busy';
+  if (need.capability === 'imagery' && satelliteBusy(s)) return `${satName(s)} busy`;
   if (need.budget && s.resources.budget < need.budget) return 'Over budget';
   return null;
 }

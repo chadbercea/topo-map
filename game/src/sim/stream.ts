@@ -42,7 +42,8 @@ export const EVENT_LABEL: Record<EventKind, string> = { contact: 'CONTACT', sign
 export function classify(m: Message): { kind: IntelKind; quiet: boolean } {
   if (m.alert) return { kind: 'alert', quiet: false };
   // On station it's ready for HQ's shot (ILI-1257), so that line speaks up; moving stays quiet.
-  if (m.from === 'ORION-3') return { kind: 'imagery', quiet: m.id.startsWith('slew-') };
+  // The satellite's own lines, by id, whatever it's called on this mission (ILI-1401).
+  if (/^(slew|station|look)-\d+$/.test(m.id)) return { kind: 'imagery', quiet: m.id.startsWith('slew-') };
   if (m.from === 'SIGINT') return { kind: 'sigint', quiet: false };
   if (STRIKES.has(m.from)) return { kind: 'strike', quiet: false };
   return { kind: 'hq', quiet: false };

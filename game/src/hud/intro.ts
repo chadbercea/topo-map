@@ -12,10 +12,11 @@ import { loadBalance, loadUnlocks, loadUpgrades } from './ledger';
 export type Stage = 'title' | 'idle' | 'wipe' | 'login' | 'panels' | 'link' | 'live';
 
 export const WIPE_MS = 520;
+// The satellite's line carries its name on this mission (ILI-1401): SATELLITE is swapped for it.
 export const LOGIN_LINES = [
   ['CASTLE HOUSE // SECURE SUPPORT TERMINAL', ''],
   ['OPERATOR AUTH', 'VERIFIED'],
-  ['ORION-3 UPLINK', 'ACQUIRED'],
+  ['SATELLITE UPLINK', 'ACQUIRED'],
   ['SATCOM RELAY-7', 'ONLINE'],
   ['ORDNANCE NET', 'ONLINE'],
   ['WAR ROOM', 'ONLINE'],

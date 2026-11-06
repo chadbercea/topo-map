@@ -73,6 +73,9 @@ export function slewMs(s: GameState, square: SquareId): number {
 }
 
 // Capturing, or listening in on enemy traffic (ILI-1394): that's what pulls it off scanning for ALPHA.
+// The satellite's name on this mission (ILI-1401): from the mission's config, never hardcoded.
+export const satName = (s: GameState) => s.mission.satellite;
+
 export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing' || (s.minigame?.status === 'active' && s.minigame.via === 'satellite');
 
 // The satellite is the player's avatar (ILI-1397): nothing runs on a square it isn't locked on.
@@ -132,7 +135,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     satellite: sat, // the picked square stays picked: its anchor shows ORION-3 on its way (ILI-1302)
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
-  return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Slewing to ${square}. On station in ${countdown(ms)}.` : `On station over ${square}. Ready for collection.`));
+  return log(next, radio(s, satName(s), `slew-${s.elapsedMs}`, ms ? `Slewing to ${square}. On station in ${countdown(ms)}.` : `On station over ${square}. Ready for collection.`));
 }
 
 // Scan a square (ILI-1367), from its square menu: the photo, now. Only once ORION-3 is locked on
@@ -172,7 +175,7 @@ function finishLook(s: GameState): GameState {
   const square = sat.aim;
   const snap = snapshot(s, square, mode, false);
   let next = record(s, snap);
-  next = reveal({ ...next, map: { ...next.map, scanned: [...new Set([...next.map.scanned, square])] } }, [square], 'ORION-3');
+  next = reveal({ ...next, map: { ...next.map, scanned: [...new Set([...next.map.scanned, square])] } }, [square], satName(s));
   const fighters = snap.seen.reduce((n, x) => n + x.units.length, 0);
   const moving = snap.seen.filter((x) => x.to).reduce((n, x) => n + x.units.length, 0);
   const contacts = snap.seen.map((x) => s.contacts.find((c) => c.id === x.contactId)!);
@@ -195,7 +198,7 @@ function finishLook(s: GameState): GameState {
     next = p.next;
     pushed = p.banked ? `Analysts: ${GRADE_LABEL[p.grade]} for ${s.team.callsign}, when it heads into ${square}` : `Analysts: ${GRADE_LABEL[p.grade]} pushed to ${s.team.callsign}`;
   }
-  next = log(next, radio(s, 'ORION-3', `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. ${pushed}.`));
+  next = log(next, radio(s, satName(s), `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. ${pushed}.`));
   return sat.callId ? log(next, radio(s, s.team.callsign, `look-${s.elapsedMs}-team`, 'Imagery received.')) : next;
 }
 
@@ -209,7 +212,7 @@ export const satelliteSystem: System = (s) => {
   const sat = s.satellite;
   if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs)
     // It says what's next (ILI-1257): the shot is HQ's to take.
-    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, 'ORION-3', `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready for collection.`));
+    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, satName(s), `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready for collection.`));
   if (sat.state !== 'capturing') return s;
   if (s.elapsedMs >= sat.captureUntilMs) return finishLook(s);
   // Video is live: the map follows them while it runs.
@@ -222,12 +225,12 @@ export function satelliteStatus(s: GameState): string {
   const secs = gameSpan;
   switch (sat.state) {
     case 'idle':
-      return `ORION-3 over ${sat.aim}`;
+      return `${satName(s)} over ${sat.aim}`;
     case 'slewing':
-      return `ORION-3 to ${sat.aim} · ${countdown(sat.arriveMs - s.elapsedMs)}`;
+      return `${satName(s)} to ${sat.aim} · ${countdown(sat.arriveMs - s.elapsedMs)}`;
     case 'onStation':
-      return `ORION-3 on station ${sat.aim}`;
+      return `${satName(s)} on station ${sat.aim}`;
     case 'capturing':
-      return `ORION-3 ${sat.mode} ${sat.aim} · ${secs(sat.captureUntilMs - s.elapsedMs)}`;
+      return `${satName(s)} ${sat.mode} ${sat.aim} · ${secs(sat.captureUntilMs - s.elapsedMs)}`;
   }
 }

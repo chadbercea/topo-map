@@ -1,4 +1,8 @@
 import { Section, Spec } from './DesignSystem';
+import { MISSION } from '../sim/state';
+
+// The imaging satellite's name on the current mission (ILI-1401).
+const SAT = MISSION.satellite;
 
 // Controls (ILI-1327): the game's controls in each state, in the game's own markup and classes,
 // so they look exactly as they do in play.
@@ -19,7 +23,7 @@ export function Controls() {
             <button>Settings</button>
           </nav>
         </Spec>
-        <Spec name="ORION-3: Reposition" rule="ORION-3's one button until it's over the square HQ picked: where, and how long. Only ever in ORION-3's panel (ILI-1308).">
+        <Spec name={`${SAT}: Reposition`} rule={`${SAT}'s one button until it's over the square HQ picked: where, and how long. Only ever in ${SAT}'s panel (ILI-1308).`}>
           <div className="orion ds-orion">
             <div className="o-buttons">
               <button className="o-reposition">
@@ -29,7 +33,7 @@ export function Controls() {
             </div>
           </div>
         </Spec>
-        <Spec name="ORION-3: Photo / Video" rule="On station, the ways to look take Reposition's place. Photo pulses when it's the next thing to do. Video is once a mission: then it reads used.">
+        <Spec name={`${SAT}: Photo / Video`} rule="On station, the ways to look take Reposition's place. Photo pulses when it's the next thing to do. Video is once a mission: then it reads used.">
           <div className="orion ds-orion">
             <div className="o-buttons">
               <div className="modes">
@@ -104,7 +108,7 @@ export function Controls() {
               COMMS
               <span className="tab-dot" />
             </button>
-            <button aria-pressed>ORION-3</button>
+            <button aria-pressed>{SAT}</button>
             <button data-alert="true">TEAM</button>
           </nav>
         </Spec>

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, slewMs, type CaptureMode } from '../sim/satellite';
+import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs, type CaptureMode } from '../sim/satellite';
 import { freshness, targets } from '../sim/imagery';
 import { nextBlind } from '../sim/progress';
 import { CELL, squareAt, squareCenter } from '../map/grid';
@@ -31,6 +31,7 @@ export function OrionPanel() {
   const square = orionSquare(s);
   const snap = square ? s.imagery[square] : undefined;
   const live = sat.state === 'onStation' || sat.state === 'capturing';
+  const name = satName(s); // from the mission's config (ILI-1401)
 
   const result = sat.state === 'idle' ? sat.result : null;
   const picked = lookSquare(s); // the square HQ is working
@@ -93,18 +94,18 @@ export function OrionPanel() {
   // down to a floor; 1 the buttons, 60 px, pinned to the bottom, never hidden. The square's
   // details are in its menu on the map now (tier three, tap the square).
   return (
-    <section className="panel orion" data-testid="satellite" data-state={sat.state} aria-label="ORION-3 imaging satellite">
+    <section className="panel orion" data-testid="satellite" data-state={sat.state} aria-label={`${name} imaging satellite`}>
       <h2>
-        <span className="o-name" title="ORION-3">
+        <span className="o-name" title={name}>
           <SatelliteIcon />
-          <span className="o-name-text">ORION-3</span>
+          <span className="o-name-text">{name}</span>
         </span>
         <span className="o-state" data-testid="orion-state" data-cloud={cloud}>
           {stateLine}
         </span>
       </h2>
       <p className="sr-only" data-testid="satellite-status">
-        {tied ? 'ORION-3 · tied up' : satelliteStatus(s)}
+        {tied ? `${name} · tied up` : satelliteStatus(s)}
       </p>
 
       {/* ORION-3 itself (ILI-1235): the 3D satellite, its outline when space is short, and its
@@ -132,7 +133,7 @@ export function OrionPanel() {
       {/* The image area: the picture takes what's left (ILI-1400). */}
       <div className="o-frame">
         {showPicture ? (
-          <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`ORION-3's picture of ${square}`}>
+          <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`${name}'s picture of ${square}`}>
             {/* The fighters it shows, each a tap away from its strikes (ILI-1250). Phaser draws the
                 dots; these sit on them, in the square's width at the picture's middle. */}
             <div className="o-targets">
@@ -191,7 +192,7 @@ export function OrionPanel() {
             ))}
           </div>
         ) : (
-          <button className="o-reposition" disabled={!picked || tied || sat.state !== 'idle' || satelliteBusy(s)} onClick={() => picked && game.lookAt(picked)} data-testid="look-here" title="Reposition ORION-3 over the picked square">
+          <button className="o-reposition" disabled={!picked || tied || sat.state !== 'idle' || satelliteBusy(s)} onClick={() => picked && game.lookAt(picked)} data-testid="look-here" title={`Reposition ${name} over the picked square`}>
             {sat.state === 'slewing' && !tied ? `Repositioning to ${sat.aim}` : 'Reposition'}
             <small>{tied ? 'tied up by the intercept' : sat.state === 'slewing' ? 'on its way' : picked ? `to ${picked} · ${countdown(away)}` : 'pick a square'}</small>
           </button>

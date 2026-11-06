@@ -1,3 +1,4 @@
+import { useGame } from '../sim/store';
 import { useEffect, useRef, useState } from 'react';
 
 // The ORION-3 close-up's ops-floor screens (ILI-1292, ILI-1295), the way a film shows a
@@ -119,6 +120,7 @@ function Payload({ t }: { t: number }) {
 const ORBIT_S = 240; // a lap is about 95 minutes; the readout runs it quick so it's seen to move
 
 function OrionFeed({ t }: { t: number }) {
+  const satellite = useGame((s) => s.mission.satellite); // from the mission's config (ILI-1401)
   const [log, setLog] = useState(() => Array.from({ length: 6 }, (_, i) => line(i)));
   useEffect(() => {
     if (still) return;
@@ -139,7 +141,7 @@ function OrionFeed({ t }: { t: number }) {
   return (
     <section className="panel feed-panel orion-feed" data-testid="orion-feed">
       <header>
-        <b>ORION-3</b>
+        <b>{satellite}</b>
         <span>ISR · NORAD 58417</span>
       </header>
       <dl>

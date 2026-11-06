@@ -1,4 +1,8 @@
 import { Section, Spec } from './DesignSystem';
+import { MISSION } from '../sim/state';
+
+// The imaging satellite's name on the current mission (ILI-1401).
+const SAT = MISSION.satellite;
 
 // Patterns (ILI-1331): how the parts work together. Each with the rule, a small example in the
 // game's own markup where there is one, and the tickets that set it.
@@ -6,7 +10,7 @@ export function Patterns() {
   return (
     <Section id="patterns" title="Patterns" intro="The player is the war room: god mode over the map, every tool, but the theater only changes through the team on the ground. These patterns keep that true and readable when several things happen at once.">
       <div className="ds-grid">
-        <Spec name="The square anchor" rule="A square's contextual action menu, pinned beside it on the map with a leader line: its fighters, its strikes, what's hitting it. It opens only when there's something to act on. Knowing and looking at a square (its details, Reposition) is ORION-3's (ILI-1302, ILI-1308).">
+        <Spec name="The square anchor" rule={`A square's contextual action menu, pinned beside it on the map with a leader line: its fighters, its strikes, what's hitting it. It opens only when there's something to act on. Knowing and looking at a square (its details, Reposition) is ${SAT}'s (ILI-1302, ILI-1308).`}>
           <div className="square-card ds-static ds-anchor">
             <header className="sc-head">
               <b>E3</b>
@@ -85,10 +89,10 @@ export function Patterns() {
             </div>
           </dl>
         </Spec>
-        <Spec name="The way in" rule="Title (the rook, the menu, the globe blurred) → START: the logo powers off, the camera flies in on ORION-3 → click it: the wipe, the login typing on, the war room powering on panel by panel, the link with ALPHA → the clock starts. No briefing (ILI-1280, ILI-1290, ILI-1307).">
+        <Spec name="The way in" rule={`Title (the rook, the menu, the globe blurred) → START: the logo powers off, the camera flies in on ${SAT} → click it: the wipe, the login typing on, the war room powering on panel by panel, the link with ALPHA → the clock starts. No briefing (ILI-1280, ILI-1290, ILI-1307).`}>
           <ol className="ds-flow">
             <li>Title</li>
-            <li>ORION-3</li>
+            <li>{SAT}</li>
             <li>Wipe</li>
             <li>Login</li>
             <li>Power-on</li>

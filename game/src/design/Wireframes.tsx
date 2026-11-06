@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { WireAvatar } from '../hud/OrionAvatar';
 import { Section } from './DesignSystem';
+import { MISSION } from '../sim/state';
+
+// The imaging satellite's name on the current mission (ILI-1401).
+const SAT = MISSION.satellite;
 
 // 3D wireframes (ILI-1329): every Three.js scene in the game, live, in the HUD's line language.
 // Each loads as it scrolls into view, and steps through its states.
 type Load = () => Promise<{ mount: (...a: never[]) => unknown }>;
 const SCENES: { name: string; where: string; load: Load; states: string[] }[] = [
-  { name: 'ORION-3', where: 'ORION-3’s panel', load: () => import('../hud/orionScene'), states: ['idle', 'slewing', 'tied'] },
+  { name: `${SAT}`, where: `${SAT}’s panel`, load: () => import('../hud/orionScene'), states: ['idle', 'slewing', 'tied'] },
   { name: 'SATCOM backpack', where: 'ALPHA’s box and flag, when it needs HQ', load: () => import('../hud/terminalScene'), states: ['idle', 'incoming', 'sending', 'tied'] },
   { name: 'Lensatic compass', where: 'ALPHA’s box, on the move', load: () => import('../hud/mapScene'), states: ['on'] },
   { name: 'M4', where: 'ALPHA’s box, in a fight', load: () => import('../hud/m4Scene'), states: ['on'] },
@@ -87,7 +91,7 @@ function Castle() {
 
 export function Wireframes() {
   return (
-    <Section id="wireframes" title="3D wireframes" intro="Every object in the game is an edges-only Three.js model in the HUD's teal (orange for ORION-3 on the title and for ALPHA's backpack when it needs HQ), turning slowly. A state changes its colour and speed, never the model.">
+    <Section id="wireframes" title="3D wireframes" intro={`Every object in the game is an edges-only Three.js model in the HUD's teal (orange for ${SAT} on the title and for ALPHA's backpack when it needs HQ), turning slowly. A state changes its colour and speed, never the model.`}>
       <figure className="ds-spec" data-wide>
         <div className="ds-stage">
           <Visible>
@@ -96,7 +100,7 @@ export function Wireframes() {
         </div>
         <figcaption>
           <b>Castle House: the rook, the globe, the constellation</b>
-          <span>The title screen and the ORION-3 close-up (castleScene). ORION-3 in orange; the others dim, Coming Soon.</span>
+          <span>The title screen and the {SAT} close-up (castleScene). {SAT} in orange; the others dim, Coming Soon.</span>
         </figcaption>
       </figure>
       <div className="ds-grid ds-wires">

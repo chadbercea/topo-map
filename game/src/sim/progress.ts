@@ -6,6 +6,7 @@ import { ammoLevel, LOW, medsLevel } from './support';
 import { squareCenter, type SquareId } from '../map/grid';
 import { BASE_SPEED } from './movement';
 import { RECOVER_MS } from './mission';
+import { satName } from './satellite';
 
 // Mission progression at a glance (ILI-1173): how far along the route ALPHA is, what it's
 // doing now, and the one thing that presses next. Pure reads of the state, for the HUD.
@@ -80,7 +81,7 @@ export function blockers(s: GameState): Blocker[] {
   const out: Blocker[] = [];
   // ALPHA waiting on a look ORION-3 is in place for (ILI-1257): the shot is the next thing to do.
   const sat = s.satellite;
-  if (sat.callId && sat.state === 'onStation') out.push({ tone: 'decision', text: `ORION-3 on station over ${sat.aim}: take the shot`, go: { square: sat.aim } });
+  if (sat.callId && sat.state === 'onStation') out.push({ tone: 'decision', text: `${satName(s)} on station over ${sat.aim}: take the shot`, go: { square: sat.aim } });
   const calls = waitingCalls(s.comms);
   if (calls.length) out.push({ tone: 'decision', text: `${calls[0].from} waiting on your decision${calls.length > 1 ? ` (+${calls.length - 1})` : ''}`, go: { ask: true } });
   if (s.team.fight) out.push({ tone: 'threat', text: `${s.team.callsign} in contact` });

@@ -47,6 +47,7 @@ export function Hud() {
   const [log, setLog] = useState(false);
 
   const tier = useTier();
+  const satellite = useGame((s) => s.mission.satellite); // its name, from the mission's config (ILI-1401)
   // The panels power on in turn as the war room comes online (ILI-1281), on the way in and on a
   // restart (intro.ts).
   const stage = useIntro();
@@ -161,7 +162,7 @@ export function Hud() {
       <nav className="dock-tabs" aria-label="Panels">
         {(['satcom', 'orion', 'team'] as const).map((t) => (
           <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'team' && calling && !shown('team')} data-update={unseen[t] || undefined}>
-            {t === 'satcom' ? 'COMMS' : t === 'orion' ? 'ORION-3' : t.toUpperCase()}
+            {t === 'satcom' ? 'COMMS' : t === 'orion' ? satellite : t.toUpperCase()}
             {unseen[t] && <span className="tab-dot" aria-hidden />}
           </button>
         ))}
