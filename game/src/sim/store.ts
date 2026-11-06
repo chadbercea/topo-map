@@ -3,7 +3,7 @@ import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { dismiss, respond, send } from './comms';
 import { promptQueue } from './prompts';
-import { cancelLook, capture, closeLook, lookAt, lookSquare, scan, slewMs, type CaptureMode } from './satellite';
+import { cancelLook, capture, closeLook, lockedOn, lookAt, lookSquare, scan, slewMs, type CaptureMode } from './satellite';
 import { abortMiniGame } from './minigame';
 import { launch } from './air';
 import { callSniper } from './sniper';
@@ -31,11 +31,15 @@ function task(s: GameState, square: string): GameState {
   return lookAt(s, square);
 }
 
-// Scan a square: task ORION-3 there, and the photo is taken on arrival (ILI-1367).
+// Scan a square (ILI-1367): the photo, only with ORION-3 locked on it (ILI-1397).
 function scanSquare(s: GameState, square: string): GameState {
+  if (!lockedOn(s, square)) return s;
   const next = task(s, square);
   return next.satellite.aim === square ? scan(next) : next;
 }
+
+// Where an event happens: its square, for the lock check (ILI-1397).
+const eventSquare = (s: GameState, eventId: string) => s.events.find((e) => e.id === eventId)?.square;
 
 export function createStore(initial: GameState = initialState()) {
   let state = initial;
@@ -63,7 +67,8 @@ export function createStore(initial: GameState = initialState()) {
     // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
     setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades))),
     // Send ALPHA to search a building a scan turned up (ILI-1316).
-    search: (square: string) => set(sendToSearch(state, square)),
+    // Like every action on a square, only with ORION-3 locked on it (ILI-1397).
+    search: (square: string) => lockedOn(state, square) && set(sendToSearch(state, square)),
     // Buy a capability (ILI-1316).
     unlock: (w: Weapon) => set(unlock(state, w)),
     // Tuning: start over with a different mission length (1 to 30 minutes).
@@ -103,18 +108,24 @@ export function createStore(initial: GameState = initialState()) {
     fire: (contactId: string, weapon: Weapon) => {
       const c = state.contacts.find((x) => x.id === contactId);
       if (!c || weaponBlocked(state, weapon, c)) return;
+      const at = eventSquare(state, `contact-${contactId}`) ?? c.square;
+      if (!lockedOn(state, at)) return; // the satellite is locked on its square first (ILI-1397)
       // No mini games: the support does it itself (ILI-1252, ILI-1253, ILI-1254).
       // Every call that goes out costs (ILI-1316), into the red if need be.
       const called = weapon === 'sniper' ? callSniper(state, contactId) : launch(state, weapon, contactId);
       set(called === state ? state : spend(called, perCall(state, weapon)));
     },
     lookAt: (square: string) => set(task(state, square)),
-    // Scan from the square's menu (ILI-1367): task ORION-3 there, photo on arrival.
+    // The move step (ILI-1397): ORION-3 slews to the square, in real time, before anything runs there.
+    moveSatellite: (square: string) => set(task(state, square)),
+    // Scan from the square's menu (ILI-1367): the photo, once ORION-3 is locked on (ILI-1397).
     scan: (square: string) => set(scanSquare(state, square)),
     // Answer the prompt on screen (ILI-1391): the response does what it says.
     answerPrompt: (id: string, response: string) => {
       const p = promptQueue(state).find((x) => x.id === id);
-      if (p?.kind === 'intel-needed' && response === 'scan') set(scanSquare(state, p.square));
+      if (p?.kind !== 'intel-needed') return;
+      if (response === 'move') set(task(state, p.square));
+      if (response === 'scan') set(scanSquare(state, p.square));
     },
     // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first
     // (ILI-1250).
@@ -126,8 +137,8 @@ export function createStore(initial: GameState = initialState()) {
     cancelLook: () => set(cancelLook(state)),
     closeLook: () => set(closeLook(state)),
     sendResupply: () => set(sendResupply(state)),
-    intercept: (eventId: string) => set(startIntercept(state, eventId)),
-    jam: (eventId: string) => set(jam(state, eventId)),
+    intercept: (eventId: string) => lockedOn(state, eventSquare(state, eventId) ?? '') && set(startIntercept(state, eventId)),
+    jam: (eventId: string) => lockedOn(state, eventSquare(state, eventId) ?? '') && set(jam(state, eventId)),
     tune: (mhz: number) => set(tune(state, mhz)),
     abortMiniGame: () => set(abortMiniGame(state)),
     dismissCall: (id: string) => set(dismiss(state, id)),

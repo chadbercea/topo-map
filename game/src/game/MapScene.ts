@@ -391,17 +391,31 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
-  // ORION-3's reticle: corner brackets where it looks, a dashed track while it swings over,
-  // and a pulse while it captures.
+  // ORION-3's reticle, the player's avatar (ILI-1397): its footprint on the square it's over.
+  // Locked on, it's solid: a bright outline and corner brackets. Swinging over, the brackets ride
+  // a dashed track to the dashed square it will lock on. A square HQ picked that it isn't over
+  // shows a ghost reticle, dashed, until HQ moves it there. A pulse while it captures.
   private drawSatellite(time: number) {
     const g = this.satGfx.clear();
-    const { satellite: sat, elapsedMs } = game.get();
+    const s = game.get();
+    const { satellite: sat, elapsedMs } = s;
     const px = DPR / this.zoom;
     const p = satellitePoint(sat, elapsedMs);
     const x = p.col * CELL;
     const y = p.row * CELL;
-    const working = sat.state !== 'idle';
-    if (sat.state === 'slewing') {
+    const slewing = sat.state === 'slewing';
+    const dashedRect = (rx: number, ry: number, alpha: number) => {
+      const dash = 10 * px;
+      const gap = 7 * px;
+      g.lineStyle(2 * px, TEAL, alpha);
+      for (const [ax, ay, bx, by] of [[rx, ry, rx + CELL, ry], [rx + CELL, ry, rx + CELL, ry + CELL], [rx + CELL, ry + CELL, rx, ry + CELL], [rx, ry + CELL, rx, ry]]) {
+        const len = Math.hypot(bx - ax, by - ay);
+        const ux = (bx - ax) / len;
+        const uy = (by - ay) / len;
+        for (let t = 0; t < len; t += dash + gap) g.lineBetween(ax + ux * t, ay + uy * t, ax + ux * Math.min(len, t + dash), ay + uy * Math.min(len, t + dash));
+      }
+    };
+    if (slewing) {
       const to = parseSquare(sat.aim)!;
       const d = Math.hypot((to.col - p.col) * CELL, (to.row - p.row) * CELL) || 1;
       const ax = x + CELL / 2;
@@ -410,13 +424,18 @@ export class MapScene extends Phaser.Scene {
       const uy = ((to.row - p.row) * CELL) / d;
       g.lineStyle(2 * px, TEAL, 0.85);
       for (let t = 0; t < d; t += 12 * px) g.lineBetween(ax + ux * t, ay + uy * t, ax + ux * Math.min(d, t + 6 * px), ay + uy * Math.min(d, t + 6 * px));
-      g.lineStyle(2 * px, TEAL, 0.7).strokeRect(to.col * CELL, to.row * CELL, CELL, CELL);
+      dashedRect(to.col * CELL, to.row * CELL, 0.8);
+    } else {
+      // Locked on: solid.
+      g.fillStyle(TEAL, 0.07).fillRect(x, y, CELL, CELL);
+      g.lineStyle(1.5 * px, TEAL, 0.7).strokeRect(x, y, CELL, CELL);
     }
+    // The ghost: picked, and neither where it is nor where it's going.
+    const picked = s.map.selected && parseSquare(s.map.selected);
+    if (picked && !s.minigame && s.map.selected !== sat.aim) dashedRect(picked.col * CELL, picked.row * CELL, 0.45 + 0.2 * Math.abs(Math.sin(time / 400)));
     if (sat.state === 'capturing') g.fillStyle(TEAL, 0.06 + 0.06 * Math.abs(Math.sin(time / 250))).fillRect(x, y, CELL, CELL);
-    // No glow on the next blind square (ILI-1296): out of nowhere, it read as a glitch. The
-    // mission line and ORION-3's standby line name it instead (ILI-1272).
-    const k = CELL * 0.18;
-    g.lineStyle((working ? 2 : 1.2) * px, TEAL, working ? 0.95 : 0.4);
+    const k = CELL * 0.22;
+    g.lineStyle(3 * px, TEAL, 0.95);
     for (const [cx, cy, dx, dy] of [[x, y, 1, 1], [x + CELL, y, -1, 1], [x + CELL, y + CELL, -1, -1], [x, y + CELL, 1, -1]]) {
       g.lineBetween(cx, cy, cx + dx * k, cy);
       g.lineBetween(cx, cy, cx, cy + dy * k);

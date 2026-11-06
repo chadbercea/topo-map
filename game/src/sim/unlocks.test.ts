@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { unlockBlocked, unlockedWeapons, weaponBlocked } from './ordnance';
 import { DEPLOY, UNLOCK } from './prices';
 import { initialState, type GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 
 // Capabilities (ILI-1316): none to start; bought in order, sniper, drone, heli, once the balance
 // covers each; then every call costs.

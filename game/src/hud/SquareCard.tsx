@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, slewMs } from '../sim/satellite';
+import { CAPTURE, lockedOn, slewMs } from '../sim/satellite';
 import { isImageryRequest } from '../sim/imageryRequest';
 import { MiniGamePanel } from './MiniGamePanel';
 import { freshness, targets } from '../sim/imagery';
@@ -18,7 +18,7 @@ import { useTier } from './tier';
 import { alphaBox, obstacles, pick, squareBox } from './overlays';
 import type { GameState } from '../sim/state';
 
-const ANCHOR_W = 300; // the anchor's width beside its square
+const ANCHOR_W = 260; // the menu's width off its square's edge
 
 // The square's anchor (ILI-1278, ILI-1302, ILI-1308): the contextual menu for the square HQ
 // picked, pinned beside it on the map, so what's done there stays tied to its ground however
@@ -27,8 +27,11 @@ const ANCHOR_W = 300; // the anchor's width beside its square
 // signal, a request). It only opens when there's something to act on. What's known of the
 // square, and Reposition, are ORION-3's (OrionPanel). Beside the square on the side away from
 // ALPHA and clear of the other panels; on a phone, a strip along the foot of the map.
-// What happens on a square stays with the square (ILI-1367): every picked square opens it with
-// Scan (a grid action that tasks ORION-3), and a mini game plays here, at its square.
+// What happens on a square stays with the square (ILI-1367): every picked square opens it, and
+// a mini game plays here, at its square.
+// The satellite is the player's avatar (ILI-1397): the menu grows out of the reticle's edge and
+// moves with it. On a square ORION-3 isn't locked on, the menu is the one move step, "Move
+// ORION-3 here" and its travel time; locked on, that square's actions, and only the valid ones.
 export function SquareCard() {
   const s = useGame((x) => x);
   const playing = s.minigame?.status === 'active' ? s.minigame : null;
@@ -65,7 +68,8 @@ export function SquareCard() {
   const area = getMapRect();
   if (!area) return null;
   if (!square) return <Busy s={s} area={area} picked={null} />;
-  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : beside(square, area, actHeight, s.team.position, ANCHOR_W);
+  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, s.team.position, ANCHOR_W);
+  const locked = lockedOn(s, square);
   return (
     <>
       <Busy s={s} area={area} picked={square} />
@@ -78,6 +82,7 @@ export function SquareCard() {
         data-square={square}
         data-side={at.side}
         data-minigame={playing ? playing.kind : undefined}
+        data-locked={locked}
         style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight }}
         role="group"
         aria-label={`Act on ${square}`}
@@ -192,43 +197,24 @@ export function hasActions(s: GameState, square: string) {
   return s.events.some(actionable(square));
 }
 
-// Beside the square, on the side away from ALPHA when both have room (so ALPHA's flag stays
-// clear), top level with it, kept inside the open map. Each side tries level with the square,
-// then below what's floating at the top (the status widget), then down at the map's foot,
-// and takes the first spot clear of the other panels and ALPHA (ILI-1215).
-function beside(square: string, area: Area, height: number, team: { x: number; y: number }, width: number): Placed {
+// Off the reticle's edge (ILI-1397): flush against the square, so the menu and the square read as
+// one thing and move together. Right of it, else left, else under or over it, whichever is
+// clear of ALPHA and the other panels, kept inside the open map.
+function attached(square: string, area: Area, height: number, team: { x: number; y: number }, width: number): Placed {
   const sq = squareBox(square);
-  const alpha = alphaBox(team);
   const maxHeight = area.height - 16;
-  if (!sq) return { left: area.x + 8, top: area.y + 8, width: width, maxHeight, side: 'right' };
-  const h = height || 300;
-  const lo = area.y + 8;
-  const hi = area.y + area.height - 8 - h;
-  const clampTop = (y: number) => Math.max(lo, Math.min(y, hi));
-  const others = obstacles(['card', 'actions', 'flag']);
-  const tops = [sq.y, ...others.map((o) => o.y + o.h + 8), hi].map(clampTop);
-  const right = { x: sq.x + sq.w + 10, side: 'right' };
-  const left = { x: sq.x - 10 - width, side: 'left' };
-  const fits = (x: number) => x >= area.x + 8 && x + width <= area.x + area.width - 8;
-  const alphaRight = !!alpha && alpha.x + alpha.w / 2 > sq.x + sq.w / 2;
-  // Then the open map's far edges (ILI-1227): with the camera centred on ALPHA, beside the
-  // square can be right on top of it.
-  const edges = [
-    { x: area.x + area.width - 8 - width, side: 'right' },
-    { x: area.x + 8, side: 'left' },
+  if (!sq) return { left: area.x + 8, top: area.y + 8, width, maxHeight, side: 'right' };
+  const h = Math.min(height || 160, maxHeight);
+  const cx = (x: number) => Math.max(area.x + 8, Math.min(x, area.x + area.width - 8 - width));
+  const cy = (y: number) => Math.max(area.y + 8, Math.min(y, area.y + area.height - 8 - h));
+  const spots = [
+    { x: cx(sq.x + sq.w), y: cy(sq.y), w: width, h, side: 'right' },
+    { x: cx(sq.x - width), y: cy(sq.y), w: width, h, side: 'left' },
+    { x: cx(sq.x), y: cy(sq.y + sq.h), w: width, h, side: 'below' },
+    { x: cx(sq.x), y: cy(sq.y - h), w: width, h, side: 'above' },
   ];
-  const sides = [...(alphaRight ? [left, right] : [right, left]), ...edges].filter((c) => fits(c.x));
-  if (!sides.length) sides.push({ x: Math.max(area.x + 8, Math.min(sq.x - 10 - width, area.x + area.width - 8 - width)), side: 'left' });
-  // Close to its square first (ILI-1302): level with it either side, then right under it or
-  // right over it, before anywhere further off.
-  const near = sides.slice(0, 2).map((c) => ({ x: c.x, y: tops[0], w: width, h, side: c.side }));
-  const ux = Math.max(area.x + 8, Math.min(sq.x, area.x + area.width - 8 - width));
-  const under = { x: ux, y: sq.y + sq.h + 10, w: width, h, side: 'below' };
-  const over = { x: ux, y: sq.y - 10 - h, w: width, h, side: 'above' };
-  const inMap = (b: { y: number; h: number }) => b.y >= area.y + 8 && b.y + b.h <= area.y + area.height - 8;
-  const spots = [...near, ...[under, over].filter(inMap), ...sides.flatMap((c) => tops.slice(1).map((y) => ({ x: c.x, y, w: width, h, side: c.side })))];
-  const at = pick(spots, [...others, alpha, sq]);
-  return { left: at.x, top: at.y, width: width, maxHeight, side: at.side };
+  const at = pick(spots, [...obstacles(['card', 'actions', 'flag']), alphaBox(team), sq]);
+  return { left: at.x, top: at.y, width, maxHeight, side: at.side };
 }
 
 const SLACK = 32; // px a measured height may shrink by before the panel moves for it
@@ -240,77 +226,92 @@ const settle = (was: number, now: number) => (now > was || was - now > SLACK ? n
 function AnchorBody({ s, square }: { s: GameState; square: string }) {
   const marked = targets(s).filter((t) => squareAt(t.x, t.y) === square);
   const strikes = s.events.filter((e) => e.square === square && strikeable(e) && e.status !== 'resolved');
+  const locked = lockedOn(s, square);
   return (
     <>
       <header className="sc-head">
         <b>{square}</b>
-        <span className="sc-status">act on</span>
+        <span className="sc-status" data-testid="lock-status">
+          {locked ? 'ORION-3 locked on' : 'ORION-3 not over it'}
+        </span>
         <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
           ×
         </button>
       </header>
 
-      <Scan s={s} square={square} />
-
-      {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304). */}
+      {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304).
+          Work already under way, so it shows locked or not. */}
       <SniperPanel square={square} />
       <AirPanel weapon="drone" square={square} />
       <AirPanel weapon="heli" square={square} />
 
-      {/* Its fighters, and every way to hit them (ILI-1230, ILI-1270), here at their square. */}
-      {strikes.length > 0 && (
-        <section className="sc-strikes" data-testid="strike-menu" aria-label={`Strike ${square}`}>
-          {marked.length > 0 && (
-            <p className="sc-marked" data-testid="fighters-marked">
-              {marked.length} {marked.length === 1 ? 'fighter' : 'fighters'} marked
-            </p>
-          )}
-          {strikes.map((e) => (
-            <div key={e.id} className="sc-event event-card" data-kind="contact" data-testid="event-card">
-              <h3>CONTACT · {e.square}</h3>
-              <p className="title">{e.title}</p>
-              <TargetMenu contactId={e.id.slice('contact-'.length)} />
-            </div>
-          ))}
-        </section>
-      )}
+      {!locked ? (
+        <MoveHere s={s} square={square} />
+      ) : (
+        <>
+          <Scan s={s} square={square} />
 
-      {hasActions(s, square) && (
-        <section className="sc-actions" data-testid="action-panel" aria-label={`Act on ${square}`}>
-          <Actions s={s} square={square} />
-        </section>
+          {/* Its fighters, and every way to hit them (ILI-1230, ILI-1270), here at their square. */}
+          {strikes.length > 0 && (
+            <section className="sc-strikes" data-testid="strike-menu" aria-label={`Strike ${square}`}>
+              {marked.length > 0 && (
+                <p className="sc-marked" data-testid="fighters-marked">
+                  {marked.length} {marked.length === 1 ? 'fighter' : 'fighters'} marked
+                </p>
+              )}
+              {strikes.map((e) => (
+                <div key={e.id} className="sc-event event-card" data-kind="contact" data-testid="event-card">
+                  <h3>CONTACT · {e.square}</h3>
+                  <p className="title">{e.title}</p>
+                  <TargetMenu contactId={e.id.slice('contact-'.length)} />
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* Team actions come out of the same menu (ILI-1397). */}
+          {hasActions(s, square) && (
+            <section className="sc-actions" data-testid="action-panel" aria-label={`Act on ${square}`}>
+              <Actions s={s} square={square} />
+            </section>
+          )}
+        </>
       )}
     </>
   );
 }
 
-// Scan (ILI-1367): the square's own way to get a look. It tasks ORION-3 here and the photo is
-// taken on arrival, so the click and the action are the same place. It pulses when ALPHA is
-// asking for imagery of this square.
-function Scan({ s, square }: { s: GameState; square: string }) {
+// The slew step (ILI-1397): on a square ORION-3 isn't over, the menu's one action is to move it
+// here, with how long that takes. It slews in real time; on arrival the reticle locks and the
+// square's actions take this one's place.
+function MoveHere({ s, square }: { s: GameState; square: string }) {
   const sat = s.satellite;
   const now = s.elapsedMs;
-  const here = sat.aim === square;
-  const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
+  const coming = sat.state === 'slewing' && sat.aim === square;
   const busy = sat.state === 'capturing';
-  const scanning = here && sat.state === 'slewing' && !!sat.autoPhoto;
-  const status = busy
-    ? `ORION-3 busy over ${sat.aim}`
-    : scanning
-      ? `ORION-3 on its way · ${countdown(sat.arriveMs - now)}`
-      : here && sat.state === 'onStation'
-        ? 'ORION-3 over it · photo now'
-        : here && sat.state === 'slewing'
-          ? `ORION-3 on its way · ${countdown(sat.arriveMs - now)}`
-          : slewMs(s, square) === 0
-            ? 'ORION-3 over it · photo now'
-            : `ORION-3 · ${countdown(slewMs(s, square))} away`;
+  const waiting = s.events.filter((e) => e.square === square && e.status !== 'resolved' && e.kind !== 'site').length;
+  return (
+    <div className="sc-scan sc-move" data-testid="square-move">
+      {waiting > 0 && <p className="sc-asked">{waiting === 1 ? 'Something here to act on' : `${waiting} things here to act on`}</p>}
+      <button onClick={() => game.moveSatellite(square)} disabled={coming || busy} data-testid="move-here">
+        <span>{coming ? 'ORION-3 on its way' : 'Move ORION-3 here'}</span>
+        <small>{coming ? `Locks on in ${countdown(sat.arriveMs - now)}` : busy ? `Busy over ${sat.aim}` : `${countdown(slewMs(s, square))} to get here`}</small>
+      </button>
+    </div>
+  );
+}
+
+// Scan (ILI-1367): the square's own way to get a look, the photo now. Only with ORION-3 locked on
+// (ILI-1397). It pulses when ALPHA is asking for imagery of this square.
+function Scan({ s, square }: { s: GameState; square: string }) {
+  const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
+  const busy = s.satellite.state === 'capturing';
   return (
     <div className="sc-scan" data-testid="square-scan">
       {asked && <p className="sc-asked">{asked.title}</p>}
-      <button onClick={() => game.scan(square)} disabled={busy || scanning} data-testid="scan-square" data-cue={(!!asked && !busy && !scanning) || undefined}>
-        <span>{scanning ? `Scanning ${square}` : `Scan ${square}`}</span>
-        <small>{status}</small>
+      <button onClick={() => game.scan(square)} disabled={busy} data-testid="scan-square" data-cue={(!!asked && !busy) || undefined}>
+        <span>Scan {square}</span>
+        <small>{busy ? `ORION-3 busy over ${s.satellite.aim}` : 'Photo now'}</small>
       </button>
     </div>
   );

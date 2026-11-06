@@ -15,7 +15,7 @@ test('the intel gauge: empty, ALPHA holds; a photo feeds it and the bar fills', 
   await expect(page.getByTestId('team-panel')).toContainText('Holding · needs intel');
   // It asks HQ for imagery (ILI-1349): the prompt on the map, pinned to F4 (ILI-1391).
   await expect(page.getByTestId('prompt')).toHaveAttribute('data-square', 'F4');
-  await expect(page.getByTestId('prompt-response')).toHaveText(['Scan F4']);
+  await expect(page.getByTestId('prompt-response')).toHaveText([/^Move ORION-3 here/]); // the move step first (ILI-1397)
   await photo(page, 'G5');
   await expect.poll(async () => Number(await bar.getAttribute('aria-valuenow'))).toBeGreaterThan(0);
 });

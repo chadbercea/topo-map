@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, start, untilOnStation, hasEvent, photo, worldToScreen, running } from './helpers';
 
-test('pick a square, Reposition: ORION-3 moves, then on station the shots take its place (ILI-1219, ILI-1250)', async ({ page }) => {
+test('pick a square, Reposition: ORION-3 moves, then on station the shots take its place (ILI-1219, ILI-1250)', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -10,6 +10,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
   // E3 is off screen on a phone (the camera stays on ALPHA); map.spec covers tapping squares.
   await page.evaluate(() => window.game.selectSquare('E3'));
+  if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
   // Picking a square pins its card: what HQ knows of it, and Reposition. No picture anywhere yet.
   const card = page.getByTestId('square-card');
   await expect(card).toHaveAttribute('data-square', 'E3');
@@ -70,12 +71,13 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
 });
 
-test('a fighter in ORION-3\u2019s picture opens its square\u2019s strikes at the square; there\u2019s no Strike button (ILI-1250, ILI-1308)', async ({ page }) => {
+test('a fighter in ORION-3\u2019s picture opens its square\u2019s strikes at the square; there\u2019s no Strike button (ILI-1250, ILI-1308)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   const sat = page.getByTestId('satellite');
   await page.evaluate(() => window.game.selectSquare('F4'));
+  if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
   await expect(sat.getByTestId('look-here')).toBeEnabled();
   await photo(page, 'E3'); // finds the checkpoint
   await page.evaluate(() => window.game.selectSquare('E3'));
@@ -108,13 +110,14 @@ test('a fighter on the map opens its strikes too (ILI-1250)', async ({ page, isM
   await expect(page.getByTestId('strike-menu').getByTestId('fire-sniper')).toBeVisible();
 });
 
-test('over a square it has already shot, no Reposition and no Rescan: the shots are there (ILI-1250)', async ({ page }) => {
+test('over a square it has already shot, no Reposition and no Rescan: the shots are there (ILI-1250)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
   const sat = page.getByTestId('satellite');
   await photo(page, 'E3');
   await page.evaluate(() => window.game.selectSquare('E3'));
+  if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
   await expect(sat.getByTestId('look-here')).toHaveCount(0);
   await sat.getByTestId('capture-photo').click();
   await expect(sat.getByTestId('satellite-result')).toContainText('Photo:');

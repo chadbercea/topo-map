@@ -43,11 +43,10 @@ html, body {
      middle with the mini game at its foot, ORION-3 down the whole right side, and along the
      bottom the small widgets and TEAM. */
   grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(300px, 380px);
-  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
     'mission map orion'
     'satcom map orion'
-    'satcom band orion'
     'bottom bottom orion';
 }
 
@@ -72,11 +71,27 @@ html, body {
 .recentre { position: absolute; top: 6px; right: 8px; z-index: 1; font: inherit; font-size: 10px; letter-spacing: 0.1em; color: #0b0f0d; background: var(--accent); border: 1px solid var(--accent); height: 24px; padding: 0 8px; cursor: pointer; }
 .recentre::before { content: ''; position: absolute; inset: -10px -4px; } /* a 44 px target in a 24 px button */
 .recentre kbd { font: inherit; font-size: 9px; color: #0b0f0d; border: 1px solid rgba(11, 15, 13, 0.4); padding: 0 3px; margin-left: 4px; }
-.slot-band { grid-area: band; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-items: end; }
+/* The band (the exfil card) floats at the map's foot: the map runs down to COMMS's foot, with no
+   row of its own under it now the ability bar is in the toolbox (ILI-1397). */
+.slot-band { grid-area: map; align-self: end; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-items: end; margin-bottom: 10px; pointer-events: none; z-index: 4; }
+.slot-band > * > * { pointer-events: auto; }
 .band-cards { display: grid; gap: 6px; justify-items: center; align-content: end; min-width: 0; }
 .band-cards > * { width: min(420px, 100%); }
-/* The ability bar (ILI-1316): the balance and the three capabilities, along the map's foot. */
-.ability-bar { justify-self: center; display: flex; gap: 4px; padding: 4px; margin-top: 6px; background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); pointer-events: auto; }
+/* The toolbox (ILI-1397): tier three, one small button over the map's bottom-left corner that
+   opens the ability bar above it. */
+.toolbox { grid-area: map; align-self: end; justify-self: start; z-index: 5; display: grid; justify-items: start; gap: 6px; margin: 0 0 10px 10px; max-width: calc(100% - 20px); pointer-events: none; }
+.toolbox > * { pointer-events: auto; }
+.toolbox-toggle { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 12px; font: inherit; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); cursor: pointer; }
+.toolbox-toggle b { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; }
+.toolbox-toggle b[data-red] { color: #e5484d; }
+.toolbox-toggle:hover, .toolbox[data-open] .toolbox-toggle { border-color: var(--accent); }
+.hud[data-playing='true'] .toolbox, .hud[data-tier='compact'][data-picked] .toolbox { display: none; } /* on a phone the square's menu has the map's foot */
+@media (max-width: 720px) { .toolbox-toggle { min-height: 44px; } .toolbox .ability-bar { flex-wrap: wrap; } }
+/* On a phone a half-open sheet leaves little map: the toolbox button stays on top, so the prompt
+   can never bury it (ILI-1397). */
+.hud[data-tier='compact'] .toolbox { z-index: 10; margin: 0 0 8px 8px; }
+/* The ability bar (ILI-1316): the balance and the three capabilities, in the toolbox. */
+.ability-bar { display: flex; gap: 4px; padding: 4px; max-width: 100%; background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); pointer-events: auto; }
 .ability-bar .ab-balance { display: grid; align-content: center; padding: 0 10px; min-width: 96px; border-right: 1px solid var(--line); }
 .ability-bar .ab-balance small, .ability-bar .ab-slot small { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
 .ability-bar .ab-balance b { font-size: 14px; font-variant-numeric: tabular-nums; color: var(--accent); }
@@ -90,8 +105,7 @@ html, body {
 .ability-bar .ab-slot[data-state='busy'] { border-color: var(--line); }
 .ability-bar .ab-slot:disabled { opacity: 1; }
 @media (max-width: 720px) { .ability-bar .ab-slot { flex: 1; min-width: 0; padding: 4px 6px 4px 20px; } .ability-bar .ab-slot i { left: 6px; } .ability-bar .ab-balance { min-width: 0; padding: 0 6px; } }
-/* The hotbar (ILI-1352, option B): on a wide screen, bigger, on the screen's center line under the
-   map (AbilityBar slides it there). */
+/* On a wide screen, bigger (ILI-1352), in the toolbox (ILI-1397). */
 @media (min-width: 1200px) {
   .ability-bar { gap: 6px; padding: 6px; border-color: var(--accent); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); max-width: 100%; }
   .ability-bar .ab-balance { width: 112px; padding: 0 14px; }
@@ -1002,7 +1016,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .sheet-handle span { width: 44px; height: 4px; border-radius: 2px; background: var(--line); }
   .sheet-handle:active span { background: var(--accent); }
   .slot-band { display: contents; }
-  .ability-bar { grid-area: map; align-self: end; justify-self: stretch; margin: 0 8px 8px; z-index: 5; } /* over the map's foot, not a row of its own (ILI-1316) */
   .band-cards { grid-area: band; }
   .band-cards:empty { display: none; }
   .band-cards > * { width: 100%; }
@@ -1175,7 +1188,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .slot-team { gap: var(--gutter); }
   .hud :is(.mission, .satcom, .call-box, .team, .intel-panel) { padding: 12px; }
   .hud .orion > h2 { padding-top: 12px; }
-  .ability-bar { margin-top: 0; }
 }
 /* ALPHA's intel gauge (ILI-1314): a short orange bar by the team's name; the tick is where it moves. */
 /* The intel gauge (ILI-1314; the loop on the bar, ILI-1339): solid fill is intel ALPHA can walk
@@ -1529,9 +1541,10 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .prompt-text b { color: #f2c14e; font-weight: 600; letter-spacing: 0.08em; margin-right: 4px; }
 .prompt-responses { display: flex; flex-wrap: wrap; gap: 6px; }
 .prompt-responses button { flex: 1 1 0; min-height: 40px; padding: 0 12px; font: inherit; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #0b0f0d; background: #f2c14e; border: 1px solid #f2c14e; cursor: pointer; }
-.prompt-responses button:hover, .prompt-responses button:focus-visible { background: #ffd56b; outline: none; }
+.prompt-responses button:hover:not(:disabled), .prompt-responses button:focus-visible { background: #ffd56b; outline: none; }
+.prompt-responses button:disabled { color: #f2c14e; background: none; cursor: default; }
 .prompt-waiting { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
-.prompt-leader { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 8; pointer-events: none; overflow: visible; }
+.prompt-leader { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 6; pointer-events: none; overflow: visible; } /* under the panels, so it never crosses a menu (ILI-1397) */
 .prompt-leader line { stroke: #f2c14e; stroke-width: 1.5; }
 .prompt-leader circle { fill: #f2c14e; }
 @keyframes prompt-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }

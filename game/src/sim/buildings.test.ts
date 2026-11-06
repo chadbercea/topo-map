@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { COLS, ROWS, squareId } from '../map/grid';
 import { buildingId, FINDS, maybeBuilding, SEARCH_MS } from './buildings';
 import type { GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 import { run, walking } from './testkit';
 
 // Buildings (ILI-1316): a photo of empty ground can turn up a building; HQ can send ALPHA to

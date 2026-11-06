@@ -7,6 +7,10 @@ import { running, start } from './helpers';
 test('the ability bar: locked in the red; in the green, buy the sniper and it costs per call', async ({ page }) => {
   await start(page, '?debug&unlocks');
   await running(page);
+  // In the toolbox (ILI-1397): one small button with the balance on it opens the bar.
+  await expect(page.getByTestId('ability-bar')).toHaveCount(0);
+  await expect(page.getByTestId('toolbox-toggle')).toContainText('−$400k');
+  await page.getByTestId('toolbox-toggle').click();
   const bar = page.getByTestId('ability-bar');
   await expect(bar.getByTestId('balance')).toHaveText('−$400k'); // deployment up front
   await expect(bar.getByTestId('ability-sniper')).toHaveAttribute('data-state', 'locked');

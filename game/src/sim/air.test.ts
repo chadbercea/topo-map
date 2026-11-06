@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { airGone, CROSS_MS, FLIGHT_MS, HELI_PASSES, LINGER_MS, TURN_MS } from './air';
 import { CASH_PER_STRIKE_KILL } from './sites';
 import type { GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 import { run, walking } from './testkit';
 
 // Two groups in E3: technicals HQ photographed (cells 5, 6, 9, 10) and a hidden pair nobody has

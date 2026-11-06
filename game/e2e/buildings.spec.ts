@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { freeze, running, start } from './helpers';
+import { freeze, lockOn, running, start } from './helpers';
 
 // Buildings (ILI-1316): one a scan turned up is pinged on its square; its anchor sends ALPHA to
 // search it, and what it finds pays on the spot.
@@ -7,6 +7,7 @@ test('a building’s anchor sends ALPHA to search it; ALPHA reports the find and
   await start(page, '?debug');
   await running(page);
   await freeze(page);
+  await lockOn(page, 'G4');
   await page.evaluate(() => {
     const s = window.game.get();
     window.game.set({ ...s, events: [...s.events, { id: 'building-G4', kind: 'building', square: 'G4', title: 'A building worth a search', atMs: 0, status: 'new' }] });

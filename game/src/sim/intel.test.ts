@@ -61,7 +61,8 @@ describe('the intel gauge', () => {
     for (let t = 0; t < 300_000; t += 100) {
       store.tick(100);
       const p = activePrompt(store.get());
-      if (p?.kind === 'intel-needed' && store.get().satellite.state === 'idle') store.answerPrompt(p.id, 'scan');
+      const r = p?.responses.find((x) => !x.disabled); // move ORION-3 there, then Scan (ILI-1397)
+      if (p && r) store.answerPrompt(p.id, r.id);
     }
     expect(store.get().team.waypoint).toBeGreaterThan(start + 3);
   });

@@ -1,7 +1,7 @@
 import { GRADE_LABEL, pushPhoto, pushVideo } from './intel';
 import { maybeBuilding } from './buildings';
 import { slewFactor } from './upgrades';
-import { parseSquare, type SquareId } from '../map/grid';
+import { parseSquare, squareId, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import { reveal } from './contacts';
 import { awarenessOf, record, snapshot, type Awareness, type CaptureMode } from './imagery';
@@ -39,7 +39,6 @@ export type Satellite = {
   captureUntilMs: number;
   callId: string | null; // ALPHA's call waiting on this look
   result: LookResult | null; // the last look, for the panel until closed
-  autoPhoto?: boolean; // tasked by Scan on the square (ILI-1367): takes the photo on arrival
 };
 
 const at = (sq: SquareId): Point => parseSquare(sq)!;
@@ -74,6 +73,11 @@ export function slewMs(s: GameState, square: SquareId): number {
 }
 
 export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing';
+
+// The satellite is the player's avatar (ILI-1397): nothing runs on a square it isn't locked on.
+// Locked means it's over the square and not on its way somewhere: tapping any other square
+// offers the move first.
+export const lockedOn = (s: GameState, square: SquareId): boolean => s.satellite.state !== 'slewing' && s.satellite.aim === square && slewMs(s, square) === 0;
 
 // The square the card is on (ILI-1201, ILI-1203): the one HQ picked (or whose event it
 // opened), else the one ORION-3 is working, else its last look until HQ closes it. Nothing
@@ -121,7 +125,6 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     mode: null,
     callId: callId ?? null,
     result: null,
-    autoPhoto: false,
   };
   const next: GameState = {
     ...s,
@@ -131,14 +134,10 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
   return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Slewing to ${square}. On station in ${countdown(ms)}.` : `On station over ${square}. Ready for collection.`));
 }
 
-// Scan a square (ILI-1367), from its square menu: a grid action that tasks ORION-3. It goes
-// there and takes the photo itself on arrival; already over it, the photo is now. Reposition
-// in ORION-3's panel stays the satellite's own control (move, then pick the shot).
+// Scan a square (ILI-1367), from its square menu: the photo, now. Only once ORION-3 is locked on
+// (ILI-1397): it never moves the satellite by itself, the move is its own visible step.
 export function scan(s: GameState): GameState {
-  const sat = s.satellite;
-  if (sat.state === 'onStation') return capture(s, 'photo');
-  if (sat.state === 'slewing') return { ...s, satellite: { ...sat, autoPhoto: true } };
-  return s;
+  return s.satellite.state === 'onStation' ? capture(s, 'photo') : s;
 }
 
 // On station: take the picture.
@@ -149,14 +148,16 @@ export function capture(s: GameState, mode: CaptureMode): GameState {
   return mode === 'photo' ? finishLook(next) : next;
 }
 
-// Call it off: the satellite stays where it is, and ALPHA moves on without imagery.
+// Call it off: the satellite stops over the square it's crossing (ILI-1397: it's locked there,
+// not on where it was going), and ALPHA moves on without imagery.
 export function cancelLook(s: GameState): GameState {
   const sat = s.satellite;
   if (sat.state === 'idle') return s;
-  const here = satellitePoint(sat, s.elapsedMs);
+  const p = satellitePoint(sat, s.elapsedMs);
+  const here = { col: Math.round(p.col), row: Math.round(p.row) };
   const next: GameState = {
     ...s,
-    satellite: { ...sat, state: 'idle', from: here, mode: null, callId: null },
+    satellite: { ...sat, state: 'idle', from: here, aim: squareId(here.col, here.row), mode: null, callId: null },
     team: sat.callId && s.team.holdFor === sat.callId ? { ...s.team, holdFor: null } : s.team,
   };
   return sat.callId ? log(next, radio(s, s.team.callsign, `look-cancel-${s.elapsedMs}`, 'No imagery. Moving anyway.')) : next;
@@ -205,9 +206,6 @@ export function describe(r: LookResult): string {
 
 export const satelliteSystem: System = (s) => {
   const sat = s.satellite;
-  if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs && sat.autoPhoto)
-    // Scanned from the square (ILI-1367): on station, it takes the photo itself.
-    return capture({ ...s, satellite: { ...sat, state: 'onStation', autoPhoto: false } }, 'photo');
   if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs)
     // It says what's next (ILI-1257): the shot is HQ's to take.
     return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, 'ORION-3', `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready for collection.`));

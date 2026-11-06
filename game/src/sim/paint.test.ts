@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeContact } from './contacts';
 import type { GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 import { walking } from './testkit';
 
 // A found checkpoint in E3. (HQ paints nothing itself: ALPHA's laser does. ILI-1315 took out

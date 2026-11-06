@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PATROL_JAMMED_MS, PATROL_MOVES_MS, PATROL_WALK_MS } from './missions/blackBox';
 import { initialState, type GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 import { step } from './systems';
 import { run } from './testkit';
 

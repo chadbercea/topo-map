@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { moveContact } from './contacts';
 import { FRESH_MS, GHOST_MS, freshness } from './imagery';
 import { PATROL_MOVES_MS, PATROL_WALK_MS } from './missions/blackBox';
-import { SETTLE_MS, SLEW_MS_PER_SQUARE, slewMs } from './satellite';
+import { lockedOn, SETTLE_MS, SLEW_MS_PER_SQUARE, slewMs } from './satellite';
 import { blockers } from './progress';
 import { initialState, type GameState } from './state';
 import { createStore, type Store } from './store';
@@ -140,13 +140,42 @@ describe('fog of war', () => {
 });
 
 describe('Scan from the square menu (ILI-1367)', () => {
-  it('tasks ORION-3 to the square and takes the photo itself on arrival', () => {
+  it('never moves the satellite by itself: on a square it is not over, Scan does nothing (ILI-1397)', () => {
     const store = atStart();
     store.scan('F4');
-    expect(store.get().satellite).toMatchObject({ state: 'slewing', aim: 'F4', autoPhoto: true });
-    for (let i = 0; i < 400 && store.get().satellite.state !== 'idle'; i++) store.tick(100);
+    expect(store.get().satellite.state).toBe('idle');
+    expect(store.get().imagery.F4).toBeUndefined();
+  });
+
+  it('the move step, then Scan: on arrival it is locked on and the photo is one press (ILI-1397)', () => {
+    const store = atStart();
+    store.moveSatellite('F4');
+    expect(lockedOn(store.get(), 'F4')).toBe(false);
+    for (let i = 0; i < 400 && store.get().satellite.state === 'slewing'; i++) store.tick(100);
+    expect(lockedOn(store.get(), 'F4')).toBe(true);
+    store.scan('F4');
     expect(store.get().satellite.result?.square).toBe('F4');
     expect(store.get().imagery.F4).toBeDefined();
+  });
+
+  it('nothing runs on a square ORION-3 is not locked on: strikes, search, Listen, Jam (ILI-1397)', () => {
+    const s0 = run(initialState(), 83_000); // enemy traffic up at C2
+    const store = createStore({ ...s0, satellite: { ...s0.satellite, aim: 'H8', from: { col: 7, row: 7 }, state: 'idle' } });
+    store.intercept('traffic-c2');
+    store.jam('traffic-c2');
+    expect(store.get().minigame).toBeNull();
+    expect(store.get().events.find((e) => e.id === 'traffic-c2')?.status).not.toBe('resolved');
+    store.search('C2');
+    expect(store.get().searching).toEqual([]);
+  });
+
+  it('called off mid-swing, it stops over the square it is crossing, not where it was going', () => {
+    const store = atStart();
+    store.moveSatellite('A1');
+    store.tick(3_000);
+    store.cancelLook();
+    expect(store.get().satellite.aim).not.toBe('A1');
+    expect(lockedOn(store.get(), store.get().satellite.aim)).toBe(true);
   });
 
   it('already over the square, the photo is now', () => {

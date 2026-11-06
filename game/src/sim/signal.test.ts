@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HOP_MS, match, RECEIVE_MS, TRANSMISSION_MS, transcript } from './signal';
 import { initialState, type GameState } from './state';
-import { createStore } from './store';
+import { lockedStore as createStore } from './testkit';
 import { run } from './testkit';
 
 // At 0:50 enemy traffic comes up near C2, where the patrol is hiding.
