@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, lockedOn, slewMs } from '../sim/satellite';
+import { CAPTURE, lockedOn, satName, slewMs } from '../sim/satellite';
 import { isImageryRequest } from '../sim/imageryRequest';
 import { settled, squareFindings, squareReports } from '../sim/intel';
 import { MiniGamePanel } from './MiniGamePanel';
@@ -235,7 +235,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       <header className="sc-head">
         <b>{square}</b>
         <span className="sc-status" data-testid="lock-status">
-          {locked ? 'ORION-3 locked on' : 'ORION-3 not over it'}
+          {locked ? `${satName(s)} locked on` : `${satName(s)} not over it`}
         </span>
         <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
           ×
@@ -325,7 +325,7 @@ function MoveHere({ s, square }: { s: GameState; square: string }) {
     <div className="sc-scan sc-move" data-testid="square-move">
       {waiting > 0 && <p className="sc-asked">{waiting === 1 ? 'Something here to act on' : `${waiting} things here to act on`}</p>}
       <button onClick={() => game.moveSatellite(square)} disabled={coming || busy} data-testid="move-here">
-        <span>{coming ? 'ORION-3 on its way' : 'Move ORION-3 here'}</span>
+        <span>{coming ? `${satName(s)} on its way` : `Move ${satName(s)} here`}</span>
         <small>{coming ? `Locks on in ${countdown(sat.arriveMs - now)}` : busy ? `Busy over ${sat.aim}` : `${countdown(slewMs(s, square))} to get here`}</small>
       </button>
     </div>
@@ -342,7 +342,7 @@ function Scan({ s, square }: { s: GameState; square: string }) {
       {asked && <p className="sc-asked">{asked.title}</p>}
       <button onClick={() => game.scan(square)} disabled={busy} data-testid="scan-square" data-cue={(!!asked && !busy) || undefined}>
         <span>Scan {square}</span>
-        <small>{busy ? `ORION-3 busy over ${s.satellite.aim}` : 'Photo now'}</small>
+        <small>{busy ? `${satName(s)} busy over ${s.satellite.aim}` : 'Photo now'}</small>
       </button>
     </div>
   );
@@ -361,10 +361,10 @@ export function Details({ s, square }: { s: GameState; square: string }) {
   const found = s.contacts.filter((c) => c.square === square && c.status === 'revealed');
   const status = working
     ? sat.state === 'slewing'
-      ? `ORION-3 ${countdown(sat.arriveMs - now)} away`
+      ? `${satName(s)} ${countdown(sat.arriveMs - now)} away`
       : sat.state === 'onStation'
-        ? 'ORION-3 on station'
-        : `ORION-3 ${CAPTURE[sat.mode!].label.toLowerCase()} · ${gameSpan(sat.captureUntilMs - now)}`
+        ? `${satName(s)} on station`
+        : `${satName(s)} ${CAPTURE[sat.mode!].label.toLowerCase()} · ${gameSpan(sat.captureUntilMs - now)}`
     : snap
       ? `imaged ${zulu(snap.atMs)} · ${seen}`
       : 'no imagery';

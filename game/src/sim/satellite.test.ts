@@ -193,3 +193,23 @@ describe('Scan from the square menu (ILI-1367)', () => {
     expect(store.get().imagery.F4).toBeUndefined();
   });
 });
+
+// The satellite's name comes from the mission's config (ILI-1401).
+describe("the satellite's name", () => {
+  it('is the mission config field, and everything the sim says uses it', async () => {
+    const { MISSION } = await import('./state');
+    const { satelliteStatus, satName } = await import('./satellite');
+    const { promptQueue } = await import('./prompts');
+    expect(initialState().mission.satellite).toBe(MISSION.satellite);
+    const s0 = initialState();
+    const atlas = { ...s0, mission: { ...s0.mission, satellite: 'ATLAS-1' } };
+    expect(satName(atlas)).toBe('ATLAS-1');
+    expect(satelliteStatus(atlas)).toMatch(/^ATLAS-1 over /);
+    const store = createStore(atlas);
+    store.lookAt('E3');
+    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ATLAS-1', text: expect.stringMatching(/^Slewing to E3/) });
+    const traffic = promptQueue(run(atlas, 83_000)).find((p) => p.kind === 'enemy-traffic');
+    expect(traffic?.responses[0].label).toMatch(/^ATLAS-1 /);
+    expect(JSON.stringify(store.get()).includes('ORION-3')).toBe(false);
+  });
+});

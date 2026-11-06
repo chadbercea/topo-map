@@ -11,7 +11,7 @@ export type UpgradeId = 'satellites' | 'analysts' | 'video2' | 'medical' | 'trai
 export type Upgrade = { id: UpgradeId; group: string; name: string; what: string; price: number };
 
 export const UPGRADES: Upgrade[] = [
-  { id: 'satellites', group: 'Intel collection', name: 'More satellites', what: 'Faster revisits: ORION-3 slews 30% faster.', price: 300_000 },
+  { id: 'satellites', group: 'Intel collection', name: 'More satellites', what: 'Faster revisits: the imaging satellite slews 30% faster.', price: 300_000 },
   { id: 'analysts', group: 'Intel collection', name: 'More analysts', what: 'Photo intel is worth 50% more to ALPHA.', price: 400_000 },
   { id: 'video2', group: 'Intel collection', name: 'A second video feed', what: 'Video can be used twice a mission.', price: 600_000 },
   { id: 'medical', group: 'The teams', name: 'Field hospital', what: 'The team carries 50% more meds.', price: 250_000 },

@@ -114,7 +114,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     stream: initialStream(),
     phase: 'running',
     timer: { remainingMs: missionMs, totalMs: missionMs },
-    mission: initialMission(ROUTE),
+    mission: initialMission(ROUTE, MISSION.satellite),
     team: {
       callsign: 'ALPHA',
       operators,

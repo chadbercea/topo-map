@@ -19,6 +19,7 @@ export type Trigger = {
 export type MissionDef = {
   id: string;
   name: string;
+  satellite: string; // the imaging satellite's name on this mission: Orion 3, Atlas 1… (ILI-1401)
   durationMs: number;
   route: SquareId[]; // A first, B (the crash site) at index 3, C last
   altExfil?: SquareId[]; // the way to the alternate exfil if C is cut, ending on it (ILI-1192)

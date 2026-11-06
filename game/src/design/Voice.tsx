@@ -1,10 +1,14 @@
 import { Section } from './DesignSystem';
+import { MISSION } from '../sim/state';
+
+// The imaging satellite's name on the current mission (ILI-1401).
+const SAT = MISSION.satellite;
 
 // Voice and comms (ILI-1330): who talks, what they say and how, and the rules learned the hard
 // way over the game's history.
 const WHO: [string, string, string][] = [
   ['ALPHA', 'The team on the ground (Reyes, Okafor, Lind, Tanaka, Brandt)', 'Its decisions, and its one question: resupply.'],
-  ['ORION-3', 'Castle House’s imaging satellite', 'Slewing, on station, collection complete, and what the analysts pushed.'],
+  [`${SAT}`, 'Castle House’s imaging satellite', 'Slewing, on station, collection complete, and what the analysts pushed.'],
   ['HQ', 'Castle House', 'News the map can’t show, the contract and its escrow.'],
   ['SIGINT', 'The intercept desk', 'What a decoded signal said.'],
   ['OVERWATCH', 'The sniper contract', 'On target, Tango down, racking; all down.'],
@@ -14,9 +18,9 @@ const WHO: [string, string, string][] = [
   ['DUSTOFF-2', 'The resupply bird', 'Up, inbound, delivered.'],
 ];
 const WORDS: [string, string][] = [
-  ['Reposition', 'Task ORION-3 to a square. Only in ORION-3’s panel.'],
+  ['Reposition', `Task ${SAT} to a square. Only in ${SAT}’s panel.`],
   ['Photo / Video', 'The ways to look. Photo is instant and fades; video is live, once.'],
-  ['On station', 'ORION-3 is over the square, ready for collection.'],
+  ['On station', `${SAT} is over the square, ready for collection.`],
   ['Collection complete', 'A look is done; IMINT goes to the analysts, then ALPHA.'],
   ['Soften them up', 'ALPHA wants HQ to thin a contact out before it goes in.'],
   ['All clear / CLEAR', 'Nothing there: the smallest unit of intel.'],
@@ -26,13 +30,13 @@ const WORDS: [string, string][] = [
 const KINDS: [string, string, string][] = [
   ['Call', 'ALPHA needs HQ: an orange flag at its marker and in its box, until answered.', 'ALPHA · Two down, the rest hurt. We need a resupply bird.'],
   ['Alert', 'News that matters now: red, up for a few seconds, then a line in the log.', 'HQ · Enemy radio net just lit up: they know a PMC is in the area.'],
-  ['Log', 'Everything else: the record, quiet.', 'ORION-3 · E3 collection complete (photo): 5 fighters, unaware.'],
+  ['Log', 'Everything else: the record, quiet.', `${SAT} · E3 collection complete (photo): 5 fighters, unaware.`],
 ];
 const DOS: [string, string][] = [
   ['ALPHA: “Contact in E3, a fortified checkpoint. Not taking that. Going around via E4.”', 'ALPHA: “Contact in E3. Attack, hold or go around?” (the team decides; HQ changes the odds)'],
   ['The square flashes F4 · CLEAR', 'ALPHA radios “F4 is clear” (feedback goes on the instruments)'],
   ['“ALPHA waiting on your decision”', '“ALPHA waiting on your call”'],
-  ['ORION-3: “On station over F4. Ready for collection.”', 'ORION-3: “Ready to shoot.” (the satellite looks; it isn’t the sniper)'],
+  [`${SAT}: “On station over F4. Ready for collection.”`, `${SAT}: “Ready to shoot.” (the satellite looks; it isn’t the sniper)`],
   ['Reposition, with where and how long', '“Task” or “Get eyes on” (jargon, and not where the satellite lives)'],
 ];
 

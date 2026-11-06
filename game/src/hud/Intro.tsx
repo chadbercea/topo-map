@@ -8,6 +8,8 @@ import { game, useGame } from '../sim/store';
 // ALPHA. The HUD's own panels power on between the login and the link (Hud.tsx, styles.css).
 
 export function Intro() {
+  const satellite = useGame((s) => s.mission.satellite); // from the mission's config (ILI-1401)
+  const callsign = useGame((s) => s.team.callsign);
   const stage = useIntro();
   if (stage === 'live') return null;
   return (
@@ -16,7 +18,9 @@ export function Intro() {
       {(stage === 'title' || stage === 'idle' || stage === 'wipe') && <Terminal stage={stage} />}
       {stage === 'link' && (
         <div className="panel intro-link" data-testid="intro-link" role="status">
-          <h2>ORION-3 ⇄ ALPHA</h2>
+          <h2>
+            {satellite} ⇄ {callsign}
+          </h2>
           <p>SATCOM link established</p>
         </div>
       )}
@@ -30,6 +34,7 @@ const LOGO_OUT_MS = 360;
 // with START, ABOUT and SETTINGS, the globe and satellites blurred behind. START folds the
 // logo away, the globe comes into focus and the camera flies in on ORION-3, pinging to be picked.
 function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link' | 'live'> }) {
+  const satellite = useGame((s) => s.mission.satellite); // its name, from the mission's config (ILI-1401)
   const back = useRef<HTMLDivElement>(null);
   const front = useRef<HTMLDivElement>(null);
   const castle = useRef<Castle | null>(null);
@@ -101,10 +106,10 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link'
           disabled={wiping}
           onClick={intro.engage}
           data-testid="intro-orion"
-          aria-label="ORION-3, uplink ready: log in"
+          aria-label={`${satellite}, uplink ready: log in`}
         >
           <span className="castle-ping" aria-hidden />
-          <span className="castle-label">ORION-3 · uplink ready</span>
+          <span className="castle-label">{satellite} · uplink ready</span>
         </button>
       )}
       {/* The rest of the constellation: not in service yet. */}
@@ -151,6 +156,7 @@ function TitleMenu({ open, hidden }: { open: (s: 'about' | 'settings') => void; 
 
 // ABOUT and SETTINGS open over the blurred globe, powering on like the war room's panels.
 function Sheet({ which, close }: { which: 'about' | 'settings'; close: () => void }) {
+  const satellite = useGame((s) => s.mission.satellite); // its name, from the mission's config (ILI-1401)
   const skip = useGame((s) => s.settings.skipIntro);
   const done = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -166,7 +172,7 @@ function Sheet({ which, close }: { which: 'about' | 'settings'; close: () => voi
           <h2>ABOUT</h2>
           {/* ILI-1301. Who Castle House is and what HQ does; nothing about the mission. */}
           <p>Castle House is private military support. We don't go in. We make sure the people who do come back out.</p>
-          <p>From this terminal you work one team on the ground: one satellite overhead, one ordnance net, one radio link. You see what ORION-3 sees, you decide what gets hit, and the team lives with what you decide.</p>
+          <p>From this terminal you work one team on the ground: one satellite overhead, one ordnance net, one radio link. You see what {satellite} sees, you decide what gets hit, and the team lives with what you decide.</p>
           <p className="credit">PMC War Room · a game by Chad Bercea</p>
           <a href="../">Portfolio</a>
           <a href="design/">Design system</a>
@@ -194,12 +200,13 @@ function Sheet({ which, close }: { which: 'about' | 'settings'; close: () => voi
 
 // The login (ILI-1282): the terminal comes up line by line, then gives way to the war room.
 function Login({ running, leaving }: { running: boolean; leaving: boolean }) {
+  const satellite = useGame((s) => s.mission.satellite); // its name, from the mission's config (ILI-1401)
   return (
     <div className="login" data-leaving={leaving || undefined} data-testid="intro-login">
       <RookMark small />
       {running && (
         <ol>
-          {LOGIN_LINES.map(([k, v], i) => (
+          {LOGIN_LINES.map(([k0, v], i) => { const k = k0.replace('SATELLITE', satellite); return (
             <li key={k} style={{ '--d': `${i * LINE_MS}ms` } as React.CSSProperties}>
               <span className="k">{k}</span>
               {v && (
@@ -209,7 +216,7 @@ function Login({ running, leaving }: { running: boolean; leaving: boolean }) {
                 </>
               )}
             </li>
-          ))}
+          ); })}
         </ol>
       )}
     </div>

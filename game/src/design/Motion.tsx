@@ -1,6 +1,10 @@
 import { useState, type CSSProperties } from 'react';
 import { OrionRack } from '../hud/OrionFeed';
 import { Section, Spec } from './DesignSystem';
+import { MISSION } from '../sim/state';
+
+// The imaging satellite's name on the current mission (ILI-1401).
+const SAT = MISSION.satellite;
 
 // Panels and motion (ILI-1326): the panel, how panels come on and go off, parallax, and the
 // ORION-3 rack saved from the title's close-up (ILI-1323), running live. The power-on demos are
@@ -36,10 +40,10 @@ function Boot({ mode }: { mode: 'again' | 'first' }) {
               <span>COMMS</span>
             </h2>
             <ul className="ds-list">
-              <li>ORION-3 Slewing to E3.</li>
+              <li>{SAT} Slewing to E3.</li>
               <li>ALPHA Boots on the ground at G5.</li>
-              <li>ORION-3 On station over E3.</li>
-              <li>ORION-3 E3 collection complete.</li>
+              <li>{SAT} On station over E3.</li>
+              <li>{SAT} E3 collection complete.</li>
             </ul>
           </section>
         </div>
@@ -93,7 +97,7 @@ export function Motion() {
     <Section id="motion" title="Panels and motion" intro="Every screen is a set of panels. A panel's frame draws first, a line that opens out, then its content comes in, line by line. Nothing slides or bounces: displays power on and off.">
       <div className="ds-grid">
         <Spec name="The panel" rule="A 1px line border on a translucent panel fill over the map. A header: the name, tracked uppercase, on the left; a live reading on the right.">
-          <Panel title="ORION-3" rows={['Status · Standby', 'Over · G5']} />
+          <Panel title={`${SAT}`} rows={['Status · Standby', 'Over · G5']} />
         </Spec>
         <Spec wide name="Power-on, quick" rule="Restart, Retry, Play again, menus and the AAR. The frame opens from a point to a line to full (420 ms), content flickers on in rows, panels a beat apart. Reduced motion: none.">
           <Boot mode="again" />
@@ -101,14 +105,14 @@ export function Motion() {
         <Spec wide name="Power-on, first boot" rule="The first time in only (ILI-1307): panel by panel, each finishing before the next, lists line by line, then a beat on the link before the clock starts.">
           <Boot mode="first" />
         </Spec>
-        <Spec name="Power-off" rule="START on the title: the logo collapses to a line, then a point (360 ms), as the camera flies in on ORION-3.">
+        <Spec name="Power-off" rule={`START on the title: the logo collapses to a line, then a point (360 ms), as the camera flies in on ${SAT}.`}>
           <PowerOff />
         </Spec>
-        <Spec name="Parallax" rule="The title's ORION-3 close-up leans with the mouse: near layers move most. Mouse only; none for touch or reduced motion.">
+        <Spec name="Parallax" rule={`The title's ${SAT} close-up leans with the mouse: near layers move most. Mouse only; none for touch or reduced motion.`}>
           <Parallax />
         </Spec>
       </div>
-      <Spec wide name="The ORION-3 rack (saved from the title, ILI-1323)" rule="Film-style ops screens: dials (arc, needle, value), meters as bars, a ground track, a dancing spectrum, a scrolling log fading out at the top, and dead feeds: static, a rolling bar, NO CARRIER. Flavour, never the mission; everything wanders on its own clock.">
+      <Spec wide name={`The ${SAT} rack (saved from the title, ILI-1323)`} rule="Film-style ops screens: dials (arc, needle, value), meters as bars, a ground track, a dancing spectrum, a scrolling log fading out at the top, and dead feeds: static, a rolling bar, NO CARRIER. Flavour, never the mission; everything wanders on its own clock.">
         <div className="ds-rack">
           <OrionRack />
         </div>
