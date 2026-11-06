@@ -78,7 +78,7 @@ html, body {
 .map-area { grid-area: map; min-height: 0; }
 /* Recentre (ILI-1227): over the right end of TEAM's title line, so the panel never reflows. */
 .team { position: relative; }
-.recentre { position: absolute; top: 6px; right: 8px; z-index: 1; font: inherit; font-size: 10px; letter-spacing: 0.1em; color: #0b0f0d; background: var(--accent); border: 1px solid var(--accent); height: 24px; padding: 0 8px; cursor: pointer; }
+.recentre { grid-area: map; align-self: end; justify-self: end; position: relative; margin: 0 10px 10px 0; pointer-events: auto; z-index: 5; font: inherit; font-size: 10px; letter-spacing: 0.1em; color: #0b0f0d; background: var(--accent); border: 1px solid var(--accent); height: 24px; padding: 0 8px; cursor: pointer; }
 .recentre::before { content: ''; position: absolute; inset: -10px -4px; } /* a 44 px target in a 24 px button */
 .recentre kbd { font: inherit; font-size: 9px; color: #0b0f0d; border: 1px solid rgba(11, 15, 13, 0.4); padding: 0 3px; margin-left: 4px; }
 /* The band (the exfil card) floats at the map's foot: the map runs down to COMMS's foot, with no
@@ -1574,3 +1574,24 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @keyframes prompt-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes prompt-glow { from { box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.25), 0 0 12px rgba(242, 193, 78, 0.2); } to { box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.4), 0 0 28px rgba(242, 193, 78, 0.45); } }
 @media (prefers-reduced-motion: reduce) { .prompt { animation: none; } }
+
+/* The heartbeat strip (ILI-1396): tier one, five heartbeats and nothing else; tap for the team
+   drawer. Bottom left on a wide screen; over the map's bottom-right corner on a fold or phone. */
+.heartbeat-strip { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 10px; font: inherit; color: var(--ink); background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); cursor: pointer; pointer-events: auto; }
+.heartbeat-strip .ecg { width: 44px; height: 20px; --vital: #35d0a5; }
+.heartbeat-strip .ecg[data-condition='down'] { --vital: #4a5a53; }
+.heartbeat-strip .ecg[data-condition='caution'] { --vital: #f2c14e; }
+.heartbeat-strip .ecg[data-condition='caution'] .trace { animation-duration: 0.85s; }
+.heartbeat-strip .ecg[data-condition='danger'] { --vital: #e5484d; }
+.heartbeat-strip .ecg[data-condition='danger'] .trace { animation-duration: 0.55s; }
+.heartbeat-strip[data-worst='caution'] { border-color: #f2c14e; }
+.heartbeat-strip[data-worst='danger'], .heartbeat-strip[data-worst='down'] { border-color: #e5484d; }
+.heartbeat-strip:hover, .heartbeat-strip[aria-expanded='true'] { border-color: var(--accent); }
+@media (min-width: 1200px) {
+  .slot-team { position: relative; justify-self: start; }
+  .hud:not([data-team]) .slot-team > .team { display: none; } /* a drawer, closed until HQ opens it */
+  .hud[data-team] .slot-team > .team { background: #0b0f0d; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); position: absolute; left: 0; bottom: calc(100% + 8px); width: min(720px, calc(100vw - 460px)); max-height: 60vh; z-index: 7; }
+}
+.hud:not([data-tier='wide']) > .heartbeat-strip { grid-area: map; align-self: start; justify-self: start; margin: 60px 0 0 10px; z-index: 5; } /* under the timer: the toolbox has the bottom left, Recentre the bottom right */
+.hud[data-tier='compact'][data-picked] > .heartbeat-strip { display: none; } /* the square's menu has the map's foot */
+.op[data-highlight] { outline: 2px solid #f2c14e; outline-offset: -2px; background: rgba(242, 193, 78, 0.08); }
