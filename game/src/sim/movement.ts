@@ -3,7 +3,7 @@ import { heightAt, theater } from '../map/terrain';
 import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
 import type { Message } from './comms';
-import { burn, moving } from './intel';
+import { burn, moving, settled } from './intel';
 import { speedFactor } from './upgrades';
 import { footfall } from './noise';
 
@@ -32,8 +32,10 @@ export const movementSystem: System = (s, dt) => {
     const activity = `Holding short of ${target} · soften them up`;
     return team.activity === activity ? s : { ...s, team: { ...team, activity } };
   }
-  // Out of intel (ILI-1314): it holds where it is until HQ feeds the gauge again.
-  if (!moving(s)) {
+  // Out of intel (ILI-1314): it holds where it is until HQ feeds the gauge again. Into settled
+  // ground it needs none (ILI-1399).
+  const known = settled(s, target);
+  if (!moving(s) && !known) {
     if (team.activity === STARVED) return s;
     const held = { ...s, team: { ...team, activity: STARVED } };
     // The first time it stalls, it says what it needs (ILI-1318): eyes on the ground ahead. Once
@@ -67,7 +69,7 @@ export const movementSystem: System = (s, dt) => {
   const waypoint = arrived ? team.waypoint + 1 : team.waypoint;
   const next = team.route[waypoint];
 
-  // The ground covered burns intel (ILI-1341).
+  // The ground covered burns intel (ILI-1341), unless it's settled ground (ILI-1399).
   return burn({
     ...s,
     team: {
@@ -79,5 +81,5 @@ export const movementSystem: System = (s, dt) => {
       activity: next ? `Moving to ${next}` : `Holding at ${target}`,
       operators: team.operators.map((o, i) => (o.health > 0 ? { ...o, steps: footfall(i, s.elapsedMs, grade) } : o)), // heard on the move (ILI-1266)
     },
-  }, step);
+  }, known ? 0 : step);
 };

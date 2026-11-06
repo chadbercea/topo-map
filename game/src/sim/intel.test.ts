@@ -150,3 +150,33 @@ describe('intel reports', () => {
     expect(next.intel.pushes.at(-1)!.items!.length).toBeGreaterThan(0);
   });
 });
+
+// One scan settles a square (ILI-1399).
+describe('settled squares', () => {
+  it('ALPHA crosses settled ground on an empty gauge, and burns nothing doing it', () => {
+    const s0 = blindAhead();
+    const next = s0.team.route[s0.team.waypoint];
+    const known = { ...s0, intel: { ...s0.intel, graded: [next] } };
+    const s = run(known, 5_000);
+    expect(s.team.position).not.toEqual(s0.team.position);
+    expect(gauge(s)).toBe(0);
+    expect(s.team.activity).toMatch(/^Moving/);
+  });
+
+  it('HQ is never asked to scan a square twice', async () => {
+    const { requestSquare } = await import('./imageryRequest');
+    const s0 = blindAhead();
+    const all = { ...s0, intel: { ...s0.intel, graded: [...s0.team.route] } };
+    expect(requestSquare(all)).toBeUndefined();
+  });
+
+  it('a square reads clear when its scan found nothing, found when it did', async () => {
+    const { squareFindings, settled } = await import('./intel');
+    const s = initialState();
+    const quiet = { ...s, intel: { ...s.intel, graded: ['C4'], pushes: [{ id: 'p', atMs: 0, source: 'IMINT' as const, square: 'C4', amount: 1, state: 'fed' as const, items: [{ kind: 'OSINT' as const, heat: 'quiet' as const, text: 'nothing posted from here' }] }] } };
+    expect(settled(quiet, 'C4')).toBe(true);
+    expect(squareFindings(quiet, 'C4')).toBe('clear');
+    const hot = { ...quiet, intel: { ...quiet.intel, pushes: [{ ...quiet.intel.pushes[0], items: [{ kind: 'SIGINT' as const, heat: 'hot' as const, text: 'radio traffic' }] }] } };
+    expect(squareFindings(hot, 'C4')).toBe('found');
+  });
+});

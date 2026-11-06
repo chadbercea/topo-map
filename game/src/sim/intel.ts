@@ -108,6 +108,16 @@ export function grade(s: GameState, square: string, fighters: number): Grade {
   return r < 0.45 ? 'clear' : r < 0.8 ? 'low' : r < 0.95 ? 'medium' : 'high';
 }
 
+// One scan settles a square (ILI-1399): once HQ's analysts have been through it, it's known
+// ground. ALPHA crosses it without burning intel, and there's never a reason to scan it again.
+export const settled = (s: GameState, square: string) => s.intel.graded.includes(square);
+
+// What HQ's scans of a square turned up (ILI-1399): every report that landed for it, and whether
+// it all came to nothing (clear) or found something.
+export const squareReports = (s: GameState, square: string): IntelItem[] => s.intel.pushes.filter((p) => p.square === square).flatMap((p) => p.items ?? []);
+export const squareFindings = (s: GameState, square: string): 'clear' | 'found' =>
+  squareReports(s, square).some((r) => r.heat !== 'quiet') || s.contacts.some((c) => c.square === square && c.status === 'revealed') ? 'found' : 'clear';
+
 // Further along the route than the leg ALPHA is on: banked for later.
 export const ahead = (s: GameState, square: string) => s.team.route.slice(s.team.waypoint + 1).includes(square);
 

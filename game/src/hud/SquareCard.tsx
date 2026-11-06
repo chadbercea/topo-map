@@ -3,6 +3,7 @@ import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, lockedOn, slewMs } from '../sim/satellite';
 import { isImageryRequest } from '../sim/imageryRequest';
+import { settled, squareFindings, squareReports } from '../sim/intel';
 import { MiniGamePanel } from './MiniGamePanel';
 import { freshness, targets } from '../sim/imagery';
 import { squareAt } from '../map/grid';
@@ -241,6 +242,10 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
         </button>
       </header>
 
+      {/* What its scan turned up (ILI-1399): the detail readouts, tier three, opened by tapping the
+          square. One scan settled it, so there's no Scan here again. */}
+      <Readouts s={s} square={square} />
+
       {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304).
           Work already under way, so it shows locked or not. */}
       <SniperPanel square={square} />
@@ -251,7 +256,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
         <MoveHere s={s} square={square} />
       ) : (
         <>
-          <Scan s={s} square={square} />
+          {settled(s, square) ? null : <Scan s={s} square={square} />}
 
           {/* Its fighters, and every way to hit them (ILI-1230, ILI-1270), here at their square. */}
           {strikes.length > 0 && (
@@ -280,6 +285,29 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
         </>
       )}
     </>
+  );
+}
+
+// The square's intel (ILI-1399): every report its scan brought in, by discipline, or that it
+// came up clear. Once a square has one, it's settled.
+function Readouts({ s, square }: { s: GameState; square: string }) {
+  if (!settled(s, square)) return null;
+  const items = squareReports(s, square);
+  const clear = squareFindings(s, square) === 'clear';
+  return (
+    <section className="sc-intel" data-testid="square-intel" data-clear={clear || undefined} aria-label={`Intel on ${square}`}>
+      <p className="sc-settled" data-testid="square-settled">
+        {clear ? '✓ Settled · clear' : `◆ Settled · ${items.length} ${items.length === 1 ? 'report' : 'reports'}`}
+      </p>
+      <ul>
+        {items.map((r, i) => (
+          <li key={i} data-kind={r.kind} data-heat={r.heat} data-testid="square-intel-item">
+            <i className="int">{r.kind}</i>
+            <span>{r.text}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

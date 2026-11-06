@@ -4,28 +4,17 @@ import { askResupply, fastForward, freeze, photo, running, start } from './helpe
 // COMMS as a card stack (option D, ILI-1347): what wants HQ is an event card that waits for it.
 // Intel lands in INTEL under ORION-3 (IA v2 draft A, ILI-1363).
 
-test('a photo lands in INTEL under ORION-3 as typed reports, not in COMMS (ILI-1363)', async ({ page, isMobile }) => {
+test('a scan settles its square: a stamp on the map, its reports in the square’s menu, and no Scan again (ILI-1399)', async ({ page }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
-  await photo(page, 'F4'); // the square ALPHA is heading into: fed at once
-  if (isMobile) await page.getByTestId('tab-orion').click();
-  const items = page.getByTestId('intel-item');
-  await expect(items.first()).toBeVisible();
-  await expect(items.first()).toContainText('F4');
-  await expect(items.first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
-  await expect(page.getByTestId('intel-latest')).toContainText('from F4');
-  await expect(page.getByTestId('intel-card')).toHaveCount(0);
-});
-
-test('a photo further along the route shows as banked intel', async ({ page, isMobile }) => {
-  await start(page, '?debug');
-  await running(page);
-  await freeze(page);
-  await photo(page, 'E3');
-  if (isMobile) await page.getByTestId('tab-orion').click();
-  await expect(page.getByTestId('intel-item').first()).toHaveAttribute('data-banked', 'true');
-  await expect(page.getByTestId('intel-item').first()).toContainText('banked');
+  await photo(page, 'F4'); // the square ALPHA is heading into
+  await expect(page.getByTestId('intel-panel')).toHaveCount(0); // results live on the map now
+  await page.evaluate(() => window.game.selectSquare('F4'));
+  const menu = page.getByTestId('square-anchor');
+  await expect(menu.getByTestId('square-settled')).toContainText(/Settled · (clear|\d reports?)/);
+  await expect(menu.getByTestId('square-intel-item').first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
+  await expect(menu.getByTestId('scan-square')).toHaveCount(0); // one scan settles it
 });
 
 test('an event is a card that waits, a record only: nothing on it starts anything (ILI-1348, ILI-1393)', async ({ page, isMobile }) => {

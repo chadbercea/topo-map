@@ -9,7 +9,6 @@ import { useTier } from './tier';
 import { StartCard, TimerChip } from './MissionBar';
 import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
-import { IntelPanel } from './IntelPanel';
 import { CommsPanel } from './CommsPanel';
 import { HeartbeatStrip, TeamPanel } from './TeamPanel';
 import { Recentre } from './Recentre';
@@ -136,7 +135,6 @@ export function Hud() {
       {tabbed && <HeartbeatStrip open={tab === 'team' && shown('team')} onToggle={toggleTeam} />}
       <div className="slot-orion" data-overlay="orion" ref={orionSlot}>
         <OrionPanel />
-        <IntelPanel />
       </div>
       <div className="slot-bottom">
         {tier !== 'wide' && (

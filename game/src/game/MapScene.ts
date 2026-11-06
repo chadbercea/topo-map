@@ -14,6 +14,7 @@ import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
 import { orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
+import { squareFindings } from '../sim/intel';
 import { freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
@@ -67,6 +68,9 @@ export class MapScene extends Phaser.Scene {
   private teamLabel!: Phaser.GameObjects.Text;
   private missionGfx!: Phaser.GameObjects.Graphics;
   private missionLabels: Phaser.GameObjects.Text[] = [];
+  private stampGfx!: Phaser.GameObjects.Graphics; // what each scan settled, on its square (ILI-1399)
+  private stamps = new Map<string, Phaser.GameObjects.Text>();
+  private stampKey = '';
   private markerGfx!: Phaser.GameObjects.Graphics;
   private blindGfx!: Phaser.GameObjects.Graphics;
   private blindLabels: Phaser.GameObjects.Text[] = [];
@@ -100,6 +104,7 @@ export class MapScene extends Phaser.Scene {
     this.gridGfx = this.add.graphics();
     this.selectGfx = this.add.graphics();
     this.missionGfx = this.add.graphics();
+    this.stampGfx = this.add.graphics();
     this.routeGfx = this.add.graphics();
     this.intelGfx = this.add.graphics();
     this.satGfx = this.add.graphics();
@@ -205,6 +210,11 @@ export class MapScene extends Phaser.Scene {
     }
     // Exfil can move (ILI-1192): the A/B/C markers follow it. Every frame: the objective pulses (ILI-1392).
     this.drawMission(_time);
+    const stampKey = `${st.intel.graded.join()}|${st.intel.pushes.length}|${st.contacts.filter((c) => c.status === 'revealed').length}|${this.zoom}`;
+    if (stampKey !== this.stampKey) {
+      this.stampKey = stampKey;
+      this.drawStamps();
+    }
     this.drawMarkers(_time);
     this.drawFight(_time);
     this.drawIntel();
@@ -803,6 +813,35 @@ export class MapScene extends Phaser.Scene {
     if (!sq) return;
     g.fillStyle(TEAL, 0.12).fillRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
     g.lineStyle((2 * DPR) / this.zoom, TEAL, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+  }
+
+  // What's known about every scanned square, on the square itself (ILI-1399): a CLEAR stamp when
+  // the scan found nothing; an INTEL tag when it found something (fighters and buildings have
+  // their own markers too). Its reports open from the square's menu.
+  private drawStamps() {
+    const s = game.get();
+    const g = this.stampGfx.clear();
+    const px = DPR / this.zoom;
+    for (const [sq, label] of this.stamps) if (!s.intel.graded.includes(sq)) (label.destroy(), this.stamps.delete(sq));
+    for (const sq of s.intel.graded) {
+      const p = parseSquare(sq);
+      if (!p) continue;
+      const found = squareFindings(s, sq) !== 'clear';
+      const x = p.col * CELL + 8 * px;
+      const y = (p.row + 1) * CELL - 8 * px;
+      const color = found ? '#f2c14e' : '#35d0a5';
+      const text = found ? '◆ INTEL' : '✓ CLEAR';
+      const label = this.stamps.get(sq) ?? this.add.text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color }).setOrigin(0, 1);
+      if (!this.stamps.has(sq)) {
+        this.stamps.set(sq, label);
+        this.inset.ignore(label);
+      }
+      label.setText(text).setColor(color).setScale(1 / this.zoom).setPosition(x + 4 * px, y - 2 * px).setAlpha(found ? 1 : 0.75);
+      const w = label.width / this.zoom + 8 * px;
+      const h = label.height / this.zoom + 4 * px;
+      g.fillStyle(0x0b0f0d, 0.85).fillRect(x, y - h, w, h);
+      g.lineStyle(1.2 * px, found ? TEAM : TEAL, found ? 0.9 : 0.6).strokeRect(x, y - h, w, h);
+    }
   }
 
   // The mission's three points: A infil, B crash site, C exfil. The objective is a marker on the
