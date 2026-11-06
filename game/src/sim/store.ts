@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { dismiss, respond, send } from './comms';
-import { cancelLook, capture, closeLook, lookAt, lookSquare, slewMs, type CaptureMode } from './satellite';
+import { cancelLook, capture, closeLook, lookAt, lookSquare, scan, slewMs, type CaptureMode } from './satellite';
 import { abortMiniGame } from './minigame';
 import { launch } from './air';
 import { callSniper } from './sniper';
@@ -102,6 +102,11 @@ export function createStore(initial: GameState = initialState()) {
       set(called === state ? state : spend(called, perCall(state, weapon)));
     },
     lookAt: (square: string) => set(task(state, square)),
+    // Scan from the square's menu (ILI-1367): task ORION-3 there, photo on arrival.
+    scan: (square: string) => {
+      const next = task(state, square);
+      set(next.satellite.aim === square ? scan(next) : next);
+    },
     // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first
     // (ILI-1250).
     capture: (mode: CaptureMode) => {

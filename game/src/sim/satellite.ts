@@ -39,6 +39,7 @@ export type Satellite = {
   captureUntilMs: number;
   callId: string | null; // ALPHA's call waiting on this look
   result: LookResult | null; // the last look, for the panel until closed
+  autoPhoto?: boolean; // tasked by Scan on the square (ILI-1367): takes the photo on arrival
 };
 
 const at = (sq: SquareId): Point => parseSquare(sq)!;
@@ -120,6 +121,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     mode: null,
     callId: callId ?? null,
     result: null,
+    autoPhoto: false,
   };
   const next: GameState = {
     ...s,
@@ -127,6 +129,16 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
   return log(next, radio(s, 'ORION-3', `slew-${s.elapsedMs}`, ms ? `Slewing to ${square}. On station in ${countdown(ms)}.` : `On station over ${square}. Ready for collection.`));
+}
+
+// Scan a square (ILI-1367), from its square menu: a grid action that tasks ORION-3. It goes
+// there and takes the photo itself on arrival; already over it, the photo is now. Reposition
+// in ORION-3's panel stays the satellite's own control (move, then pick the shot).
+export function scan(s: GameState): GameState {
+  const sat = s.satellite;
+  if (sat.state === 'onStation') return capture(s, 'photo');
+  if (sat.state === 'slewing') return { ...s, satellite: { ...sat, autoPhoto: true } };
+  return s;
 }
 
 // On station: take the picture.
@@ -193,6 +205,9 @@ export function describe(r: LookResult): string {
 
 export const satelliteSystem: System = (s) => {
   const sat = s.satellite;
+  if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs && sat.autoPhoto)
+    // Scanned from the square (ILI-1367): on station, it takes the photo itself.
+    return capture({ ...s, satellite: { ...sat, state: 'onStation', autoPhoto: false } }, 'photo');
   if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs)
     // It says what's next (ILI-1257): the shot is HQ's to take.
     return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, 'ORION-3', `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready for collection.`));
