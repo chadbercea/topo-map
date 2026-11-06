@@ -11,9 +11,7 @@ import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
 import { IntelPanel } from './IntelPanel';
 import { CommsPanel } from './CommsPanel';
-import { useAskHidden } from './CommsPanel';
 import { TeamPanel } from './TeamPanel';
-import { CallBox } from './CallBox';
 import { PauseMenu } from './PauseMenu';
 import { Intro } from './Intro';
 import { firstBoot, useIntro } from './intro';
@@ -31,23 +29,19 @@ type Tab = 'satcom' | 'orion' | 'team';
 type Sheet = 'peek' | 'half' | 'full';
 const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 
-// The war room, layout A (ILI-1186, ILI-1226): HQ sits down to a live, multi-panel view of the
-// theater. Top left MISSION · BLACK BOX, the clock and the mission in one panel; under it COMMS,
-// HQ's one feed (ILI-1225). The map fills the middle, the mini game floating at its foot. Down
-// the whole right side ENVIRONMENT, a HUD readout (ILI-1218), over ORION-3 (ILI-1219). Along
-// the bottom ALPHA's box, then TEAM (ILI-1255, ILI-1313). A square HQ picks, on the map or named in COMMS, shows in ORION-3's
-// panel, its details and Reposition (ILI-1228, ILI-1250), and what HQ can call in on it floats beside it (the
-// action panel). When ALPHA needs something its ask pops up beside its marker (AskWindow). On
-// a fold or tablet the mission floats over the map's corner and COMMS, ORION-3 and TEAM share a
-// rail down the right behind tabs (ILI-1213); on a phone the mission is the line on top and the
-// three share a bottom sheet. Picking a square or tasking ORION-3 brings its tab forward.
+// The war room (layout A, ILI-1226, reworked by the HUD tiers, ILI-1391 to ILI-1395). The map runs
+// edge to edge on the left; ORION-3 and INTEL down the right; TEAM along the bottom.
+// Tier one, always on and small: the timer in the map's corner (ILI-1392); ALPHA's status on its
+// marker (ILI-1395). Tier two: the one prompt on the map (PromptLayer). Tier three, opened by HQ:
+// the comms log (ILI-1393) and the toolbox (ILI-1397). A square HQ picks gets its menu flush with
+// its edge (SquareCard), its details in ORION-3's panel. On a fold or tablet COMMS, ORION-3 and
+// TEAM share a rail down the right behind tabs (ILI-1213); on a phone they share a bottom sheet.
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('team');
   // On a wide screen the log is a drawer over the map's left edge, behind one small button (ILI-1393).
   const [log, setLog] = useState(false);
 
-  const askHidden = useAskHidden(); // ALPHA's flag is out of sight: light TEAM's tab, where its call box is (ILI-1255)
   const tier = useTier();
   // The panels power on in turn as the war room comes online (ILI-1281), on the way in and on a
   // restart (intro.ts).
@@ -124,7 +118,6 @@ export function Hud() {
         )}
         {/* ALPHA's box on the left, then the team's table (ILI-1313). */}
         <div className="slot-team">
-          <CallBox />
           <TeamPanel />
         </div>
       </div>
@@ -140,7 +133,7 @@ export function Hud() {
       {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
       <nav className="dock-tabs" aria-label="Panels">
         {(['satcom', 'orion', 'team'] as const).map((t) => (
-          <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'team' && (askHidden || calling) && !shown('team')} data-update={unseen[t] || undefined}>
+          <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'team' && calling && !shown('team')} data-update={unseen[t] || undefined}>
             {t === 'satcom' ? 'COMMS' : t === 'orion' ? 'ORION-3' : t.toUpperCase()}
             {unseen[t] && <span className="tab-dot" aria-hidden />}
           </button>

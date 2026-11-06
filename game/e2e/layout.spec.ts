@@ -67,12 +67,11 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   expect(env.y).toBeGreaterThanOrEqual(sat.y + sat.height - 1);
   await expect(page.getByTestId('satellite').getByTestId('conditions').locator('.env-tile')).toHaveCount(6);
   await expect(page.getByTestId('small-widgets')).toHaveCount(0);
-  // Along the bottom: ALPHA's box at the left, then TEAM's table (ILI-1313), under COMMS and the map.
-  const alpha = await box('call-box');
+  // Along the bottom: TEAM's table (ILI-1313), under the map. No ALPHA nav box (ILI-1395).
+  await expect(page.getByTestId('call-box')).toHaveCount(0);
   expect(team.y).toBeGreaterThan(map.y + map.height - 1);
   expect(team.y + team.height).toBeGreaterThan(view.height - 40);
-  expect(alpha.x).toBeLessThan(40);
-  expect(team.x).toBeGreaterThanOrEqual(alpha.x + alpha.width - 1);
+  expect(team.x).toBeLessThan(40);
   expect(team.x + team.width).toBeLessThanOrEqual(orion.x);
   await expect(page.getByTestId('resources')).toHaveCount(0); // no Logistics panel (ILI-1231)
 });
@@ -101,20 +100,19 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   await page.waitForTimeout(500);
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
-  const [orion, alpha, team, map, intel] = await Promise.all(['satellite', 'call-box', 'team-panel', 'map-area', 'intel-panel'].map(box));
+  const [orion, team, map, intel] = await Promise.all(['satellite', 'team-panel', 'map-area', 'intel-panel'].map(box));
   const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
   // The margin round the screen.
   near(map.x, 16); near(map.y, 16); near(orion.y, 16); // no mission panel (ILI-1392), COMMS a drawer (ILI-1393): the map takes the corner
   near(view.width - (orion.x + orion.width), 16); near(view.height - (intel.y + intel.height), 16); near(view.height - (team.y + team.height), 16);
   // The gutter, down and across.
-  near(alpha.y - (map.y + map.height), 16);
-  near(alpha.x, 16);
-  near(team.x - (alpha.x + alpha.width), 16);
+  near(team.y - (map.y + map.height), 16);
+  near(team.x, 16);
   near(orion.x - (map.x + map.width), 16);
   near(intel.y - (orion.y + orion.height), 16); // INTEL under ORION-3 (ILI-1363)
   // Every panel's title the same distance in from its top edge.
   const inset = await page.evaluate(() =>
-    ['satellite', 'call-box', 'team-panel', 'intel-panel'].map((id) => {
+    ['satellite', 'team-panel', 'intel-panel'].map((id) => {
       const p = document.querySelector(`[data-testid=${id}]`)!;
       const h = p.querySelector('h2')!;
       const pad = parseFloat(getComputedStyle(h).paddingTop);

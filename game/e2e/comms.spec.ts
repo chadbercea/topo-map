@@ -35,15 +35,11 @@ test('ALPHA’s call is a prompt at its marker, answered there; the comms log ke
   await expect(call(page)).toHaveCount(0);
   await expect(log).toContainText('We need a resupply bird');
   await expect(log).toContainText('HQ › Move on without');
-  // TEAM's call box follows the link (ILI-1209): sending, then ALPHA reads it back and the box goes back to the gear.
-  if (isMobile) await page.getByTestId('tab-team').click();
-  const box = page.getByTestId('call-box');
-  await expect(page.getByTestId('call-state')).toHaveText('Move on without · sending');
+  // It goes up the link (ILI-1209): sending, then ALPHA reads it back.
+  await expect(log).toContainText('HQ › Move on without · sending');
   await linked(page);
-  await expect(box).not.toHaveAttribute('data-call');
-  await expect(box).toHaveAttribute('data-gear', /map|m4|ifak/);
-  if (isMobile) await page.getByTestId('tab-satcom').click();
   await expect(log).toContainText('Understood. Moving with what we have.');
+  await expect(page.getByTestId('call-box')).toHaveCount(0); // no ALPHA nav box (ILI-1395)
 });
 
 test('the comms log is a drawer, closed until HQ opens it (ILI-1393)', async ({ page, isMobile }) => {
@@ -81,19 +77,4 @@ test('news the map does not show lands in the stream as an alert', async ({ page
   await expect(page.getByTestId('comms-feed')).toContainText('know a PMC is in the area');
   if (isMobile) await page.getByTestId('tab-satcom').click();
   await expect(page.getByTestId('comms-feed')).toContainText('Enemy radio net just lit up');
-});
-
-test('the call box’s strip follows the link: incoming while ALPHA waits, sending while the answer is up, then the box goes back to the gear (ILI-1236, ILI-1255, ILI-1256)', async ({ page, isMobile }) => {
-  await start(page, '?debug');
-  await askResupply(page);
-  await freeze(page);
-  if (isMobile) await page.getByTestId('tab-team').click();
-  const strip = page.getByTestId('call-box').getByTestId('comms-avatar');
-  await expect(strip).toBeVisible();
-  await expect(strip).toHaveAttribute('data-state', 'incoming');
-  await expect(page.getByTestId('comms-traffic')).toHaveText('incoming');
-  await page.evaluate(() => window.game.respond(window.game.get().team.holdFor!, 'push'));
-  await expect(strip).toHaveAttribute('data-state', 'sending');
-  await fastForward(page, 3_000);
-  await expect(page.getByTestId('call-box')).not.toHaveAttribute('data-call');
 });

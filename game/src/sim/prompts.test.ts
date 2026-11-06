@@ -17,32 +17,26 @@ describe('the prompt queue', () => {
 
   it('ALPHA needing intel is a prompt: a square, one line, one to three responses', () => {
     const p = activePrompt(run(blindAhead(), 3_000))!;
-    expect(p).toMatchObject({ kind: 'intel-needed', priority: PRIORITY.teamRequest, square: 'F4' });
-    expect(p.text).toBe('ALPHA is holding: it needs intel on F4 to move');
+    expect(p).toMatchObject({ kind: 'intel-needed', priority: PRIORITY.teamRequest, square: 'G5', grid: 'F4' }); // on ALPHA's marker (ILI-1395)
+    expect(p.text).toBe('ALPHA holding, needs route intel to D3');
     expect(p.responses.length).toBeGreaterThanOrEqual(1);
     expect(p.responses.length).toBeLessThanOrEqual(3);
   });
 
-  it('answering it moves ORION-3 there, then scans the square, and once handled it is gone (ILI-1397)', () => {
+  it('Scan grids opens the grid square; its menu moves ORION-3 there, Scan takes the photo, and the prompt is gone (ILI-1395, ILI-1397)', () => {
     const store = createStore(run(blindAhead(), 3_000));
     const p = activePrompt(store.get())!;
-    expect(p.responses).toEqual([{ id: 'move', label: expect.stringMatching(/^Move ORION-3 here · \d+:\d\d$/) }]);
-    store.answerPrompt(p.id, 'move');
-    expect(store.get().satellite).toMatchObject({ state: 'slewing', aim: 'F4' });
-    expect(activePrompt(store.get())!.responses[0]).toMatchObject({ disabled: true, label: expect.stringMatching(/on its way/) });
+    expect(p.responses).toEqual([{ id: 'grids', label: 'Scan grids' }]);
+    store.answerPrompt(p.id, 'grids');
+    expect(store.get().map.selected).toBe('F4');
+    expect(store.get().satellite.aim).not.toBe('F4'); // the move is its own step, in the square's menu
+    store.scan('F4');
+    expect(store.get().imagery.F4).toBeUndefined(); // not locked on yet
+    store.moveSatellite('F4');
     for (let i = 0; i < 400 && store.get().satellite.state === 'slewing'; i++) store.tick(100);
-    expect(activePrompt(store.get())!.responses).toEqual([{ id: 'scan', label: 'Scan F4' }]);
-    store.answerPrompt(p.id, 'scan');
+    store.scan('F4');
     store.tick(100);
     expect(promptQueue(store.get()).some((x) => x.id === p.id)).toBe(false);
-  });
-
-  it('Scan does nothing until ORION-3 is locked on (ILI-1397)', () => {
-    const store = createStore(run(blindAhead(), 3_000));
-    const p = activePrompt(store.get())!;
-    store.answerPrompt(p.id, 'scan');
-    expect(store.get().satellite.state).toBe('idle');
-    expect(store.get().satellite.aim).not.toBe('F4');
   });
 
   it('orders by priority, then the one that has waited longest', () => {

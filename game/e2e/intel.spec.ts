@@ -11,10 +11,10 @@ test('intel: empty, ALPHA holds and the prompt asks for a look; a photo feeds it
   expect(await fuel()).toBe(0);
   await page.evaluate(() => { for (let t = 0; t < 4_000; t += 100) window.game.tick(100); });
   await expect(page.getByTestId('intel-gauge')).toHaveCount(0);
-  // It asks HQ for imagery (ILI-1349): the prompt on the map, pinned to F4 (ILI-1391).
-  await expect(page.getByTestId('prompt')).toHaveAttribute('data-square', 'F4');
-  await expect(page.getByTestId('prompt-text')).toContainText('ALPHA is holding');
-  await expect(page.getByTestId('prompt-response')).toHaveText([/^Move ORION-3 here/]); // the move step first (ILI-1397)
+  // It asks HQ for imagery (ILI-1349): the prompt on the map (ILI-1391).
+  await expect(page.getByTestId('prompt')).toHaveAttribute('data-square', 'G5'); // on ALPHA's marker (ILI-1395)
+  await expect(page.getByTestId('prompt-text')).toContainText('ALPHA holding, needs route intel to D3');
+  await expect(page.getByTestId('prompt-response')).toHaveText(['Scan grids']);
   await photo(page, 'G5');
   await expect.poll(fuel).toBeGreaterThan(0);
 });

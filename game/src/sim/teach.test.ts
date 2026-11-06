@@ -17,7 +17,7 @@ describe('teaching through play', () => {
 
   it('stalled, ALPHA needing intel is the prompt on the map, pinned to the square (ILI-1349, ILI-1391)', () => {
     const s = run(initialState(), 1_000);
-    expect(activePrompt(s)).toMatchObject({ square: 'F4', text: 'ALPHA is holding: it needs intel on F4 to move', responses: [{ id: 'move', label: expect.stringMatching(/^Move ORION-3 here/) }] });
+    expect(activePrompt(s)).toMatchObject({ square: 'G5', grid: 'F4', text: 'ALPHA holding, needs route intel to D3', responses: [{ id: 'grids', label: 'Scan grids' }] }); // on ALPHA's marker (ILI-1395)
   });
 
   it('holding short for HQ to soften a contact, the need line points at it', () => {

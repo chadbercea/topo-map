@@ -1,26 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { game, useGame } from '../sim/store';
 import { kindOf, sending, type Comms, type Message } from '../sim/comms';
 import { cards, type Card, type EventCardKind } from '../sim/cards';
 import type { GameState } from '../sim/state';
 import { classify, EVENT_LABEL } from '../sim/stream';
 import { gameClock } from '../sim/gameTime';
-import { bus, EV, getAskHidden } from '../game/events';
 import { FeedIcon, type Tier } from './feedIcons';
 
 export const RELAY = 'RELAY-7'; // the comms satellite HQ talks to the team through
-
-// Whether ALPHA's waiting ask is out of sight on the map (under the square card, or waiting
-// out a mini game): TEAM's call box answers for it then (ILI-1255).
-export function useAskHidden() {
-  const [hidden, setHidden] = useState(getAskHidden);
-  useEffect(() => {
-    setHidden(getAskHidden());
-    bus.on(EV.askHidden, setHidden);
-    return () => void bus.off(EV.askHidden, setHidden);
-  }, []);
-  return hidden;
-}
 
 // COMMS (ILI-1199, ILI-1225, ILI-1255): HQ's one feed, through RELAY-7.
 // Option D (ILI-1347): it's a stack of cards, in the order things came in, with the radio
@@ -30,8 +17,8 @@ export function useAskHidden() {
 //   They stand out, never expire, and the newest open one pulses; answered, they shrink to a dim
 //   line. Tapping one opens its square on the map;
 // - lines: ALPHA's and HQ's words, and the other callsigns' reports, as before.
-// ALPHA's ask is answered at its flag on the map or from TEAM's call box (CallBox). An answer
-// takes a moment to reach the team (ILI-1209): it shows as sending until ALPHA reads it back.
+// ALPHA's ask is answered at its prompt on the map (ILI-1393). An answer takes a moment to reach
+// the team (ILI-1209): it shows as sending until ALPHA reads it back.
 
 type Item =
   | { at: number; o: number; key: string; note: GameState['stream']['items'][number] }

@@ -5,7 +5,7 @@ import { feed, LOW_AT } from './intel';
 import { isImageryRequest, openImageryRequest } from './imageryRequest';
 import { openCards } from './cards';
 import { activePrompt } from './prompts';
-import { fed, run } from './testkit';
+import { answerIntel, fed, run } from './testkit';
 
 // The never-stuck rule (ILI-1349): low or out of intel, ALPHA asks HQ for imagery of the next
 // square on its route nobody has scanned. One at a time; a look at the square answers it.
@@ -22,7 +22,7 @@ describe('the never-stuck rule', () => {
     expect(s.team.activity).toBe('Holding · needs intel');
     expect(openImageryRequest(s)).toMatchObject({ square: 'F4', title: 'ALPHA requests imagery' });
     expect(requests(run(s, 60_000))).toHaveLength(1); // one at a time, and it never expires
-    expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', square: 'F4' }); // a prompt on the map (ILI-1391)
+    expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', grid: 'F4' }); // a prompt on the map (ILI-1391)
     expect(openCards(s).some((c) => c.kind === 'request')).toBe(false); // not a card in COMMS any more
   });
 
@@ -62,8 +62,7 @@ describe('the never-stuck rule', () => {
       store.tick(100);
       const s = store.get();
       const p = activePrompt(s); // answer the prompt on the map: move ORION-3 there, then Scan (ILI-1391, ILI-1397)
-      const r = p?.responses.find((x) => !x.disabled);
-      if (p && r) store.answerPrompt(p.id, r.id);
+      answerIntel(store, p); // Scan grids, the move, then Scan (ILI-1395, ILI-1397)
     }
     expect(store.get().team.waypoint).toBeGreaterThanOrEqual(crash);
   });

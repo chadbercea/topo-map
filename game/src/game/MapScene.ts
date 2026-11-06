@@ -13,6 +13,7 @@ import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
 import { orionSquare, satellitePoint } from '../sim/satellite';
+import { teamStatus } from '../sim/team';
 import { freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
@@ -901,6 +902,21 @@ export class MapScene extends Phaser.Scene {
     const fx = Math.cos(this.heading);
     const fy = Math.sin(this.heading);
     const g = this.teamGfx.clear();
+    // The leg to the next waypoint (ILI-1395): from the marker, so the map says where ALPHA is
+    // going. Pushing into contact (HQ said attack or push) is a heavy solid line; otherwise it
+    // sneaks, a light dashed one.
+    const goal = route[waypoint] && squareCenter(route[waypoint]);
+    if (goal && !st.exfil) {
+      const pushing = ['attack', 'push'].includes(st.team.decisions[route[waypoint]] ?? '');
+      const pts = [position, ...(st.team.pathTo === route[waypoint] ? path : []), goal];
+      if (pushing) {
+        g.lineStyle(3 * u, TEAM, 0.9);
+        for (let i = 1; i < pts.length; i++) g.lineBetween(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y);
+      } else {
+        g.lineStyle(1.6 * u, TEAM, 0.85);
+        for (let i = 1; i < pts.length; i++) this.dashed(g, pts[i - 1], pts[i], 7 * u, i);
+      }
+    }
     operators.forEach((o, i) => {
       if (gone.includes(o.id)) return;
       const [along, across] = WEDGE[i % WEDGE.length];
@@ -920,6 +936,10 @@ export class MapScene extends Phaser.Scene {
       if (down) g.lineStyle(1.2 * u, TEAM, 0.45).strokeCircle(x, y, 2.6 * u);
       else g.fillStyle(TEAM, 1).fillCircle(x, y, 3.2 * u).lineStyle(1.2 * u, 0x0b0f0d, 1).strokeCircle(x, y, 3.2 * u);
     });
+    // Its status tag (ILI-1395): what ALPHA is doing, on the marker itself.
+    const status = teamStatus(st);
+    const tag = `${st.team.callsign} · ${status.toUpperCase()}`;
+    if (this.teamLabel.text !== tag) this.teamLabel.setText(tag).setColor(status === 'In contact' ? '#e5484d' : '#f2c14e');
     if (moved || this.teamLabel.scale !== 1 / this.zoom) this.teamLabel.setScale(1 / this.zoom).setPosition(position.x + 16 * u, position.y - 22 * u);
     this.teamLabel.setVisible(gone.length < operators.length); // all aboard: ALPHA is off the map
   }
@@ -1037,3 +1057,4 @@ export class MapScene extends Phaser.Scene {
     bus.emit(EV.sceneStatus, s);
   }
 }
+
