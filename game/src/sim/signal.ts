@@ -5,6 +5,7 @@ import type { Message } from './comms';
 import type { MiniGame } from './minigame';
 import type { GameState } from './state';
 import type { System } from './systems';
+import { lockedOn, lookAt, satelliteBusy } from './satellite';
 
 // Signal intercept (GDD, reworked in ILI-1169): one action with a clear goal. Their
 // transmission is a wave on a frequency; HQ lays its own wave over it with one control.
@@ -20,6 +21,17 @@ export type Signal = {
   plain: string;
   contactId?: string;
 };
+
+// Getting in range (ILI-1394): a mini game never starts from a button. Enemy traffic comes up near
+// a square; to listen, HQ gets an asset in range, and each way costs something, shown before HQ
+// commits. ORION-3 goes there, which pulls it off scanning for ALPHA (it's tied up while it
+// listens), or ALPHA stops and sets up its antenna, which burns mission clock. Once the asset is
+// in place, the intercept starts by itself.
+export type ListenVia = 'satellite' | 'antenna';
+export type Listen = { eventId: string; square: string; via: ListenVia; readyMs: number };
+// What came through, waiting on the map for HQ to send it to ALPHA (ILI-1394).
+export type Decoded = { id: string; square: string; text: string; contactId?: string; atMs: number };
+export const ANTENNA_MS = 30_000;
 
 export const BAND = { min: 30, max: 88 }; // MHz
 export const MATCH_RANGE = 6; // MHz off before the match reads 0
@@ -41,7 +53,36 @@ export const transcript = (g: Signal) => g.plain.slice(0, Math.floor(g.progress 
 
 const WORD: Record<string, string> = { patrol: 'PATROL', checkpoint: 'CHECKPOINT', post: 'OBSERVATION POST' };
 
-export function startIntercept(s: GameState, eventId: string): GameState {
+// Commit an asset to listen (ILI-1394).
+export function listenWith(s: GameState, eventId: string, via: ListenVia): GameState {
+  const e = s.events.find((x) => x.id === eventId && x.kind === 'signal' && x.status !== 'resolved');
+  if (!e || s.minigame?.status === 'active' || s.listen) return s;
+  const listen: Listen = { eventId, square: e.square, via, readyMs: via === 'antenna' ? s.elapsedMs + ANTENNA_MS : s.elapsedMs };
+  if (via === 'satellite') {
+    if (satelliteBusy(s)) return s;
+    const moved = lookAt(s, e.square);
+    return { ...moved, listen, openEvent: null };
+  }
+  const t = s.team;
+  return { ...s, listen, openEvent: null, team: { ...t, holdUntilMs: Math.max(t.holdUntilMs, listen.readyMs), activity: `Setting up the antenna for ${e.square}` } };
+}
+
+// The asset gets in place, and the intercept starts by itself (ILI-1394). Moved off the square,
+// ORION-3 drops it; the traffic gone quiet, so does the antenna.
+export const listenSystem: System = (s) => {
+  const l = s.listen;
+  if (!l) return s;
+  const e = s.events.find((x) => x.id === l.eventId && x.status !== 'resolved');
+  if (!e) return { ...s, listen: null };
+  if (s.minigame?.status === 'active') return s;
+  if (l.via === 'satellite') {
+    if (s.satellite.aim !== l.square) return { ...s, listen: null };
+    if (!lockedOn(s, l.square)) return s;
+  } else if (s.elapsedMs < l.readyMs) return s;
+  return startIntercept({ ...s, listen: null }, l.eventId, l.via);
+};
+
+export function startIntercept(s: GameState, eventId: string, via?: ListenVia): GameState {
   const e = s.events.find((x) => x.id === eventId && x.status !== 'resolved'); // jammed or gone quiet: nothing to hear
   if (!e || s.minigame?.status === 'active') return s;
   // The traffic comes from whoever is near the signal; prefer a contact nobody has found.
@@ -61,6 +102,7 @@ export function startIntercept(s: GameState, eventId: string): GameState {
     misses: 0,
     status: 'active',
     signal,
+    via,
   };
   return { ...s, rng, openEvent: null, minigame: game };
 }
@@ -104,8 +146,9 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
   const c = g.contactId ? next.contacts.find((x) => x.id === g.contactId) : undefined;
   if (where && c?.status === 'hidden') next = reveal(next, [c.square], 'SIGINT');
   if (plan) {
-    next = feed({ ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } }, SIGNAL_INTEL, { source: 'SIGINT', square: m.square, items: [{ kind: 'SIGINT', heat: 'hot', text: 'decoded: what they plan' }] }); // decoded, it feeds ALPHA's gauge (ILI-1314)
-    if (c) next = { ...next, contacts: next.contacts.map((x) => (x.id === c.id ? { ...x, planKnown: true } : x)) };
+    // What gets decoded is a marker on the map, waiting for HQ to send it to ALPHA (ILI-1394).
+    const d: Decoded = { id: `decoded-${m.startedMs}`, square: c?.square ?? m.square, text: g.plain, contactId: c?.id, atMs: s.elapsedMs };
+    next = { ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 }, decoded: [...next.decoded, d] };
   }
   const report: Message = {
     id: `signal-${m.startedMs}`,
@@ -122,6 +165,18 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
     events: next.events.map((e) => (e.id === m.eventId ? { ...e, status: 'resolved' as const } : e)),
     comms: { ...next.comms, messages: [...next.comms.messages, report] },
   };
+}
+
+// HQ sends decoded traffic to ALPHA (ILI-1394): it feeds the gauge (ILI-1314) and the contact's
+// plan is known, its route drawn.
+export function sendDecoded(s: GameState, id: string): GameState {
+  const d = s.decoded.find((x) => x.id === id);
+  if (!d) return s;
+  let next: GameState = { ...s, decoded: s.decoded.filter((x) => x !== d) };
+  next = feed(next, SIGNAL_INTEL, { source: 'SIGINT', square: d.square, items: [{ kind: 'SIGINT', heat: 'hot', text: 'decoded: what they plan' }] });
+  if (d.contactId) next = { ...next, contacts: next.contacts.map((x) => (x.id === d.contactId ? { ...x, planKnown: true } : x)) };
+  const m: Message = { id: `sent-${d.id}`, from: 'HQ', text: `Sent to ${s.team.callsign}: "${d.text}".`, atMs: s.elapsedMs, status: 'read', holds: false, square: d.square };
+  return { ...next, comms: { ...next.comms, messages: [...next.comms.messages, m] } };
 }
 
 // Jamming (GDD PMC mechanics): block the enemy's radios instead of listening to them. The

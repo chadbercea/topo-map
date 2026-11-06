@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, lockOn, openEvent, running, start } from './helpers';
+import { fastForward, freeze, lockOn, running, start } from './helpers';
 
 // What happens on a square stays with the square (ILI-1367): Scan is in its menu, and the mini
 // game plays there. The satellite is the player's avatar (ILI-1397): on a square it isn't over,
@@ -63,9 +63,10 @@ test('the radio mini game plays in its square’s menu, at C2', async ({ page })
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 83_000);
-  await lockOn(page, 'C2');
-  await openEvent(page, 'signal', 'C2');
-  await page.getByRole('button', { name: 'Listen' }).click();
+  await page.getByTestId('prompt').locator('[data-response=antenna]').click(); // ALPHA's antenna (ILI-1394)
+  await page.evaluate(() => {
+    for (let i = 0; i < 400 && !window.game.get().minigame; i++) window.game.tick(100);
+  });
   const anchor = page.getByTestId('square-anchor');
   await expect(anchor).toHaveAttribute('data-square', 'C2');
   await expect(anchor).toHaveAttribute('data-minigame', 'signal');

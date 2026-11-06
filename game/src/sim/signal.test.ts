@@ -1,3 +1,4 @@
+import { promptQueue } from './prompts';
 import { describe, expect, it } from 'vitest';
 import { HOP_MS, match, RECEIVE_MS, TRANSMISSION_MS, transcript } from './signal';
 import { initialState, type GameState } from './state';
@@ -60,9 +61,16 @@ describe('signal intercept', () => {
     return store;
   };
 
-  it('following them all the way decodes their plan: patrol marked, route known', () => {
-    const s: GameState = follow(TRANSMISSION_MS).get();
-    expect(s.minigame).toBeNull();
+  it('following them all the way decodes their plan: a marker HQ sends to ALPHA, then the patrol is marked, route known (ILI-1394)', () => {
+    const store = follow(TRANSMISSION_MS);
+    const before = store.get();
+    expect(before.minigame).toBeNull();
+    expect(before.contacts.find((c) => c.id === 'patrol')!.planKnown).toBeFalsy(); // not until HQ sends it
+    const p = promptQueue(before).find((x) => x.kind === 'intel-ready')!;
+    expect(p).toMatchObject({ square: 'C2', text: 'Decoded: “PATROL AT C2 MOVING TO D3 FOR THE DRONE”', responses: [{ id: 'send', label: 'Send to ALPHA' }] });
+    store.answerPrompt(p.id, 'send');
+    const s: GameState = store.get();
+    expect(s.decoded).toEqual([]);
     const patrol = s.contacts.find((c) => c.id === 'patrol')!;
     expect(patrol).toMatchObject({ status: 'revealed', planKnown: true, planTo: 'D3' });
     expect(s.events.find((e) => e.id === 'traffic-c2')?.status).toBe('resolved');

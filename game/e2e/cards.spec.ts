@@ -28,7 +28,7 @@ test('a photo further along the route shows as banked intel', async ({ page, isM
   await expect(page.getByTestId('intel-item').first()).toContainText('banked');
 });
 
-test('an event is a card that waits; tapping radio traffic starts Listen, and answered it goes dim (ILI-1348)', async ({ page, isMobile }) => {
+test('an event is a card that waits; tapping radio traffic shows it on the map, it never starts Listen, and answered it goes dim (ILI-1348, ILI-1394)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
@@ -39,9 +39,10 @@ test('an event is a card that waits; tapping radio traffic starts Listen, and an
   const card = page.getByTestId('event-card-stack').filter({ hasText: 'Enemy radio traffic' });
   await expect(card).toHaveAttribute('data-open', 'true');
   await expect(card).toHaveAttribute('data-newest', 'true');
-  await expect(card).toContainText('Listen ›');
+  await expect(card).toContainText('Locate ›');
   await card.getByTestId('card-act').click();
-  await expect(page.getByTestId('minigame')).toContainText('LISTEN · C2');
+  await expect(page.getByTestId('selected-square')).toHaveText('C2');
+  await expect(page.getByTestId('minigame')).toHaveCount(0); // getting in range starts it (ILI-1394)
   await page.evaluate(() => {
     const s = window.game.get();
     window.game.set({ ...s, minigame: null, events: s.events.map((e) => (e.id === 'traffic-x' ? { ...e, status: 'resolved' as const } : e)) });

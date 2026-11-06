@@ -1,6 +1,7 @@
 import type { GameState } from './state';
 import { openImageryRequest } from './imageryRequest';
-import { lockedOn, slewMs } from './satellite';
+import { lockedOn, satelliteBusy, slewMs } from './satellite';
+import { ANTENNA_MS } from './signal';
 import { countdown } from './gameTime';
 
 // The HUD's tiers (ILI-1391). Tier one is always on and tiny (the mission timer, the team's
@@ -11,7 +12,7 @@ import { countdown } from './gameTime';
 // the others wait. A prompt is a map anchor, one line saying what's happening, and one to three
 // responses. It's derived from the game's state, so it goes away the moment it's handled.
 
-export type PromptKind = 'intel-needed';
+export type PromptKind = 'intel-needed' | 'enemy-traffic' | 'intel-ready';
 export type PromptResponse = { id: string; label: string; disabled?: boolean };
 export type Prompt = {
   id: string;
@@ -58,7 +59,36 @@ function lookResponse(s: GameState, square: string): PromptResponse {
   return { id: 'move', label: `Move ORION-3 here · ${countdown(slewMs(s, square))}` };
 }
 
-const SOURCES: Source[] = [intelNeeded];
+// Enemy traffic (ILI-1394): to listen, get an asset in range. Each way's cost is on its button
+// before HQ commits: ORION-3 goes there and is tied up while it listens, off scanning for ALPHA;
+// or ALPHA holds and sets up the antenna, which burns mission clock. Once it's in place the
+// intercept starts by itself; no button starts it.
+const enemyTraffic: Source = (s) =>
+  s.events
+    .filter((e) => e.kind === 'signal' && e.status !== 'resolved' && !(s.minigame?.status === 'active' && s.minigame.eventId === e.id))
+    .map((e) => {
+      const l = s.listen?.eventId === e.id ? s.listen : null;
+      const sat = s.satellite;
+      const responses: PromptResponse[] = l
+        ? [
+            l.via === 'satellite'
+              ? { id: 'satellite', label: sat.state === 'slewing' ? `ORION-3 on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : 'ORION-3 in range', disabled: true }
+              : { id: 'antenna', label: `Antenna up in ${countdown(l.readyMs - s.elapsedMs)}`, disabled: true },
+          ]
+        : [
+            satelliteBusy(s)
+              ? { id: 'satellite', label: 'ORION-3 busy', disabled: true }
+              : { id: 'satellite', label: lockedOn(s, e.square) ? 'ORION-3 listens · off ALPHA’s route' : `ORION-3 · ${countdown(slewMs(s, e.square))} there, off ALPHA’s route` },
+            { id: 'antenna', label: `ALPHA sets up antenna · holds ${countdown(ANTENNA_MS)}`, disabled: !!s.listen },
+          ];
+      return { id: e.id, kind: 'enemy-traffic' as const, priority: PRIORITY.enemyTraffic, atMs: e.atMs, square: e.square, text: l ? `Getting in range of their traffic near ${e.square}` : `Enemy radio traffic near ${e.square}. Get an asset in range to listen`, responses };
+    });
+
+// Decoded traffic (ILI-1394): a marker on the map, for HQ to send to ALPHA.
+const intelReady: Source = (s) =>
+  s.decoded.map((d) => ({ id: d.id, kind: 'intel-ready' as const, priority: PRIORITY.intelReady, atMs: d.atMs, square: d.square, text: `Decoded: “${d.text}”`, responses: [{ id: 'send', label: `Send to ${s.team.callsign}` }] }));
+
+const SOURCES: Source[] = [intelNeeded, enemyTraffic, intelReady];
 
 // Most urgent first: by priority, then the one that's waited longest.
 export const byUrgency = (a: Prompt, b: Prompt) => a.priority - b.priority || a.atMs - b.atMs;

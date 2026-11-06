@@ -71,7 +71,8 @@ export function lockedStore(start?: GameState) {
       over(eventSquare(`contact-${contactId}`) ?? store.get().contacts.find((c) => c.id === contactId)?.square);
       store.fire(contactId, w);
     },
-    intercept: (id: string) => (over(eventSquare(id)), store.intercept(id)),
+    // Listen (ILI-1394): ORION-3 already over the traffic, so the intercept starts on the next tick.
+    intercept: (id: string) => (over(eventSquare(id)), store.answerPrompt(id, 'satellite'), store.tick(0)),
     jam: (id: string) => (over(eventSquare(id)), store.jam(id)),
     search: (square: string) => (over(square), store.search(square)),
     scan: (square: string) => (over(square), store.scan(square)),
