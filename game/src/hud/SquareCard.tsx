@@ -245,6 +245,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       {/* What its scan turned up (ILI-1399): the detail readouts, tier three, opened by tapping the
           square. One scan settled it, so there's no Scan here again. */}
       <Readouts s={s} square={square} />
+      <Details s={s} square={square} />
 
       {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304).
           Work already under way, so it shows locked or not. */}
@@ -347,13 +348,12 @@ function Scan({ s, square }: { s: GameState; square: string }) {
   );
 }
 
-// A square's details (ILI-1203, ILI-1220), in ORION-3's panel (ILI-1228, ILI-1308): its
-// status and what's known of it. Reposition is ORION-3's button, under its picture.
-export function Card({ s, square }: { s: GameState; square: string }) {
+// A square's details (ILI-1203, ILI-1220): tier three since the satellite panel's ladder
+// (ILI-1400), in the square's own menu, folded under one line that says how fresh its imagery is.
+export function Details({ s, square }: { s: GameState; square: string }) {
   const sat = s.satellite;
   const now = s.elapsedMs;
   const working = sat.aim === square && sat.state !== 'idle'; // ORION-3 is on this square
-  const result = sat.state === 'idle' && sat.result?.square === square ? sat.result : null;
   const g = ground(s, square)!;
   const wx = weather(s);
   const snap = s.imagery[square];
@@ -368,47 +368,32 @@ export function Card({ s, square }: { s: GameState; square: string }) {
     : snap
       ? `imaged ${zulu(snap.atMs)} · ${seen}`
       : 'no imagery';
-  const close = () => {
-    if (sat.state === 'slewing' && sat.aim === square) game.cancelLook();
-    game.closeSquare();
-  };
-
   return (
-    <>
-      <header className="sc-head" data-state={working ? sat.state : result ? 'result' : 'selected'}>
-        <b>{square}</b>
-        <span className="sc-status" data-testid="square-status">
-          {status}
-        </span>
-        <button className="x" onClick={close} aria-label="Close">
-          ×
-        </button>
-      </header>
-
-      <div className="sc-body">
-        {/* The one home for a square's details (ILI-1220): the clock widget no longer repeats them. */}
-        <dl className="facts" data-testid="square-facts">
-          <dt>Elevation</dt>
-          <dd data-testid="square-elevation">
-            {g.lowM}–{g.highM} m
-          </dd>
-          <dt>Slope</dt>
-          <dd>{g.slope}</dd>
-          <dt>Features</dt>
-          <dd>{g.features.length ? g.features.join(', ') : 'open ground'}</dd>
-          <dt>Weather</dt>
-          <dd>
-            {wx.sky.toLowerCase()} · vis {wx.visibilityKm} km · {wx.light.toLowerCase()}
-          </dd>
-          <dt>Imagery</dt>
-          <dd>{snap ? `${snap.mode === 'eyes' ? 'eyes on' : snap.mode} ${zulu(snap.atMs)} · ${seen}` : g.imagery}</dd>
-          <dt>Contacts</dt>
-          <dd data-testid="square-contacts">
-            {found.length ? `${found.length} · ${found.map((c) => c.label).join(', ')}` : snap ? 'none seen' : 'not looked at yet'}
-          </dd>
-        </dl>
-      </div>
-    </>
+    <details className="sc-details square-card-details" data-testid="square-card" data-square={square}>
+      <summary>
+        Ground · <span data-testid="square-status">{status}</span>
+      </summary>
+      <dl className="facts" data-testid="square-facts">
+        <dt>Elevation</dt>
+        <dd data-testid="square-elevation">
+          {g.lowM}–{g.highM} m
+        </dd>
+        <dt>Slope</dt>
+        <dd>{g.slope}</dd>
+        <dt>Features</dt>
+        <dd>{g.features.length ? g.features.join(', ') : 'open ground'}</dd>
+        <dt>Weather</dt>
+        <dd>
+          {wx.sky.toLowerCase()} · vis {wx.visibilityKm} km · {wx.light.toLowerCase()}
+        </dd>
+        <dt>Imagery</dt>
+        <dd>{snap ? `${snap.mode === 'eyes' ? 'eyes on' : snap.mode} ${zulu(snap.atMs)} · ${seen}` : g.imagery}</dd>
+        <dt>Contacts</dt>
+        <dd data-testid="square-contacts">
+          {found.length ? `${found.length} · ${found.map((c) => c.label).join(', ')}` : snap ? 'none seen' : 'not looked at yet'}
+        </dd>
+      </dl>
+    </details>
   );
 }
 

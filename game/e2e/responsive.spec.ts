@@ -47,10 +47,11 @@ for (const [name, width, height] of SIZES) {
       g.capture('photo');
     });
     await expect(page.locator('.hud')).toHaveAttribute('data-tab', 'orion');
-    const card = page.getByTestId('square-card');
-    await expect(card).toHaveAttribute('data-square', 'E3');
-    const c = await box(card);
-    expect(c.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
+    // Its details are in its menu on the map now (ILI-1400); ORION-3's rail has the picture.
+    await expect(page.getByTestId('square-anchor').getByTestId('square-card')).toHaveAttribute('data-square', 'E3');
+    const sat = await box(page.getByTestId('satellite'));
+    expect(sat.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
+    const card = page.getByTestId('square-anchor');
     // Its strikes open from a fighter in ORION-3's picture (ILI-1250).
     await page.getByTestId('target-pin').first().click();
     const menu = page.getByTestId('strike-menu');

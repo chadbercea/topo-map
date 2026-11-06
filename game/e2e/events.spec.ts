@@ -15,10 +15,9 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
 
   // Marker sits in the square's top-right quarter (F4 = col 5, row 3: next to ALPHA, in view).
   await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25, -0.25));
-  if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
-  const card = page.getByTestId('square-card');
+  const card = page.getByTestId('square-anchor');
   const act = page.getByTestId('action-panel');
-  await expect(page.getByTestId('satellite').getByTestId('square-card')).toBeVisible(); // in ORION-3's panel
+  await expect(card.getByTestId('square-card')).toBeVisible(); // its details, folded in its menu (ILI-1400)
   await expect(act.getByTestId('event-card')).toContainText('Test contact');
   await expect.poll(status).toBe('seen'); // seen, so no longer flagged
   await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the event picks its square
