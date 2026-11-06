@@ -1595,3 +1595,14 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud:not([data-tier='wide']) > .heartbeat-strip { grid-area: map; align-self: start; justify-self: start; margin: 60px 0 0 10px; z-index: 5; } /* under the timer: the toolbox has the bottom left, Recentre the bottom right */
 .hud[data-tier='compact'][data-picked] > .heartbeat-strip { display: none; } /* the square's menu has the map's foot */
 .op[data-highlight] { outline: 2px solid #f2c14e; outline-offset: -2px; background: rgba(242, 193, 78, 0.08); }
+
+/* A square's intel (ILI-1399): in its menu, the detail readouts of what its one scan settled. */
+.square-card .sc-intel { display: grid; gap: 4px; padding: 6px 10px 8px; border-bottom: 1px solid var(--line); }
+.square-card .sc-settled { margin: 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #f2c14e; }
+.square-card .sc-intel[data-clear] .sc-settled { color: var(--accent); }
+.square-card .sc-intel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.square-card .sc-intel li { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink); }
+.square-card .sc-intel li[data-heat='quiet'] { color: var(--dim); }
+.square-card .sc-intel .int { flex: 0 0 52px; font-style: normal; font-size: 9px; letter-spacing: 0.06em; text-align: center; padding: 0 3px; border: 1px solid rgba(207, 232, 220, 0.3); border-radius: 2px; color: var(--dim); }
+.square-card .sc-intel li[data-heat='some'] .int { border-color: rgba(255, 138, 42, 0.6); color: #ff8a2a; }
+.square-card .sc-intel li[data-heat='hot'] .int { border-color: #e5484d; color: #e5484d; }

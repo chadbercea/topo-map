@@ -102,19 +102,19 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   await page.waitForTimeout(500);
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
-  const [orion, team, map, intel] = await Promise.all(['satellite', 'heartbeat-strip', 'map-area', 'intel-panel'].map(box));
+  const [orion, team, map] = await Promise.all(['satellite', 'heartbeat-strip', 'map-area'].map(box));
+  await expect(page.getByTestId('intel-panel')).toHaveCount(0); // intel lands on the squares (ILI-1399)
   const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
   // The margin round the screen.
   near(map.x, 16); near(map.y, 16); near(orion.y, 16); // no mission panel (ILI-1392), COMMS a drawer (ILI-1393): the map takes the corner
-  near(view.width - (orion.x + orion.width), 16); near(view.height - (intel.y + intel.height), 16); near(view.height - (team.y + team.height), 16);
+  near(view.width - (orion.x + orion.width), 16); near(view.height - (orion.y + orion.height), 16); near(view.height - (team.y + team.height), 16);
   // The gutter, down and across.
   near(team.y - (map.y + map.height), 16);
   near(team.x, 16);
   near(orion.x - (map.x + map.width), 16);
-  near(intel.y - (orion.y + orion.height), 16); // INTEL under ORION-3 (ILI-1363)
   // Every panel's title the same distance in from its top edge.
   const inset = await page.evaluate(() =>
-    ['satellite', 'intel-panel'].map((id) => {
+    ['satellite'].map((id) => {
       const p = document.querySelector(`[data-testid=${id}]`)!;
       const h = p.querySelector('h2')!;
       const pad = parseFloat(getComputedStyle(h).paddingTop);
