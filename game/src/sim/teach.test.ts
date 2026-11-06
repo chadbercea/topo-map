@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { blockers } from './progress';
+import { activePrompt } from './prompts';
 import { initialState } from './state';
 import { run, walking } from './testkit';
 
@@ -14,9 +15,9 @@ describe('teaching through play', () => {
     expect(run(s, 10_000).comms.messages.filter((m) => m.id === 'needs-intel')).toHaveLength(1);
   });
 
-  it('stalled, ALPHA requests imagery and the need line points at the square (ILI-1349)', () => {
+  it('stalled, ALPHA needing intel is the prompt on the map, pinned to the square (ILI-1349, ILI-1391)', () => {
     const s = run(initialState(), 1_000);
-    expect(blockers(s)[0]).toEqual({ tone: 'decision', text: 'ALPHA requests imagery of F4', go: { square: 'F4' } });
+    expect(activePrompt(s)).toMatchObject({ square: 'F4', text: 'ALPHA is holding: it needs intel on F4 to move', responses: [{ id: 'scan', label: 'Scan F4' }] });
   });
 
   it('holding short for HQ to soften a contact, the need line points at it', () => {

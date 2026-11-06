@@ -13,13 +13,9 @@ test('the intel gauge: empty, ALPHA holds; a photo feeds it and the bar fills', 
   await expect(bar).toHaveAttribute('data-low', 'true');
   await page.evaluate(() => { for (let t = 0; t < 4_000; t += 100) window.game.tick(100); });
   await expect(page.getByTestId('team-panel')).toContainText('Holding · needs intel');
-  // It asks HQ for imagery (ILI-1349): a card in COMMS, and the line under the mission points there.
-  await expect(page.getByTestId('needs-hq')).toHaveText('ALPHA requests imagery of F4');
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  await expect(page.getByTestId('event-card-stack').filter({ hasText: 'ALPHA requests imagery' })).toContainText('Scan ›');
-  await page.getByTestId('needs-hq').click();
-  await expect.poll(() => page.evaluate(() => window.game.get().map.selected)).toBe('F4');
-  if (isMobile) await page.getByTestId('tab-team').click();
+  // It asks HQ for imagery (ILI-1349): the prompt on the map, pinned to F4 (ILI-1391).
+  await expect(page.getByTestId('prompt')).toHaveAttribute('data-square', 'F4');
+  await expect(page.getByTestId('prompt-response')).toHaveText(['Scan F4']);
   await photo(page, 'G5');
   await expect.poll(async () => Number(await bar.getAttribute('aria-valuenow'))).toBeGreaterThan(0);
 });

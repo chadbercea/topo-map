@@ -4,6 +4,7 @@ import { createStore } from './store';
 import { feed, LOW_AT } from './intel';
 import { isImageryRequest, openImageryRequest } from './imageryRequest';
 import { openCards } from './cards';
+import { activePrompt } from './prompts';
 import { fed, run } from './testkit';
 
 // The never-stuck rule (ILI-1349): low or out of intel, ALPHA asks HQ for imagery of the next
@@ -21,7 +22,8 @@ describe('the never-stuck rule', () => {
     expect(s.team.activity).toBe('Holding · needs intel');
     expect(openImageryRequest(s)).toMatchObject({ square: 'F4', title: 'ALPHA requests imagery' });
     expect(requests(run(s, 60_000))).toHaveLength(1); // one at a time, and it never expires
-    expect(openCards(s).some((c) => c.kind === 'request' && c.square === 'F4')).toBe(true); // a card in COMMS
+    expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', square: 'F4' }); // a prompt on the map (ILI-1391)
+    expect(openCards(s).some((c) => c.kind === 'request')).toBe(false); // not a card in COMMS any more
   });
 
   it('running low on the move, the request goes up before ALPHA stops', () => {
@@ -59,9 +61,8 @@ describe('the never-stuck rule', () => {
     for (let t = 0; t < 600_000 && store.get().team.waypoint < crash; t += 100) {
       store.tick(100);
       const s = store.get();
-      const req = openCards(s).find((c) => c.kind === 'request');
-      if (req?.square && s.satellite.state === 'idle') store.lookAt(req.square);
-      if (s.satellite.state === 'onStation') store.capture('photo');
+      const p = activePrompt(s); // answer the prompt on the map: Scan (ILI-1391)
+      if (p?.kind === 'intel-needed' && s.satellite.state === 'idle') store.answerPrompt(p.id, 'scan');
     }
     expect(store.get().team.waypoint).toBeGreaterThanOrEqual(crash);
   });

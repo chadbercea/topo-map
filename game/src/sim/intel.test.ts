@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { activePrompt } from './prompts';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
 import { feed, gauge, grade, GRADE_INTEL, INT_KINDS, LOW_AT, pushPhoto, reports, SQUARE_INTEL, VIDEO_INTEL } from './intel';
-import { blockers } from './progress';
 import { run } from './testkit';
 
 // ALPHA's intel gauge (ILI-1314): it moves only while HQ keeps it fed.
@@ -51,19 +51,17 @@ describe('the intel gauge', () => {
   it('running low on the move, ALPHA requests imagery before it stops (ILI-1341, ILI-1349)', () => {
     const s = run(feed(blindAhead(), LOW_AT - 1), 1_000);
     expect(s.team.activity).toMatch(/^Moving/);
-    expect(blockers(s).some((b) => /ALPHA requests imagery of [A-H]\d/.test(b.text))).toBe(true);
+    expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', text: expect.stringMatching(/low on intel: it needs a look at [A-H]\d/) });
   });
 
-  it('the stretch after the opening scans: scanning the squares the need line points at keeps ALPHA going (ILI-1341)', () => {
-    // Play it the way the player is told to: when the line says scan, scan where it points.
+  it('the stretch after the opening scans: scanning where the prompt points keeps ALPHA going (ILI-1341, ILI-1391)', () => {
+    // Play it the way the player is told to: when the prompt says scan, scan where it points.
     const store = createStore(blindAhead());
     const start = store.get().team.waypoint;
     for (let t = 0; t < 300_000; t += 100) {
       store.tick(100);
-      const need = blockers(store.get()).find((b) => /requests imagery of/.test(b.text));
-      const sat = store.get().satellite;
-      if (need?.go?.square && sat.state === 'idle') store.lookAt(need.go.square);
-      if (sat.state === 'onStation') store.capture('photo');
+      const p = activePrompt(store.get());
+      if (p?.kind === 'intel-needed' && store.get().satellite.state === 'idle') store.answerPrompt(p.id, 'scan');
     }
     expect(store.get().team.waypoint).toBeGreaterThan(start + 3);
   });

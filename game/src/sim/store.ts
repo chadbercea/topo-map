@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { dismiss, respond, send } from './comms';
+import { promptQueue } from './prompts';
 import { cancelLook, capture, closeLook, lookAt, lookSquare, scan, slewMs, type CaptureMode } from './satellite';
 import { abortMiniGame } from './minigame';
 import { launch } from './air';
@@ -28,6 +29,12 @@ function task(s: GameState, square: string): GameState {
   const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.square === square && m.status === 'new');
   if (call?.responses?.some((r) => r.id === 'send')) return respond(s, call.id, 'send');
   return lookAt(s, square);
+}
+
+// Scan a square: task ORION-3 there, and the photo is taken on arrival (ILI-1367).
+function scanSquare(s: GameState, square: string): GameState {
+  const next = task(s, square);
+  return next.satellite.aim === square ? scan(next) : next;
 }
 
 export function createStore(initial: GameState = initialState()) {
@@ -103,9 +110,11 @@ export function createStore(initial: GameState = initialState()) {
     },
     lookAt: (square: string) => set(task(state, square)),
     // Scan from the square's menu (ILI-1367): task ORION-3 there, photo on arrival.
-    scan: (square: string) => {
-      const next = task(state, square);
-      set(next.satellite.aim === square ? scan(next) : next);
+    scan: (square: string) => set(scanSquare(state, square)),
+    // Answer the prompt on screen (ILI-1391): the response does what it says.
+    answerPrompt: (id: string, response: string) => {
+      const p = promptQueue(state).find((x) => x.id === id);
+      if (p?.kind === 'intel-needed' && response === 'scan') set(scanSquare(state, p.square));
     },
     // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first
     // (ILI-1250).
