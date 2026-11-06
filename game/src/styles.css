@@ -1606,3 +1606,51 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card .sc-intel .int { flex: 0 0 52px; font-style: normal; font-size: 9px; letter-spacing: 0.06em; text-align: center; padding: 0 3px; border: 1px solid rgba(207, 232, 220, 0.3); border-radius: 2px; color: var(--dim); }
 .square-card .sc-intel li[data-heat='some'] .int { border-color: rgba(255, 138, 42, 0.6); color: #ff8a2a; }
 .square-card .sc-intel li[data-heat='hot'] .int { border-color: #e5484d; color: #e5484d; }
+
+/* A square's details in its menu (ILI-1400): folded under one line. */
+.square-card .sc-details { border-bottom: 1px solid var(--line); }
+.square-card .sc-details summary { padding: 6px 10px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); cursor: pointer; }
+.square-card .sc-details summary span { color: var(--ink); text-transform: none; letter-spacing: 0.04em; }
+
+/* The satellite panel's priority ladder (ILI-1400): it never scrolls. The slot is a size
+   container, so the panel answers to its own height. Rank 1, the buttons, 60 px pinned to the
+   foot; rank 2, the picture, takes what's left, never under 120 px; then, as the panel gets
+   shorter, the lowest rank drops first: 8 weather, telemetry and Last look; 6 what it saw; 5 the
+   3D satellite, to its outline, then gone; 4 the name, to an icon. Floor about 230 px. */
+.slot-orion { container: orion-slot / size; align-self: stretch !important; display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.hud[data-tier='compact'] .slot-orion { height: var(--sheet, 30dvh); }
+.hud .orion { height: 100%; max-height: 100%; min-height: 0; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto minmax(120px, 1fr) auto auto 60px; grid-template-areas: 'head' 'sat' 'env' 'frame' 'saw' 'last' 'buttons'; }
+.hud .orion::after { display: none; }
+.hud .orion > h2 { grid-area: head; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; }
+.hud .orion > .o-satpanel { grid-area: sat; }
+.hud .orion > .env-stack { grid-area: env; }
+.hud .orion > .o-frame { grid-area: frame; aspect-ratio: auto; height: 100%; min-height: 0; }
+.hud .orion > .o-saw { grid-area: saw; }
+.hud .orion > .o-last { grid-area: last; }
+.hud .orion > .o-buttons { grid-area: buttons; height: 60px; }
+.orion .o-name { display: inline-flex; align-items: center; gap: 6px; flex: none; }
+.orion .o-icon { display: none; width: 14px; height: 14px; fill: none; stroke: var(--accent); stroke-width: 1.2; }
+.orion .o-state { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); font-weight: 400; letter-spacing: 0.04em; }
+.orion[data-state='slewing'] .o-state, .orion[data-state='onStation'] .o-state { color: #f2c14e; }
+.orion .o-state[data-cloud='amber'] { color: #f2c14e; text-decoration: underline dotted; }
+.orion .o-state[data-cloud='red'] { color: #e5484d; text-decoration: underline dotted; }
+.orion .o-mark { display: none; }
+.orion .o-saw, .orion .o-last { margin: 0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.orion .o-saw { color: #f2c14e; }
+.orion .o-last { color: var(--dim); }
+@container orion-slot (max-height: 640px) {
+  .orion .env-stack, .orion .o-telemetry, .orion .o-last { display: none; }
+  .orion .o-satpanel { grid-template-columns: minmax(0, 1fr); height: 96px; }
+}
+@container orion-slot (max-height: 520px) { .orion .o-saw { display: none; } }
+@container orion-slot (max-height: 440px) {
+  .orion .o-satpanel { height: 52px; }
+  .orion .o-satpanel .o-sat-3d { display: none; }
+  .orion .o-mark { display: grid; place-items: center; height: 100%; }
+  .orion .o-mark .o-sat { width: auto; height: 40px; }
+}
+@container orion-slot (max-height: 360px) { .orion .o-satpanel { display: none; } }
+@container orion-slot (max-height: 280px) {
+  .orion .o-name-text { display: none; }
+  .orion .o-icon { display: block; }
+}

@@ -24,12 +24,11 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
   await page.getByTestId('look-here').click();
 
-  // ORION-3 repositions, in its own panel: a countdown that runs down, and nothing to press
-  // but Cancel. On a fold or phone its tab comes forward.
-  const moving = page.getByTestId('orion-repositioning');
-  await expect(moving).toBeVisible();
-  await expect(moving).toContainText(/Repositioning to E3 · \d+:\d\d/);
-  await expect(sat.getByTestId('orion-placeholder')).toContainText('On station over E3 in'); // counting down in the frame (ILI-1269)
+  // ORION-3 repositions: one countdown, on its state line (ILI-1400), and nothing to press.
+  // On a fold or phone its tab comes forward.
+  const moving = sat.getByTestId('orion-state');
+  await expect(moving).toHaveText(/^Repositioning · → E3 · \d+:\d\d$/);
+  await expect(sat.getByTestId('orion-placeholder')).toContainText('On its way to E3, then take the photo');
   // The button row keeps its place under the picture: Reposition, unlit while it moves.
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
   await expect(sat.getByTestId('look-here')).toBeDisabled();
@@ -41,7 +40,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
 
   // On station the panel opens up: the larger square, and the ways to look.
   await expect(sat).toHaveAttribute('data-state', 'onStation');
-  await expect(moving).toHaveCount(0);
+  await expect(moving).toHaveText('On station · E3');
   await expect(sat.getByTestId('orion-placeholder')).toHaveCount(0);
   const picture = sat.getByTestId('satellite-inset');
   await expect(picture).toBeVisible();
@@ -66,7 +65,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
   await act.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
   await expect(act.getByTestId('fire-sniper')).toBeVisible();
-  await card.getByRole('button', { name: 'Close' }).click();
+  await page.getByTestId('square-anchor').getByRole('button', { name: 'Close' }).click();
   await expect(card).toHaveCount(0); // closed: the look is filed
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
 });
@@ -141,7 +140,7 @@ test('standing by, ORION-3 names the next square ahead with no imagery (ILI-1272
   await expect(page.getByTestId('orion-placeholder')).toHaveText('Standing by over G5 · no imagery of F4 ahead');
 });
 
-test("a slew counts down in ORION-3's frame, then the photo (ILI-1269)", async ({ page, isMobile }) => {
+test("a slew counts down once, on ORION-3's state line, then the photo (ILI-1269, ILI-1400)", async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
@@ -150,12 +149,15 @@ test("a slew counts down in ORION-3's frame, then the photo (ILI-1269)", async (
     window.game.lookAt('E3');
   });
   if (isMobile) await page.getByTestId('tab-orion').click();
-  const eta = page.getByTestId('orion-eta');
-  await expect(eta).toHaveText(/^0:\d\d$/);
-  const first = await eta.textContent();
+  const state = page.getByTestId('orion-state');
+  await expect(state).toHaveText(/· 0:\d\d$/);
+  const first = await state.textContent();
   await page.evaluate(() => window.game.tick(2000));
-  await expect(eta).not.toHaveText(first!);
+  await expect(state).not.toHaveText(first!);
   await expect(page.getByTestId('orion-placeholder')).toContainText('then take the photo');
+  // One countdown in the panel: not in the frame, not on the button.
+  await expect(page.getByTestId('orion-placeholder')).not.toContainText(/\d:\d\d/);
+  await expect(page.getByTestId('look-here')).not.toContainText(/\d:\d\d/);
 });
 
 test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMobile }) => {
@@ -176,8 +178,8 @@ test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMob
   await expect(page.getByTestId('square-anchor').getByTestId('fighters-marked')).toHaveText(`${n} ${n === 1 ? 'fighter' : 'fighters'} marked`);
 });
 
-test('ORION-3 never scrolls, and nothing in it moves through a scan; the picture stays up after the shot (ILI-1354)', async ({ page, isMobile }) => {
-  test.skip(isMobile, 'on a phone ORION-3 is a tab in the sheet, which scrolls by design');
+test('ORION-3 never scrolls, and nothing in it moves through a scan; the picture stays up after the shot (ILI-1354, ILI-1400)', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'a picked square folds the phone sheet (ILI-1397); the ladder spec covers the phone size');
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
@@ -209,5 +211,5 @@ test('ORION-3 never scrolls, and nothing in it moves through a scan; the picture
   expect(new Set(seen.map((s) => s.buttons)).size).toBe(1); // the buttons never move
   await expect(page.getByTestId('satellite-inset')).toHaveCount(1); // the zoomed square is still up
   await expect(page.getByTestId('satellite-result')).toContainText(/Video: 5 fighters/);
-  await expect(page.getByTestId('satellite').getByTestId('square-card')).toHaveAttribute('data-square', 'E3');
+  await expect(page.getByTestId('square-anchor').getByTestId('square-card')).toHaveAttribute('data-square', 'E3'); // the square's details: its menu, tier three (ILI-1400)
 });
