@@ -487,6 +487,15 @@ export class MapScene extends Phaser.Scene {
       g.lineStyle((2 * DPR) / this.zoom, color, 1).strokeCircle(x, y, r);
       g.fillStyle(color, e.id === openEvent ? 1 : 0.7).fillCircle(x, y, r * 0.45);
     }
+    // Decoded traffic waiting for HQ to send it to ALPHA (ILI-1394): a SIGINT diamond on its square.
+    for (const d of game.get().decoded) {
+      const { x, y } = this.markerPos(d.square);
+      const k = r * 1.3;
+      const pts = [new Phaser.Math.Vector2(x, y - k), new Phaser.Math.Vector2(x + k, y), new Phaser.Math.Vector2(x, y + k), new Phaser.Math.Vector2(x - k, y)];
+      g.fillStyle(0x0b0f0d, 0.9).fillPoints(pts, true);
+      g.lineStyle((2 * DPR) / this.zoom, EVENT_COLOR.signal, 0.6 + 0.4 * Math.abs(Math.sin(time / 300))).strokePoints(pts, true);
+      g.fillStyle(EVENT_COLOR.signal, 1).fillCircle(x, y, r * 0.35);
+    }
     // Hovered (ILI-1297): a ring round the ping and a tag saying what it is.
     const hover = events.find((e) => e.id === this.hovered && e.status !== 'resolved');
     this.hoverLabel.setVisible(!!hover);

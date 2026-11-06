@@ -161,7 +161,6 @@ describe('Scan from the square menu (ILI-1367)', () => {
   it('nothing runs on a square ORION-3 is not locked on: strikes, search, Listen, Jam (ILI-1397)', () => {
     const s0 = run(initialState(), 83_000); // enemy traffic up at C2
     const store = createStore({ ...s0, satellite: { ...s0.satellite, aim: 'H8', from: { col: 7, row: 7 }, state: 'idle' } });
-    store.intercept('traffic-c2');
     store.jam('traffic-c2');
     expect(store.get().minigame).toBeNull();
     expect(store.get().events.find((e) => e.id === 'traffic-c2')?.status).not.toBe('resolved');

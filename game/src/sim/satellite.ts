@@ -72,7 +72,8 @@ export function slewMs(s: GameState, square: SquareId): number {
   return Math.round(((SETTLE_MS + d * SLEW_MS_PER_SQUARE) * slewFactor(s)) / 100) * 100; // more satellites, faster revisits (ILI-1317)
 }
 
-export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing';
+// Capturing, or listening in on enemy traffic (ILI-1394): that's what pulls it off scanning for ALPHA.
+export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing' || (s.minigame?.status === 'active' && s.minigame.via === 'satellite');
 
 // The satellite is the player's avatar (ILI-1397): nothing runs on a square it isn't locked on.
 // Locked means it's over the square and not on its way somewhere: tapping any other square

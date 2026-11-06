@@ -102,7 +102,7 @@ export function CommsPanel() {
 }
 
 const EVENT_TIER: Record<EventCardKind, Tier> = { contact: 'alert', signal: 'sigint', request: 'intel', building: 'humint', ask: 'comms' };
-const EVENT_GO: Record<EventCardKind, string> = { contact: 'Actions', signal: 'Listen', request: 'Scan', building: 'Search', ask: '' };
+const EVENT_GO: Record<EventCardKind, string> = { contact: 'Actions', signal: 'Locate', request: 'Scan', building: 'Search', ask: '' };
 
 // What tapping an event card does (ILI-1348): it starts the thing it's about, the mini game we
 // already have. Each one opens the event too (marked seen, its square picked), so the map and
@@ -111,7 +111,7 @@ function act(c: Extract<Card, { type: 'event' }>) {
   if (c.eventId) game.openEvent(c.eventId);
   switch (c.kind) {
     case 'signal':
-      return c.eventId && game.intercept(c.eventId); // Listen, on the map
+      return; // its square: the prompt there says how to get in range (ILI-1394)
     case 'request':
       return c.square && game.lookAt(c.square); // ORION-3 to the square for the shot
     case 'building':

@@ -11,6 +11,7 @@ import { deployCost, medsFactor } from './upgrades';
 import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
 import type { MiniGame } from './minigame';
+import type { Decoded, Listen } from './signal';
 import type { AirRun } from './air';
 import type { SniperRun } from './sniper';
 import type { ExfilRun } from './exfil';
@@ -77,6 +78,8 @@ export type GameState = {
   resources: { budget: number; ledger: Ledger }; // the balance now, and where the mission's money went (ILI-1316)
   bankrupt: boolean; // the PMC's credit ran out (ILI-1316)
   searching: string[]; // buildings HQ sent ALPHA to search (ILI-1316)
+  listen: Listen | null; // an asset on its way into range of enemy traffic (ILI-1394)
+  decoded: Decoded[]; // decoded traffic waiting for HQ to send it to ALPHA (ILI-1394)
   upgrades: string[]; // what the PMC has bought in the store (ILI-1317)
   satellite: Satellite; // ORION-3: where it's looking and what it's doing
   imagery: Record<string, Snapshot>; // the newest look at each square
@@ -143,6 +146,8 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     resources: { budget: opening - deployCost(upgrades), ledger: { ...openLedger(opening), deploy: -deployCost(upgrades) } },
     bankrupt: false,
     searching: [],
+    listen: null,
+    decoded: [],
     upgrades: [...upgrades],
     satellite: initialSatellite(ROUTE[0]),
     imagery: {},

@@ -12,7 +12,7 @@ import { perCall } from './upgrades';
 import { sendToSearch } from './buildings';
 import { spend } from './sites';
 import { sendResupply } from './support';
-import { jam, startIntercept, tune } from './signal';
+import { jam, listenWith, sendDecoded, tune, type ListenVia } from './signal';
 import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
@@ -123,9 +123,14 @@ export function createStore(initial: GameState = initialState()) {
     // Answer the prompt on screen (ILI-1391): the response does what it says.
     answerPrompt: (id: string, response: string) => {
       const p = promptQueue(state).find((x) => x.id === id);
-      if (p?.kind !== 'intel-needed') return;
-      if (response === 'move') set(task(state, p.square));
-      if (response === 'scan') set(scanSquare(state, p.square));
+      if (!p || p.responses.find((r) => r.id === response)?.disabled) return;
+      if (p.kind === 'intel-needed') {
+        if (response === 'move') set(task(state, p.square));
+        if (response === 'scan') set(scanSquare(state, p.square));
+      }
+      // Get an asset in range of enemy traffic; the intercept starts once it is (ILI-1394).
+      if (p.kind === 'enemy-traffic' && (response === 'satellite' || response === 'antenna')) set(listenWith(state, p.id, response as ListenVia));
+      if (p.kind === 'intel-ready' && response === 'send') set(sendDecoded(state, p.id));
     },
     // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first
     // (ILI-1250).
@@ -137,7 +142,6 @@ export function createStore(initial: GameState = initialState()) {
     cancelLook: () => set(cancelLook(state)),
     closeLook: () => set(closeLook(state)),
     sendResupply: () => set(sendResupply(state)),
-    intercept: (eventId: string) => lockedOn(state, eventSquare(state, eventId) ?? '') && set(startIntercept(state, eventId)),
     jam: (eventId: string) => lockedOn(state, eventSquare(state, eventId) ?? '') && set(jam(state, eventId)),
     tune: (mhz: number) => set(tune(state, mhz)),
     abortMiniGame: () => set(abortMiniGame(state)),

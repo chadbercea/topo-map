@@ -1,7 +1,7 @@
 import type { SquareId } from '../map/grid';
 import type { GameState } from './state';
 import type { System } from './systems';
-import { finishSignal, type Signal } from './signal';
+import { finishSignal, type ListenVia, type Signal } from './signal';
 
 // Mini games play on the theater map itself (GDD). Starting one puts the map in that game's
 // mode and opens a companion panel; the result feeds back into the mission: the team gets
@@ -23,6 +23,7 @@ export type MiniGame = {
   status: MiniGameStatus;
   // Listen (signal intercept) only:
   signal?: Signal;
+  via?: ListenVia; // the asset in range (ILI-1394): ORION-3 is tied up while it listens
 };
 
 type Def = { title: string; instructions: string };

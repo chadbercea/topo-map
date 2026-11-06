@@ -411,10 +411,9 @@ export function Actions({ s, square }: { s: GameState; square: string }) {
               )}
             </div>
           ) : e.kind === 'signal' ? (
+            // Listening starts from getting an asset in range, through the prompt (ILI-1394). Jam
+            // is no mini game: it's here.
             <div className="signal-options">
-              <button className="intercept" onClick={() => game.intercept(e.id)}>
-                Listen
-              </button>
               <button className="jam" onClick={() => game.jam(e.id)} title="Slows the enemy, but you won't learn what they're planning">
                 Jam
               </button>
