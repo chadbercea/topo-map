@@ -6,29 +6,29 @@ import { fastForward, freeze, running, start } from './helpers';
 
 const fadeIn = (page: import('@playwright/test').Page) => page.waitForTimeout(250);
 
-test('ALPHA needing intel is a prompt pinned to its square; move ORION-3, then Scan answers it and it goes', async ({ page }) => {
+test('ALPHA needing intel is a prompt on its marker; Scan grids opens the square, whose menu moves ORION-3 and scans, and the prompt goes (ILI-1395)', async ({ page }) => {
   await start(page, '?debug&gauge');
   await running(page);
   await freeze(page);
   await fastForward(page, 3_000);
   const prompt = page.getByTestId('prompt');
   await expect(prompt).toHaveCount(1); // one at a time
-  const square = await prompt.getAttribute('data-square');
-  expect(square).toMatch(/^[A-H]\d$/);
-  await expect(prompt.getByTestId('prompt-text')).toContainText(`needs intel on ${square}`);
-  await expect(prompt.getByTestId('prompt-response')).toHaveText([/^Move ORION-3 here · \d:\d\d$/]); // the move step first (ILI-1397)
+  await expect(prompt).toHaveAttribute('data-square', 'G5'); // where ALPHA is
+  await expect(prompt.getByTestId('prompt-text')).toContainText('ALPHA holding, needs route intel to D3');
+  await expect(prompt.getByTestId('prompt-response')).toHaveText(['Scan grids']);
   await expect(page.getByTestId('needs-hq')).toHaveCount(0); // no mission panel to double it (ILI-1392)
   await expect(page.getByTestId('event-card-stack').filter({ hasText: 'requests imagery' })).toHaveCount(0); // nor in COMMS
 
   await prompt.getByTestId('prompt-response').click();
-  await expect.poll(() => page.evaluate(() => window.game.get().satellite.aim)).toBe(square);
-  await expect(prompt.getByTestId('prompt-response')).toBeDisabled(); // on its way
+  const menu = page.getByTestId('square-anchor');
+  await expect(menu).toHaveAttribute('data-square', 'F4'); // the grid square to scan
+  await menu.getByTestId('move-here').click(); // the move step (ILI-1397)
   await fastForward(page, 30_000);
-  await expect(prompt.getByTestId('prompt-response')).toHaveText([`Scan ${square}`]); // locked on
-  await prompt.getByTestId('prompt-response').click();
-  await expect.poll(() => page.evaluate((sq) => !!window.game.get().imagery[sq!], square)).toBe(true);
+  await menu.getByTestId('scan-square').click();
+  await expect.poll(() => page.evaluate(() => !!window.game.get().imagery.F4)).toBe(true);
   await fastForward(page, 200);
-  await expect(page.getByTestId('prompt').and(page.locator(`[data-square="${square}"]`))).toHaveCount(0);
+  // F4's request is answered (the next one, further on, may come up as ALPHA walks off the photo's intel).
+  await expect.poll(() => page.evaluate(() => window.game.get().events.some((e) => e.id.startsWith('imagery-F4') && e.status !== 'resolved'))).toBe(false);
 });
 
 test('the prompt follows its square when the map moves', async ({ page, isMobile }) => {

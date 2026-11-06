@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { Backpack } from './AskWindow';
 
 // COMMS's line icons (ILI-1258), 12 px, in the line's colour: who or what a line is from, at a
 // glance. Drawn in the HUD's line style, like ENVIRONMENT's.
@@ -81,3 +80,13 @@ function icon(tier: Tier) {
       return null;
   }
 }
+
+// The SATCOM backpack: ALPHA on the radio.
+export const Backpack = () => (
+  <svg className="pack" viewBox="0 0 16 16" width="14" height="14" aria-hidden>
+    <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.5" y="5" width="8" height="10" rx="1" />
+      <path d="M3.5 7.5h8M5.5 10h4v3h-4zM6 5V3.5h3V5M10.5 5 13 1" />
+    </g>
+  </svg>
+);

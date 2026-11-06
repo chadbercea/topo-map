@@ -33,3 +33,15 @@ describe('roster', () => {
     expect(roster()[0]).not.toBe(roster()[0]);
   });
 });
+
+// The status tag on ALPHA's marker (ILI-1395).
+describe('team status', () => {
+  it('reads Moving, Holding or In contact', async () => {
+    const { teamStatus } = await import('./team');
+    const { initialState } = await import('./state');
+    const s = initialState();
+    expect(teamStatus({ ...s, team: { ...s.team, activity: 'Moving to F4' } })).toBe('Moving');
+    expect(teamStatus({ ...s, team: { ...s.team, activity: 'Holding · needs intel' } })).toBe('Holding');
+    expect(teamStatus({ ...s, team: { ...s.team, activity: 'Moving to F4', fight: { contactId: 'x' } as never } })).toBe('In contact');
+  });
+});

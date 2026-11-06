@@ -1,4 +1,5 @@
 // The MVP team (GDD: one five-man special operations unit) and each role's loadout.
+import type { GameState } from './state';
 
 export type Role = 'Squad lead' | 'Gunner' | 'Medic' | 'Commo' | 'Heavy gunner';
 
@@ -62,3 +63,9 @@ export const condition = (o: Operator): Condition =>
 
 // Health, ammo and meds as one string, so a tick can tell whether any of them changed.
 export const vitalsFor = (ops: Operator[]) => ops.map((o) => `${o.health}|${o.ammo}|${o.meds}`).join(',');
+
+// What ALPHA is doing, in a word, for the status tag on its marker (ILI-1395).
+export function teamStatus(s: GameState): 'Moving' | 'Holding' | 'In contact' {
+  if (s.team.fight) return 'In contact';
+  return s.team.activity.startsWith('Moving') ? 'Moving' : 'Holding';
+}

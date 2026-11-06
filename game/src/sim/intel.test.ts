@@ -3,7 +3,7 @@ import { activePrompt } from './prompts';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
 import { feed, gauge, grade, GRADE_INTEL, INT_KINDS, LOW_AT, pushPhoto, reports, SQUARE_INTEL, VIDEO_INTEL } from './intel';
-import { run } from './testkit';
+import { answerIntel, run } from './testkit';
 
 // ALPHA's intel gauge (ILI-1314): it moves only while HQ keeps it fed.
 const blindAhead = (): GameState => {
@@ -51,7 +51,7 @@ describe('the intel gauge', () => {
   it('running low on the move, ALPHA requests imagery before it stops (ILI-1341, ILI-1349)', () => {
     const s = run(feed(blindAhead(), LOW_AT - 1), 1_000);
     expect(s.team.activity).toMatch(/^Moving/);
-    expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', text: expect.stringMatching(/low on intel: it needs a look at [A-H]\d/) });
+    expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', grid: expect.stringMatching(/^[A-H]\d$/), text: 'ALPHA low on intel, needs route intel to D3' });
   });
 
   it('the stretch after the opening scans: scanning where the prompt points keeps ALPHA going (ILI-1341, ILI-1391)', () => {
@@ -61,8 +61,7 @@ describe('the intel gauge', () => {
     for (let t = 0; t < 300_000; t += 100) {
       store.tick(100);
       const p = activePrompt(store.get());
-      const r = p?.responses.find((x) => !x.disabled); // move ORION-3 there, then Scan (ILI-1397)
-      if (p && r) store.answerPrompt(p.id, r.id);
+      answerIntel(store, p); // Scan grids, the move, then Scan (ILI-1395, ILI-1397)
     }
     expect(store.get().team.waypoint).toBeGreaterThan(start + 3);
   });

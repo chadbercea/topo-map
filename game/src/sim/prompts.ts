@@ -23,6 +23,7 @@ export type Prompt = {
   priority: number; // lower goes first
   atMs: number; // when it came up: the older of two at one priority goes first
   square: string; // where it's pinned on the map
+  grid?: string; // the grid square a response takes HQ to, when that's not where it's pinned (ILI-1395)
   text: string;
   responses: PromptResponse[]; // one to three
 };
@@ -35,32 +36,27 @@ type Source = (s: GameState) => Prompt[];
 
 // ALPHA needs intel (ILI-1341, ILI-1349): out of it and holding, or running low on the move. It
 // asks for a look at the next square on its route, and a scan there answers it.
+// On the marker (ILI-1395): it's ALPHA's need, so it's pinned where ALPHA is and says where ALPHA
+// is going; Scan grids takes HQ to the grid square to scan, whose menu has the move, then Scan.
 const intelNeeded: Source = (s) => {
   const req = openImageryRequest(s);
   if (!req) return [];
   const holding = s.team.activity.startsWith('Holding');
+  const goal = s.mission.phase === 'exfil' || s.mission.phase === 'complete' ? s.mission.c : s.mission.b;
+  const { x, y } = s.team.position;
   return [
     {
       id: req.id,
       kind: 'intel-needed',
       priority: PRIORITY.teamRequest,
       atMs: req.atMs,
-      square: req.square,
-      text: holding ? `${s.team.callsign} is holding: it needs intel on ${req.square} to move` : `${s.team.callsign} is low on intel: it needs a look at ${req.square}`,
-      responses: [lookResponse(s, req.square)],
+      square: squareAt(x, y) ?? req.square,
+      grid: req.square,
+      text: `${s.team.callsign} ${holding ? 'holding' : 'low on intel'}, needs route intel to ${goal}`,
+      responses: [{ id: 'grids', label: 'Scan grids' }],
     },
   ];
 };
-
-// What getting a look at a square takes right now (ILI-1397): the satellite moves there first,
-// a step the player sees, then the scan.
-function lookResponse(s: GameState, square: string): PromptResponse {
-  const sat = s.satellite;
-  if (lockedOn(s, square)) return sat.state === 'capturing' ? { id: 'scan', label: 'ORION-3 busy', disabled: true } : { id: 'scan', label: `Scan ${square}` };
-  if (sat.state === 'slewing' && sat.aim === square) return { id: 'move', label: `ORION-3 on its way · ${countdown(sat.arriveMs - s.elapsedMs)}`, disabled: true };
-  if (sat.state === 'capturing') return { id: 'move', label: `ORION-3 busy over ${sat.aim}`, disabled: true };
-  return { id: 'move', label: `Move ORION-3 here · ${countdown(slewMs(s, square))}` };
-}
 
 // Enemy traffic (ILI-1394): to listen, get an asset in range. Each way's cost is on its button
 // before HQ commits: ORION-3 goes there and is tied up while it listens, off scanning for ALPHA;
