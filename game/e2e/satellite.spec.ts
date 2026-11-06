@@ -100,12 +100,19 @@ test('a fighter on the map opens its strikes too (ILI-1250)', async ({ page, isM
   await freeze(page);
   await photo(page, 'E3');
   await page.evaluate(() => window.game.closeSquare());
-  const spot = await page.evaluate(() => {
+  const spots = await page.evaluate(() => {
     const seen = window.game.get().imagery.E3!.seen[0];
-    const u = seen.units[0];
-    return { x: seen.x + ((u % 4) + 0.5) * 50, y: seen.y + (Math.floor(u / 4) + 0.5) * 50 };
+    return seen.units.map((u) => ({ x: seen.x + ((u % 4) + 0.5) * 50, y: seen.y + (Math.floor(u / 4) + 0.5) * 50 }));
   });
-  const p = await worldToScreen(page, spot.x, spot.y);
+  // A fighter in open map: the timer sits in the map's corner (ILI-1392).
+  let p = await worldToScreen(page, spots[0].x, spots[0].y);
+  for (const s of spots) {
+    const q = await worldToScreen(page, s.x, s.y);
+    if (await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName === 'CANVAS', q)) {
+      p = q;
+      break;
+    }
+  }
   await page.mouse.click(p.x, p.y);
   await expect(page.getByTestId('strike-menu').getByTestId('fire-sniper')).toBeVisible();
 });

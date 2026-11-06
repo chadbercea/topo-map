@@ -28,6 +28,6 @@ test('mission clock runs in real time and freezes on pause', async ({ page, isMo
   if (isMobile) await page.getByRole('button', { name: 'Resume' }).tap();
   else await page.keyboard.press('p');
   await expect(page.getByTestId('pause-menu')).toHaveCount(0);
-  await expect(page.getByTestId('mission-timer')).toHaveAttribute('data-phase', 'running');
+  await expect(page.getByTestId('timer')).toHaveAttribute('data-phase', 'running');
   await expect.poll(() => tick(page)).toBeGreaterThan(frozen);
 });

@@ -1,48 +1,37 @@
 import { expect, test } from '@playwright/test';
-import { askResupply, fastForward, start } from './helpers';
+import { fastForward, freeze, start } from './helpers';
 
-test('the mission panel: the deadline, the race, what to do, what needs HQ (ILI-1216, ILI-1245)', async ({ page, isMobile }) => {
+// The mission panel is broken up (ILI-1392): only the timer is left, small, in the map's corner;
+// the objective is a start card and a marker on the map; the race is in the debrief.
+
+test('only the timer is left: the client deadline, small, in the map’s corner, with pause', async ({ page, isMobile }) => {
   await page.goto('?debug');
-  // The mission and its progress run along the map's foot; the clock sits in the widget.
-  const strip = page.getByTestId('mission-strip');
-  await expect(strip).toContainText('BLACK BOX');
-  await expect(page.getByTestId('mission-timer').getByTestId('clock')).toBeVisible();
-  await expect(strip.getByTestId('objective')).toBeAttached();
-  // The race: time left on top, ALPHA's route under it with A, B and C marked.
-  const race = page.getByTestId('race');
-  await expect(race.locator('li')).toHaveText(['A', 'B', 'C']);
-  await expect(race).toHaveAttribute('data-behind', 'false');
-  await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
-  await askResupply(page); // ALPHA's one question (ILI-1315)
-  await expect(page.getByTestId('needs-hq')).toHaveText('ALPHA waiting on your decision'); // only the most pressing
+  await expect(page.getByTestId('mission-strip')).toHaveCount(0);
+  const timer = page.getByTestId('timer');
+  await expect(timer).toContainText('Client deadline');
+  await expect(timer.getByTestId('clock')).toBeVisible();
+  await expect(timer.getByTestId('pause-toggle')).toBeVisible();
+  await expect(page.getByTestId('race')).toHaveCount(0); // the debrief's now
+  await expect(page.getByTestId('needs-hq')).toHaveCount(0); // ALPHA needing intel is a prompt (ILI-1391)
+  await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3'); // for a screen reader; on the map it's a marker
   await fastForward(page, 15_000);
   await expect(page.getByTestId('clock')).toHaveText(/^9:4[0-5]$/);
 
   if (isMobile) return; // the ground and weather wait for a wider screen
   await expect(page.getByTestId('conditions')).toContainText('High cloud');
   await expect(page.getByTestId('cloud-tile')).not.toHaveAttribute('data-warn', /./); // 60%: clear enough
-  // A square's ground is on its card, not in the widget (ILI-1220).
   await expect(page.getByTestId('ground')).toHaveCount(0);
   await page.evaluate(() => window.game.selectSquare('E2'));
   await expect(page.getByTestId('square-elevation')).toHaveText(/^\d+–\d+ m$/);
   await expect(page.getByTestId('square-facts')).toContainText(/Features\s*town/);
 });
 
-test("the need line goes where it points: ALPHA's call, or the square (ILI-1271)", async ({ page }) => {
+test('the mission start card says the objective in plain words, then goes', async ({ page }) => {
   await start(page, '?debug');
-  await askResupply(page); // ALPHA's one question (ILI-1315)
-  const need = page.getByTestId('needs-hq');
-  await expect(need).toHaveText('ALPHA waiting on your decision');
-  await need.click();
-  await expect(page.getByTestId('comms-text')).toBeVisible(); // the call, open
-  // Nothing waiting, unimaged ground ahead: the line picks that square.
-  await page.evaluate(() => {
-    window.frozen = true;
-    const s = window.game.get();
-    window.game.set({ ...s, comms: { ...s.comms, messages: [] }, team: { ...s.team, holdFor: null } });
-  });
-  await expect(need).toContainText('No imagery ahead at');
-  const sq = (await need.textContent())!.match(/at (\w\d)/)![1];
-  await need.click();
-  await expect.poll(() => page.evaluate(() => window.game.get().map.selected)).toBe(sq);
+  await page.waitForFunction(() => window.game?.get().phase === 'running');
+  await freeze(page);
+  const card = page.getByTestId('start-card');
+  await expect(card).toContainText("Recover the drone's black box at D3");
+  await fastForward(page, 4_500);
+  await expect(card).toHaveCount(0);
 });

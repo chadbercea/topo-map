@@ -11,7 +11,7 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
   // No intel stream any more: the task is a marker on its square (ILI-1225).
   const status = () => page.evaluate(() => window.game.get().events.find((e) => e.id === 't')?.status);
   await expect.poll(status).toBe('new');
-  await expect(page.getByTestId('needs-hq')).not.toContainText('Test contact'); // not in the header any more
+  await expect(page.getByTestId('needs-hq')).toHaveCount(0); // no mission panel any more (ILI-1392)
 
   // Marker sits in the square's top-right quarter (F4 = col 5, row 3: next to ALPHA, in view).
   await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25, -0.25));

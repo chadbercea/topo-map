@@ -45,7 +45,7 @@ html, body {
   grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(300px, 380px);
   grid-template-rows: auto minmax(0, 1fr) auto;
   grid-template-areas:
-    'mission map orion'
+    'satcom map orion'
     'satcom map orion'
     'bottom bottom orion';
 }
@@ -64,7 +64,7 @@ html, body {
 .slot-satcom { grid-area: satcom; min-width: 0; min-height: 0; display: grid; } /* COMMS runs the left side (ILI-1225) */
 .dock-tabs { display: none; }
 
-.slot-widget { grid-area: mission; min-width: 0; position: relative; z-index: 1; }
+.slot-widget { grid-area: map; justify-self: start; align-self: start; min-width: 0; position: relative; z-index: 5; margin: 10px 0 0 10px; } /* the timer, in the map's corner (ILI-1392) */
 .map-area { grid-area: map; min-height: 0; }
 /* Recentre (ILI-1227): over the right end of TEAM's title line, so the panel never reflows. */
 .team { position: relative; }
@@ -773,6 +773,21 @@ html, body {
 
 @keyframes blink { 50% { opacity: 0.2; } }
 
+/* The timer (ILI-1392): tier one, small, in the map's corner: the client's deadline and pause. */
+.timer-chip { --tone: var(--accent); display: flex; align-items: center; gap: 10px; padding: 4px 4px 4px 10px; background: rgba(11, 15, 13, 0.9); border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent); pointer-events: auto; }
+.timer-chip[data-warn='amber'] { --tone: #f2c14e; }
+.timer-chip[data-warn='red'] { --tone: #e5484d; }
+.timer-chip .t-label { color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
+.timer-chip .clock { font-size: 20px; line-height: 1; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--tone); }
+.timer-chip[data-phase='paused'] .clock { color: var(--dim); }
+.timer-chip .pause { min-height: 32px; }
+/* The mission start card (ILI-1392): the objective in plain words, a few seconds, never in the way. */
+.start-card { position: fixed; z-index: 11; left: 50%; top: 38%; transform: translate(-50%, -50%); display: grid; gap: 6px; justify-items: center; max-width: min(520px, calc(100vw - 32px)); padding: 16px 24px; text-align: center; pointer-events: none; background: rgba(11, 15, 13, 0.92); border: 1px solid #f2c14e; animation: start-card 4s ease-in-out forwards; }
+.start-card small { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
+.start-card p { margin: 0; font-size: 18px; color: #f2c14e; }
+@keyframes start-card { 0% { opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .start-card { animation: none; } }
+.wrapup .race { margin: 4px 0 12px; }
 /* MISSION · BLACK BOX (ILI-1226): the contract window and the mission in one panel. */
 .mission { position: relative; display: grid; gap: 6px; padding: 10px 12px 12px; --tone: var(--accent); background:
   repeating-linear-gradient(0deg, rgba(53, 208, 165, 0.05) 0 1px, transparent 1px 16px),
@@ -790,23 +805,23 @@ html, body {
 .mission .m-label .env-icon { stroke: var(--tone); }
 .mission .clock { font-size: 34px; line-height: 1; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--tone); text-shadow: 0 0 12px color-mix(in srgb, var(--tone) 35%, transparent); }
 .mission .pause { align-self: stretch; }
-.mission .race { position: relative; display: grid; gap: 4px; padding-bottom: 12px; }
-.mission .race-time, .mission .race-route { display: block; height: 4px; background: color-mix(in srgb, var(--tone) 15%, transparent); }
-.mission .race-time > span { display: block; height: 100%; background: var(--tone); transition: width 400ms linear; }
-.mission .race-route { background: rgba(242, 193, 78, 0.15); }
-.mission .race-route > span { display: block; height: 100%; background: #f2c14e; transition: width 400ms linear; }
-.mission .race[data-behind='true'] .race-route { background: rgba(229, 72, 77, 0.45); box-shadow: 0 0 8px rgba(229, 72, 77, 0.5); }
-.mission .race[data-behind='true'] .race-route > span { background: #e5484d; }
-.mission .race[data-behind='true'] .race-marks li, .mission .race[data-behind='true'] .race-marks li[data-passed='true'] { color: #e5484d; }
-.mission .race[data-behind='true'] .race-marks li::before { background: #e5484d; }
-.mission .race-marks { list-style: none; margin: 0; padding: 0; position: absolute; left: 0; right: 0; top: 8px; height: 0; }
-.mission .race-marks li { position: absolute; transform: translateX(-50%); display: grid; justify-items: center; font-size: 9px; line-height: 1; color: var(--dim); }
-.mission .race-marks li::before { content: ''; width: 1px; height: 7px; margin-bottom: 1px; background: var(--dim); }
-.mission .race-marks li:first-child { transform: none; justify-items: start; }
-.mission .race-marks li:last-child { transform: translateX(-100%); justify-items: end; }
-.mission .race-marks li[data-passed='true'] { color: #f2c14e; }
-.mission .race-marks li[data-passed='true']::before { background: #f2c14e; }
-@media (prefers-reduced-motion: reduce) { .mission .race-time > span, .mission .race-route > span { transition: none; } }
+.race { position: relative; display: grid; gap: 4px; padding-bottom: 12px; }
+.race-time, .race-route { display: block; height: 4px; background: color-mix(in srgb, var(--tone) 15%, transparent); }
+.race-time > span { display: block; height: 100%; background: var(--tone); transition: width 400ms linear; }
+.race-route { background: rgba(242, 193, 78, 0.15); }
+.race-route > span { display: block; height: 100%; background: #f2c14e; transition: width 400ms linear; }
+.race[data-behind='true'] .race-route { background: rgba(229, 72, 77, 0.45); box-shadow: 0 0 8px rgba(229, 72, 77, 0.5); }
+.race[data-behind='true'] .race-route > span { background: #e5484d; }
+.race[data-behind='true'] .race-marks li, .race[data-behind='true'] .race-marks li[data-passed='true'] { color: #e5484d; }
+.race[data-behind='true'] .race-marks li::before { background: #e5484d; }
+.race-marks { list-style: none; margin: 0; padding: 0; position: absolute; left: 0; right: 0; top: 8px; height: 0; }
+.race-marks li { position: absolute; transform: translateX(-50%); display: grid; justify-items: center; font-size: 9px; line-height: 1; color: var(--dim); }
+.race-marks li::before { content: ''; width: 1px; height: 7px; margin-bottom: 1px; background: var(--dim); }
+.race-marks li:first-child { transform: none; justify-items: start; }
+.race-marks li:last-child { transform: translateX(-100%); justify-items: end; }
+.race-marks li[data-passed='true'] { color: #f2c14e; }
+.race-marks li[data-passed='true']::before { background: #f2c14e; }
+@media (prefers-reduced-motion: reduce) { .race-time > span, .race-route > span { transition: none; } }
 .mission .objective { margin: 0; color: #f2c14e; font-size: 12px; }
 .mission .m-intel { display: flex; align-items: center; gap: 8px; }
 .mission .m-intel .intel-gauge { flex: 1 1 auto; max-width: 160px; }
@@ -1024,13 +1039,12 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
      pause; the race; what needs HQ), and the small widgets one slim line under it. The
      objective waits for a wider screen. */
   .hud { padding-top: max(4px, env(safe-area-inset-top)); padding-bottom: max(4px, env(safe-area-inset-bottom)); }
-  .slot-widget { grid-area: widget; }
   .mission { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'title head' 'race race' 'intel need'; align-items: center; gap: 3px 10px; padding: 4px 8px 6px; }
   .mission .m-title { grid-area: title; }
   .mission .m-intel { grid-area: intel; gap: 6px; }
   .mission .m-intel .intel-gauge { flex: 0 0 72px; }
   .mission .m-head { grid-area: head; padding: 0; border: none; background: none; justify-self: end; }
-  .mission .race { grid-area: race; }
+  .race { grid-area: race; }
   .mission .m-label, .mission .objective { display: none; }
   .mission .need { grid-area: need; }
   .mission .pause { min-width: 32px; min-height: 28px; }
@@ -1103,7 +1117,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 
   /* The mission floats over the map's top-left corner (ILI-1226); the small widgets are one
      slim line along the map's foot. */
-  .slot-widget { grid-area: map; justify-self: start; align-self: start; width: min(360px, 100%); }
+
   .mission { padding: 6px 10px; }
   .mission .clock { font-size: 26px; }
   .slot-small { grid-area: small; display: flex; flex-wrap: wrap; gap: 4px 16px; align-self: end; }
@@ -1260,7 +1274,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .hud { grid-template-columns: minmax(0, 1fr) clamp(290px, 33vw, 320px); }
   .slot-team, .slot-satcom, .slot-orion { align-self: start; max-height: 100%; grid-template-rows: minmax(0, 1fr); } /* to its content, and scrolls past the rail */
   .orion::after { display: none; }
-  .slot-widget { width: min(280px, 100%); }
+
   .mission { gap: 4px; padding: 6px 8px 8px; }
   .mission .m-head { padding: 4px 8px; }
   .mission .clock { font-size: 20px; }

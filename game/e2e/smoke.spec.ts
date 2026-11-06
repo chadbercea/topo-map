@@ -14,9 +14,15 @@ test('scene fills the screen and hears input, with no errors', async ({ page, is
 
   const status = page.getByTestId('scene-status');
   await expect(status).toContainText(`${vp.width}×${vp.height}`);
-  // Tap the open map near its top, clear of ALPHA's ask window.
-  const map = (await page.getByTestId('map-area').boundingBox())!;
-  const at = { x: map.x + map.width / 2, y: map.y + 40 };
+  // Tap open map, clear of what floats over it (the timer in its corner, ILI-1392).
+  const at = await page.evaluate(() => {
+    const b = document.querySelector('[data-testid=map-area]')!.getBoundingClientRect();
+    for (const fy of [0.1, 0.3, 0.5]) for (const fx of [0.5, 0.75, 0.25]) {
+      const p = { x: b.x + b.width * fx, y: b.y + b.height * fy };
+      if (document.elementFromPoint(p.x, p.y)?.tagName === 'CANVAS') return p;
+    }
+    throw new Error('no open map to tap');
+  });
   if (isMobile) await page.touchscreen.tap(at.x, at.y);
   else await page.mouse.click(at.x, at.y);
   await expect(status).toContainText(isMobile ? 'pointer: touch' : 'pointer: mouse');

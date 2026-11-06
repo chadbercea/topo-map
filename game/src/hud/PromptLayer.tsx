@@ -37,10 +37,9 @@ export function PromptLayer() {
   if (!p || !area) return null;
   const sq = squareBox(p.square);
   const width = Math.min(W, area.width - 16);
-  // On a phone the square menu is a strip along the map's foot that never moves: the prompt keeps
-  // clear of it. On a wider screen the menu moves out of the prompt's way instead (ILI-1397).
-  // The toolbox button never moves either.
-  const strip = overlaysNamed(tier === 'compact' ? ['actions', 'toolbox'] : ['toolbox']);
+  // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
+  // on a phone a strip along the map's foot), the toolbox and the timer (ILI-1392).
+  const strip = overlaysNamed(['actions', 'toolbox', 'widget']);
   const at = place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
   const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
   const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 96))) };
@@ -98,5 +97,7 @@ function place(sq: Box | null, area: { x: number; y: number; width: number; heig
     { x: clampX(sq.x + sq.w + GAP), y: clampY(cy), w, h },
     { x: clampX(sq.x - GAP - w), y: clampY(cy), w, h },
   ];
+  // A crowded corner: further out, the leader line still reaches the square.
+  for (const fy of [0.15, 0.5, 0.85]) for (const fx of [0.5, 0.2, 0.8]) spots.push({ x: clampX(area.x + area.width * fx - w / 2), y: clampY(area.y + area.height * fy - h / 2), w, h });
   return pick(spots, [...avoid, sq]);
 }

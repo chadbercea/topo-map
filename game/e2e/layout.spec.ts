@@ -10,8 +10,8 @@ test('panels leave a clear space between them (where a strike closes in)', async
   const map = (await page.getByTestId('map-area').boundingBox())!;
   expect(map.width).toBeGreaterThan(200);
   expect(map.height).toBeGreaterThan(150);
-  // The status widget floats in the map's corner on purpose (ILI-1216); the rest stay clear.
-  for (const id of ['mission-strip', 'team-panel', 'satcom']) {
+  // The timer floats in the map's corner on purpose (ILI-1392); the rest stay clear.
+  for (const id of ['team-panel', 'satcom']) {
     const p = await page.getByTestId(id).boundingBox();
     if (!p) continue; // on a phone the dock shows one of team and satcom at a time
     const overlaps = p.x < map.x + map.width && p.x + p.width > map.x && p.y < map.y + map.height && p.y + p.height > map.y;
@@ -26,7 +26,7 @@ test('the team panel shows what the team is doing', async ({ page }) => {
   await expect(page.getByTestId('team-panel')).toContainText(/Moving to F4|Holding · needs intel/); // it sets off on its own (ILI-1315)
 });
 
-test('layout A: mission and COMMS down the left, ENVIRONMENT over ORION-3 down the right, TEAM along the bottom (ILI-1226, ILI-1218)', async ({ page, isMobile }) => {
+test('layout A: COMMS down the left, the timer in the map’s corner, ENVIRONMENT over ORION-3 down the right, TEAM along the bottom (ILI-1226, ILI-1218, ILI-1392)', async ({ page, isMobile }) => {
   await start(page);
   if (isMobile) {
     // One dock, three tabs: COMMS, ORION-3, TEAM; no INTEL (ILI-1225).
@@ -39,18 +39,20 @@ test('layout A: mission and COMMS down the left, ENVIRONMENT over ORION-3 down t
   }
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
-  const mission = await box('mission-strip');
+  const timer = await box('timer');
   const comms = await box('satcom');
   const orion = await box('satellite');
   const env = await box('conditions');
   const team = await box('team-panel');
   const map = await box('map-area');
-  // Top left the mission, the clock in it; COMMS under it.
-  expect(mission.x).toBeLessThan(40);
-  expect(mission.y).toBeLessThan(40);
-  await expect(page.getByTestId('mission-strip').getByTestId('clock')).toBeVisible();
+  // No mission panel (ILI-1392): COMMS runs the whole left side; the timer is small, in the map's top-left corner.
+  await expect(page.getByTestId('mission-strip')).toHaveCount(0);
   expect(comms.x).toBeLessThan(40);
-  expect(comms.y).toBeGreaterThan(mission.y + mission.height - 1);
+  expect(comms.y).toBeLessThan(40);
+  expect(timer.x - map.x).toBeLessThan(24);
+  expect(timer.y - map.y).toBeLessThan(24);
+  expect(timer.height).toBeLessThan(56);
+  await expect(page.getByTestId('timer').getByTestId('clock')).toBeVisible();
   // ORION-3 down the right, right of the map.
   expect(orion.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
   expect(orion.x + orion.width).toBeGreaterThan(view.width - 40);
@@ -96,13 +98,12 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   await page.waitForTimeout(500);
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
-  const [mission, comms, orion, alpha, team, map, intel] = await Promise.all(['mission-strip', 'satcom', 'satellite', 'call-box', 'team-panel', 'map-area', 'intel-panel'].map(box));
+  const [comms, orion, alpha, team, map, intel] = await Promise.all(['satcom', 'satellite', 'call-box', 'team-panel', 'map-area', 'intel-panel'].map(box));
   const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
   // The margin round the screen.
-  near(mission.x, 16); near(mission.y, 16); near(orion.y, 16);
+  near(comms.x, 16); near(comms.y, 16); near(orion.y, 16); near(map.y, 16); // no mission panel: COMMS starts at the top (ILI-1392)
   near(view.width - (orion.x + orion.width), 16); near(view.height - (intel.y + intel.height), 16); near(view.height - (team.y + team.height), 16);
   // The gutter, down and across.
-  near(comms.y - (mission.y + mission.height), 16);
   near(alpha.y - (comms.y + comms.height), 16);
   near(team.x - (alpha.x + alpha.width), 16);
   near(map.x - (comms.x + comms.width), 16);
@@ -111,7 +112,7 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   near(map.y + map.height, comms.y + comms.height); // the map's foot lines up with COMMS's (ILI-1397: no bar row under it)
   // Every panel's title the same distance in from its top edge.
   const inset = await page.evaluate(() =>
-    ['mission-strip', 'satcom', 'satellite', 'call-box', 'team-panel', 'intel-panel'].map((id) => {
+    ['satcom', 'satellite', 'call-box', 'team-panel', 'intel-panel'].map((id) => {
       const p = document.querySelector(`[data-testid=${id}]`)!;
       const h = p.querySelector('h2')!;
       const pad = parseFloat(getComputedStyle(h).paddingTop);
