@@ -4,7 +4,7 @@ import { game, useGame } from '../sim/store';
 
 // Companion panel for the mini game (the signal intercept, ILI-1169): what to do, the countdown,
 // and its controls. No after-action panel (ILI-1204): when it's over it's gone, and the result
-// is a report in the stream and comms. Strikes have no mini game: they're automated (air.ts,
+// is a report in the stream and comms. It plays in its square's menu, at the square (ILI-1367). Strikes have no mini game: they're automated (air.ts,
 // sniper.ts).
 export function MiniGamePanel() {
   const m = useGame((s) => s.minigame);

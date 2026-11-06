@@ -213,6 +213,17 @@ html, body {
 .anchor-leader circle, .anchor-leader polygon { fill: var(--accent); }
 .anchor-leader text { fill: var(--accent); font-size: 11px; letter-spacing: 0.1em; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
 /* The square's anchor (ILI-1302, ILI-1308): its strikes, what's hitting it, what else is going on there. */
+.square-card .sc-scan { display: grid; gap: 4px; padding: 8px 10px; }
+.square-card .sc-asked { margin: 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #f2c14e; }
+.square-card .sc-scan button { display: grid; gap: 2px; justify-items: start; text-align: left; font: inherit; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); background: none; border: 1px solid var(--accent); min-height: 48px; padding: 6px 10px; cursor: pointer; }
+.square-card .sc-scan button small { color: var(--dim); font-size: 10px; letter-spacing: 0.04em; text-transform: none; }
+.square-card .sc-scan button:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.square-card .sc-scan button:disabled { opacity: 0.6; cursor: default; }
+.square-card .sc-scan button[data-cue] { animation: cue 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .square-card .sc-scan button[data-cue] { animation: none; box-shadow: 0 0 0 1px var(--accent); } }
+/* The mini game plays in its square's menu (ILI-1367): no second frame inside the anchor. */
+.square-card .minigame { border: 0; animation: none; }
+.square-card[data-minigame] { z-index: 8; background: var(--bg); }
 .square-card .sc-strikes { --kind: #e5484d; }
 .square-card .sc-marked { margin: 0; padding: 6px 10px 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #e5484d; border-top: 1px solid var(--line); }
 .square-card .sc-actions .ap-head { display: none; } /* the anchor's header already names the square */

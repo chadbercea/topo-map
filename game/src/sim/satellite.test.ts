@@ -138,3 +138,30 @@ describe('fog of war', () => {
     expect(s.imagery.G5).toMatchObject({ mode: 'eyes', live: true });
   });
 });
+
+describe('Scan from the square menu (ILI-1367)', () => {
+  it('tasks ORION-3 to the square and takes the photo itself on arrival', () => {
+    const store = atStart();
+    store.scan('F4');
+    expect(store.get().satellite).toMatchObject({ state: 'slewing', aim: 'F4', autoPhoto: true });
+    for (let i = 0; i < 400 && store.get().satellite.state !== 'idle'; i++) store.tick(100);
+    expect(store.get().satellite.result?.square).toBe('F4');
+    expect(store.get().imagery.F4).toBeDefined();
+  });
+
+  it('already over the square, the photo is now', () => {
+    const store = atStart();
+    const over = store.get().satellite.aim;
+    store.scan(over);
+    expect(store.get().satellite.state).toBe('idle');
+    expect(store.get().satellite.result?.square).toBe(over);
+  });
+
+  it('Reposition stays the satellite’s own control: it moves and waits for the shot', () => {
+    const store = atStart();
+    store.lookAt('F4');
+    onStation(store);
+    expect(store.get().satellite.state).toBe('onStation');
+    expect(store.get().imagery.F4).toBeUndefined();
+  });
+});

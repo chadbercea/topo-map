@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { DebugPanel } from './DebugPanel';
 import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
-import { MiniGamePanel } from './MiniGamePanel';
 import { ExfilPanel } from './ExfilPanel';
 import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
@@ -75,6 +74,12 @@ export function Hud() {
       setSheet((h) => (h === 'peek' ? 'half' : h));
     }
   }, [tasked]);
+  // A mini game plays at its square on the map (ILI-1367): on a phone the sheet folds to give
+  // it the map, and comes back half open when it's over.
+  const minigame = useGame((s) => s.minigame?.status === 'active');
+  useEffect(() => {
+    if (tier === 'compact') setSheet(minigame ? 'peek' : (h) => (h === 'peek' ? 'half' : h));
+  }, [minigame, tier]);
   // News in a panel out of sight dots its tab; a panel in view flashes its frame (ILI-1287).
   // ALPHA waiting on HQ lights TEAM's tab whole: its call box is there.
   const tabbed = tier !== 'wide';
@@ -102,7 +107,6 @@ export function Hud() {
       <SquareCard />
       <div className="slot-band">
         <div className="band-cards" data-overlay="band">
-          <MiniGamePanel />
           <ExfilPanel />
         </div>
         <AbilityBar />
