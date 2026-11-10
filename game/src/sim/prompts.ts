@@ -56,7 +56,8 @@ const intelNeeded: Source = (s) => {
       square: squareAt(x, y) ?? req.square,
       grid: req.square,
       text: `${s.team.callsign} ${holding ? 'holding' : 'low on intel'}, needs route intel to ${goal}`,
-      responses: [{ id: 'grids', label: 'Scan grids' }],
+      // On its way (ILI-1414): the button says what's happening instead.
+      responses: [s.satellite.autoScan === req.square ? { id: 'grids', label: `ORION-3 moving to ${req.square}…`, disabled: true } : { id: 'grids', label: 'Scan grids' }],
     },
   ];
 };

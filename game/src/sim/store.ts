@@ -124,8 +124,14 @@ export function createStore(initial: GameState = initialState()) {
     answerPrompt: (id: string, response: string) => {
       const p = promptQueue(state).find((x) => x.id === id);
       if (!p || p.responses.find((r) => r.id === response)?.disabled) return;
-      // Scan grids (ILI-1395): open the grid square to scan, where its menu has the move step, then Scan.
-      if (p.kind === 'intel-needed' && response === 'grids' && p.grid) set({ ...state, map: { ...state.map, selected: p.grid }, openEvent: null });
+      // Scan grids does what it says (ILI-1414): ORION-3 goes to the grid square ALPHA needs and
+      // scans it the moment it's locked on. The square stays picked, so its menu shows the way.
+      if (p.kind === 'intel-needed' && response === 'grids' && p.grid) {
+        const grid = p.grid;
+        const there = task({ ...state, map: { ...state.map, selected: grid }, openEvent: null }, grid);
+        if (lockedOn(there, grid)) set(scanSquare(there, grid));
+        else set(there.satellite.aim === grid ? { ...there, satellite: { ...there.satellite, autoScan: grid } } : there);
+      }
       // Get an asset in range of enemy traffic; the intercept starts once it is (ILI-1394).
       if (p.kind === 'enemy-traffic' && (response === 'satellite' || response === 'antenna')) set(listenWith(state, p.id, response as ListenVia));
       if (p.kind === 'intel-ready' && response === 'send') set(sendDecoded(state, p.id));
