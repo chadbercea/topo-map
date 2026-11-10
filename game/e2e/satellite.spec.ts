@@ -113,6 +113,7 @@ test('a fighter on the map opens its strikes too, from his pinned panel (ILI-125
     }
   }
   await page.mouse.click(p.x, p.y); // pins his panel (ILI-1411)
+  await expect(page.locator('.sighting-panel[data-kind=hostile][data-pinned]').getByTestId('panel-tango')).toHaveText(/^HOSTILE · TANGO-\d+$/); // ILI-1412
   await page.locator('.sighting-panel[data-kind=hostile][data-pinned]').getByTestId('panel-strike').click();
   await expect(page.getByTestId('strike-menu').getByTestId('fire-sniper')).toBeVisible();
 });
