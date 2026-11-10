@@ -1054,9 +1054,11 @@ export class MapScene extends Phaser.Scene {
     const iu = DPR / this.inset.zoom;
     const arrow = (x: number, y: number, down: boolean) => {
       const z = 3.5 * iu;
-      const pts = [new Phaser.Math.Vector2(x + fx * z * 1.4, y + fy * z * 1.4), new Phaser.Math.Vector2(x - fx * z + fy * z * 0.8, y - fy * z - fx * z * 0.8), new Phaser.Math.Vector2(x - fx * z * 0.4, y - fy * z * 0.4), new Phaser.Math.Vector2(x - fx * z - fy * z * 0.8, y - fy * z + fx * z * 0.8)];
-      if (down) arrows.lineStyle(1 * iu, OPS, 0.45).strokePoints(pts, true);
-      else arrows.fillStyle(OPS, 1).fillPoints(pts, true);
+      // HAMMER-2's shape (ILI-1424): a plain outlined triangle, no notch, no fill.
+      const tip = { x: x + fx * z, y: y + fy * z };
+      const l = { x: x - fx * z + fy * z * 0.8, y: y - fy * z - fx * z * 0.8 };
+      const r = { x: x - fx * z - fy * z * 0.8, y: y - fy * z + fx * z * 0.8 };
+      arrows.lineStyle(1.2 * iu, OPS, down ? 0.45 : 1).strokeTriangle(tip.x, tip.y, l.x, l.y, r.x, r.y);
     };
     operators.forEach((o, i) => {
       if (gone.includes(o.id)) return;
