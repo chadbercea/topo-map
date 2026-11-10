@@ -34,7 +34,7 @@ describe('a group walking out of a live picture', () => {
   it('shows while inside the square, and is gone once it walks into unseen ground', () => {
     const s0 = pictured(initialState(), 0);
     const c = s0.contacts[0];
-    const live = { ...s0, imagery: { [c.square]: { ...s0.imagery[c.square]!, live: true } } } as GameState;
+    const live = { ...s0, imagery: { [c.square]: { ...s0.imagery[c.square]!, mode: 'video', live: true } } } as GameState; // ORION-3's live look (ILI-1430)
     const fighters = (s: GameState) => sightings(s, spots(s)).filter((t) => t.kind === 'hostile').length;
     expect(fighters(live)).toBe(c.units.length);
     // Off east, a square nobody is looking at: half way there it's already out of the picture.
@@ -53,5 +53,19 @@ describe('aircraft', () => {
     const at = (ms: number) => ({ ...s0, exfil, elapsedMs: ms }) as GameState;
     expect(sightings(at(5_000), spots(s0)).some((t) => t.id === 'air:exfil')).toBe(false);
     expect(sightings(at(11_000), spots(s0)).some((t) => t.id === 'air:exfil' && t.kind === 'aircraft')).toBe(true);
+  });
+});
+
+// One live square (ILI-1430): ALPHA's own eyes hold where they saw them, like any other look.
+describe("ALPHA's eyes", () => {
+  it('do not follow a group that moves: only ORION-3 does', () => {
+    const s0 = pictured(initialState(), 0);
+    const c = s0.contacts[0];
+    const eyes = { ...s0, imagery: { [c.square]: { ...s0.imagery[c.square]!, mode: 'eyes', live: true } } } as GameState;
+    const to = String.fromCharCode(c.square.charCodeAt(0) + 2) + c.square.slice(1);
+    const going = { ...eyes, elapsedMs: 9_000, contacts: eyes.contacts.map((x) => (x.id === c.id ? { ...x, move: { from: c.square, to, fromMs: 0, arriveMs: 10_000 } } : x)) };
+    const before = sightings(eyes, spots(eyes)).filter((t) => t.kind === 'hostile').map((t) => t.x);
+    const after = sightings(going, spots(going)).filter((t) => t.kind === 'hostile').map((t) => t.x);
+    expect(after).toEqual(before); // where they were seen
   });
 });

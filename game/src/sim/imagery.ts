@@ -63,8 +63,11 @@ export function groupOrigin(c: Contact, now: number) {
 // Where a look shows a group (ILI-1416: fog of war). A photo shows where it was when taken. A
 // live look (video, ALPHA's eyes) follows it, but only while it's inside the square being
 // watched: once it walks out into ground nobody is looking at, the look loses it (null).
+// Only ORION-3's own live look follows anything on the map (ILI-1430): ALPHA's eyes, like every
+// other look, hold where they last saw them.
+export const follows = (snap: Snapshot) => snap.live && snap.mode !== 'eyes';
 export function shownAt(snap: Snapshot, seen: Seen, c: Contact, now: number): { x: number; y: number } | null {
-  if (!snap.live) return seen;
+  if (!follows(snap)) return seen;
   const o = groupOrigin(c, now);
   return squareAt(o.x + CELL / 2, o.y + CELL / 2) === snap.square ? o : null;
 }
@@ -145,7 +148,7 @@ export function targets(s: GameState) {
       if (!c || c.status !== 'revealed' || !s.events.some((e) => e.id === `contact-${c.id}` && e.status !== 'resolved')) continue;
       const o = shownAt(snap, seen, c, s.elapsedMs);
       if (!o) continue;
-      for (const u of snap.live ? c.units : seen.units) out.push({ contactId: c.id, ...unitSpot(o, u) });
+      for (const u of follows(snap) ? c.units : seen.units) out.push({ contactId: c.id, ...unitSpot(o, u) });
     }
   return out;
 }
