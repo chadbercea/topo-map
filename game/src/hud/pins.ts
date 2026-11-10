@@ -35,5 +35,5 @@ export const usePins = () => useSyncExternalStore(pins.subscribe, pins.get);
 
 // The kinds that get one of these panels. Event pings and SIGINT diamonds keep their own: a
 // name on hover and their card on a click.
-export const PANELLED = ['operator', 'hostile', 'site', 'wreck'] as const;
+export const PANELLED = ['operator', 'hostile', 'site', 'wreck', 'aircraft'] as const;
 export const panelled = (t: Sighting) => (PANELLED as readonly string[]).includes(t.kind);

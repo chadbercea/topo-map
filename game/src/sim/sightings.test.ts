@@ -44,3 +44,14 @@ describe('a group walking out of a live picture', () => {
     expect(fighters({ ...going, elapsedMs: 9_000 })).toBe(0); // gone into the fog
   });
 });
+
+// Our aircraft are always bracketed (ILI-1420).
+describe('aircraft', () => {
+  it('brackets RAVEN-6 once it is over the exfil square, not before', () => {
+    const s0 = initialState();
+    const exfil = { square: s0.mission.c, calledMs: 0, arriveMs: 10_000, boardMs: null, liftMs: null };
+    const at = (ms: number) => ({ ...s0, exfil, elapsedMs: ms }) as GameState;
+    expect(sightings(at(5_000), spots(s0)).some((t) => t.id === 'air:exfil')).toBe(false);
+    expect(sightings(at(11_000), spots(s0)).some((t) => t.id === 'air:exfil' && t.kind === 'aircraft')).toBe(true);
+  });
+});

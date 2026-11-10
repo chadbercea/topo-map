@@ -1,4 +1,5 @@
 import { game, useGame } from '../sim/store';
+import { startCard, useStartDismissed } from './startCard';
 import { race } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import type { GameState } from '../sim/state';
@@ -60,20 +61,23 @@ export function BudgetChip() {
   );
 }
 
-// The mission start card (ILI-1392): the objective in plain words, for a few seconds as the clock
-// starts, then gone. It never takes a click.
-export const START_CARD_MS = 4_000;
+// The mission start card (ILI-1392): the objective in plain words as the clock starts. It stays
+// until HQ dismisses it (ILI-1421), and no prompt shows until then.
 export const startText = (s: GameState) => `Recover the drone's black box at ${s.mission.b}`;
 
 export function StartCard() {
-  const show = useGame((s) => s.phase === 'running' && s.elapsedMs < START_CARD_MS);
+  const running = useGame((s) => s.phase === 'running');
+  const dismissed = useStartDismissed();
   const text = useGame(startText);
   const name = useGame((s) => s.mission.name);
-  if (!show) return null;
+  if (!running || dismissed) return null;
   return (
-    <div className="start-card" data-testid="start-card" role="status">
+    <div className="start-card" data-testid="start-card" role="dialog" aria-label={name} onClick={startCard.dismiss}>
       <small>{name}</small>
       <p>{text}</p>
+      <button className="start-go" onClick={startCard.dismiss} data-testid="start-dismiss" autoFocus>
+        Got it
+      </button>
     </div>
   );
 }

@@ -70,6 +70,8 @@ export class MapScene extends Phaser.Scene {
   private selectGfx!: Phaser.GameObjects.Graphics;
   private routeGfx!: Phaser.GameObjects.Graphics;
   private teamGfx!: Phaser.GameObjects.Graphics;
+  private dotGfx!: Phaser.GameObjects.Graphics; // the team's dots: the map only
+  private arrowGfx!: Phaser.GameObjects.Graphics; // the team as tiny heading arrows: ORION-3's picture only (ILI-1419)
   private bracketGfx!: Phaser.GameObjects.Graphics; // four corners round everything HQ can interact with (ILI-1410)
   private insetBracketGfx!: Phaser.GameObjects.Graphics; // the same, at ORION-3's picture's scale (ILI-1415)
   private opSpots = new Map<string, { x: number; y: number }>(); // where each operator's dot was drawn this frame
@@ -135,6 +137,9 @@ export class MapScene extends Phaser.Scene {
       .setDepth(10)
       .setVisible(false);
     this.teamGfx = this.add.graphics();
+    this.dotGfx = this.add.graphics();
+    this.arrowGfx = this.add.graphics();
+    this.cameras.main.ignore(this.arrowGfx);
     this.bracketGfx = this.add.graphics();
     this.insetBracketGfx = this.add.graphics();
     this.cameras.main.ignore(this.insetBracketGfx); // only ORION-3's picture draws these (ILI-1415)
@@ -154,7 +159,7 @@ export class MapScene extends Phaser.Scene {
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
     this.inset.ignore([...this.labels, this.teamLabel, this.airLabels.drone, this.airLabels.heli, this.exfilLabel, this.hoverLabel]); // the caption names the square; ORION-3's panel has its own hovers
-    this.inset.ignore([this.stampGfx, this.bracketGfx]); // a square's INTEL / CLEAR tag is a map note; the satellite doesn't see it (ILI-1407)
+    this.inset.ignore([this.stampGfx, this.bracketGfx, this.dotGfx]); // a square's INTEL / CLEAR tag is a map note; the satellite doesn't see it (ILI-1407)
     // ?debug: tests read the live camera to turn world points into screen taps.
     if (new URLSearchParams(location.search).has('debug'))
       Object.assign(window, {
@@ -556,12 +561,13 @@ export class MapScene extends Phaser.Scene {
     if (!sq) return;
     const pad = CELL * 0.25; // the sliver of neighbours round the square
     const inView = this.seen.filter((t) => t.x >= sq.col * CELL - pad && t.x <= (sq.col + 1) * CELL + pad && t.y >= sq.row * CELL - pad && t.y <= (sq.row + 1) * CELL + pad);
-    this.bracketsInto(g, inView, DPR / this.zoom, DPR / this.inset.zoom);
+    this.bracketsInto(g, inView, DPR / this.zoom, DPR / this.inset.zoom, true);
   }
 
   // Four corner brackets round each thing. px: one CSS pixel at the zoom the things are drawn for;
   // line: one CSS pixel at the zoom of the camera that shows these brackets.
-  private bracketsInto(g: Phaser.GameObjects.Graphics, things: Sighting[], px: number, line: number) {
+  // picture: ORION-3's, where operators are arrows drawn at its own zoom (ILI-1419).
+  private bracketsInto(g: Phaser.GameObjects.Graphics, things: Sighting[], px: number, line: number, picture = false) {
     const s = game.get();
     const eventColor = (id: string) => EVENT_COLOR[s.events.find((e) => e.id === id)?.kind ?? 'request'];
     for (const t of things) {
@@ -569,10 +575,12 @@ export class MapScene extends Phaser.Scene {
         t.kind === 'operator' ? [7, TEAL]
         : t.kind === 'hostile' || t.kind === 'site' ? [8, 0xe5484d]
         : t.kind === 'wreck' ? [16, TEAM]
+        : t.kind === 'aircraft' ? [14, t.id === 'air:exfil' ? 0xff8a2a : 0xe5484d]
         : t.kind === 'signal' ? [MARKER_R * 1.3 + 4, EVENT_COLOR.signal]
         : [MARKER_R + 4, eventColor(t.id)];
-      const h = half * px;
-      const k = Math.max(3, half * 0.4) * px; // each corner's arms
+      const size = picture && t.kind === 'operator' ? line : px;
+      const h = half * size;
+      const k = Math.max(3, half * 0.4) * size; // each corner's arms
       const { x, y } = t;
       g.lineStyle(1.2 * line, color, t.age === 'ghost' ? 0.45 : 0.9);
       for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const) {
@@ -1003,6 +1011,8 @@ export class MapScene extends Phaser.Scene {
     const inside = searchingIn(st);
     if (inside) {
       const g = this.teamGfx.clear();
+      this.dotGfx.clear();
+      this.arrowGfx.clear();
       this.opSpots.clear();
       if (lockedOn(st, inside)) {
         const w = 16 * u;
@@ -1037,6 +1047,17 @@ export class MapScene extends Phaser.Scene {
       }
     }
     this.opSpots.clear();
+    const dots = this.dotGfx.clear();
+    const arrows = this.arrowGfx.clear();
+    // ORION-3 is a special view of the team (ILI-1419): each operator a tiny arrow the way they're
+    // heading, sized for the picture's zoom, much smaller than RAVEN-6's.
+    const iu = DPR / this.inset.zoom;
+    const arrow = (x: number, y: number, down: boolean) => {
+      const z = 3.5 * iu;
+      const pts = [new Phaser.Math.Vector2(x + fx * z * 1.4, y + fy * z * 1.4), new Phaser.Math.Vector2(x - fx * z + fy * z * 0.8, y - fy * z - fx * z * 0.8), new Phaser.Math.Vector2(x - fx * z * 0.4, y - fy * z * 0.4), new Phaser.Math.Vector2(x - fx * z - fy * z * 0.8, y - fy * z + fx * z * 0.8)];
+      if (down) arrows.lineStyle(1 * iu, OPS, 0.45).strokePoints(pts, true);
+      else arrows.fillStyle(OPS, 1).fillPoints(pts, true);
+    };
     operators.forEach((o, i) => {
       if (gone.includes(o.id)) return;
       const [along, across] = WEDGE[i % WEDGE.length];
@@ -1054,10 +1075,11 @@ export class MapScene extends Phaser.Scene {
         if (!p) this.pings.set(o.id, (p = { at: -Infinity, next: time + nextGap() }));
         if (time >= p.next) (p.at = time), (p.next = time + nextGap());
         const t = (time - p.at) / 900; // 0..1 over the ring's life
-        if (t < 1) g.lineStyle(1.2 * u, OPS, 0.7 * (1 - t)).strokeCircle(x, y, (3 + 11 * t) * u);
+        if (t < 1) dots.lineStyle(1.2 * u, OPS, 0.7 * (1 - t)).strokeCircle(x, y, (3 + 11 * t) * u);
       }
-      if (down) g.lineStyle(1.2 * u, OPS, 0.45).strokeCircle(x, y, 2.6 * u);
-      else g.fillStyle(OPS, 1).fillCircle(x, y, 3.2 * u).lineStyle(1.2 * u, 0x0b0f0d, 1).strokeCircle(x, y, 3.2 * u);
+      if (down) dots.lineStyle(1.2 * u, OPS, 0.45).strokeCircle(x, y, 2.6 * u);
+      else dots.fillStyle(OPS, 1).fillCircle(x, y, 3.2 * u).lineStyle(1.2 * u, 0x0b0f0d, 1).strokeCircle(x, y, 3.2 * u);
+      arrow(x, y, down);
     });
     // Its status tag (ILI-1395): what ALPHA is doing, on the marker itself.
     const status = teamStatus(st);

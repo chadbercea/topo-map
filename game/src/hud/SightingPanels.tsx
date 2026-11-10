@@ -3,6 +3,8 @@ import { toScreen } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { targets } from '../sim/imagery';
 import { activityOf, conditionOf, satOver, weaponOf } from '../sim/fighters';
+import { AIR } from '../sim/air';
+import { exfilStage, TRANSPORT } from '../sim/exfil';
 import type { Sighting } from '../sim/sightings';
 import { OperatorRow } from './OperatorRow';
 import { panelled, pins, usePins } from './pins';
@@ -105,6 +107,29 @@ function PanelBody({ t }: { t: Sighting }) {
             Strike
           </button>
         )}
+      </>
+    );
+  }
+  // Our aircraft (ILI-1420): who it is, its job, and what it's doing now.
+  if (t.kind === 'aircraft') {
+    if (t.id === 'air:exfil' && s.exfil) {
+      const NOW = { enroute: 'Inbound', landing: 'Landing', waiting: 'Down, waiting for ALPHA', boarding: 'Boarding ALPHA', leaving: 'Lifting off', done: 'Away' } as const;
+      return (
+        <>
+          <h3 className="sp-title" data-testid="panel-callsign">{TRANSPORT.callsign}</h3>
+          <p className="sp-line">Exfil · {s.exfil.square}</p>
+          <p className="sp-line">{NOW[exfilStage(s.exfil, s.elapsedMs)]}</p>
+        </>
+      );
+    }
+    const w = t.id === 'air:heli' ? 'heli' : 'drone';
+    const run = w === 'heli' ? s.heli : s.drone;
+    const hits = (run?.kills ?? []).filter((k) => k.atMs <= s.elapsedMs).length;
+    return (
+      <>
+        <h3 className="sp-title hostile" data-testid="panel-callsign">{AIR[w].callsign}</h3>
+        <p className="sp-line">{w === 'heli' ? 'Gun run' : 'Drone strike'} · {t.square}</p>
+        <p className="sp-line">On its pass{hits ? ` · ${hits} down` : ''}</p>
       </>
     );
   }
