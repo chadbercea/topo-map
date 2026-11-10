@@ -1,6 +1,6 @@
 import { CELL, squareAt, squareCenter } from '../map/grid';
 import type { GameState } from './state';
-import { freshness, shownAt, unitSpot, type Freshness } from './imagery';
+import { follows, freshness, shownAt, unitSpot, type Freshness } from './imagery';
 import { aircraftAt } from './air';
 import { transportAt } from './exfil';
 
@@ -44,7 +44,7 @@ export function sightings(s: GameState, operators: ReadonlyMap<string, { x: numb
       if (!c || c.status === 'cleared') continue;
       const o = shownAt(snap, seen, c, s.elapsedMs);
       if (!o) continue; // walked out of the picture into unseen ground (ILI-1416)
-      for (const u of snap.live ? c.units : seen.units) out.push({ id: fighterId(c.id, u), kind: 'hostile', ...unitSpot(o, u), age, square: snap.square });
+      for (const u of follows(snap) ? c.units : seen.units) out.push({ id: fighterId(c.id, u), kind: 'hostile', ...unitSpot(o, u), age, square: snap.square });
     }
   }
   // Kill sites: every X a strike left, while the square's picture holds.

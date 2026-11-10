@@ -16,7 +16,7 @@ import { lockedOn, orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
 import { searchingIn } from '../sim/buildings';
 import { squareFindings } from '../sim/intel';
-import { freshness, shownAt, unitSpot } from '../sim/imagery';
+import { follows, freshness, GHOST_MS, shownAt, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 import { sightings, type Sighting } from '../sim/sightings';
@@ -367,14 +367,15 @@ export class MapScene extends Phaser.Scene {
     const px = DPR / this.zoom;
     for (const snap of Object.values(imagery)) {
       const age = freshness(snap, now);
-      const alpha = age === 'live' || age === 'fresh' ? 1 : age === 'ghost' ? 0.45 : 0.18;
+      // Old looks fade as they age (ILI-1430): full while live, then smoothly down to faint at stale.
+      const alpha = age === 'live' ? 1 : age === 'stale' ? 0.18 : Math.max(0.18, 1 - ((now - snap.atMs) / GHOST_MS) * 0.82);
       for (const seen of snap.seen) {
         const c = contacts.find((x) => x.id === seen.contactId);
         if (!c || c.status === 'cleared') continue;
         // Live looks follow them; anything else shows where they were.
         const o = shownAt(snap, seen, c, now);
         if (!o) continue; // out of the picture: the fog closes over it (ILI-1416)
-        const units = snap.live ? c.units : seen.units;
+        const units = follows(snap) ? c.units : seen.units;
         let cx = 0;
         let cy = 0;
         for (const u of units) {

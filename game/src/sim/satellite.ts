@@ -40,7 +40,7 @@ export type Satellite = {
   callId: string | null; // ALPHA's call waiting on this look
   result: LookResult | null; // the last look, for the panel until closed
   autoScan?: SquareId | null; // Scan grids (ILI-1414): scan this square the moment it's locked on
-  watching?: SquareId | null; // video ran here: its picture stays live while ORION-3 stays over (ILI-1423)
+  watching?: SquareId | null; // a look was taken here: its picture stays live while ORION-3 stays over (ILI-1423, ILI-1430)
 };
 
 const at = (sq: SquareId): Point => parseSquare(sq)!;
@@ -192,7 +192,7 @@ function finishLook(s: GameState): GameState {
   const result: LookResult = { square, mode, fighters, moving, awareness };
   next = {
     ...next,
-    satellite: { ...sat, state: 'idle', from: at(square), mode: null, callId: null, result, watching: mode === 'video' ? square : null },
+    satellite: { ...sat, state: 'idle', from: at(square), mode: null, callId: null, result, watching: square }, // it keeps watching what it's over (ILI-1430)
     team: sat.callId && next.team.holdFor === sat.callId ? { ...next.team, holdFor: null } : next.team,
   };
   // To the analysts, and what it was worth to ALPHA (ILI-1314): a photo's grade feeds its
@@ -228,7 +228,9 @@ export const satelliteSystem: System = (s) => {
   }
   // Video is real time (ILI-1423): once it's run on a square, the picture stays live for as long
   // as ORION-3 stays over it. No rescan.
-  if (sat.state !== 'capturing') return sat.watching && sat.watching === sat.aim && sat.state !== 'slewing' ? record(s, snapshot(s, sat.aim, 'video', true)) : s;
+  // The square ORION-3 is over is the one live square on the map (ILI-1430): once it's looked
+  // there, it follows what moves for as long as it stays.
+  if (sat.state !== 'capturing') return sat.watching && sat.watching === sat.aim && sat.state !== 'slewing' ? record(s, snapshot(s, sat.aim, s.imagery[sat.aim]?.mode === 'video' ? 'video' : 'photo', true)) : s;
   if (s.elapsedMs >= sat.captureUntilMs) return finishLook(s);
   // Video is live: the map follows them while it runs.
   return sat.mode === 'video' ? record(s, snapshot(s, sat.aim, 'video', true)) : s;
