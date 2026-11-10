@@ -49,6 +49,7 @@ test('drone strike: its panel counts down to target, then it clears the square, 
   await targetE3(page);
   await page.getByTestId('fire-drone').click();
   await expect(page.getByTestId('minigame')).toHaveCount(0); // no board to aim on
+  await expect(page.getByTestId('strike-menu')).toHaveCount(0); // the options slid away (ILI-1425)
   const panel = page.getByTestId('drone-panel');
   await expect(panel).toContainText('REAPER-1');
   await expect(panel).toContainText('drone strike · E3');
