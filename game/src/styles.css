@@ -1628,3 +1628,12 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .orion .o-name-text { display: none; }
   .orion .o-icon { display: block; }
 }
+
+/* The comms log button (ILI-1413): something new that moves the game forward (a call that needs
+   HQ's answer, an alert) turns it the game orange, with a dot that pings and how many are new. */
+.log-toggle[data-update] { color: #ff8a2a; border-color: #ff8a2a; box-shadow: 0 0 10px rgba(255, 138, 42, 0.35); }
+.log-toggle .tab-dot { position: relative; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ff8a2a; box-shadow: 0 0 6px rgba(255, 138, 42, 0.8); }
+.log-toggle .tab-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 1px solid #ff8a2a; animation: comms-ping 1.6s ease-out infinite; }
+.log-toggle .new-count { font-weight: 600; font-size: 10px; letter-spacing: 0.08em; }
+@keyframes comms-ping { from { transform: scale(1); opacity: 0.9; } to { transform: scale(3.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .log-toggle .tab-dot::after { animation: none; display: none; } }

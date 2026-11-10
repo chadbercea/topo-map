@@ -18,8 +18,8 @@ import { Intro } from './Intro';
 import { firstBoot, useIntro } from './intro';
 import { WrapUp } from './WrapUp';
 import { PromptLayer } from './PromptLayer';
-import { useFlash, useUnseen } from './attention';
-import { currentCall } from '../sim/comms';
+import { useFlash, useUnseen, useUnseenCount } from './attention';
+import { currentCall, kindOf } from '../sim/comms';
 
 const debug = new URLSearchParams(location.search).has('debug');
 // Tests and debugging drive the game directly through window.game when ?debug is on.
@@ -88,7 +88,11 @@ export function Hud() {
   const commsNews = useGame((s) => s.comms.messages.length + s.stream.items.length);
   const orionNews = useGame((s) => `${s.satellite.state}|${s.satellite.aim}|${s.satellite.result ? 'look' : ''}`);
   const calling = useGame((s) => !!currentCall(s.comms));
-  const unseen = { satcom: useUnseen(commsNews, tabbed ? shown('satcom') : log), orion: useUnseen(orionNews, shown('orion')), team: false };
+  // Only what moves the game forward lights COMMS up (ILI-1413): calls that need HQ's answer and
+  // alerts, not routine chatter.
+  const forward = useGame((s) => s.comms.messages.filter((m) => kindOf(m) !== 'log').length);
+  const newComms = useUnseenCount(forward, tabbed ? shown('satcom') : log);
+  const unseen = { satcom: newComms > 0, orion: useUnseen(orionNews, shown('orion')), team: false };
   const satcomSlot = useRef<HTMLDivElement>(null);
   const orionSlot = useRef<HTMLDivElement>(null);
   useFlash(satcomSlot, commsNews, tabbed ? shown('satcom') : log);
@@ -154,7 +158,14 @@ export function Hud() {
       {!tabbed && (
         <button className="log-toggle" data-overlay="logtoggle" onClick={() => setLog((o) => !o)} aria-expanded={log} data-testid="log-toggle" data-update={unseen.satcom || undefined}>
           Comms log
-          {unseen.satcom && <span className="tab-dot" aria-hidden />}
+          {newComms > 0 && (
+            <>
+              <span className="tab-dot" aria-hidden />
+              <b className="new-count" data-testid="comms-new">
+                {newComms} new
+              </b>
+            </>
+          )}
         </button>
       )}
       {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
