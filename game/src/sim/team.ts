@@ -65,7 +65,8 @@ export const condition = (o: Operator): Condition =>
 export const vitalsFor = (ops: Operator[]) => ops.map((o) => `${o.health}|${o.ammo}|${o.meds}`).join(',');
 
 // What ALPHA is doing, in a word, for the status tag on its marker (ILI-1395).
-export function teamStatus(s: GameState): 'Moving' | 'Holding' | 'In contact' {
+export function teamStatus(s: GameState): 'Moving' | 'Holding' | 'In contact' | 'Searching' {
   if (s.team.fight) return 'In contact';
+  if (s.team.activity.startsWith('Searching the building') && s.elapsedMs < s.team.holdUntilMs) return 'Searching'; // inside (ILI-1418)
   return s.team.activity.startsWith('Moving') ? 'Moving' : 'Holding';
 }

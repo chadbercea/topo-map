@@ -48,3 +48,20 @@ describe('buildings', () => {
     expect(s.elapsedMs).toBeGreaterThanOrEqual(SEARCH_MS); // it took mission time
   });
 });
+
+// Inside, searching (ILI-1418): the team is off the map until the search is done.
+import { searchingIn as inside } from './buildings';
+import { teamStatus as statusOf } from './team';
+import { squareAt as at } from '../map/grid';
+import { initialState } from './state';
+describe('searching a building', () => {
+  it('puts ALPHA inside while it searches, and back out when it is done', () => {
+    const s0 = initialState();
+    const here = at(s0.team.position.x, s0.team.position.y)!;
+    const s = { ...s0, searching: [here], team: { ...s0.team, holdUntilMs: 20_000, activity: `Searching the building in ${here}` } };
+    expect(inside(s)).toBe(here);
+    expect(statusOf(s)).toBe('Searching');
+    const done = { ...s, elapsedMs: 20_000 };
+    expect(inside(done)).toBeNull();
+  });
+});

@@ -12,8 +12,9 @@ import { hillshade } from '../map/relief';
 import type { Settings } from '../sim/state';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
-import { orionSquare, satellitePoint } from '../sim/satellite';
+import { lockedOn, orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
+import { searchingIn } from '../sim/buildings';
 import { squareFindings } from '../sim/intel';
 import { freshness, shownAt, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
@@ -997,6 +998,25 @@ export class MapScene extends Phaser.Scene {
     }
     const still = reducedMotion();
     const u = DPR / this.zoom; // one CSS pixel in world units
+    // Inside a building, searching (ILI-1418): the team is off the map. With ORION-3 over the
+    // square, the building it went into shows as a small outline; the tag stays at the door.
+    const inside = searchingIn(st);
+    if (inside) {
+      const g = this.teamGfx.clear();
+      this.opSpots.clear();
+      if (lockedOn(st, inside)) {
+        const w = 16 * u;
+        const h = 11 * u;
+        const { x, y } = position;
+        g.fillStyle(0x0b0f0d, 0.85).fillRect(x - w / 2, y - h / 2, w, h);
+        g.lineStyle(1.4 * u, 0xb8c4bf, 0.95).strokeRect(x - w / 2, y - h / 2, w, h);
+        g.lineStyle(1.4 * u, 0x0b0f0d, 1).lineBetween(x - 2.5 * u, y + h / 2, x + 2.5 * u, y + h / 2); // its door
+      }
+      const tag = `${st.team.callsign} · SEARCHING`;
+      if (this.teamLabel.text !== tag) this.teamLabel.setText(tag).setColor('#35d0a5');
+      this.teamLabel.setScale(1 / this.zoom).setPosition(position.x + 14 * u, position.y - 18 * u).setVisible(true);
+      return;
+    }
     const gap = 11 * u;
     const fx = Math.cos(this.heading);
     const fy = Math.sin(this.heading);
