@@ -25,3 +25,30 @@ test('a building’s anchor sends ALPHA to search it; ALPHA reports the find and
   await expect(page.getByTestId('comms-feed')).toContainText(/Building in G4 searched: .*\+\$[\d,]+, and intel to keep us moving\./);
   expect(await page.evaluate(() => window.game.get().resources.budget)).toBeGreaterThan(before);
 });
+
+// ALPHA at work on a square (ILI-1427): a bar fills while it searches; then the find takes its place.
+test('a search shows its bar filling in the square menu, then the find in its place', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'the square menu on a phone is covered by the map spec');
+  await start(page, '?debug');
+  await running(page);
+  await freeze(page);
+  await lockOn(page, 'G4');
+  await page.evaluate(() => {
+    const s = window.game.get();
+    window.game.set({ ...s, events: [...s.events, { id: 'building-G4', kind: 'building', square: 'G4', title: 'A building worth a search', atMs: 0, status: 'new' }] });
+    window.game.selectSquare('G4');
+  });
+  const anchor = page.getByTestId('square-anchor');
+  await anchor.getByTestId('send-search').click();
+  await page.evaluate(() => {
+    for (let i = 0; i < 1500 && !window.game.get().team.activity.startsWith('Searching'); i++) window.game.tick(100);
+    for (let i = 0; i < 50; i++) window.game.tick(100); // five seconds in
+    if (window.game.get().map.selected !== 'G4') window.game.selectSquare('G4');
+  });
+  await expect(anchor.getByTestId('work-bar')).toContainText('ALPHA searching the building');
+  await page.evaluate(() => {
+    for (let i = 0; i < 400 && !window.game.get().comms.messages.some((m) => m.id === 'found-building-G4'); i++) window.game.tick(100);
+  });
+  await expect(anchor.getByTestId('work-found')).toContainText(/ALPHA found .* · \+\$[\d,]+/);
+  await expect(anchor.getByTestId('work-bar')).toHaveCount(0);
+});

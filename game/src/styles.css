@@ -1681,3 +1681,17 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @keyframes opt-in { from { opacity: 0; transform: translateX(14px); } }
 @keyframes opt-out { to { opacity: 0; transform: translateX(-18px); } }
 @media (prefers-reduced-motion: reduce) { .square-card .sc-fold, .square-card .sc-fold .options button { animation: none; transition: none; } }
+
+/* ALPHA at work on a square (ILI-1427): a tiny event with its bar filling; done, the bar fades
+   and the find slides into its place, a line of the square's intel. */
+.square-card .sc-work { display: grid; gap: 4px; padding: 6px 10px 8px; border-bottom: 1px solid var(--line); }
+.square-card .sc-work p { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 11px; color: var(--ink); }
+.square-card .sc-work .int { font-style: normal; font-size: 9px; letter-spacing: 0.1em; padding: 1px 5px; border: 1px solid #f2c14e; color: #f2c14e; }
+.square-card .sc-bar { display: grid; gap: 4px; transition: opacity 400ms ease-in; }
+.square-card .sc-bar[data-leaving] { opacity: 0; }
+.square-card .sc-bar .decay { display: block; height: 4px; background: rgba(53, 208, 165, 0.12); }
+.square-card .sc-bar .decay > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
+.square-card .sc-found { animation: found-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.square-card .sc-found .int { border-color: var(--accent); color: var(--accent); }
+@keyframes found-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .square-card .sc-bar, .square-card .sc-found { animation: none; transition: none; } }

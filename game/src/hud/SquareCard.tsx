@@ -18,6 +18,9 @@ import { EVENT_LABEL } from '../sim/stream';
 import { useTier } from './tier';
 import { alphaBox, obstacles, pick, squareBox } from './overlays';
 import type { GameState } from '../sim/state';
+import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
+import { RECOVER_MS } from '../sim/mission';
+import { ESCROW_BOX } from '../sim/prices';
 
 const ANCHOR_W = 260; // the menu's width off its square's edge
 
@@ -252,6 +255,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       {/* What its scan turned up (ILI-1399): the detail readouts, tier three, opened by tapping the
           square. One scan settled it, so there's no Scan here again. */}
       <Readouts s={s} square={square} />
+      <TeamWork s={s} square={square} />
       <Details s={s} square={square} />
 
       {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304).
@@ -487,3 +491,59 @@ function Fold({ open, children }: { open: boolean; children: ReactNode }) {
   );
 }
 const FOLD_MS = 320;
+
+// ALPHA at work on this square (ILI-1427): a tiny event with its bar filling while it searches a
+// building or recovers the black box; when it's done the bar fades and what it found slides into
+// its place, and stays as a line of the square's intel.
+type Work = { id: string; kind: string; text: string; progress: number } | null;
+type Found = { id: string; kind: string; text: string }[];
+function teamWork(s: GameState, square: string): { work: Work; found: Found } {
+  const now = s.elapsedMs;
+  const { mission, team } = s;
+  let work: Work = null;
+  if (searchingIn(s) === square) work = { id: `search-${square}`, kind: 'HUMINT', text: `${team.callsign} searching the building`, progress: 1 - (team.holdUntilMs - now) / SEARCH_MS };
+  else if (mission.b === square && mission.phase === 'objective' && mission.recoverUntilMs !== null)
+    work = { id: 'recover', kind: 'IMINT', text: `${team.callsign} recovering the black box`, progress: 1 - (mission.recoverUntilMs - now) / RECOVER_MS };
+  const found: Found = [];
+  if (s.events.some((e) => e.id === buildingId(square) && e.status === 'resolved')) {
+    const f = findIn(s, square);
+    found.push({ id: `search-${square}`, kind: 'HUMINT', text: `${team.callsign} found ${f.what} · +$${f.cash.toLocaleString('en-US')}` });
+  }
+  if (mission.b === square && mission.blackBox) found.push({ id: 'recover', kind: 'IMINT', text: `${team.callsign} recovered the black box · +$${ESCROW_BOX.toLocaleString('en-US')}` });
+  return { work, found };
+}
+
+function TeamWork({ s, square }: { s: GameState; square: string }) {
+  const { work, found } = teamWork(s, square);
+  // The last bar, kept a moment after it fills so it can fade out as the find slides in.
+  const [last, setLast] = useState<Work>(null);
+  useEffect(() => {
+    if (work) return void setLast(work);
+    if (!last) return;
+    const t = setTimeout(() => setLast(null), 450);
+    return () => clearTimeout(t);
+  }, [work?.id, work?.progress, last]);
+  const bar = work ?? (last && found.some((f) => f.id === last.id) ? { ...last, progress: 1 } : null);
+  if (!bar && !found.length) return null;
+  return (
+    <section className="sc-work" data-testid="team-work" aria-label={`${s.team.callsign} at ${square}`}>
+      {found.map((f) => (
+        <p key={f.id} className="sc-found" data-testid="work-found">
+          <i className="int">{f.kind}</i>
+          <span>{f.text}</span>
+        </p>
+      ))}
+      {bar && (
+        <div className="sc-bar" data-leaving={!work || undefined} data-testid="work-bar">
+          <p>
+            <i className="int">{bar.kind}</i>
+            <span>{bar.text}</span>
+          </p>
+          <span className="decay fill" role="progressbar" aria-valuenow={Math.round(Math.min(1, Math.max(0, bar.progress)) * 100)}>
+            <span style={{ width: `${Math.min(1, Math.max(0, bar.progress)) * 100}%` }} />
+          </span>
+        </div>
+      )}
+    </section>
+  );
+}
