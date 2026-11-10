@@ -44,6 +44,9 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
   });
   const wrap = page.getByTestId('wrapup');
   await expect(wrap).toContainText('AFTER ACTION REPORT');
+  // RAVEN-6 is the report's header now, and the only one on screen (ILI-1426).
+  await expect(wrap.getByTestId('aar-exfil')).toContainText('Successful extraction');
+  await expect(page.getByTestId('exfil-panel')).toHaveCount(0);
   await expect(wrap).toHaveAttribute('data-outcome', 'win');
   await expect(wrap).toContainText('MISSION SUCCESS');
   await expect(wrap).toContainText('Black box recovered. Everyone came home.');
