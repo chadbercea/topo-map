@@ -87,45 +87,13 @@ html, body {
 .slot-band > * > * { pointer-events: auto; }
 .band-cards { display: grid; gap: 6px; justify-items: center; align-content: end; min-width: 0; }
 .band-cards > * { width: min(420px, 100%); }
-/* The toolbox (ILI-1397): tier three, one small button over the map's bottom-left corner that
-   opens the ability bar above it. */
-.toolbox { grid-area: map; align-self: end; justify-self: start; z-index: 5; display: grid; justify-items: start; gap: 6px; margin: 0 0 10px 10px; max-width: calc(100% - 20px); pointer-events: none; }
-.toolbox > * { pointer-events: auto; }
-.toolbox-toggle { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 12px; font: inherit; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); cursor: pointer; }
-.toolbox-toggle b { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; }
-.toolbox-toggle b[data-red] { color: #e5484d; }
-.toolbox-toggle:hover, .toolbox[data-open] .toolbox-toggle { border-color: var(--accent); }
-.hud[data-playing='true'] .toolbox, .hud[data-tier='compact'][data-picked] .toolbox { display: none; } /* on a phone the square's menu has the map's foot */
-@media (max-width: 720px) { .toolbox-toggle { min-height: 44px; } .toolbox .ability-bar { flex-wrap: wrap; } }
-/* On a phone a half-open sheet leaves little map: the toolbox button stays on top, so the prompt
-   can never bury it (ILI-1397). */
-.hud[data-tier='compact'] .toolbox { z-index: 10; margin: 0 0 8px 8px; }
-/* The ability bar (ILI-1316): the balance and the three capabilities, in the toolbox. */
-.ability-bar { display: flex; gap: 4px; padding: 4px; max-width: 100%; background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); pointer-events: auto; }
-.ability-bar .ab-balance { display: grid; align-content: center; padding: 0 10px; min-width: 96px; border-right: 1px solid var(--line); }
-.ability-bar .ab-balance small, .ability-bar .ab-slot small { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
-.ability-bar .ab-balance b { font-size: 14px; font-variant-numeric: tabular-nums; color: var(--accent); }
-.ability-bar .ab-balance[data-red] b { color: #e5484d; }
-.ability-bar .ab-slot { position: relative; display: grid; justify-items: start; gap: 1px; min-width: 104px; min-height: 44px; padding: 4px 10px 4px 26px; font: inherit; font-size: 11px; letter-spacing: 0.06em; text-align: left; color: var(--ink); background: var(--panel); border: 1px solid var(--accent); cursor: default; }
-.ability-bar .ab-slot i { position: absolute; left: 8px; top: 5px; font-style: normal; font-size: 10px; color: var(--dim); }
-.ability-bar .ab-slot[data-state='locked'] { color: var(--dim); border-color: var(--line); border-style: dashed; }
-.ability-bar .ab-slot[data-state='buyable'] { color: #f2c14e; border-color: #f2c14e; cursor: pointer; }
-.ability-bar .ab-slot[data-state='buyable']:hover { color: var(--bg); background: #f2c14e; }
-.ability-bar .ab-slot[data-state='buyable']:hover small { color: inherit; }
-.ability-bar .ab-slot[data-state='busy'] { border-color: var(--line); }
-.ability-bar .ab-slot:disabled { opacity: 1; }
-@media (max-width: 720px) { .ability-bar .ab-slot { flex: 1; min-width: 0; padding: 4px 6px 4px 20px; } .ability-bar .ab-slot i { left: 6px; } .ability-bar .ab-balance { min-width: 0; padding: 0 6px; } }
-/* On a wide screen, bigger (ILI-1352), in the toolbox (ILI-1397). */
-@media (min-width: 1200px) {
-  .ability-bar { gap: 6px; padding: 6px; border-color: var(--accent); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); max-width: 100%; }
-  .ability-bar .ab-balance { width: 112px; padding: 0 14px; }
-  .ability-bar .ab-balance b { font-size: 18px; }
-  .ability-bar .ab-slot { min-width: 0; width: 144px; min-height: 56px; padding: 6px 10px 6px 34px; font-size: 13px; flex: 0 1 auto; } /* shrinks to fit a narrower strip */
-  .ability-bar .ab-balance { flex: 0 1 auto; min-width: 0; }
-  .ability-bar .ab-slot small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  .ability-bar .ab-slot i { left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--ink); border: 1px solid var(--line); padding: 1px 5px; }
-  .ability-bar .ab-slot small { font-size: 10px; }
-}
+/* The budget (ILI-1405): tier one, a chip beside the clock, the same weight. */
+.slot-widget { display: flex; align-items: stretch; gap: 6px; }
+.budget-chip { display: flex; align-items: center; gap: 10px; padding: 4px 10px; background: rgba(11, 15, 13, 0.9); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); pointer-events: auto; }
+.budget-chip .t-label { color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
+.budget-chip b { font-size: 16px; line-height: 1; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--accent); }
+.budget-chip[data-red] { border-color: color-mix(in srgb, #e5484d 45%, transparent); }
+.budget-chip[data-red] b { color: #e5484d; }
 
 .event-card h2 { color: var(--accent); }
 .event-card[data-kind='contact'] h2 { color: #e5484d; }
@@ -978,10 +946,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* Teaching through play (ILI-1318): the one control that answers what someone asked for pulses. */
 .target-menu .options button[data-cue] { animation: cue-red 1.4s ease-in-out infinite; }
 @keyframes cue-red { 50% { box-shadow: 0 0 0 1px #e5484d, 0 0 12px rgba(229, 72, 77, 0.45); background: rgba(229, 72, 77, 0.12); } }
-.ability-bar .ab-slot[data-state='buyable'] { animation: cue-gold 1.6s ease-in-out infinite; }
 @keyframes cue-gold { 50% { box-shadow: 0 0 0 1px #f2c14e, 0 0 12px rgba(242, 193, 78, 0.45); } }
 .wrapup button[data-cue] { border-color: #f2c14e; color: #f2c14e; animation: cue-gold 1.6s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .target-menu .options button[data-cue], .ability-bar .ab-slot[data-state='buyable'], .wrapup button[data-cue] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .target-menu .options button[data-cue], .wrapup button[data-cue] { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .orion .o-buttons .modes button[data-cue] { animation: none; box-shadow: 0 0 0 1px var(--accent); } }
 /* Not over the square yet (ILI-1250): one big Reposition fills the row; the shots come after. */
 .orion .o-buttons .o-reposition { flex: 1; min-height: 40px; font-size: 13px; letter-spacing: 0.14em; border-color: var(--accent); color: var(--accent); }
@@ -1592,7 +1559,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .hud:not([data-team]) .slot-team > .team { display: none; } /* a drawer, closed until HQ opens it */
   .hud[data-team] .slot-team > .team { background: #0b0f0d; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); position: absolute; left: 0; bottom: calc(100% + 8px); width: min(720px, calc(100vw - 460px)); max-height: 60vh; z-index: 7; }
 }
-.hud:not([data-tier='wide']) > .heartbeat-strip { grid-area: map; align-self: start; justify-self: start; margin: 60px 0 0 10px; z-index: 5; } /* under the timer: the toolbox has the bottom left, Recentre the bottom right */
+.hud:not([data-tier='wide']) > .heartbeat-strip { grid-area: map; align-self: start; justify-self: start; margin: 60px 0 0 10px; z-index: 5; } /* under the timer; Recentre has the bottom right */
 .hud[data-tier='compact'][data-picked] > .heartbeat-strip { display: none; } /* the square's menu has the map's foot */
 .op[data-highlight] { outline: 2px solid #f2c14e; outline-offset: -2px; background: rgba(242, 193, 78, 0.08); }
 
