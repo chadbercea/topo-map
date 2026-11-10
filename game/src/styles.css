@@ -1660,6 +1660,13 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .sighting-panel .sp-rows dt { color: var(--dim); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
 .sighting-panel .sp-rows dd { margin: 0; color: var(--ink); }
 .sighting-panel .sp-rows[data-redacted] dd { color: #4a5a53; letter-spacing: -0.05em; }
+
+/* ORION-3's picture is square (ILI-1422): the frame keeps its space, and the picture is the
+   largest square that fits in it, centred, pinned to the top. Phaser's camera reads the
+   picture's box, so it draws the square exactly into it. */
+.orion .o-frame { container-type: size; outline: none; }
+.orion .o-frame > .o-picture { inset: auto; top: 0; left: 50%; transform: translateX(-50%); width: min(100cqw, 100cqh); height: min(100cqw, 100cqh); outline: 1px solid var(--line); outline-offset: -1px; }
+
 /* The start card waits for HQ (ILI-1421): one clear button. */
 .start-card { pointer-events: auto; cursor: pointer; }
 .start-card .start-go { margin-top: 6px; min-height: 36px; padding: 0 18px; font: inherit; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #0b0f0d; background: #f2c14e; border: 0; cursor: pointer; }
@@ -1674,3 +1681,34 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @keyframes aar-unfold { from { opacity: 0; transform: translateY(-8px); } }
 @keyframes aar-dim { from { background-color: transparent; } }
 @media (prefers-reduced-motion: reduce) { .overlay[data-extracted] .wrapup > :not(.aar-head), .overlay[data-extracted] { animation: none; } }
+
+/* Strike options in and out (ILI-1425): picking a strike sends its siblings off one after
+   another and folds the section shut while the strike's panel slides in; they come back the
+   same way. Snappy, eased. */
+.square-card .sc-fold { overflow: hidden; transition: max-height 260ms cubic-bezier(0.4, 0, 0.2, 1) 60ms; animation: fold-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.square-card .sc-fold[data-leaving] { pointer-events: none; }
+.square-card .sc-fold .options button { animation: opt-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.square-card .sc-fold .options button:nth-child(2) { animation-delay: 40ms; }
+.square-card .sc-fold .options button:nth-child(3) { animation-delay: 80ms; }
+.square-card .sc-fold[data-leaving] .options button { animation: opt-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+.square-card .sc-fold[data-leaving] .options button:nth-child(2) { animation-delay: 30ms; }
+.square-card .sc-fold[data-leaving] .options button:nth-child(3) { animation-delay: 60ms; }
+.square-card .sc-fold[data-leaving] .sc-marked, .square-card .sc-fold[data-leaving] .note, .square-card .sc-fold[data-leaving] h3, .square-card .sc-fold[data-leaving] .title { transition: opacity 160ms ease-in; opacity: 0; }
+@keyframes fold-in { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes opt-in { from { opacity: 0; transform: translateX(14px); } }
+@keyframes opt-out { to { opacity: 0; transform: translateX(-18px); } }
+@media (prefers-reduced-motion: reduce) { .square-card .sc-fold, .square-card .sc-fold .options button { animation: none; transition: none; } }
+
+/* ALPHA at work on a square (ILI-1427): a tiny event with its bar filling; done, the bar fades
+   and the find slides into its place, a line of the square's intel. */
+.square-card .sc-work { display: grid; gap: 4px; padding: 6px 10px 8px; border-bottom: 1px solid var(--line); }
+.square-card .sc-work p { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 11px; color: var(--ink); }
+.square-card .sc-work .int { font-style: normal; font-size: 9px; letter-spacing: 0.1em; padding: 1px 5px; border: 1px solid #f2c14e; color: #f2c14e; }
+.square-card .sc-bar { display: grid; gap: 4px; transition: opacity 400ms ease-in; }
+.square-card .sc-bar[data-leaving] { opacity: 0; }
+.square-card .sc-bar .decay { display: block; height: 4px; background: rgba(53, 208, 165, 0.12); }
+.square-card .sc-bar .decay > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
+.square-card .sc-found { animation: found-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.square-card .sc-found .int { border-color: var(--accent); color: var(--accent); }
+@keyframes found-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .square-card .sc-bar, .square-card .sc-found { animation: none; transition: none; } }
