@@ -18,6 +18,7 @@ import { squareFindings } from '../sim/intel';
 import { freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
+import { sightings, type Sighting } from '../sim/sightings';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the mission's points and route, in amber
@@ -67,6 +68,9 @@ export class MapScene extends Phaser.Scene {
   private selectGfx!: Phaser.GameObjects.Graphics;
   private routeGfx!: Phaser.GameObjects.Graphics;
   private teamGfx!: Phaser.GameObjects.Graphics;
+  private bracketGfx!: Phaser.GameObjects.Graphics; // four corners round everything HQ can interact with (ILI-1410)
+  private opSpots = new Map<string, { x: number; y: number }>(); // where each operator's dot was drawn this frame
+  private seen: Sighting[] = [];
   private teamLabel!: Phaser.GameObjects.Text;
   private missionGfx!: Phaser.GameObjects.Graphics;
   private missionLabels: Phaser.GameObjects.Text[] = [];
@@ -128,6 +132,7 @@ export class MapScene extends Phaser.Scene {
       .setDepth(10)
       .setVisible(false);
     this.teamGfx = this.add.graphics();
+    this.bracketGfx = this.add.graphics();
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
       fontSize: `${11 * DPR}px`,
@@ -144,7 +149,7 @@ export class MapScene extends Phaser.Scene {
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
     this.inset.ignore([...this.labels, this.teamLabel, this.airLabels.drone, this.airLabels.heli, this.exfilLabel, this.hoverLabel]); // the caption names the square; ORION-3's panel has its own hovers
-    this.inset.ignore(this.stampGfx); // a square's INTEL / CLEAR tag is a map note; the satellite doesn't see it (ILI-1407)
+    this.inset.ignore([this.stampGfx, this.bracketGfx]); // a square's INTEL / CLEAR tag is a map note; the satellite doesn't see it (ILI-1407)
     // ?debug: tests read the live camera to turn world points into screen taps.
     if (new URLSearchParams(location.search).has('debug'))
       Object.assign(window, {
@@ -224,6 +229,7 @@ export class MapScene extends Phaser.Scene {
     this.drawPlans();
     this.drawSatellite(_time);
     this.drawMiniGame(_time);
+    this.drawBrackets();
     this.drawStrikes();
     this.drawBlind();
   }
@@ -521,9 +527,37 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
+  // Only a bracketed fighter (ILI-1410): a dot on a stale picture can't be hit from here.
   private targetAt(x: number, y: number) {
     const hit = ((7 + 6) * DPR) / this.zoom; // the dot, and a margin for thumbs
-    return targets(game.get()).find((t) => Math.hypot(t.x - x, t.y - y) <= hit)?.contactId;
+    const near = this.seen.filter((t) => t.kind === 'hostile' && Math.hypot(t.x - x, t.y - y) <= hit).map((t) => t.id.split(':')[0]);
+    return targets(game.get()).find((t) => near.includes(t.contactId) && Math.hypot(t.x - x, t.y - y) <= hit)?.contactId;
+  }
+
+  // Four corner brackets round everything HQ can interact with, and nothing else (ILI-1410).
+  private drawBrackets() {
+    const s = game.get();
+    this.seen = sightings(s, this.opSpots);
+    const g = this.bracketGfx.clear();
+    const px = DPR / this.zoom;
+    const eventColor = (id: string) => EVENT_COLOR[s.events.find((e) => e.id === id)?.kind ?? 'request'];
+    for (const t of this.seen) {
+      const [half, color] =
+        t.kind === 'operator' ? [7, TEAL]
+        : t.kind === 'hostile' || t.kind === 'site' ? [8, 0xe5484d]
+        : t.kind === 'wreck' ? [16, TEAM]
+        : t.kind === 'signal' ? [MARKER_R * 1.3 + 4, EVENT_COLOR.signal]
+        : [MARKER_R + 4, eventColor(t.id)];
+      const h = half * px;
+      const k = Math.max(3, half * 0.4) * px; // each corner's arms
+      const { x, y } = t;
+      g.lineStyle(1.2 * px, color, t.age === 'ghost' ? 0.45 : 0.9);
+      for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const) {
+        const cx = x + sx * h;
+        const cy = y + sy * h;
+        g.lineBetween(cx, cy, cx - sx * k, cy).lineBetween(cx, cy, cx, cy - sy * k);
+      }
+    }
   }
 
   private eventAt(x: number, y: number) {
@@ -960,6 +994,7 @@ export class MapScene extends Phaser.Scene {
         for (let i = 1; i < pts.length; i++) this.dashed(g, pts[i - 1], pts[i], 7 * u, i);
       }
     }
+    this.opSpots.clear();
     operators.forEach((o, i) => {
       if (gone.includes(o.id)) return;
       const [along, across] = WEDGE[i % WEDGE.length];
@@ -970,6 +1005,7 @@ export class MapScene extends Phaser.Scene {
       const c = (across + dy) * gap;
       const x = position.x + fx * a - fy * c;
       const y = position.y + fy * a + fx * c;
+      this.opSpots.set(o.id, { x, y });
       const down = o.health <= 0;
       if (!down && !still) {
         let p = this.pings.get(o.id);
