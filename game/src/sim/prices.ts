@@ -5,6 +5,7 @@
 // until the PMC's credit runs out. The balance carries from mission to mission. Starting
 // values are Claude's picks, for Chad to tune by feel.
 
+export const OPENING_BUDGET = 10_000_000; // every mission opens on this; nothing carries over (ILI-1405)
 export const DEPLOY = 400_000; // the team ($250k) and the ORION-3 network ($150k), up front
 export const ESCROW_BOX = 750_000; // out of escrow when the black box is recovered
 export const ESCROW_EXFIL = 750_000; // and the rest at exfil

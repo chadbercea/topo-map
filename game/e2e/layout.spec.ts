@@ -78,22 +78,18 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   await expect(page.getByTestId('resources')).toHaveCount(0); // no Logistics panel (ILI-1231)
 });
 
-test('no floating action bar: the capabilities are in the toolbox, one small button in the map’s corner (ILI-1397)', async ({ page }) => {
-  await start(page);
-  await page.waitForTimeout(500);
+test('no toolbox: the budget is a chip beside the clock, $10M less deployment, and strikes need no unlock (ILI-1405)', async ({ page }) => {
+  await start(page, '?debug');
+  await expect(page.getByTestId('toolbox-toggle')).toHaveCount(0);
   await expect(page.getByTestId('ability-bar')).toHaveCount(0);
-  const map = (await page.getByTestId('map-area').boundingBox())!;
-  const toggle = page.getByTestId('toolbox-toggle');
-  const t = (await toggle.boundingBox())!;
-  expect(t.x).toBeGreaterThanOrEqual(map.x);
-  expect(t.y + t.height).toBeLessThanOrEqual(map.y + map.height);
-  expect(t.x - map.x).toBeLessThan(40); // the bottom-left corner
-  expect(map.y + map.height - (t.y + t.height)).toBeLessThan(40);
-  await toggle.click();
-  await expect(page.getByTestId('ability-bar')).toBeVisible();
-  await expect(page.getByTestId('ability-drone')).not.toContainText('…');
-  await toggle.click();
-  await expect(page.getByTestId('ability-bar')).toHaveCount(0);
+  const chip = page.getByTestId('budget-chip');
+  await expect(chip).toContainText('Budget');
+  await expect(chip.getByTestId('balance')).toHaveText('$9.6M');
+  const t = (await page.getByTestId('timer').boundingBox())!;
+  const b = (await chip.boundingBox())!;
+  expect(b.x).toBeGreaterThanOrEqual(t.x + t.width); // beside it, on its row
+  expect(Math.abs(b.y - t.y)).toBeLessThan(4);
+  expect(await page.evaluate(() => Object.values(window.game.get().ordnance).every((o) => o.unlocked))).toBe(true);
 });
 
 test('one spacing rule: a 16 px margin and gutter everywhere, and every panel title on one line (ILI-1353)', async ({ page, isMobile }) => {

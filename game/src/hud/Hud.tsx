@@ -6,7 +6,7 @@ import { ExfilPanel } from './ExfilPanel';
 import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
-import { StartCard, TimerChip } from './MissionBar';
+import { BudgetChip, StartCard, TimerChip } from './MissionBar';
 import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
 import { CommsPanel } from './CommsPanel';
@@ -17,7 +17,6 @@ import { PauseMenu } from './PauseMenu';
 import { Intro } from './Intro';
 import { firstBoot, useIntro } from './intro';
 import { WrapUp } from './WrapUp';
-import { Toolbox } from './AbilityBar';
 import { PromptLayer } from './PromptLayer';
 import { useFlash, useUnseen } from './attention';
 import { currentCall } from '../sim/comms';
@@ -34,7 +33,7 @@ const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 // edge to edge on the left; ORION-3 and INTEL down the right; TEAM along the bottom.
 // Tier one, always on and small: the timer in the map's corner (ILI-1392); ALPHA's status on its
 // marker (ILI-1395). Tier two: the one prompt on the map (PromptLayer). Tier three, opened by HQ:
-// the comms log (ILI-1393) and the toolbox (ILI-1397). A square HQ picks gets its menu flush with
+// the comms log (ILI-1393). The budget sits beside the clock (ILI-1405). A square HQ picks gets its menu flush with
 // its edge (SquareCard), its details in ORION-3's panel. On a fold or tablet COMMS, ORION-3 and
 // TEAM share a rail down the right behind tabs (ILI-1213); on a phone they share a bottom sheet.
 export function Hud() {
@@ -121,6 +120,7 @@ export function Hud() {
     <div className="hud" data-boot={boot ? (firstBoot() ? 'first' : 'again') : undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined} data-team={teamOpen || undefined}>
       <div className="slot-widget">
         <TimerChip />
+        <BudgetChip />
       </div>
       <StartCard />
       <MapArea />
@@ -131,7 +131,6 @@ export function Hud() {
           <ExfilPanel />
         </div>
       </div>
-      <Toolbox />
       <Recentre />
       {tabbed && <HeartbeatStrip open={tab === 'team' && shown('team')} onToggle={toggleTeam} />}
       <div className="slot-orion" data-overlay="orion" ref={orionSlot}>

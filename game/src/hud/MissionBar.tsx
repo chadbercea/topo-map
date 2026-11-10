@@ -41,6 +41,25 @@ export function TimerChip() {
   );
 }
 
+// Short money: $9.6M, $250k, −$400k.
+export const cash = (n: number) => {
+  const a = Math.abs(n);
+  const v = a >= 1_000_000 ? `${+(a / 1_000_000).toFixed(2)}M` : a >= 1_000 ? `${Math.round(a / 1_000)}k` : String(a);
+  return `${n < 0 ? '−' : ''}$${v}`;
+};
+
+// The budget (ILI-1405), tier one beside the clock: what Castle House has left to spend this
+// mission. Red once it's in the red.
+export function BudgetChip() {
+  const budget = useGame((s) => s.resources.budget);
+  return (
+    <section className="budget-chip" data-testid="budget-chip" data-red={budget < 0 || undefined} data-overlay="widget" aria-label="Budget">
+      <span className="t-label">Budget</span>
+      <b data-testid="balance">{cash(budget)}</b>
+    </section>
+  );
+}
+
 // The mission start card (ILI-1392): the objective in plain words, for a few seconds as the clock
 // starts, then gone. It never takes a click.
 export const START_CARD_MS = 4_000;
