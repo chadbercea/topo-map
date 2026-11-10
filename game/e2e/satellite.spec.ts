@@ -92,7 +92,7 @@ test('a fighter in ORION-3\u2019s picture opens its square\u2019s strikes at the
   await expect(page.getByTestId('square-card')).toHaveAttribute('data-square', 'E3'); // its details stay in ORION-3
 });
 
-test('a fighter on the map opens its strikes too (ILI-1250)', async ({ page, isMobile }) => {
+test('a fighter on the map opens its strikes too, from his pinned panel (ILI-1250, ILI-1411)', async ({ page, isMobile }) => {
   test.skip(isMobile, 'a phone taps them in ORION-3\u2019s picture');
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -112,7 +112,8 @@ test('a fighter on the map opens its strikes too (ILI-1250)', async ({ page, isM
       break;
     }
   }
-  await page.mouse.click(p.x, p.y);
+  await page.mouse.click(p.x, p.y); // pins his panel (ILI-1411)
+  await page.locator('.sighting-panel[data-kind=hostile][data-pinned]').getByTestId('panel-strike').click();
   await expect(page.getByTestId('strike-menu').getByTestId('fire-sniper')).toBeVisible();
 });
 
