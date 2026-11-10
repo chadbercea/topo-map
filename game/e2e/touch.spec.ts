@@ -64,7 +64,7 @@ test('pinch (or the wheel) zooms in, and recentring zooms back out', async ({ pa
     for (let i = 0; i < 5; i++) await page.mouse.wheel(0, -200);
   }
   await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(fit * 1.3);
-  await expect.poll(async () => (await camera(page)).zoom).toBeLessThanOrEqual(fit * 3 + 1e-6);
+  await expect.poll(async () => (await camera(page)).zoom).toBeLessThanOrEqual(fit * 2 + 1e-6);
   await page.getByTestId('recentre').click();
   await expect.poll(async () => (await camera(page)).zoom).toBeCloseTo(fit, 5);
 });
