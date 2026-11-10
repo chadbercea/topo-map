@@ -1,6 +1,8 @@
 import { CELL, squareAt, squareCenter } from '../map/grid';
 import type { GameState } from './state';
 import { freshness, shownAt, unitSpot, type Freshness } from './imagery';
+import { aircraftAt } from './air';
+import { transportAt } from './exfil';
 
 // Everything on the map HQ can interact with (ILI-1408), and only that: brackets mean it can be
 // hovered and clicked, no brackets mean no interaction (ILI-1410).
@@ -8,7 +10,7 @@ import { freshness, shownAt, unitSpot, type Freshness } from './imagery';
 // - whatever ORION-3's newest picture of a square shows while that picture isn't stale: hostile
 //   fighters, kill sites, the wreck;
 // - the event pings and the SIGINT diamonds, always.
-export type SightingKind = 'operator' | 'hostile' | 'site' | 'wreck' | 'event' | 'signal';
+export type SightingKind = 'operator' | 'hostile' | 'site' | 'wreck' | 'event' | 'signal' | 'aircraft';
 export type Sighting = { id: string; kind: SightingKind; x: number; y: number; age: Freshness | 'tracked'; square: string };
 
 // The age of the newest picture of a square, or null if there is none or it has gone stale.
@@ -60,6 +62,14 @@ export function sightings(s: GameState, operators: ReadonlyMap<string, { x: numb
     if (e.status === 'resolved' || e.kind === 'site') continue; // a kill site's X marks stand for it (ILI-1252)
     out.push({ id: e.id, kind: 'event', ...markerSpot(e.square), age: 'tracked', square: e.square });
   }
+  // Our own aircraft, always (ILI-1420): REAPER-1, HAMMER-2, and RAVEN-6 for the exfil.
+  for (const w of ['drone', 'heli'] as const) {
+    const run = w === 'drone' ? s.drone : s.heli;
+    const at = run && aircraftAt(run, now);
+    if (run && at) out.push({ id: `air:${w}`, kind: 'aircraft', x: at.x, y: at.y, age: 'tracked', square: run.square });
+  }
+  const bird = s.exfil && transportAt(s.exfil, now);
+  if (s.exfil && bird) out.push({ id: 'air:exfil', kind: 'aircraft', x: bird.x, y: bird.y, age: 'tracked', square: s.exfil.square });
   for (const d of s.decoded) out.push({ id: d.id, kind: 'signal', ...markerSpot(d.square), age: 'tracked', square: d.square });
   return out;
 }

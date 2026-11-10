@@ -575,6 +575,7 @@ export class MapScene extends Phaser.Scene {
         t.kind === 'operator' ? [7, TEAL]
         : t.kind === 'hostile' || t.kind === 'site' ? [8, 0xe5484d]
         : t.kind === 'wreck' ? [16, TEAM]
+        : t.kind === 'aircraft' ? [14, t.id === 'air:exfil' ? 0xff8a2a : 0xe5484d]
         : t.kind === 'signal' ? [MARKER_R * 1.3 + 4, EVENT_COLOR.signal]
         : [MARKER_R + 4, eventColor(t.id)];
       const size = picture && t.kind === 'operator' ? line : px;
