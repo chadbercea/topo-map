@@ -49,6 +49,14 @@ export function sendToSearch(s: GameState, square: SquareId): GameState {
   return { ...next, team: { ...next.team, route: [...route.slice(0, waypoint), square, ...route.slice(waypoint)] } };
 }
 
+// The square of the building ALPHA is inside, searching, or null (ILI-1418): while it searches
+// the team is off the map.
+export function searchingIn(s: GameState): SquareId | null {
+  const here = squareAt(s.team.position.x, s.team.position.y);
+  const inside = !!here && s.searching.includes(here) && !s.team.fight && s.elapsedMs < s.team.holdUntilMs && s.team.activity.startsWith('Searching the building');
+  return inside ? here : null;
+}
+
 const radio = (s: GameState, id: string, text: string): Message => ({ id, from: s.team.callsign, text, atMs: s.elapsedMs, status: 'new', holds: false });
 
 // In a building HQ sent it to: it holds and searches, then reports what it found.
