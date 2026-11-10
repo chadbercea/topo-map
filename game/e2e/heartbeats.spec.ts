@@ -34,3 +34,19 @@ test('an operator hit is a prompt; it opens the team panel with them highlighted
   await expect(page.getByTestId('op-gunner')).toHaveAttribute('data-highlight', 'true');
   await expect(prompt).toHaveCount(0); // seen to
 });
+
+// Names and status on the strip; the drawer as wide as its rows (ILI-1406).
+test('the strip names each operator with their status; the open drawer hugs its rows', async ({ page, isMobile }) => {
+  await start(page, '?debug');
+  await running(page);
+  const strip = page.getByTestId('heartbeat-strip');
+  await expect(strip.getByTestId('hb-lead')).toContainText('Reyes');
+  await expect(strip.getByTestId('hb-lead')).toContainText('FINE');
+  const s = (await strip.boundingBox())!;
+  expect(s.x + s.width).toBeLessThanOrEqual(page.viewportSize()!.width); // fits on a phone
+  if (isMobile) return; // on a phone the drawer is the TEAM tab of the sheet
+  await strip.click();
+  const panel = (await page.getByTestId('team-panel').boundingBox())!;
+  const row = (await page.getByTestId('op-lead').boundingBox())!;
+  expect(panel.width - row.width).toBeLessThan(40); // no dead space beside the rows
+});

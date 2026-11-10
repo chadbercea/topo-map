@@ -1,5 +1,5 @@
 import { useGame } from '../sim/store';
-import { Heartbeat, OperatorRow } from './OperatorRow';
+import { Heartbeat, OperatorRow, STATUS } from './OperatorRow';
 import { condition } from '../sim/team';
 
 // The team panel (ILI-1123, bottom right since ILI-1186): every operator's heartbeat,
@@ -35,17 +35,25 @@ export function TeamPanel({ highlight }: { highlight?: string | null }) {
   );
 }
 
-// The heartbeat strip (ILI-1396): tier one, five heartbeats and nothing else. Tapping it opens the
-// team panel, a drawer (tier three) that is closed until HQ opens it.
+// The heartbeat strip (ILI-1396): tier one, one small column per operator: name, heartbeat and
+// status (ILI-1406). Tapping it opens the team panel, a drawer (tier three) that is closed until
+// HQ opens it.
 export function HeartbeatStrip({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const callsign = useGame((s) => s.team.callsign);
   const operators = useGame((s) => s.team.operators);
   const worst = operators.map(condition).sort((a, b) => RANK[b] - RANK[a])[0];
   return (
     <button className="heartbeat-strip" onClick={onToggle} aria-expanded={open} aria-label={`${callsign} team: ${open ? 'close' : 'open'} the team panel`} data-testid="heartbeat-strip" data-worst={worst} data-overlay="heartbeats">
-      {operators.map((o) => (
-        <Heartbeat key={o.id} o={o} />
-      ))}
+      {operators.map((o) => {
+        const c = condition(o);
+        return (
+          <span key={o.id} className="hb" data-condition={c} data-testid={`hb-${o.id}`}>
+            <span className="hb-name">{o.name}</span>
+            <Heartbeat o={o} />
+            <span className="hb-status">{STATUS[c]}</span>
+          </span>
+        );
+      })}
     </button>
   );
 }
