@@ -15,6 +15,16 @@ export function useUnseen(sig: string | number, open: boolean) {
   return !open && sig !== seen;
 }
 
+// How many of a count's new items HQ hasn't seen since its panel was last open (ILI-1413).
+export function useUnseenCount(count: number, open: boolean) {
+  const [seen, setSeen] = useState(count);
+  const fresh = useGame((s) => s.elapsedMs === 0);
+  useEffect(() => {
+    if (open || fresh || count < seen) setSeen(count);
+  }, [open, fresh, count, seen]);
+  return open ? 0 : Math.max(0, count - seen);
+}
+
 const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // The panel in `slot` brightens its frame for a moment each time `sig` changes while it's shown.
