@@ -1645,3 +1645,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .sighting-panel .sp-act { justify-self: start; min-height: 28px; padding: 0 10px; font: inherit; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #e5484d; background: transparent; border: 1px solid #e5484d; cursor: pointer; }
 .sighting-panel .sp-close { position: absolute; top: 2px; right: 2px; width: 22px; height: 22px; padding: 0; font: inherit; font-size: 11px; color: var(--dim); background: transparent; border: 0; cursor: pointer; }
 .sighting-panel .sp-close:hover { color: var(--ink); }
+/* A hostile's rows (ILI-1412): what imagery can tell, redacted without ORION-3 over him. */
+.sighting-panel .sp-rows { display: grid; gap: 2px; margin: 0; }
+.sighting-panel .sp-rows > div { display: flex; justify-content: space-between; gap: 12px; }
+.sighting-panel .sp-rows dt { color: var(--dim); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+.sighting-panel .sp-rows dd { margin: 0; color: var(--ink); }
+.sighting-panel .sp-rows[data-redacted] dd { color: #4a5a53; letter-spacing: -0.05em; }

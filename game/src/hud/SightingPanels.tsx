@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { toScreen } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { targets } from '../sim/imagery';
+import { activityOf, conditionOf, satOver, weaponOf } from '../sim/fighters';
 import type { Sighting } from '../sim/sightings';
 import { OperatorRow } from './OperatorRow';
 import { panelled, pins, usePins } from './pins';
@@ -78,10 +79,27 @@ function PanelBody({ t }: { t: Sighting }) {
   if (t.kind === 'hostile') {
     const contactId = t.id.split(':')[0];
     const strikeable = targets(s).some((x) => x.contactId === contactId);
+    // Redacted unless ORION-3 is over his square with a live picture (ILI-1412).
+    const over = satOver(s, t.square);
+    const rows: [string, string][] = [
+      ['Weapon', weaponOf(t.id)],
+      ['Activity', activityOf(s, contactId)],
+      ['Condition', conditionOf(s, contactId)],
+    ];
     return (
       <>
-        <h3 className="sp-title hostile">HOSTILE</h3>
-        <p className="sp-line">{t.square}</p>
+        <h3 className="sp-title hostile" data-testid="panel-tango">
+          HOSTILE · TANGO-{pins.tango(t.id)}
+        </h3>
+        <dl className="sp-rows" data-redacted={!over || undefined}>
+          {rows.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd data-testid={`panel-${k.toLowerCase()}`}>{over ? v : '█████'}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="sp-line">{over ? `ORION-3 over ${t.square}` : `${t.square} · no eyes on`}</p>
         {strikeable && (
           <button className="sp-act" onClick={() => game.openEvent(`contact-${contactId}`)} data-testid="panel-strike">
             Strike
@@ -94,7 +112,7 @@ function PanelBody({ t }: { t: Sighting }) {
     return (
       <>
         <h3 className="sp-title hostile">KILL SITE</h3>
-        <p className="sp-line">{t.square}</p>
+        <p className="sp-line">{t.square} · Down</p>
       </>
     );
   return (
