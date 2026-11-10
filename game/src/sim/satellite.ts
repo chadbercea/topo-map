@@ -39,6 +39,7 @@ export type Satellite = {
   captureUntilMs: number;
   callId: string | null; // ALPHA's call waiting on this look
   result: LookResult | null; // the last look, for the panel until closed
+  autoScan?: SquareId | null; // Scan grids (ILI-1414): scan this square the moment it's locked on
 };
 
 const at = (sq: SquareId): Point => parseSquare(sq)!;
@@ -129,6 +130,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     mode: null,
     callId: callId ?? null,
     result: null,
+    autoScan: null, // a new tasking calls off any scan Scan grids had waiting (ILI-1414)
   };
   const next: GameState = {
     ...s,
@@ -210,9 +212,13 @@ export function describe(r: LookResult): string {
 
 export const satelliteSystem: System = (s) => {
   const sat = s.satellite;
-  if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs)
-    // It says what's next (ILI-1257): the shot is HQ's to take.
-    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, satName(s), `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready for collection.`));
+  if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs) {
+    // It says what's next (ILI-1257): the shot is HQ's to take, unless Scan grids already took
+    // it (ILI-1414).
+    const auto = sat.autoScan === sat.aim;
+    const there = log({ ...s, satellite: { ...sat, state: 'onStation', autoScan: null } }, radio(s, satName(s), `station-${s.elapsedMs}`, auto ? `On station over ${sat.aim}. Scanning.` : `On station over ${sat.aim}. Ready for collection.`));
+    return auto ? scan(there) : there;
+  }
   if (sat.state !== 'capturing') return s;
   if (s.elapsedMs >= sat.captureUntilMs) return finishLook(s);
   // Video is live: the map follows them while it runs.

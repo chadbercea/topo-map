@@ -6,7 +6,7 @@ import { fastForward, freeze, running, start } from './helpers';
 
 const fadeIn = (page: import('@playwright/test').Page) => page.waitForTimeout(250);
 
-test('ALPHA needing intel is a prompt on its marker; Scan grids opens the square, whose menu moves ORION-3 and scans, and the prompt goes (ILI-1395)', async ({ page }) => {
+test('ALPHA needing intel is a prompt on its marker; Scan grids moves ORION-3 there and scans on arrival, and the prompt goes (ILI-1395, ILI-1414)', async ({ page }) => {
   await start(page, '?debug&gauge');
   await running(page);
   await freeze(page);
@@ -22,9 +22,8 @@ test('ALPHA needing intel is a prompt on its marker; Scan grids opens the square
   await prompt.getByTestId('prompt-response').click();
   const menu = page.getByTestId('square-anchor');
   await expect(menu).toHaveAttribute('data-square', 'F4'); // the grid square to scan
-  await menu.getByTestId('move-here').click(); // the move step (ILI-1397)
+  await expect(prompt.getByTestId('prompt-response')).toHaveText(['ORION-3 moving to F4…']); // one click: no more steps (ILI-1414)
   await fastForward(page, 30_000);
-  await menu.getByTestId('scan-square').click();
   await expect.poll(() => page.evaluate(() => !!window.game.get().imagery.F4)).toBe(true);
   await fastForward(page, 200);
   // F4's request is answered (the next one, further on, may come up as ALPHA walks off the photo's intel).
