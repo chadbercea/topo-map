@@ -20,10 +20,12 @@ import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 
 const TEAL = 0x35d0a5;
-const TEAM = 0xf2c14e; // the team stands out from the map in amber
+const TEAM = 0xf2c14e; // the mission's points and route, in amber
+const OPS = TEAL; // the team's dots, in the map's green (ILI-1409)
+// Each operator's ping comes on its own random gap, re-rolled every time (ILI-1409).
+const nextGap = () => 2000 + Math.random() * 3000;
 // The team's formation, in gaps: along the heading (forward +), across it. Point man first.
 const WEDGE: [number, number][] = [[1.4, 0], [0.4, -1], [0.4, 1], [-0.7, -0.5], [-0.8, 0.6]];
-const PING_MS = [2300, 3100, 2700, 3700, 4300]; // each operator's own beat
 const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff, building: 0xf2c14e } as const;
 const WATER = 0x5fa8d3;
 const FLASH_MS = 2_500; // a new event's square flashes this long, in mission time
@@ -129,7 +131,7 @@ export class MapScene extends Phaser.Scene {
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
       fontSize: `${11 * DPR}px`,
-      color: '#f2c14e',
+      color: '#35d0a5',
     });
     for (let c = 0; c < COLS; c++)
       for (let r = 0; r < ROWS; r++)
@@ -919,6 +921,7 @@ export class MapScene extends Phaser.Scene {
   // ALPHA is five people, not a dot (ILI-1210): one per operator, in a loose wedge facing where the team
   // is headed. Each drifts a little on its own and pings on its own beat, so the team reads as
   // alive. The downed stay in the group, dim and hollow. Reduced motion: still and quiet.
+  private pings = new Map<string, { at: number; next: number }>(); // each operator's last ping and next (ILI-1409)
   private drawTeam(time = 0) {
     const st = game.get();
     const { position, path, route, waypoint, operators } = st.team;
@@ -949,10 +952,10 @@ export class MapScene extends Phaser.Scene {
       const pushing = ['attack', 'push'].includes(st.team.decisions[route[waypoint]] ?? '');
       const pts = [position, ...(st.team.pathTo === route[waypoint] ? path : []), goal];
       if (pushing) {
-        g.lineStyle(3 * u, TEAM, 0.9);
+        g.lineStyle(3 * u, OPS, 0.9);
         for (let i = 1; i < pts.length; i++) g.lineBetween(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y);
       } else {
-        g.lineStyle(1.6 * u, TEAM, 0.85);
+        g.lineStyle(1.6 * u, OPS, 0.85);
         for (let i = 1; i < pts.length; i++) this.dashed(g, pts[i - 1], pts[i], 7 * u, i);
       }
     }
@@ -968,17 +971,19 @@ export class MapScene extends Phaser.Scene {
       const y = position.y + fy * a + fx * c;
       const down = o.health <= 0;
       if (!down && !still) {
-        const every = PING_MS[i % PING_MS.length];
-        const t = ((time + i * 611) % every) / 900; // 0..1 over the ring's life
-        if (t < 1) g.lineStyle(1.2 * u, TEAM, 0.7 * (1 - t)).strokeCircle(x, y, (3 + 11 * t) * u);
+        let p = this.pings.get(o.id);
+        if (!p) this.pings.set(o.id, (p = { at: -Infinity, next: time + nextGap() }));
+        if (time >= p.next) (p.at = time), (p.next = time + nextGap());
+        const t = (time - p.at) / 900; // 0..1 over the ring's life
+        if (t < 1) g.lineStyle(1.2 * u, OPS, 0.7 * (1 - t)).strokeCircle(x, y, (3 + 11 * t) * u);
       }
-      if (down) g.lineStyle(1.2 * u, TEAM, 0.45).strokeCircle(x, y, 2.6 * u);
-      else g.fillStyle(TEAM, 1).fillCircle(x, y, 3.2 * u).lineStyle(1.2 * u, 0x0b0f0d, 1).strokeCircle(x, y, 3.2 * u);
+      if (down) g.lineStyle(1.2 * u, OPS, 0.45).strokeCircle(x, y, 2.6 * u);
+      else g.fillStyle(OPS, 1).fillCircle(x, y, 3.2 * u).lineStyle(1.2 * u, 0x0b0f0d, 1).strokeCircle(x, y, 3.2 * u);
     });
     // Its status tag (ILI-1395): what ALPHA is doing, on the marker itself.
     const status = teamStatus(st);
     const tag = `${st.team.callsign} · ${status.toUpperCase()}`;
-    if (this.teamLabel.text !== tag) this.teamLabel.setText(tag).setColor(status === 'In contact' ? '#e5484d' : '#f2c14e');
+    if (this.teamLabel.text !== tag) this.teamLabel.setText(tag).setColor(status === 'In contact' ? '#e5484d' : '#35d0a5');
     if (moved || this.teamLabel.scale !== 1 / this.zoom) this.teamLabel.setScale(1 / this.zoom).setPosition(position.x + 16 * u, position.y - 22 * u);
     this.teamLabel.setVisible(gone.length < operators.length); // all aboard: ALPHA is off the map
   }
