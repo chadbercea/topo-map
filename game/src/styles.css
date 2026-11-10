@@ -1660,3 +1660,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .sighting-panel .sp-rows dt { color: var(--dim); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
 .sighting-panel .sp-rows dd { margin: 0; color: var(--ink); }
 .sighting-panel .sp-rows[data-redacted] dd { color: #4a5a53; letter-spacing: -0.05em; }
+/* The start card waits for HQ (ILI-1421): one clear button. */
+.start-card { pointer-events: auto; cursor: pointer; }
+.start-card .start-go { margin-top: 6px; min-height: 36px; padding: 0 18px; font: inherit; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #0b0f0d; background: #f2c14e; border: 0; cursor: pointer; }
+.start-card .start-go:hover, .start-card .start-go:focus-visible { background: #ffd56b; outline: none; }

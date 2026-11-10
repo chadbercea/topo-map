@@ -26,12 +26,16 @@ test('only the timer is left: the client deadline, small, in the map’s corner,
   await expect(page.getByTestId('square-facts')).toContainText(/Features\s*town/);
 });
 
-test('the mission start card says the objective in plain words, then goes', async ({ page }) => {
-  await start(page, '?debug');
+test('the mission start card says the objective in plain words and stays until dismissed; the first prompt waits for it (ILI-1421)', async ({ page }) => {
+  await start(page, '?debug&gauge&startcard');
   await page.waitForFunction(() => window.game?.get().phase === 'running');
   await freeze(page);
   const card = page.getByTestId('start-card');
   await expect(card).toContainText("Recover the drone's black box at D3");
-  await fastForward(page, 4_500);
+  await fastForward(page, 6_000);
+  await expect(card).toBeVisible(); // no timeout any more
+  await expect(page.getByTestId('prompt')).toHaveCount(0); // ALPHA's ask waits for it
+  await card.getByTestId('start-dismiss').click();
   await expect(card).toHaveCount(0);
+  await expect(page.getByTestId('prompt')).toHaveCount(1); // then Scan grids
 });
