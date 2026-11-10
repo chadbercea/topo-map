@@ -91,11 +91,11 @@ export const lockedOn = (s: GameState, square: SquareId): boolean => s.satellite
 // The square ORION-3's panel shows (ILI-1219): where it's tasked; idle, the square HQ picked
 // (ILI-1228, ILI-1308) or just looked at. Nothing when none is (the placeholder, ILI-1229), or while the
 // intercept has it tied up. The sniper's run plays out at its square's anchor (ILI-1303).
+// It can only see what it's over (ILI-1428): picking another square never moves the picture;
+// only moving ORION-3 does.
 export function orionSquare(s: GameState): SquareId | null {
-  const sat = s.satellite;
   if (s.minigame) return null;
-  if (sat.state !== 'idle') return sat.aim;
-  return s.map.selected ?? sat.result?.square ?? null;
+  return s.satellite.aim;
 }
 
 export function lookSquare(s: GameState): SquareId | null {

@@ -16,9 +16,8 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(card).toHaveAttribute('data-square', 'E3');
   await expect(page.getByTestId('square-status')).toHaveText('no imagery');
   await expect(page.getByTestId('square-facts')).toContainText(/Elevation\s*\d+–\d+ m/);
-  // The image area holds its place: the placeholder (later the Three.js satellite, ILI-1229).
-  await expect(page.getByTestId('satellite-inset')).toHaveCount(0);
-  await expect(sat.getByTestId('orion-placeholder')).toContainText('No imagery of E3 · Reposition');
+  // The picture stays on the square ORION-3 is over (ILI-1428): picking E3 doesn't move it.
+  await expect(page.getByTestId('satellite-inset')).toHaveAttribute('aria-label', /picture of G5$/);
   // Not over E3 yet: one big Reposition, and no shots to take (ILI-1250).
   await expect(page.getByTestId('look-here')).toHaveText(/^Reposition\s*to E3 · \d+:\d\d$/);
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
@@ -135,11 +134,13 @@ test('over a square it has already shot, no Reposition and no Rescan: the shots 
   await expect(sat.getByTestId('capture-modes')).toHaveCount(0);
 });
 
-test('standing by, ORION-3 names the next square ahead with no imagery (ILI-1272)', async ({ page, isMobile }) => {
+test('standing by, ORION-3 shows the square it is over; the next square ahead has no imagery (ILI-1272, ILI-1428)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   if (isMobile) await page.getByTestId('tab-orion').click();
-  await expect(page.getByTestId('orion-placeholder')).toHaveText('Standing by over G5 · no imagery of F4 ahead');
+  // Over G5 it shows G5, which ALPHA's own eyes have imaged (ILI-1428); ahead, F4 has nothing yet.
+  await expect(page.getByTestId('satellite-inset')).toHaveAttribute('aria-label', /picture of G5$/);
+  expect(await page.evaluate(() => !!window.game.get().imagery.F4)).toBe(false);
 });
 
 test("a slew counts down once, on ORION-3's state line, then the photo (ILI-1269, ILI-1400)", async ({ page, isMobile }) => {
