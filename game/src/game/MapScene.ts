@@ -70,6 +70,7 @@ export class MapScene extends Phaser.Scene {
   private routeGfx!: Phaser.GameObjects.Graphics;
   private teamGfx!: Phaser.GameObjects.Graphics;
   private bracketGfx!: Phaser.GameObjects.Graphics; // four corners round everything HQ can interact with (ILI-1410)
+  private insetBracketGfx!: Phaser.GameObjects.Graphics; // the same, at ORION-3's picture's scale (ILI-1415)
   private opSpots = new Map<string, { x: number; y: number }>(); // where each operator's dot was drawn this frame
   private seen: Sighting[] = [];
   private teamLabel!: Phaser.GameObjects.Text;
@@ -134,6 +135,8 @@ export class MapScene extends Phaser.Scene {
       .setVisible(false);
     this.teamGfx = this.add.graphics();
     this.bracketGfx = this.add.graphics();
+    this.insetBracketGfx = this.add.graphics();
+    this.cameras.main.ignore(this.insetBracketGfx); // only ORION-3's picture draws these (ILI-1415)
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
       fontSize: `${11 * DPR}px`,
@@ -542,10 +545,24 @@ export class MapScene extends Phaser.Scene {
     const s = game.get();
     this.seen = sightings(s, this.opSpots);
     pins.setSeen(this.seen);
-    const g = this.bracketGfx.clear();
-    const px = DPR / this.zoom;
+    this.bracketsInto(this.bracketGfx.clear(), this.seen, DPR / this.zoom, DPR / this.zoom);
+    // ORION-3's picture gets them too (ILI-1415): sized to wrap the dots as drawn (they're drawn
+    // for the map's zoom), with a line as thin as the map's at the picture's zoom.
+    const g = this.insetBracketGfx.clear();
+    const id = this.inset.visible ? orionSquare(s) : null;
+    const sq = id ? parseSquare(id) : null;
+    if (!sq) return;
+    const pad = CELL * 0.25; // the sliver of neighbours round the square
+    const inView = this.seen.filter((t) => t.x >= sq.col * CELL - pad && t.x <= (sq.col + 1) * CELL + pad && t.y >= sq.row * CELL - pad && t.y <= (sq.row + 1) * CELL + pad);
+    this.bracketsInto(g, inView, DPR / this.zoom, DPR / this.inset.zoom);
+  }
+
+  // Four corner brackets round each thing. px: one CSS pixel at the zoom the things are drawn for;
+  // line: one CSS pixel at the zoom of the camera that shows these brackets.
+  private bracketsInto(g: Phaser.GameObjects.Graphics, things: Sighting[], px: number, line: number) {
+    const s = game.get();
     const eventColor = (id: string) => EVENT_COLOR[s.events.find((e) => e.id === id)?.kind ?? 'request'];
-    for (const t of this.seen) {
+    for (const t of things) {
       const [half, color] =
         t.kind === 'operator' ? [7, TEAL]
         : t.kind === 'hostile' || t.kind === 'site' ? [8, 0xe5484d]
@@ -555,7 +572,7 @@ export class MapScene extends Phaser.Scene {
       const h = half * px;
       const k = Math.max(3, half * 0.4) * px; // each corner's arms
       const { x, y } = t;
-      g.lineStyle(1.2 * px, color, t.age === 'ghost' ? 0.45 : 0.9);
+      g.lineStyle(1.2 * line, color, t.age === 'ghost' ? 0.45 : 0.9);
       for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const) {
         const cx = x + sx * h;
         const cy = y + sy * h;
