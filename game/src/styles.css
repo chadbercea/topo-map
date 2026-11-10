@@ -1546,6 +1546,13 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    drawer. Bottom left on a wide screen; over the map's bottom-right corner on a fold or phone. */
 .heartbeat-strip { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 10px; font: inherit; color: var(--ink); background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); cursor: pointer; pointer-events: auto; }
 .heartbeat-strip .ecg { width: 44px; height: 20px; --vital: #35d0a5; }
+/* Each operator's column (ILI-1406): name over the heartbeat, status under it, in its colour. */
+.heartbeat-strip .hb { display: grid; justify-items: center; gap: 2px; min-width: 44px; }
+.heartbeat-strip .hb-name { font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink); white-space: nowrap; }
+.heartbeat-strip .hb-status { font-size: 8px; letter-spacing: 0.1em; color: #35d0a5; white-space: nowrap; }
+.heartbeat-strip .hb[data-condition='caution'] .hb-status { color: #f2c14e; }
+.heartbeat-strip .hb[data-condition='danger'] .hb-status { color: #e5484d; }
+.heartbeat-strip .hb[data-condition='down'] .hb-status, .heartbeat-strip .hb[data-condition='down'] .hb-name { color: #4a5a53; }
 .heartbeat-strip .ecg[data-condition='down'] { --vital: #4a5a53; }
 .heartbeat-strip .ecg[data-condition='caution'] { --vital: #f2c14e; }
 .heartbeat-strip .ecg[data-condition='caution'] .trace { animation-duration: 0.85s; }
@@ -1557,7 +1564,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @media (min-width: 1200px) {
   .slot-team { position: relative; justify-self: start; }
   .hud:not([data-team]) .slot-team > .team { display: none; } /* a drawer, closed until HQ opens it */
-  .hud[data-team] .slot-team > .team { background: #0b0f0d; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); position: absolute; left: 0; bottom: calc(100% + 8px); width: min(720px, calc(100vw - 460px)); max-height: 60vh; z-index: 7; }
+  .hud[data-team] .slot-team > .team { background: #0b0f0d; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); position: absolute; left: 0; bottom: calc(100% + 8px); width: max-content; max-width: calc(100vw - 460px); max-height: 60vh; z-index: 7; }
 }
 .hud:not([data-tier='wide']) > .heartbeat-strip { grid-area: map; align-self: start; justify-self: start; margin: 60px 0 0 10px; z-index: 5; } /* under the timer; Recentre has the bottom right */
 .hud[data-tier='compact'][data-picked] > .heartbeat-strip { display: none; } /* the square's menu has the map's foot */
