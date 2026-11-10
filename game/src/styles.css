@@ -1664,3 +1664,20 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .start-card { pointer-events: auto; cursor: pointer; }
 .start-card .start-go { margin-top: 6px; min-height: 36px; padding: 0 18px; font: inherit; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #0b0f0d; background: #f2c14e; border: 0; cursor: pointer; }
 .start-card .start-go:hover, .start-card .start-go:focus-visible { background: #ffd56b; outline: none; }
+
+/* Strike options in and out (ILI-1425): picking a strike sends its siblings off one after
+   another and folds the section shut while the strike's panel slides in; they come back the
+   same way. Snappy, eased. */
+.square-card .sc-fold { overflow: hidden; transition: max-height 260ms cubic-bezier(0.4, 0, 0.2, 1) 60ms; animation: fold-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.square-card .sc-fold[data-leaving] { pointer-events: none; }
+.square-card .sc-fold .options button { animation: opt-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.square-card .sc-fold .options button:nth-child(2) { animation-delay: 40ms; }
+.square-card .sc-fold .options button:nth-child(3) { animation-delay: 80ms; }
+.square-card .sc-fold[data-leaving] .options button { animation: opt-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+.square-card .sc-fold[data-leaving] .options button:nth-child(2) { animation-delay: 30ms; }
+.square-card .sc-fold[data-leaving] .options button:nth-child(3) { animation-delay: 60ms; }
+.square-card .sc-fold[data-leaving] .sc-marked, .square-card .sc-fold[data-leaving] .note, .square-card .sc-fold[data-leaving] h3, .square-card .sc-fold[data-leaving] .title { transition: opacity 160ms ease-in; opacity: 0; }
+@keyframes fold-in { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes opt-in { from { opacity: 0; transform: translateX(14px); } }
+@keyframes opt-out { to { opacity: 0; transform: translateX(-18px); } }
+@media (prefers-reduced-motion: reduce) { .square-card .sc-fold, .square-card .sc-fold .options button { animation: none; transition: none; } }

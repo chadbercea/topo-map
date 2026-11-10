@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, lockedOn, satName, slewMs } from '../sim/satellite';
@@ -231,6 +231,9 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
   // Strikes only once a look (photo or video) shows fighters here and isn't stale (ILI-1417): a radio
   // report of a contact is a report, not a target.
   const look = s.imagery[square];
+  // A strike under way here (ILI-1425): its panel takes the options' place until it signs off.
+  const now = s.elapsedMs;
+  const running = (!!s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now)) || [s.drone, s.heli].some((r) => !!r && r.square === square && !airGone(r, now));
   const seenHere = !!look && freshness(look, s.elapsedMs) !== 'stale' && marked.length > 0;
   const strikes = s.events.filter((e) => e.square === square && strikeable(e) && e.status !== 'resolved');
   const locked = lockedOn(s, square);
@@ -264,7 +267,8 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
           {settled(s, square) ? null : <Scan s={s} square={square} />}
 
           {/* Its fighters, and every way to hit them (ILI-1230, ILI-1270), here at their square. */}
-          {seenHere && strikes.length > 0 && (
+          {/* The options fold away while a strike runs, and slide back after (ILI-1425). */}
+          <Fold open={seenHere && strikes.length > 0 && !running}>
             <section className="sc-strikes" data-testid="strike-menu" aria-label={`Strike ${square}`}>
               {marked.length > 0 && (
                 <p className="sc-marked" data-testid="fighters-marked">
@@ -279,7 +283,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
                 </div>
               ))}
             </section>
-          )}
+          </Fold>
 
           {/* Team actions come out of the same menu (ILI-1397). */}
           {hasActions(s, square) && (
@@ -455,3 +459,31 @@ function Call({ s, eventId }: { s: GameState; eventId: string }) {
     </p>
   );
 }
+
+// A section that slides in when it opens and folds shut when it closes (ILI-1425): its buttons
+// leave one after another, then it collapses with no jump; reduced motion just swaps.
+const still = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function Fold({ open, children }: { open: boolean; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(open);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (open) {
+      setMounted(true);
+      if (el) el.style.maxHeight = '';
+      return;
+    }
+    if (!el || still()) return void setMounted(false);
+    el.style.maxHeight = `${el.scrollHeight}px`;
+    const raf = requestAnimationFrame(() => (el.style.maxHeight = '0px'));
+    const t = setTimeout(() => setMounted(false), FOLD_MS);
+    return () => (cancelAnimationFrame(raf), clearTimeout(t));
+  }, [open]);
+  if (!open && !mounted) return null;
+  return (
+    <div ref={ref} className="sc-fold" data-leaving={!open || undefined}>
+      {children}
+    </div>
+  );
+}
+const FOLD_MS = 320;
