@@ -15,10 +15,11 @@ import { BOARD } from '../sim/minigame';
 import { orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
 import { squareFindings } from '../sim/intel';
-import { freshness, groupOrigin, targets, unitSpot } from '../sim/imagery';
+import { freshness, groupOrigin, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 import { sightings, type Sighting } from '../sim/sightings';
+import { panelled, pins } from '../hud/pins';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the mission's points and route, in amber
@@ -153,6 +154,7 @@ export class MapScene extends Phaser.Scene {
     // ?debug: tests read the live camera to turn world points into screen taps.
     if (new URLSearchParams(location.search).has('debug'))
       Object.assign(window, {
+        mapSightings: () => pins.seen(), // what's bracketed, in world points (ILI-1410)
         mapCamera: () => {
           const c = this.cameras.main;
           return { scrollX: c.scrollX, scrollY: c.scrollY, zoom: c.zoom, width: c.width, height: c.height, dpr: DPR };
@@ -527,17 +529,19 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
-  // Only a bracketed fighter (ILI-1410): a dot on a stale picture can't be hit from here.
-  private targetAt(x: number, y: number) {
-    const hit = ((7 + 6) * DPR) / this.zoom; // the dot, and a margin for thumbs
-    const near = this.seen.filter((t) => t.kind === 'hostile' && Math.hypot(t.x - x, t.y - y) <= hit).map((t) => t.id.split(':')[0]);
-    return targets(game.get()).find((t) => near.includes(t.contactId) && Math.hypot(t.x - x, t.y - y) <= hit)?.contactId;
+  // The bracketed thing under a point that gets a panel (ILI-1411): an operator, a fighter, a kill
+  // site, the wreck. Nothing without brackets answers (ILI-1410).
+  private sightingAt(x: number, y: number) {
+    const hit = (12 * DPR) / this.zoom; // the dot, and a margin for thumbs
+    const near = this.seen.filter((t) => panelled(t) && Math.hypot(t.x - x, t.y - y) <= (t.kind === 'wreck' ? hit * 1.6 : hit));
+    return near.sort((p, q) => Math.hypot(p.x - x, p.y - y) - Math.hypot(q.x - x, q.y - y))[0] ?? null;
   }
 
   // Four corner brackets round everything HQ can interact with, and nothing else (ILI-1410).
   private drawBrackets() {
     const s = game.get();
     this.seen = sightings(s, this.opSpots);
+    pins.setSeen(this.seen);
     const g = this.bracketGfx.clear();
     const px = DPR / this.zoom;
     const eventColor = (id: string) => EVENT_COLOR[s.events.find((e) => e.id === id)?.kind ?? 'request'];
@@ -1046,8 +1050,10 @@ export class MapScene extends Phaser.Scene {
     this.track(p);
     // A mouse over a ping names it (ILI-1297); touch gets the card on a tap instead.
     if (!p.wasTouch && !p.isDown) {
-      this.hovered = this.eventAt(p.worldX, p.worldY)?.id ?? null;
-      this.input.manager.canvas.style.cursor = this.hovered ? 'pointer' : '';
+      const thing = this.sightingAt(p.worldX, p.worldY);
+      pins.hover(thing?.id ?? null);
+      this.hovered = thing ? null : (this.eventAt(p.worldX, p.worldY)?.id ?? null);
+      this.input.manager.canvas.style.cursor = thing || this.hovered ? 'pointer' : '';
     }
     const [a, b] = this.fingers();
     if (this.pinch && a && b) {
@@ -1078,9 +1084,10 @@ export class MapScene extends Phaser.Scene {
     const drag = this.drag;
     this.drag = null;
     if (!drag || drag.id !== p.id || drag.moved || game.get().phase !== 'running' || game.get().minigame?.kind === 'signal') return;
-    // A fighter HQ can see opens its strikes (ILI-1250).
-    const target = this.targetAt(p.worldX, p.worldY);
-    if (target) return game.openEvent(`contact-${target}`);
+    // A bracketed operator, fighter, kill site or the wreck: its panel pins, or unpins (ILI-1411).
+    // A fighter's strikes are a button on his panel.
+    const thing = this.sightingAt(p.worldX, p.worldY);
+    if (thing) return pins.toggle(thing.id);
     const event = this.eventAt(p.worldX, p.worldY);
     if (event) return game.openEvent(event.id);
     const id = squareAt(p.worldX, p.worldY);
