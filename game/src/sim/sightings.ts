@@ -1,6 +1,6 @@
 import { CELL, squareAt, squareCenter } from '../map/grid';
 import type { GameState } from './state';
-import { freshness, groupOrigin, unitSpot, type Freshness } from './imagery';
+import { freshness, shownAt, unitSpot, type Freshness } from './imagery';
 
 // Everything on the map HQ can interact with (ILI-1408), and only that: brackets mean it can be
 // hovered and clicked, no brackets mean no interaction (ILI-1410).
@@ -40,7 +40,8 @@ export function sightings(s: GameState, operators: ReadonlyMap<string, { x: numb
     for (const seen of snap.seen) {
       const c = s.contacts.find((x) => x.id === seen.contactId);
       if (!c || c.status === 'cleared') continue;
-      const o = snap.live ? groupOrigin(c, s.elapsedMs) : seen;
+      const o = shownAt(snap, seen, c, s.elapsedMs);
+      if (!o) continue; // walked out of the picture into unseen ground (ILI-1416)
       for (const u of snap.live ? c.units : seen.units) out.push({ id: fighterId(c.id, u), kind: 'hostile', ...unitSpot(o, u), age, square: snap.square });
     }
   }

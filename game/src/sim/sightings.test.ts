@@ -28,3 +28,19 @@ describe('sightings', () => {
     expect(sightings(old, spots(old)).filter((t) => t.kind === 'hostile')).toHaveLength(0);
   });
 });
+
+// Fog of war (ILI-1416): a live look follows a group only while it's in the watched square.
+describe('a group walking out of a live picture', () => {
+  it('shows while inside the square, and is gone once it walks into unseen ground', () => {
+    const s0 = pictured(initialState(), 0);
+    const c = s0.contacts[0];
+    const live = { ...s0, imagery: { [c.square]: { ...s0.imagery[c.square]!, live: true } } } as GameState;
+    const fighters = (s: GameState) => sightings(s, spots(s)).filter((t) => t.kind === 'hostile').length;
+    expect(fighters(live)).toBe(c.units.length);
+    // Off east, a square nobody is looking at: half way there it's already out of the picture.
+    const to = String.fromCharCode(c.square.charCodeAt(0) + 2) + c.square.slice(1);
+    const going = { ...live, contacts: live.contacts.map((x) => (x.id === c.id ? { ...x, move: { from: c.square, to, fromMs: 0, arriveMs: 10_000 } } : x)) };
+    expect(fighters({ ...going, elapsedMs: 1_000 })).toBe(c.units.length); // still in the square
+    expect(fighters({ ...going, elapsedMs: 9_000 })).toBe(0); // gone into the fog
+  });
+});

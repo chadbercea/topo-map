@@ -7,6 +7,7 @@ import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
 import { BudgetChip, StartCard, TimerChip } from './MissionBar';
+import { SightingPanels } from './SightingPanels';
 import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
 import { CommsPanel } from './CommsPanel';
@@ -130,6 +131,7 @@ export function Hud() {
       <MapArea />
       <SquareCard />
       <PromptLayer />
+      <SightingPanels />
       <div className="slot-band">
         <div className="band-cards" data-overlay="band">
           <ExfilPanel />

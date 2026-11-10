@@ -23,18 +23,16 @@ describe('the prompt queue', () => {
     expect(p.responses.length).toBeLessThanOrEqual(3);
   });
 
-  it('Scan grids opens the grid square; its menu moves ORION-3 there, Scan takes the photo, and the prompt is gone (ILI-1395, ILI-1397)', () => {
+  it('Scan grids does it: ORION-3 goes to the grid square and scans it on arrival; the prompt shows progress, then goes (ILI-1414)', () => {
     const store = createStore(run(blindAhead(), 3_000));
     const p = activePrompt(store.get())!;
     expect(p.responses).toEqual([{ id: 'grids', label: 'Scan grids' }]);
     store.answerPrompt(p.id, 'grids');
     expect(store.get().map.selected).toBe('F4');
-    expect(store.get().satellite.aim).not.toBe('F4'); // the move is its own step, in the square's menu
-    store.scan('F4');
-    expect(store.get().imagery.F4).toBeUndefined(); // not locked on yet
-    store.moveSatellite('F4');
-    for (let i = 0; i < 400 && store.get().satellite.state === 'slewing'; i++) store.tick(100);
-    store.scan('F4');
+    expect(store.get().satellite.aim).toBe('F4'); // on its way, no more clicks
+    expect(activePrompt(store.get())?.responses[0]).toMatchObject({ label: 'ORION-3 moving to F4…', disabled: true });
+    for (let i = 0; i < 400 && !store.get().imagery.F4; i++) store.tick(100);
+    expect(store.get().imagery.F4).toBeDefined(); // scanned the moment it locked on
     store.tick(100);
     expect(promptQueue(store.get()).some((x) => x.id === p.id)).toBe(false);
   });
