@@ -47,7 +47,7 @@ const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').match
 // fits the grid to the screen; line widths and labels are redrawn per zoom so they stay crisp.
 const PAN_SPEED = 700; // CSS px a second, while a key is held
 const DRAG_PX = 8; // CSS px a finger can wander and still count as a tap
-const MAX_ZOOM = 3; // pinch or wheel in up to 3x the whole-map fit
+const MAX_ZOOM = 2; // pinch or wheel in up to 2x the whole-map fit (ILI-1429: was 3x, too close)
 // Keys go to whatever has focus first: no panning while typing or on the signal dial.
 const typing = () => {
   const el = document.activeElement;
