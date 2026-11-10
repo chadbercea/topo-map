@@ -60,6 +60,15 @@ export function groupOrigin(c: Contact, now: number) {
   return { x: here.x + (to.x - here.x) * t, y: here.y + (to.y - here.y) * t };
 }
 
+// Where a look shows a group (ILI-1416: fog of war). A photo shows where it was when taken. A
+// live look (video, ALPHA's eyes) follows it, but only while it's inside the square being
+// watched: once it walks out into ground nobody is looking at, the look loses it (null).
+export function shownAt(snap: Snapshot, seen: Seen, c: Contact, now: number): { x: number; y: number } | null {
+  if (!snap.live) return seen;
+  const o = groupOrigin(c, now);
+  return squareAt(o.x + CELL / 2, o.y + CELL / 2) === snap.square ? o : null;
+}
+
 // A look at a square: every live contact in it. A single photo can't tell who is moving.
 export function snapshot(s: GameState, square: SquareId, mode: Snapshot['mode'], live: boolean): Snapshot {
   const seen = s.contacts
@@ -134,7 +143,8 @@ export function targets(s: GameState) {
     for (const seen of snap.seen) {
       const c = s.contacts.find((x) => x.id === seen.contactId);
       if (!c || c.status !== 'revealed' || !s.events.some((e) => e.id === `contact-${c.id}` && e.status !== 'resolved')) continue;
-      const o = snap.live ? groupOrigin(c, s.elapsedMs) : seen;
+      const o = shownAt(snap, seen, c, s.elapsedMs);
+      if (!o) continue;
       for (const u of snap.live ? c.units : seen.units) out.push({ contactId: c.id, ...unitSpot(o, u) });
     }
   return out;

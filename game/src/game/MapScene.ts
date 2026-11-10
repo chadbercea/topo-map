@@ -15,7 +15,7 @@ import { BOARD } from '../sim/minigame';
 import { orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
 import { squareFindings } from '../sim/intel';
-import { freshness, groupOrigin, unitSpot } from '../sim/imagery';
+import { freshness, shownAt, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 import { sightings, type Sighting } from '../sim/sightings';
@@ -360,7 +360,8 @@ export class MapScene extends Phaser.Scene {
         const c = contacts.find((x) => x.id === seen.contactId);
         if (!c || c.status === 'cleared') continue;
         // Live looks follow them; anything else shows where they were.
-        const o = snap.live ? groupOrigin(c, now) : seen;
+        const o = shownAt(snap, seen, c, now);
+        if (!o) continue; // out of the picture: the fog closes over it (ILI-1416)
         const units = snap.live ? c.units : seen.units;
         let cx = 0;
         let cy = 0;
