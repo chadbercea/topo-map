@@ -40,6 +40,7 @@ export type Satellite = {
   callId: string | null; // ALPHA's call waiting on this look
   result: LookResult | null; // the last look, for the panel until closed
   autoScan?: SquareId | null; // Scan grids (ILI-1414): scan this square the moment it's locked on
+  watching?: SquareId | null; // video ran here: its picture stays live while ORION-3 stays over (ILI-1423)
 };
 
 const at = (sq: SquareId): Point => parseSquare(sq)!;
@@ -131,9 +132,15 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     callId: callId ?? null,
     result: null,
     autoScan: null, // a new tasking calls off any scan Scan grids had waiting (ILI-1414)
+    watching: null, // and ends any live feed (ILI-1423)
   };
+  // Leaving a square it was watching live (ILI-1423): that picture stops being live and ages
+  // from now like any other look.
+  const was = s.satellite.watching;
+  const left = was && was !== square && s.imagery[was]?.live ? { ...s.imagery, [was]: { ...s.imagery[was]!, live: false, atMs: s.elapsedMs } } : s.imagery;
   const next: GameState = {
     ...s,
+    imagery: left,
     satellite: sat, // the picked square stays picked: its anchor shows ORION-3 on its way (ILI-1302)
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
@@ -185,7 +192,7 @@ function finishLook(s: GameState): GameState {
   const result: LookResult = { square, mode, fighters, moving, awareness };
   next = {
     ...next,
-    satellite: { ...sat, state: 'idle', from: at(square), mode: null, callId: null, result },
+    satellite: { ...sat, state: 'idle', from: at(square), mode: null, callId: null, result, watching: mode === 'video' ? square : null },
     team: sat.callId && next.team.holdFor === sat.callId ? { ...next.team, holdFor: null } : next.team,
   };
   // To the analysts, and what it was worth to ALPHA (ILI-1314): a photo's grade feeds its
@@ -219,7 +226,9 @@ export const satelliteSystem: System = (s) => {
     const there = log({ ...s, satellite: { ...sat, state: 'onStation', autoScan: null } }, radio(s, satName(s), `station-${s.elapsedMs}`, auto ? `On station over ${sat.aim}. Scanning.` : `On station over ${sat.aim}. Ready for collection.`));
     return auto ? scan(there) : there;
   }
-  if (sat.state !== 'capturing') return s;
+  // Video is real time (ILI-1423): once it's run on a square, the picture stays live for as long
+  // as ORION-3 stays over it. No rescan.
+  if (sat.state !== 'capturing') return sat.watching && sat.watching === sat.aim && sat.state !== 'slewing' ? record(s, snapshot(s, sat.aim, 'video', true)) : s;
   if (s.elapsedMs >= sat.captureUntilMs) return finishLook(s);
   // Video is live: the map follows them while it runs.
   return sat.mode === 'video' ? record(s, snapshot(s, sat.aim, 'video', true)) : s;

@@ -106,12 +106,14 @@ describe('fog of war', () => {
     expect(photo.get().imagery.C2.seen[0].to).toBeNull();
   });
 
-  it('video is live while it runs, then becomes an ordinary look', () => {
+  it('video is live while it runs and while ORION-3 stays over; tasked away, it becomes an ordinary look (ILI-1423)', () => {
     const store = createStore(walkingPatrol());
     look(store, 'C2', 'video');
     store.set(run(store.get(), 2_000));
     expect(store.get().imagery.C2).toMatchObject({ mode: 'video', live: true });
     store.set(run(store.get(), 14_000));
+    expect(store.get().imagery.C2.live).toBe(true); // still over it: real time
+    store.lookAt('E3');
     expect(store.get().imagery.C2.live).toBe(false);
   });
 
@@ -211,5 +213,22 @@ describe("the satellite's name", () => {
     const traffic = promptQueue(run(atlas, 83_000)).find((p) => p.kind === 'enemy-traffic');
     expect(traffic?.responses[0].label).toMatch(/^ATLAS-1 /);
     expect(JSON.stringify(store.get()).includes('ORION-3')).toBe(false);
+  });
+});
+
+// Video is real time (ILI-1423): its square stays live while ORION-3 stays over it.
+describe('video stays live', () => {
+  it('keeps refreshing while ORION-3 stays over the square, and ages once it is tasked away', () => {
+    const store = atStart();
+    look(store, 'G4', 'video');
+    for (let i = 0; i < 200 && store.get().satellite.state === 'capturing'; i++) store.tick(100);
+    for (let i = 0; i < (GHOST_MS + 5_000) / 100; i++) store.tick(100); // long past any look's life
+    const s = store.get();
+    expect(s.imagery.G4?.live).toBe(true);
+    expect(freshness(s.imagery.G4!, s.elapsedMs)).toBe('live');
+    store.lookAt('F4');
+    store.tick(100);
+    expect(store.get().imagery.G4?.live).toBe(false);
+    expect(freshness(store.get().imagery.G4!, store.get().elapsedMs)).toBe('fresh'); // ages from now
   });
 });

@@ -70,6 +70,9 @@ export class MapScene extends Phaser.Scene {
   private selectGfx!: Phaser.GameObjects.Graphics;
   private routeGfx!: Phaser.GameObjects.Graphics;
   private teamGfx!: Phaser.GameObjects.Graphics;
+  private wipeGfx!: Phaser.GameObjects.Graphics; // a new scan's wipe over its square (ILI-1423)
+  private scansSeen = new Set<string>();
+  private wipes = new Map<string, number>(); // square -> when its wipe started
   private dotGfx!: Phaser.GameObjects.Graphics; // the team's dots: the map only
   private arrowGfx!: Phaser.GameObjects.Graphics; // the team as tiny heading arrows: ORION-3's picture only (ILI-1419)
   private bracketGfx!: Phaser.GameObjects.Graphics; // four corners round everything HQ can interact with (ILI-1410)
@@ -141,6 +144,8 @@ export class MapScene extends Phaser.Scene {
     this.arrowGfx = this.add.graphics();
     this.cameras.main.ignore(this.arrowGfx);
     this.bracketGfx = this.add.graphics();
+    this.wipeGfx = this.add.graphics();
+    for (const sq of game.get().map.scanned) this.scansSeen.add(sq);
     this.insetBracketGfx = this.add.graphics();
     this.cameras.main.ignore(this.insetBracketGfx); // only ORION-3's picture draws these (ILI-1415)
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
@@ -241,6 +246,7 @@ export class MapScene extends Phaser.Scene {
     this.drawSatellite(_time);
     this.drawMiniGame(_time);
     this.drawBrackets();
+    this.drawWipes(_time);
     this.drawStrikes();
     this.drawBlind();
   }
@@ -562,6 +568,42 @@ export class MapScene extends Phaser.Scene {
     const pad = CELL * 0.25; // the sliver of neighbours round the square
     const inView = this.seen.filter((t) => t.x >= sq.col * CELL - pad && t.x <= (sq.col + 1) * CELL + pad && t.y >= sq.row * CELL - pad && t.y <= (sq.row + 1) * CELL + pad);
     this.bracketsInto(g, inView, DPR / this.zoom, DPR / this.inset.zoom, true);
+  }
+
+  // A scan of a square nobody had scanned (ILI-1423): the intro's wipe, on the square. It snaps
+  // black, then a bright bar sweeps across and the square comes back with what the scan found.
+  private drawWipes(time: number) {
+    const scanned = game.get().map.scanned;
+    if (scanned.length < this.scansSeen.size) this.scansSeen = new Set(scanned); // a new mission
+    for (const sq of scanned) {
+      if (this.scansSeen.has(sq)) continue;
+      this.scansSeen.add(sq);
+      if (!reducedMotion()) this.wipes.set(sq, time);
+    }
+    const g = this.wipeGfx.clear();
+    const BLACK = 120;
+    const SWEEP = 480;
+    const px = DPR / this.zoom;
+    for (const [sq, at] of this.wipes) {
+      const t = time - at;
+      const p = parseSquare(sq);
+      if (!p || t > BLACK + SWEEP) {
+        this.wipes.delete(sq);
+        continue;
+      }
+      const x0 = p.col * CELL;
+      const y0 = p.row * CELL;
+      if (t < BLACK) {
+        g.fillStyle(0x0b0f0d, t / BLACK).fillRect(x0, y0, CELL, CELL);
+        continue;
+      }
+      const k = (t - BLACK) / SWEEP;
+      const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; // the intro's ease, near enough
+      const bar = x0 + e * CELL;
+      g.fillStyle(0x0b0f0d, 1).fillRect(bar, y0, x0 + CELL - bar, CELL);
+      g.fillStyle(TEAL, 0.25).fillRect(bar - 9 * px, y0, 18 * px, CELL); // its glow
+      g.fillStyle(TEAL, 1).fillRect(bar - 1.5 * px, y0, 3 * px, CELL);
+    }
   }
 
   // Four corner brackets round each thing. px: one CSS pixel at the zoom the things are drawn for;
