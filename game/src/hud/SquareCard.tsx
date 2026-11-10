@@ -228,6 +228,10 @@ const settle = (was: number, now: number) => (now > was || was - now > SLACK ? n
 // every way to strike them, then anything else going on there.
 function AnchorBody({ s, square }: { s: GameState; square: string }) {
   const marked = targets(s).filter((t) => squareAt(t.x, t.y) === square);
+  // Strikes only once a look (photo or video) shows fighters here and isn't stale (ILI-1417): a radio
+  // report of a contact is a report, not a target.
+  const look = s.imagery[square];
+  const seenHere = !!look && freshness(look, s.elapsedMs) !== 'stale' && marked.length > 0;
   const strikes = s.events.filter((e) => e.square === square && strikeable(e) && e.status !== 'resolved');
   const locked = lockedOn(s, square);
   return (
@@ -260,7 +264,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
           {settled(s, square) ? null : <Scan s={s} square={square} />}
 
           {/* Its fighters, and every way to hit them (ILI-1230, ILI-1270), here at their square. */}
-          {strikes.length > 0 && (
+          {seenHere && strikes.length > 0 && (
             <section className="sc-strikes" data-testid="strike-menu" aria-label={`Strike ${square}`}>
               {marked.length > 0 && (
                 <p className="sc-marked" data-testid="fighters-marked">
