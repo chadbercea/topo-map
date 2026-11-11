@@ -2,6 +2,8 @@ name: Game CI
 
 # Required on main: PRs auto-merge only when this and the Vercel check pass.
 # Runs on every PR (no path filter) so a required check never hangs waiting.
+# The browser suite is split across four runners at once (ILI-1457: it was ~9 min on one); a
+# last job, named game-ci (the required check), passes only if every part passed.
 on:
   pull_request:
   push:
@@ -15,11 +17,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  game-ci:
+  checks:
+    name: typecheck + unit
     runs-on: ubuntu-latest
-    # Browsers and their system libraries come preinstalled; installing them per run took ~9 minutes.
-    # Keep the tag in step with @playwright/test in game/package.json.
-    container: mcr.microsoft.com/playwright:v1.64.1-noble
     defaults:
       run:
         working-directory: game
@@ -33,10 +33,43 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - run: npm run e2e
+
+  e2e:
+    name: e2e ${{ matrix.shard }}/4
+    runs-on: ubuntu-latest
+    # Browsers and their system libraries come preinstalled; installing them per run took ~9 minutes.
+    # Keep the tag in step with @playwright/test in game/package.json.
+    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: game
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: game/package-lock.json
+      - run: npm ci
+      - run: npx playwright test --shard=${{ matrix.shard }}/4
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-traces
+          name: playwright-traces-${{ matrix.shard }}
           path: game/test-results
           retention-days: 7
+
+  game-ci:
+    name: game-ci
+    runs-on: ubuntu-latest
+    needs: [checks, e2e]
+    if: always()
+    steps:
+      - name: Every part passed
+        run: |
+          echo "checks: ${{ needs.checks.result }}  e2e: ${{ needs.e2e.result }}"
+          test "${{ needs.checks.result }}" = success && test "${{ needs.e2e.result }}" = success
