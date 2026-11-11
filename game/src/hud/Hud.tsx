@@ -41,7 +41,7 @@ export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   // ORION-3 first: the team panel is a drawer now (ILI-1396), closed until HQ opens it.
   const [tab, setTab] = useState<Tab>('orion');
-  const [teamOpen, setTeamOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(true); // expanded by default; minimizes to the strip (ILI-1439)
   const [highlight, setHighlight] = useState<string | null>(null);
   // On a wide screen the log is a drawer over the map's left edge, behind one small button (ILI-1393).
   const [log, setLog] = useState(false);
@@ -150,8 +150,8 @@ export function Hud() {
         )}
         {/* The heartbeat strip, tier one; the team panel is its drawer (ILI-1396). */}
         <div className="slot-team" data-overlay={!tabbed && teamOpen ? 'team' : undefined}>
-          {!tabbed && <HeartbeatStrip open={teamOpen} onToggle={toggleTeam} />}
-          <TeamPanel highlight={highlight} />
+          {/* One panel, two display states (ILI-1439): expanded, or folded to the strip. */}
+          <TeamPanel highlight={highlight} minimized={!tabbed && !teamOpen} onToggle={tabbed ? undefined : toggleTeam} />
         </div>
       </div>
       <div className="slot-satcom" ref={satcomSlot} data-overlay={!tabbed && log ? 'log' : undefined}>

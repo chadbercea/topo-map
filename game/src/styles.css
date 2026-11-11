@@ -1559,8 +1559,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .heartbeat-strip:hover, .heartbeat-strip[aria-expanded='true'] { border-color: var(--accent); }
 @media (min-width: 1200px) {
   .slot-team { position: relative; justify-self: start; }
-  .hud:not([data-team]) .slot-team > .team { display: none; } /* a drawer, closed until HQ opens it */
-  .hud[data-team] .slot-team > .team { background: #0b0f0d; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); position: absolute; left: 0; bottom: calc(100% + 8px); width: max-content; max-width: calc(100vw - 460px); max-height: 60vh; z-index: 7; }
+  .slot-team > .team { background: #0b0f0d; width: max-content; max-width: calc(100vw - 460px); max-height: 40vh; } /* one panel at the bottom left, its own room: the map gives way (ILI-1439) */
 }
 .hud:not([data-tier='wide']) > .heartbeat-strip { grid-area: map; align-self: start; justify-self: start; margin: 60px 0 0 10px; z-index: 5; } /* under the timer; Recentre has the bottom right */
 .hud[data-tier='compact'][data-picked] > .heartbeat-strip { display: none; } /* the square's menu has the map's foot */
@@ -1714,6 +1713,17 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion .modes[data-step='send'] button { animation: opt-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .orion .modes[data-step='send'] button:nth-child(2) { animation-delay: 50ms; }
 @media (prefers-reduced-motion: reduce) { .orion .modes[data-step='send'] button { animation: none; } }
+
+/* The team panel's minimize (ILI-1439): it swaps back to the heartbeat strip. */
+.team h2 .team-min { margin-left: auto; min-height: 24px; width: 28px; padding: 0; font: inherit; font-size: 12px; line-height: 1; color: var(--dim); background: transparent; border: 1px solid var(--line); cursor: pointer; }
+.team h2 .team-min:hover, .team h2 .team-min:focus-visible { color: var(--ink); border-color: var(--accent); outline: none; }
+
+/* One team panel, two states (ILI-1439): minimized, it folds to the heartbeat strip inside the
+   same frame; expanded, the rows slide in. */
+.team[data-state='min'] .heartbeat-strip { border: 0; background: none; padding: 4px 0 0; min-height: 0; animation: team-fold 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.team[data-state='full'] .readout { animation: team-fold 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes team-fold { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .team .readout, .team .heartbeat-strip { animation: none; } }
 
 /* A square's details in ORION-3's view (ILI-1438): under its square picture, in the frame's
    space below it. It never scrolls the panel: anything past the space is cut, newest first. */
