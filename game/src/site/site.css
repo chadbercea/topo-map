@@ -98,3 +98,17 @@ html.ch-root body { margin: 0; background: #f6f7f4; font-family: 'Inter Tight', 
   .ch-lede { font-size: 17px; }
 }
 @media (prefers-reduced-motion: reduce) { html.ch-root { scroll-behavior: auto; } }
+
+/* The game's intro is the hero (ILI-1447): the live rook and globe, full screen and fixed. The
+   page slides up over it; a scrim darkens it as it's covered (--cover, 0 to 1, set on scroll). */
+.ch-intro { position: fixed; inset: 0; z-index: 0; background: var(--bg); color: var(--ink); overflow: hidden; }
+.ch-intro .ch-hero-3d { opacity: 1; }
+.ch-intro-mark { position: absolute; left: 0; right: 0; bottom: max(9vh, 56px); display: grid; justify-items: center; gap: 10px; padding: 0 16px; text-align: center; text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg); transform: translateY(calc(var(--cover, 0) * -40px)); opacity: calc(1 - var(--cover, 0) * 1.4); }
+.ch-intro-mark .ch-rook { width: 34px; height: 44px; color: var(--accent); }
+.ch-intro-mark h1 { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: clamp(22px, 4.2vw, 40px); font-weight: 600; letter-spacing: 0.42em; margin-right: -0.42em; }
+.ch-intro-mark p { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); }
+.ch-intro-scroll { margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); animation: ch-nudge 1.8s ease-in-out infinite; }
+@keyframes ch-nudge { 50% { transform: translateY(4px); } }
+.ch-intro-scrim { position: absolute; inset: 0; background: #000; opacity: calc(var(--cover, 0) * 0.85); pointer-events: none; }
+.ch-page { position: relative; z-index: 1; margin-top: 100svh; box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.6); }
+@media (prefers-reduced-motion: reduce) { .ch-intro-scroll { animation: none; } }
