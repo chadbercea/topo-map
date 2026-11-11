@@ -10,7 +10,8 @@ import { transportAt } from './exfil';
 // - whatever ORION-3's newest picture of a square shows while that picture isn't stale: hostile
 //   fighters, kill sites, the wreck;
 // - the event pings and the SIGINT diamonds, always.
-export type SightingKind = 'operator' | 'hostile' | 'site' | 'wreck' | 'event' | 'signal' | 'aircraft';
+// team: ALPHA as one target, the main map's (ILI-1443); operator: each man, ORION-3's picture's.
+export type SightingKind = 'team' | 'operator' | 'hostile' | 'site' | 'wreck' | 'event' | 'signal' | 'aircraft';
 export type Sighting = { id: string; kind: SightingKind; x: number; y: number; age: Freshness | 'tracked'; square: string };
 
 // The age of the newest picture of a square, or null if there is none or it has gone stale.
@@ -35,6 +36,12 @@ export function sightings(s: GameState, operators: ReadonlyMap<string, { x: numb
   for (const o of s.team.operators) {
     const at = operators.get(o.id);
     if (at) out.push({ id: `op:${o.id}`, kind: 'operator', x: at.x, y: at.y, age: 'tracked', square: squareAt(at.x, at.y) ?? '' });
+  }
+  if (operators.size) {
+    const spots = [...operators.values()];
+    const x = spots.reduce((n, p) => n + p.x, 0) / spots.length;
+    const y = spots.reduce((n, p) => n + p.y, 0) / spots.length;
+    out.push({ id: 'team', kind: 'team', x, y, age: 'tracked', square: squareAt(x, y) ?? '' });
   }
   for (const snap of Object.values(s.imagery)) {
     const age = freshness(snap, s.elapsedMs);

@@ -551,7 +551,8 @@ export class MapScene extends Phaser.Scene {
   // site, the wreck. Nothing without brackets answers (ILI-1410).
   private sightingAt(x: number, y: number) {
     const hit = (12 * DPR) / this.zoom; // the dot, and a margin for thumbs
-    const near = this.seen.filter((t) => panelled(t) && Math.hypot(t.x - x, t.y - y) <= (t.kind === 'wreck' ? hit * 1.6 : hit));
+    const reach = (t: Sighting) => (t.kind === 'team' ? hit * 2.4 : t.kind === 'wreck' ? hit * 1.6 : hit);
+    const near = this.seen.filter((t) => panelled(t) && t.kind !== 'operator' && Math.hypot(t.x - x, t.y - y) <= reach(t)); // the main map's targets (ILI-1443)
     return near.sort((p, q) => Math.hypot(p.x - x, p.y - y) - Math.hypot(q.x - x, q.y - y))[0] ?? null;
   }
 
@@ -560,7 +561,8 @@ export class MapScene extends Phaser.Scene {
     const s = game.get();
     this.seen = sightings(s, this.opSpots);
     pins.setSeen(this.seen);
-    this.bracketsInto(this.bracketGfx.clear(), this.seen, DPR / this.zoom, DPR / this.zoom);
+    // The main map is the overview (ILI-1443): ALPHA is one target; each man is ORION-3's.
+    this.bracketsInto(this.bracketGfx.clear(), this.seen.filter((t) => t.kind !== 'operator'), DPR / this.zoom, DPR / this.zoom);
     // ORION-3's picture gets them too (ILI-1415): sized to wrap the dots as drawn (they're drawn
     // for the map's zoom), with a line as thin as the map's at the picture's zoom.
     const g = this.insetBracketGfx.clear();
@@ -568,7 +570,7 @@ export class MapScene extends Phaser.Scene {
     const sq = id ? parseSquare(id) : null;
     if (!sq) return;
     const pad = CELL * 0.25; // the sliver of neighbours round the square
-    const inView = this.seen.filter((t) => t.x >= sq.col * CELL - pad && t.x <= (sq.col + 1) * CELL + pad && t.y >= sq.row * CELL - pad && t.y <= (sq.row + 1) * CELL + pad);
+    const inView = this.seen.filter((t) => t.kind !== 'team' && t.x >= sq.col * CELL - pad && t.x <= (sq.col + 1) * CELL + pad && t.y >= sq.row * CELL - pad && t.y <= (sq.row + 1) * CELL + pad);
     this.bracketsInto(g, inView, DPR / this.zoom, DPR / this.inset.zoom, true);
   }
 
@@ -616,7 +618,8 @@ export class MapScene extends Phaser.Scene {
     const eventColor = (id: string) => EVENT_COLOR[s.events.find((e) => e.id === id)?.kind ?? 'request'];
     for (const t of things) {
       const [half, color] =
-        t.kind === 'operator' ? [7, TEAL]
+        t.kind === 'team' ? [26, TEAL]
+        : t.kind === 'operator' ? [7, TEAL]
         : t.kind === 'hostile' || t.kind === 'site' ? [8, 0xe5484d]
         : t.kind === 'wreck' ? [16, TEAM]
         : t.kind === 'aircraft' ? [14, t.id === 'air:exfil' ? 0xff8a2a : 0xe5484d]
@@ -1204,7 +1207,7 @@ export class MapScene extends Phaser.Scene {
     // A mouse over a ping names it (ILI-1297); touch gets the card on a tap instead.
     if (!p.wasTouch && !p.isDown) {
       const thing = this.sightingAt(p.worldX, p.worldY);
-      pins.hover(thing?.id ?? null);
+      pins.hover(thing?.id ?? null, 'map');
       this.hovered = thing ? null : (this.eventAt(p.worldX, p.worldY)?.id ?? null);
       this.input.manager.canvas.style.cursor = thing || this.hovered ? 'pointer' : '';
     }
@@ -1237,10 +1240,8 @@ export class MapScene extends Phaser.Scene {
     const drag = this.drag;
     this.drag = null;
     if (!drag || drag.id !== p.id || drag.moved || game.get().phase !== 'running' || game.get().minigame?.kind === 'signal') return;
-    // A bracketed operator, fighter, kill site or the wreck: its panel pins, or unpins (ILI-1411).
-    // A fighter's strikes are a button on his panel.
-    const thing = this.sightingAt(p.worldX, p.worldY);
-    if (thing) return pins.toggle(thing.id);
+    // Nothing pins on the main map (ILI-1443): that's ORION-3's picture's job. A click here falls
+    // through to the event or the square (which sends ORION-3).
     const event = this.eventAt(p.worldX, p.worldY);
     if (event) return game.openEvent(event.id);
     // A square: picked, and if ORION-3 isn't over it, ORION-3 goes (ILI-1437); its menu opens on

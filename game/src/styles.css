@@ -1730,3 +1730,13 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion .o-frame > .o-detail { position: absolute; left: 0; right: 0; top: min(100cqw, 100cqh); bottom: 0; overflow: hidden; display: grid; align-content: start; background: var(--bg); border-top: 1px solid var(--line); }
 .orion .o-frame > .o-detail .sc-details summary { cursor: default; }
 .hud[data-tier='compact'] .orion .o-frame > .o-detail { display: none; } /* a phone's picture has no room under it */
+
+/* The main map's hover (ILI-1443): a light tag, and ALPHA TEAM's mini status. */
+.sighting-panel[data-tag] { min-width: 0; padding: 4px 8px; }
+.sighting-panel .sp-tag { margin: 0; font-size: 10px; letter-spacing: 0.1em; color: var(--ink); white-space: nowrap; }
+.sighting-panel .sp-tag.hostile { color: #e5484d; }
+.sighting-panel .sp-title.team { color: var(--accent); }
+.sighting-panel .sp-bar { display: block; width: 120px; height: 4px; background: rgba(53, 208, 165, 0.15); }
+.sighting-panel .sp-bar > span { display: block; height: 100%; background: var(--accent); }
+.sighting-panel .sp-bar[data-level='low'] > span { background: #f2c14e; }
+.sighting-panel .sp-bar[data-level='out'] > span { background: #e5484d; }
