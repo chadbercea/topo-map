@@ -17,7 +17,17 @@ test('the title screen, then ORION-3; the clock starts and ALPHA sets off', asyn
   await expect(page.getByText('CASTLE HOUSE', { exact: true })).toHaveCount(0);
   const orion = page.getByTestId('intro-orion');
   await expect(orion).toBeVisible();
+  // ORION-3's tasking panel (ILI-1445): the mission on offer; close, expand, then accept.
   await press(orion, isMobile);
+  const tasking = page.getByTestId('intro-tasking');
+  await expect(tasking).toContainText('ORION-3 · TASKING');
+  await expect(tasking).toContainText("Recover the drone's black box at D3");
+  await press(page.getByTestId('tasking-close'), isMobile);
+  await expect(tasking).toHaveCount(0);
+  await press(orion, isMobile);
+  await press(page.getByTestId('tasking-expand'), isMobile);
+  await expect(page.getByTestId('tasking-specs')).toContainText(/RECOVERY.*1 · ALPHA ×5.*\d+:00/s);
+  await press(page.getByTestId('tasking-accept'), isMobile);
   await expect(page.getByTestId('intro-login')).toContainText('OPERATOR AUTH');
   await expect(page.getByTestId('intro-link')).toHaveCount(0); // no SATCOM link modal (ILI-1433)
 

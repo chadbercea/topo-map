@@ -6,7 +6,7 @@ import { ExfilPanel } from './ExfilPanel';
 import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
-import { BudgetChip, StartCard, TimerChip } from './MissionBar';
+import { BudgetChip, TimerChip } from './MissionBar';
 import { SightingPanels } from './SightingPanels';
 import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
@@ -127,7 +127,6 @@ export function Hud() {
         <TimerChip />
         <BudgetChip />
       </div>
-      <StartCard />
       <MapArea />
       <SquareCard />
       <PromptLayer />

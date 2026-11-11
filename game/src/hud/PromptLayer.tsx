@@ -3,7 +3,6 @@ import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { promptQueue } from '../sim/prompts';
 import { alphaBox, overlaysNamed, pick, squareBox, type Box } from './overlays';
-import { useStartDismissed } from './startCard';
 import { useTier } from './tier';
 
 const W = 280; // the prompt's width on a wide screen
@@ -15,7 +14,6 @@ const GAP = 12; // between the prompt and its square
 export function PromptLayer() {
   const s = useGame((x) => x);
   const queue = promptQueue(s);
-  const started = useStartDismissed();
   const p = queue[0];
   const tier = useTier();
   const ref = useRef<HTMLElement>(null);
@@ -38,7 +36,7 @@ export function PromptLayer() {
   });
 
   const area = getMapRect();
-  if (!p || !area || !started) return null; // the start card first (ILI-1421)
+  if (!p || !area) return null;
   const sq = squareBox(p.square);
   const width = Math.min(W, area.width - 16);
   // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
