@@ -11,11 +11,9 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   // E3 is off screen on a phone (the camera stays on ALPHA); map.spec covers tapping squares.
   await page.evaluate(() => window.game.selectSquare('E3'));
   if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
-  // Picking a square pins its card: what HQ knows of it, and Reposition. No picture anywhere yet.
+  // Picking a square ORION-3 isn't over opens no menu (ILI-1437); ORION-3 offers Reposition.
   const card = page.getByTestId('square-card');
-  await expect(card).toHaveAttribute('data-square', 'E3');
-  await expect(page.getByTestId('square-status')).toHaveText('no imagery');
-  await expect(page.getByTestId('square-facts')).toContainText(/Elevation\s*\d+–\d+ m/);
+  await expect(page.getByTestId('square-anchor')).toHaveCount(0);
   // The picture stays on the square ORION-3 is over (ILI-1428): picking E3 doesn't move it.
   await expect(page.getByTestId('satellite-inset')).toHaveAttribute('aria-label', /picture of G5$/);
   // Not over E3 yet: one big Reposition, and no shots to take (ILI-1250).
@@ -34,7 +32,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(sat.getByTestId('look-here')).toContainText('Repositioning to E3');
   await expect(sat.getByRole('button', { name: 'Cancel' })).toHaveCount(0); // no Cancel
   await expect(page.getByTestId('satellite-status')).toContainText('ORION-3 to E3');
-  await expect(page.getByTestId('square-status')).toHaveText(/ORION-3 \d+:\d\d away/); // the square, in the same panel (ILI-1228)
+  await expect(page.getByTestId('square-anchor')).toHaveCount(0); // its menu waits for the lock (ILI-1437)
   await untilOnStation(page);
 
   // On station the panel opens up: the larger square, and the ways to look.
