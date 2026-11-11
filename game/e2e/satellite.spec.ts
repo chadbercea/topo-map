@@ -85,7 +85,13 @@ test('a fighter in ORION-3\u2019s picture opens its square\u2019s strikes at the
   await expect(sat.getByTestId('strike-toggle')).toHaveCount(0);
   const pins = sat.getByTestId('target-pin');
   await expect(pins).toHaveCount(5); // one per fighter it saw
+  // A click in ORION-3's picture pins his full panel there (ILI-1444); its Strike opens the square's strikes.
+  await page.evaluate(() => window.game.tick(100)); // ORION-3's live feed over E3
   await pins.first().click();
+  const panel = page.locator('.sighting-panel[data-kind=hostile][data-pinned]');
+  await expect(panel.getByTestId('panel-tango')).toHaveText(/^HOSTILE · TANGO-\d+$/);
+  await expect(panel.getByTestId('panel-weapon')).not.toHaveText('█████'); // ORION-3 is over him: his weapon shows
+  await panel.getByTestId('panel-strike').click();
   const anchor = page.getByTestId('square-anchor');
   await expect(anchor).toHaveAttribute('data-square', 'E3');
   await expect(anchor.getByTestId('strike-menu').getByTestId('fire-drone')).toBeVisible();
@@ -181,8 +187,8 @@ test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMob
     g.tick(3000);
   });
   if (isMobile) await page.getByTestId('tab-orion').click();
+  await expect.poll(() => page.getByTestId('target-pin').count()).toBeGreaterThan(0); // the map brackets them on its next frame
   const n = await page.getByTestId('target-pin').count();
-  expect(n).toBeGreaterThan(0);
   await expect(page.getByTestId('square-anchor').getByTestId('fighters-marked')).toHaveText(`${n} ${n === 1 ? 'fighter' : 'fighters'} marked`);
 });
 

@@ -13,6 +13,9 @@ let seen: Sighting[] = [];
 // TANGO numbers (ILI-1412): each fighter gets the next one the first time he's bracketed, and
 // keeps it for the mission.
 const tangos = new Map<string, number>();
+let seenKey = '';
+let seenVersion = 0;
+const seenListeners = new Set<() => void>();
 const listeners = new Set<() => void>();
 const set = (next: Pins) => {
   state = next;
@@ -27,6 +30,8 @@ export const pins = {
   clear: () => (tangos.clear(), set({ hovered: null, from: 'map', pinned: [] })),
   // What's bracketed this frame (MapScene).
   setSeen: (list: Sighting[]) => {
+    const key = list.map((t) => t.id).join();
+    if (key !== seenKey) (seenKey = key, seenVersion++, seenListeners.forEach((l) => l())); // what's bracketed changed (ILI-1444)
     seen = list;
     for (const t of list) if (t.kind === 'hostile' && !tangos.has(t.id)) tangos.set(t.id, tangos.size + 1);
   },
@@ -35,6 +40,12 @@ export const pins = {
 };
 
 export const usePins = () => useSyncExternalStore(pins.subscribe, pins.get);
+// Re-render when the set of bracketed things changes (ORION-3's picture targets, ILI-1444).
+export const useSeenVersion = () =>
+  useSyncExternalStore(
+    (l) => (seenListeners.add(l), () => void seenListeners.delete(l)),
+    () => seenVersion,
+  );
 
 // The kinds that get one of these panels. Event pings and SIGINT diamonds keep their own: a
 // name on hover and their card on a click.

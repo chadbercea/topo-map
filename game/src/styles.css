@@ -1740,3 +1740,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .sighting-panel .sp-bar > span { display: block; height: 100%; background: var(--accent); }
 .sighting-panel .sp-bar[data-level='low'] > span { background: #f2c14e; }
 .sighting-panel .sp-bar[data-level='out'] > span { background: #e5484d; }
+
+/* ORION-3's picture is where the detail lives (ILI-1444): every bracketed thing in its square is a
+   hover and click target there; a hostile's ring lights red, the rest green. */
+.orion .o-picture .o-thing { position: absolute; width: 22px; height: 22px; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 1px solid transparent; border-radius: 50%; background: none; cursor: pointer; }
+.orion .o-picture .o-thing:hover, .orion .o-picture .o-thing:focus-visible { border-color: var(--accent); background: rgba(53, 208, 165, 0.15); outline: none; }
