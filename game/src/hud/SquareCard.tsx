@@ -74,6 +74,9 @@ export function SquareCard() {
   if (!square) return <Busy s={s} area={area} picked={null} />;
   const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, s.team.position, ANCHOR_W);
   const locked = lockedOn(s, square);
+  // Only once ORION-3 is over it (ILI-1437): no menu for a square it isn't watching, but a mini
+  // game playing there.
+  if (!locked && !playing) return <Busy s={s} area={area} picked={square} />;
   return (
     <>
       <Busy s={s} area={area} picked={square} />

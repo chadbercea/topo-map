@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, start } from './helpers';
+import { fastForward, freeze, lockOn, start } from './helpers';
 
 // The mission panel is broken up (ILI-1392): only the timer is left, small, in the map's corner;
 // the objective is a start card and a marker on the map; the race is in the debrief.
@@ -21,6 +21,7 @@ test('only the timer is left: the client deadline, small, in the map’s corner,
   await expect(page.getByTestId('conditions')).toContainText('High cloud');
   await expect(page.getByTestId('cloud-tile')).not.toHaveAttribute('data-warn', /./); // 60%: clear enough
   await expect(page.getByTestId('ground')).toHaveCount(0);
+  await lockOn(page, 'E2'); // a square's details show once ORION-3 is over it (ILI-1437)
   await page.evaluate(() => window.game.selectSquare('E2'));
   await expect(page.getByTestId('square-elevation')).toHaveText(/^\d+–\d+ m$/);
   await expect(page.getByTestId('square-facts')).toContainText(/Features\s*town/);

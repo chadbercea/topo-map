@@ -1,25 +1,19 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, lockOn, running, start } from './helpers';
+import { fastForward, freeze, lockOn, running, squarePoint, start, tapAt } from './helpers';
 
 // What happens on a square stays with the square (ILI-1367): Scan is in its menu, and the mini
 // game plays there. The satellite is the player's avatar (ILI-1397): on a square it isn't over,
 // the menu is the move step; locked on, the square's actions.
 
-test('a square ORION-3 is not over offers only the move; on arrival it locks and Scan takes the photo (ILI-1397)', async ({ page }) => {
+test('a square ORION-3 is not over has no menu; a tap sends ORION-3, and on arrival the menu opens with Scan (ILI-1397, ILI-1437)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
-  await page.evaluate(() => window.game.selectSquare('F4'));
+  await tapAt(page, isMobile, await squarePoint(page, 5, 3)); // F4
   const anchor = page.getByTestId('square-anchor');
-  await expect(anchor).toHaveAttribute('data-square', 'F4');
-  await expect(anchor).toHaveAttribute('data-locked', 'false');
-  await expect(anchor.getByTestId('scan-square')).toHaveCount(0); // nothing runs here yet
-  const move = anchor.getByTestId('move-here');
-  await expect(move).toContainText('Move ORION-3 here');
-  await expect(move).toContainText(/\d:\d\d to get here/);
-  await move.click();
-  await expect(move).toContainText('ORION-3 on its way');
-  await expect(move).toBeDisabled();
+  await expect(page.getByTestId('selected-square')).toHaveText('F4');
+  await expect(anchor).toHaveCount(0); // nothing until ORION-3 is over it
+  expect(await page.evaluate(() => window.game.get().satellite.aim)).toBe('F4'); // on its way
   await fastForward(page, 30_000);
   await expect(anchor).toHaveAttribute('data-locked', 'true');
   await expect(anchor.getByTestId('lock-status')).toHaveText('ORION-3 locked on');
@@ -34,6 +28,7 @@ test('the menu grows out of the square’s edge (ILI-1397)', async ({ page, isMo
   await start(page, '?debug');
   await running(page);
   await freeze(page);
+  await lockOn(page, 'F4'); // the menu shows once ORION-3 is over it (ILI-1437)
   await page.evaluate(() => window.game.selectSquare('F4'));
   const box = (await page.getByTestId('square-anchor').boundingBox())!;
   const sq = await page.evaluate(() => {

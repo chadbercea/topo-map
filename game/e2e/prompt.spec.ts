@@ -20,8 +20,7 @@ test('ALPHA needing intel is a prompt on its marker; Scan grids moves ORION-3 th
   await expect(page.getByTestId('event-card-stack').filter({ hasText: 'requests imagery' })).toHaveCount(0); // nor in COMMS
 
   await prompt.getByTestId('prompt-response').click();
-  const menu = page.getByTestId('square-anchor');
-  await expect(menu).toHaveAttribute('data-square', 'F4'); // the grid square to scan
+  await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the grid square to scan; its menu waits for the lock (ILI-1437)
   await expect(prompt.getByTestId('prompt-response')).toHaveText(['ORION-3 moving to F4…']); // one click: no more steps (ILI-1414)
   await fastForward(page, 30_000);
   await expect.poll(() => page.evaluate(() => !!window.game.get().imagery.F4)).toBe(true);
