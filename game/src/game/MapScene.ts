@@ -22,6 +22,7 @@ import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 import { sightings, type Sighting } from '../sim/sightings';
 import { panelled, pins } from '../hud/pins';
+import { isImageryRequest } from '../sim/imageryRequest';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the mission's points and route, in amber
@@ -515,6 +516,9 @@ export class MapScene extends Phaser.Scene {
         g.fillStyle(color, a).fillRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
       }
       if (e.id === openEvent) g.lineStyle(3 * px, color, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+      // The grid square ALPHA needs intel on (ILI-1450): outlined in amber and pulsing, so the
+      // player knows where to click, until its intel is sent.
+      else if (isImageryRequest(e)) g.lineStyle(3 * px, color, 0.45 + 0.5 * Math.abs(Math.sin(time / 450))).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
       if (e.status === 'new') {
         // Pulse until the player looks at it.
         const t = (time % 1200) / 1200;
@@ -1250,7 +1254,8 @@ export class MapScene extends Phaser.Scene {
     // Nothing pins on the main map (ILI-1443): that's ORION-3's picture's job. A click here falls
     // through to the event or the square (which sends ORION-3).
     const event = this.eventAt(p.worldX, p.worldY);
-    if (event) return game.openEvent(event.id);
+    // ALPHA's intel ask's marker is part of its square (ILI-1451): a click on it is a click on the square.
+    if (event && !isImageryRequest(event)) return game.openEvent(event.id);
     // A square: picked, and if ORION-3 isn't over it, ORION-3 goes (ILI-1437); its menu opens on
     // the lock.
     const id = squareAt(p.worldX, p.worldY);

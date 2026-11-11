@@ -18,6 +18,7 @@ export function PromptLayer() {
   const tier = useTier();
   const ref = useRef<HTMLElement>(null);
   const [h, setH] = useState(0);
+  const [w, setW] = useState(0); // the grid tag's width (ILI-1450)
   const [, redraw] = useState(0);
   useEffect(() => {
     const again = () => redraw((n) => n + 1);
@@ -33,10 +34,39 @@ export function PromptLayer() {
   useLayoutEffect(() => {
     const now = ref.current?.offsetHeight ?? 0;
     if (now && Math.abs(now - h) > 1) setH(now);
+    const wide = ref.current?.offsetWidth ?? 0;
+    if (wide && Math.abs(wide - w) > 1) setW(wide);
   });
 
   const area = getMapRect();
   if (!p || !area) return null;
+  // ALPHA needs intel (ILI-1450, ILI-1451): no card and no button. A small tag on the edge of the
+  // grid square it needs (outlined on the map) says the next step; the player does each one.
+  if (p.kind === 'intel-needed') {
+    const sq = squareBox(p.square);
+    const tw = w || 200;
+    const th = h || 24;
+    const cx = sq ? sq.x + sq.w / 2 : area.x + area.width / 2;
+    const above = sq ? sq.y - 6 - th : area.y + 8;
+    const y = sq && above < area.y + 8 ? sq.y + sq.h + 6 : above; // under the square when there's no room above
+    return (
+      <div
+        ref={ref as React.RefObject<HTMLDivElement>}
+        className="prompt-tag"
+        data-testid="prompt"
+        data-overlay="prompt"
+        data-kind={p.kind}
+        data-square={p.square}
+        data-step={p.step}
+        data-tier={tier}
+        style={{ left: Math.max(area.x + 8, Math.min(cx - tw / 2, area.x + area.width - 8 - tw)), top: Math.max(area.y + 8, Math.min(y, area.y + area.height - 8 - th)) }}
+        role="status"
+        aria-label={`${p.text}. ${p.hint}`}
+      >
+        <span data-testid="prompt-text">{p.hint}</span>
+      </div>
+    );
+  }
   const sq = squareBox(p.square);
   const width = Math.min(W, area.width - 16);
   // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
