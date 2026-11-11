@@ -11,7 +11,7 @@ import { startCard } from './startCard';
 // replays the short half: panels, link, go (ILI-1285). No briefing: nothing on the way in says
 // what the mission is.
 
-export type Stage = 'title' | 'idle' | 'wipe' | 'login' | 'panels' | 'link' | 'live';
+export type Stage = 'title' | 'idle' | 'wipe' | 'login' | 'panels' | 'live'; // no SATCOM link step (ILI-1433)
 
 export const WIPE_MS = 520;
 // The satellite's line carries its name on this mission (ILI-1401): SATELLITE is swapped for it.
@@ -26,11 +26,9 @@ export const LOGIN_LINES = [
 export const LINE_MS = 230;
 const LOGIN_MS = LOGIN_LINES.length * LINE_MS + 450;
 const PANELS_MS = 1_800; // the last panel's rows are in (styles.css, power-on)
-const LINK_MS = 1_100;
 // The first time in (ILI-1307) it comes up slower: panel by panel, line by line, so HQ gets
 // its bearings; then the link holds a beat before ALPHA's first hold lands.
 const PANELS_FIRST_MS = 7_000; // styles.css, .hud[data-boot='first']
-const LINK_FIRST_MS = 2_600;
 let first = false;
 export const firstBoot = () => first;
 
@@ -81,7 +79,7 @@ export const intro = {
   engage() {
     if (stage !== 'idle' && stage !== 'title') return;
     first = true;
-    run([['wipe', WIPE_MS], ['login', LOGIN_MS], ['panels', PANELS_FIRST_MS], ['link', LINK_FIRST_MS], ['live', 0]]);
+    run([['wipe', WIPE_MS], ['login', LOGIN_MS], ['panels', PANELS_FIRST_MS], ['live', 0]]);
   },
   // Restart, Retry, Play again: the mission over, and the war room powers back on.
   reboot() {
@@ -89,7 +87,7 @@ export const intro = {
     if (!introOn) return;
     game.standby();
     first = false;
-    run([['panels', PANELS_MS], ['link', LINK_MS], ['live', 0]]);
+    run([['panels', PANELS_MS], ['live', 0]]);
   },
   // Exit, from the pause menu: the mission over, back to the title screen.
   home() {

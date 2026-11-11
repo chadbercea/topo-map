@@ -5,25 +5,15 @@ import { MapViews } from './MapViews';
 import { game, useGame } from '../sim/store';
 
 // The way in (ILI-1280): Castle House's idle terminal, the wipe, the login, and the link with
-// ALPHA. The HUD's own panels power on between the login and the link (Hud.tsx, styles.css).
+// ALPHA. The HUD's own panels power on after the login (Hud.tsx, styles.css); no link step (ILI-1433).
 
 export function Intro() {
-  const satellite = useGame((s) => s.mission.satellite); // from the mission's config (ILI-1401)
-  const callsign = useGame((s) => s.team.callsign);
   const stage = useIntro();
   if (stage === 'live') return null;
   return (
     <div className="intro" data-stage={stage} data-testid="intro" style={{ '--wipe': `${WIPE_MS}ms` } as React.CSSProperties}>
       {(stage === 'wipe' || stage === 'login' || stage === 'panels') && <Login running={stage !== 'wipe'} leaving={stage === 'panels'} />}
       {(stage === 'title' || stage === 'idle' || stage === 'wipe') && <Terminal stage={stage} />}
-      {stage === 'link' && (
-        <div className="panel intro-link" data-testid="intro-link" role="status">
-          <h2>
-            {satellite} ⇄ {callsign}
-          </h2>
-          <p>SATCOM link established</p>
-        </div>
-      )}
     </div>
   );
 }
@@ -33,7 +23,7 @@ const LOGO_OUT_MS = 360;
 // Castle House at rest (ILI-1283). The title screen first (ILI-1290): the rook and the name
 // with START, ABOUT and SETTINGS, the globe and satellites blurred behind. START folds the
 // logo away, the globe comes into focus and the camera flies in on ORION-3, pinging to be picked.
-function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'link' | 'live'> }) {
+function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'live'> }) {
   const satellite = useGame((s) => s.mission.satellite); // its name, from the mission's config (ILI-1401)
   const back = useRef<HTMLDivElement>(null);
   const front = useRef<HTMLDivElement>(null);

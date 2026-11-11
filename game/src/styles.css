@@ -1378,13 +1378,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @keyframes dots { to { transform: scaleX(1); } }
 
 /* The link (ILI-1282): ORION-3 has ALPHA; the next thing is ALPHA's call. */
-.intro-link { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); text-align: center; border-color: var(--accent); padding: 12px 22px; animation: power-frame 380ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.intro-link > * { animation: power-content 240ms ease-out both; animation-delay: 300ms; }
-.intro-link h2 { margin: 0 0 2px; letter-spacing: 0.24em; }
-.intro-link p { color: var(--ink); letter-spacing: 0.14em; text-transform: uppercase; font-size: 11px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .castle[data-wiping], .castle-wipe, .login[data-leaving], .castle-ping::before, .castle-ping::after, .castle-mark .caret, .intro-link, .intro-link > * { animation: none; }
+  .castle[data-wiping], .castle-wipe, .login[data-leaving], .castle-ping::before, .castle-ping::after, .castle-mark .caret { animation: none; }
   .castle-wipe { display: none; }
   .login li, .login li .k, .login li .dots, .login li b { animation-duration: 1ms; }
 }
