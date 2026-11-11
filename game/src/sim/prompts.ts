@@ -1,7 +1,6 @@
 import type { GameState } from './state';
 import { openImageryRequest } from './imageryRequest';
 import { lockedOn, satelliteBusy, satName, slewMs } from './satellite';
-import { ANTENNA_MS } from './signal';
 import { currentCall } from './comms';
 import { blocked } from './responses';
 import { squareAt } from '../map/grid';
@@ -81,8 +80,8 @@ const enemyTraffic: Source = (s) =>
         : [
             satelliteBusy(s)
               ? { id: 'satellite', label: `${satName(s)} busy`, disabled: true }
-              : { id: 'satellite', label: lockedOn(s, e.square) ? `${satName(s)} listens · off ${s.team.callsign}’s route` : `${satName(s)} · ${countdown(slewMs(s, e.square))} there, off ${s.team.callsign}’s route` },
-            { id: 'antenna', label: `ALPHA sets up antenna · holds ${countdown(ANTENNA_MS)}`, disabled: !!s.listen },
+              : { id: 'satellite', label: lockedOn(s, e.square) ? `${satName(s)} listens` : `${satName(s)} listens · ${countdown(slewMs(s, e.square))} there` },
+            // Listening is HQ's job (ILI-1435): no "ALPHA sets up antenna"; HQ decodes and feeds ALPHA.
           ];
       return { id: e.id, kind: 'enemy-traffic' as const, priority: PRIORITY.enemyTraffic, atMs: e.atMs, square: e.square, text: l ? `Getting in range of their traffic near ${e.square}` : `Enemy radio traffic near ${e.square}. Get an asset in range to listen`, responses };
     });

@@ -63,7 +63,7 @@ test('the radio mini game plays in its square’s menu, at C2', async ({ page })
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await fastForward(page, 83_000);
-  await page.getByTestId('prompt').locator('[data-response=antenna]').click(); // ALPHA's antenna (ILI-1394)
+  await page.getByTestId('prompt').locator('[data-response=satellite]').click(); // ORION-3 listens (ILI-1435)
   await page.evaluate(() => {
     for (let i = 0; i < 400 && !window.game.get().minigame; i++) window.game.tick(100);
   });
