@@ -73,9 +73,44 @@ function Enlist({ children = 'Take the test' }: { children?: string }) {
   );
 }
 
-export function Site() {
+// The game's intro is the hero (ILI-1447): the rook and the globe, live, full screen and fixed.
+// Scrolling leaves it still while the site slides up over it, a scrim darkening it as it's
+// covered.
+function IntroHero() {
   return (
-    <div className="ch">
+    <div className="ch-intro" data-testid="intro-hero">
+      <Hero3D />
+      <div className="ch-intro-mark">
+        <Rook />
+        <h1>CASTLE HOUSE</h1>
+        <p>Private military support · now recruiting</p>
+        <Enlist>Take the test</Enlist>
+        <span className="ch-intro-scroll" aria-hidden>
+          Scroll ↓
+        </span>
+      </div>
+      <div className="ch-intro-scrim" aria-hidden />
+    </div>
+  );
+}
+
+export function Site() {
+  // How far the page has covered the hero, 0 to 1 (ILI-1447).
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const on = () => root.current?.style.setProperty('--cover', String(Math.min(1, scrollY / Math.max(1, innerHeight))));
+    on();
+    addEventListener('scroll', on, { passive: true });
+    addEventListener('resize', on);
+    return () => {
+      removeEventListener('scroll', on);
+      removeEventListener('resize', on);
+    };
+  }, []);
+  return (
+    <div className="ch" ref={root}>
+      <IntroHero />
+      <div className="ch-page">
       {/* ACT ONE: the brochure. */}
       <div className="ch-act1">
         <header className="ch-nav">
@@ -153,7 +188,7 @@ export function Site() {
       {/* ACT THREE: the pitch. */}
       <div className="ch-act3">
         <section className="ch-hero3" id="enlist">
-          <Hero3D />
+          {/* The live rook and globe are the page's hero now (ILI-1447); one scene, not two. */}
           <div className="ch-hero3-copy">
             <p className="ch-stamp">Castle House needs you</p>
             <h2 className="ch-shout">
@@ -206,6 +241,7 @@ export function Site() {
             Castle House is a fictional company from <a href={GAME}>PMC War Room</a>, a browser game by Chad Bercea. This is satire: nothing on this page describes a real company, person, job or service. <a href="../design/">Design system</a>
           </p>
         </footer>
+      </div>
       </div>
     </div>
   );
