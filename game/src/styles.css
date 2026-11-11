@@ -1724,3 +1724,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .team[data-state='full'] .readout { animation: team-fold 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 @keyframes team-fold { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .team .readout, .team .heartbeat-strip { animation: none; } }
+
+/* A square's details in ORION-3's view (ILI-1438): under its square picture, in the frame's
+   space below it. It never scrolls the panel: anything past the space is cut, newest first. */
+.orion .o-frame > .o-detail { position: absolute; left: 0; right: 0; top: min(100cqw, 100cqh); bottom: 0; overflow: hidden; display: grid; align-content: start; background: var(--bg); border-top: 1px solid var(--line); }
+.orion .o-frame > .o-detail .sc-details summary { cursor: default; }
+.hud[data-tier='compact'] .orion .o-frame > .o-detail { display: none; } /* a phone's picture has no room under it */

@@ -257,9 +257,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
 
       {/* What its scan turned up (ILI-1399): the detail readouts, tier three, opened by tapping the
           square. One scan settled it, so there's no Scan here again. */}
-      <Readouts s={s} square={square} />
-      <TeamWork s={s} square={square} />
-      <Details s={s} square={square} />
+      {/* Its details live in ORION-3's view now (ILI-1438): this menu is the square's actions. */}
 
       {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304).
           Work already under way, so it shows locked or not. */}
@@ -306,7 +304,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
 
 // The square's intel (ILI-1399): every report its scan brought in, by discipline, or that it
 // came up clear. Once a square has one, it's settled.
-function Readouts({ s, square }: { s: GameState; square: string }) {
+export function Readouts({ s, square }: { s: GameState; square: string }) {
   if (!settled(s, square)) return null;
   const items = squareReports(s, square);
   const clear = squareFindings(s, square) === 'clear';
@@ -365,7 +363,7 @@ function Scan({ s, square }: { s: GameState; square: string }) {
 
 // A square's details (ILI-1203, ILI-1220): tier three since the satellite panel's ladder
 // (ILI-1400), in the square's own menu, folded under one line that says how fresh its imagery is.
-export function Details({ s, square }: { s: GameState; square: string }) {
+export function Details({ s, square, open = false }: { s: GameState; square: string; open?: boolean }) {
   const sat = s.satellite;
   const now = s.elapsedMs;
   const working = sat.aim === square && sat.state !== 'idle'; // ORION-3 is on this square
@@ -384,7 +382,7 @@ export function Details({ s, square }: { s: GameState; square: string }) {
       ? `imaged ${zulu(snap.atMs)} · ${seen}`
       : 'no imagery';
   return (
-    <details className="sc-details square-card-details" data-testid="square-card" data-square={square}>
+    <details className="sc-details square-card-details" data-testid="square-card" data-square={square} open={open || undefined}>
       <summary>
         Ground · <span data-testid="square-status">{status}</span>
       </summary>
@@ -516,7 +514,7 @@ function teamWork(s: GameState, square: string): { work: Work; found: Found } {
   return { work, found };
 }
 
-function TeamWork({ s, square }: { s: GameState; square: string }) {
+export function TeamWork({ s, square }: { s: GameState; square: string }) {
   const { work, found } = teamWork(s, square);
   // The last bar, kept a moment after it fills so it can fade out as the find slides in.
   const [last, setLast] = useState<Work>(null);

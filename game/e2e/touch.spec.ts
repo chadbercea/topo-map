@@ -42,7 +42,7 @@ test('drag pans the map without picking a square; a tap still picks one', async 
   }
   const after = await camera(page);
   expect(after.scrollX).toBeLessThan(before.scrollX); // dragged right: the map came along
-  await expect(page.getByTestId('square-card')).toHaveCount(0);
+  await expect(page.getByTestId('square-anchor')).toHaveCount(0); // a drag picks nothing (ORION-3's own square keeps its details in its view, ILI-1438)
   await expect(page.getByTestId('recentre')).toBeVisible(); // over the map's corner (ILI-1227, ILI-1396)
 
   if (isMobile) await page.touchscreen.tap(m.x, m.y);
