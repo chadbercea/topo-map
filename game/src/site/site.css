@@ -94,3 +94,7 @@ html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-fa
 .ch-intro-scrim { position: absolute; inset: 0; background: #000; opacity: calc(var(--cover, 0) * 0.85); pointer-events: none; }
 .ch-page { position: relative; z-index: 1; margin-top: 100svh; box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.6); }
 @media (prefers-reduced-motion: reduce) { .ch-intro-scroll { animation: none; } }
+
+/* The hero's back layer, the globe and satellites, blurred and dimmed behind the sharp rook, as
+   on the game's title screen (ILI-1458; .castle[data-stage='title'] .castle-back in styles.css). */
+.ch-intro .ch-hero-3d .castle-scene:first-child { filter: blur(7px); opacity: 0.45; }
