@@ -65,3 +65,20 @@ describe('searching a building', () => {
     expect(inside(done)).toBeNull();
   });
 });
+
+// Every search turns up supplies on top of its find (ILI-1434).
+import { resupplied } from './buildings';
+import { LOADOUT } from './team';
+describe('supplies from a search', () => {
+  it('gives each standing operator half a loadout of ammo and meds back, up to full', () => {
+    const s0 = initialState();
+    const worn = { ...s0, team: { ...s0.team, operators: s0.team.operators.map((o, i) => (i === 4 ? { ...o, health: 0, ammo: 0, meds: 0 } : { ...o, ammo: 0, meds: 0 })) } };
+    const ops = resupplied(worn);
+    const lead = ops[0];
+    expect(lead.ammo).toBe(Math.round(LOADOUT[lead.role].ammo * 0.5));
+    expect(lead.meds).toBeGreaterThan(0);
+    expect(ops[4].ammo).toBe(0); // a man down carries nothing out
+    const full = resupplied(s0);
+    expect(full[0].ammo).toBe(LOADOUT[full[0].role].ammo); // never past a full loadout
+  });
+});
