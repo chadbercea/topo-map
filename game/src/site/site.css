@@ -95,6 +95,14 @@ html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-fa
 .ch-page { position: relative; z-index: 1; margin-top: 100svh; box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.6); }
 @media (prefers-reduced-motion: reduce) { .ch-intro-scroll { animation: none; } }
 
-/* The hero's back layer, the globe and satellites, blurred and dimmed behind the sharp rook, as
-   on the game's title screen (ILI-1458; .castle[data-stage='title'] .castle-back in styles.css). */
-.ch-intro .ch-hero-3d .castle-scene:first-child { filter: blur(7px); opacity: 0.45; }
+/* The hero, the original site technique (ILI-1458): the live scene at 90%, a dark gradient
+   barrier from the left (95% → 60% → clear by 80%), and the copy left-aligned on the dark side.
+   On a phone the barrier rises from the foot and the copy sits at the bottom. No blur. */
+.ch-intro .ch-hero-3d { opacity: 0.9; }
+.ch-intro .ch-hero-3d::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(11, 15, 13, 0.95) 0%, rgba(11, 15, 13, 0.6) 45%, rgba(11, 15, 13, 0) 80%); pointer-events: none; }
+.ch-intro-mark { left: clamp(16px, 5vw, 64px); right: auto; top: 50%; bottom: auto; max-width: 900px; justify-items: start; text-align: left; padding: 0; text-shadow: none; transform: translateY(calc(-50% - var(--cover, 0) * 40px)); }
+.ch-intro-mark h1 { margin-right: 0; }
+@media (max-width: 720px) {
+  .ch-intro .ch-hero-3d::after { background: linear-gradient(0deg, rgba(11, 15, 13, 0.97) 35%, rgba(11, 15, 13, 0.45) 75%, rgba(11, 15, 13, 0.2)); }
+  .ch-intro-mark { top: auto; bottom: max(9vh, 56px); right: 16px; left: 16px; transform: translateY(calc(var(--cover, 0) * -40px)); }
+}
