@@ -6,7 +6,9 @@ import { activityOf, conditionOf, satOver, weaponOf } from '../sim/fighters';
 import { AIR } from '../sim/air';
 import { exfilStage, TRANSPORT } from '../sim/exfil';
 import type { Sighting } from '../sim/sightings';
-import { OperatorRow } from './OperatorRow';
+import { OperatorRow, STATUS } from './OperatorRow';
+import { condition } from '../sim/team';
+import { gauge, GAUGE_MAX, LOW_AT } from '../sim/intel';
 import { panelled, pins, usePins } from './pins';
 
 // Panels over bracketed things (ILI-1411): hover one for a mini panel beside it; click it and
@@ -15,7 +17,7 @@ import { panelled, pins, usePins } from './pins';
 const OFFSET = { x: 18, y: -18 }; // up and to the right of the thing, CSS px
 
 export function SightingPanels() {
-  const { hovered, pinned } = usePins();
+  const { hovered, pinned, from } = usePins();
   const running = useGame((s) => s.phase === 'running' || s.phase === 'paused');
   // Follow the map every frame: the things move, and so does the camera.
   const [, frame] = useState(0);
@@ -54,9 +56,11 @@ export function SightingPanels() {
           data-pinned={pin || undefined}
           data-ghost={t.age === 'ghost' || undefined}
           data-testid={`panel-${t.id}`}
+          data-tag={(!pin && from === 'map') || undefined}
           style={{ left: at.x + OFFSET.x, top: at.y + OFFSET.y }}
         >
-          <PanelBody t={t} />
+          {/* On the main map a hover is a light tag (ILI-1443); full panels are ORION-3's. */}
+          {!pin && from === 'map' ? <MapTag t={t} /> : <PanelBody t={t} />}
           {pin && (
             <button className="sp-close" onClick={() => pins.toggle(t.id)} aria-label="Close" data-testid="panel-close">
               ✕
@@ -67,6 +71,36 @@ export function SightingPanels() {
     </div>
   );
 }
+
+// The main map's hover (ILI-1443): ALPHA TEAM and its mini status; anything else, one line.
+function MapTag({ t }: { t: Sighting }) {
+  const s = useGame((x) => x);
+  if (t.kind === 'team') {
+    const ops = s.team.operators;
+    const down = ops.filter((o) => o.health <= 0).length;
+    const worst = ops.map(condition).sort((a, b) => RANK[b] - RANK[a])[0];
+    const v = Math.min(1, gauge(s) / GAUGE_MAX);
+    return (
+      <>
+        <h3 className="sp-title team" data-testid="panel-team-title">{s.team.callsign} TEAM</h3>
+        <p className="sp-line">{s.team.activity}</p>
+        <span className="sp-bar" data-level={gauge(s) <= 0 ? 'out' : gauge(s) <= LOW_AT ? 'low' : 'ok'} aria-label="Intel">
+          <span style={{ width: `${v * 100}%` }} />
+        </span>
+        <p className="sp-line" data-testid="panel-team-worst">{down ? `${down} down` : STATUS[worst]}</p>
+      </>
+    );
+  }
+  const line =
+    t.kind === 'hostile' ? `HOSTILE · TANGO-${pins.tango(t.id)}`
+    : t.kind === 'site' ? `KILL SITE · ${t.square}`
+    : t.kind === 'wreck' ? `WRECK · BLACK BOX · ${t.square}`
+    : t.id === 'air:exfil' ? `${TRANSPORT.callsign} · exfil · ${t.square}`
+    : t.id === 'air:heli' ? `${AIR.heli.callsign} · gun run · ${t.square}`
+    : `${AIR.drone.callsign} · drone strike · ${t.square}`;
+  return <p className={`sp-tag${t.kind === 'hostile' || t.kind === 'site' ? ' hostile' : ''}`} data-testid="panel-tag">{line}</p>;
+}
+const RANK = { fine: 0, caution: 1, danger: 2, down: 3 } as const;
 
 function PanelBody({ t }: { t: Sighting }) {
   const s = useGame((x) => x);

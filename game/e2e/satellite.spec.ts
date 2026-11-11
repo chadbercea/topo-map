@@ -113,9 +113,9 @@ test('a fighter on the map opens its strikes too, from his pinned panel (ILI-125
       break;
     }
   }
-  await page.mouse.click(p.x, p.y); // pins his panel (ILI-1411)
-  await expect(page.locator('.sighting-panel[data-kind=hostile][data-pinned]').getByTestId('panel-tango')).toHaveText(/^HOSTILE · TANGO-\d+$/); // ILI-1412
-  await page.locator('.sighting-panel[data-kind=hostile][data-pinned]').getByTestId('panel-strike').click();
+  await page.mouse.move(p.x, p.y); // on the main map: a one-line tag (ILI-1443)
+  await expect(page.locator('.sighting-panel[data-kind=hostile]').getByTestId('panel-tag')).toHaveText(/^HOSTILE · TANGO-\d+$/);
+  await page.mouse.click(p.x, p.y); // a click picks his square: ORION-3 is over it, so its menu has the strikes
   await expect(page.getByTestId('strike-menu').getByTestId('fire-sniper')).toBeVisible();
 });
 
