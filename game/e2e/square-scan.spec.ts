@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, lockOn, running, squarePoint, start, tapAt } from './helpers';
+import { fastForward, freeze, lockOn, running, squarePoint, start, tapAt, untilTraffic } from './helpers';
 
 // What happens on a square stays with the square (ILI-1367): Scan is in its menu, and the mini
 // game plays there. The satellite is the player's avatar (ILI-1397): on a square it isn't over,
@@ -57,7 +57,7 @@ test('the radio mini game plays in its square’s menu, at C2', async ({ page })
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
-  await fastForward(page, 83_000);
+  await untilTraffic(page);
   await page.getByTestId('prompt').locator('[data-response=satellite]').click(); // ORION-3 listens (ILI-1435)
   await page.evaluate(() => {
     for (let i = 0; i < 400 && !window.game.get().minigame; i++) window.game.tick(100);

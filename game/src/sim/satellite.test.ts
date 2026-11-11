@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { moveContact } from './contacts';
 import { FRESH_MS, GHOST_MS, freshness } from './imagery';
-import { PATROL_MOVES_MS, PATROL_WALK_MS } from './missions/blackBox';
+import { planDepartMs } from './enemy';
 import { lockedOn, SETTLE_MS, SLEW_MS_PER_SQUARE, slewMs } from './satellite';
 import { blockers } from './progress';
 import { initialState, type GameState } from './state';
 import { createStore, type Store } from './store';
-import { run, walking } from './testkit';
+import { run, trafficId, untilTraffic, walking } from './testkit';
 
 // ORION-3 over G5 at the start; ALPHA doesn't ask for looks any more (ILI-1315): HQ tasks it.
 const atStart = () => createStore(initialState());
@@ -91,7 +91,8 @@ describe('ORION-3 tasking', () => {
 describe('fog of war', () => {
   // The patrol is on its way from C2 to D3 for the last half minute before it gets there.
   const walkingPatrol = (): GameState => {
-    let s: GameState = { ...walking(), contacts: initialState().contacts, elapsedMs: PATROL_MOVES_MS - PATROL_WALK_MS - 100 };
+    const s0: GameState = { ...walking(), contacts: initialState().contacts };
+    let s: GameState = { ...s0, elapsedMs: planDepartMs(s0, s0.contacts.find((c) => c.id === 'patrol')!) - 100 };
     s = run(s, 1_000);
     expect(s.contacts.find((c) => c.id === 'patrol')!.move?.to).toBe('D3');
     return s;
@@ -163,11 +164,12 @@ describe('Scan from the square menu (ILI-1367)', () => {
   });
 
   it('nothing runs on a square ORION-3 is not locked on: strikes, search, Listen, Jam (ILI-1397)', () => {
-    const s0 = run(initialState(), 83_000); // enemy traffic up at C2
+    const s0 = untilTraffic(initialState()); // enemy traffic up at C2
     const store = createStore({ ...s0, satellite: { ...s0.satellite, aim: 'H8', from: { col: 7, row: 7 }, state: 'idle' } });
-    store.jam('traffic-c2');
+    const id = trafficId(s0);
+    store.jam(id);
     expect(store.get().minigame).toBeNull();
-    expect(store.get().events.find((e) => e.id === 'traffic-c2')?.status).not.toBe('resolved');
+    expect(store.get().events.find((e) => e.id === id)?.status).not.toBe('resolved');
     store.search('C2');
     expect(store.get().searching).toEqual([]);
   });
@@ -212,7 +214,7 @@ describe("the satellite's name", () => {
     const store = createStore(atlas);
     store.lookAt('E3');
     expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ATLAS-1', text: expect.stringMatching(/^Slewing to E3/) });
-    const traffic = promptQueue(run(atlas, 83_000)).find((p) => p.kind === 'enemy-traffic');
+    const traffic = promptQueue(untilTraffic(atlas)).find((p) => p.kind === 'enemy-traffic');
     expect(traffic?.responses[0].label).toMatch(/^ATLAS-1 /);
     expect(JSON.stringify(store.get()).includes('ORION-3')).toBe(false);
   });

@@ -32,6 +32,7 @@ export type Contact = {
   move?: { from: SquareId; to: SquareId; fromMs: number; arriveMs: number }; // on its way to another square
   planTo?: SquareId; // where its plan takes it (what an intercept reveals)
   planKnown?: boolean; // HQ decoded its plan: its route shows on the map
+  nextTxMs?: number; // when it next talks on its net (enemy.ts, ILI-1454)
 };
 
 // What the team decided about a square on its route.

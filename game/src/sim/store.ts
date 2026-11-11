@@ -64,17 +64,19 @@ export function createStore(initial: GameState = initialState()) {
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
     // No saves in the MVP: retry and restart both start the mission over, live.
     // A new mission opens on the balance HQ carries in (ILI-1316): the last one's, unless given.
-    restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state), upgrades: readonly string[] = state.upgrades) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades))),
+    restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state), upgrades: readonly string[] = state.upgrades) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
     // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
-    setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades))),
+    setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
     // Send ALPHA to search a building a scan turned up (ILI-1316).
     // Like every action on a square, only with ORION-3 locked on it (ILI-1397).
     search: (square: string) => lockedOn(state, square) && set(sendToSearch(state, square)),
     // Buy a capability (ILI-1316).
     unlock: (w: Weapon) => set(unlock(state, w)),
+    // Replay a mission exactly, or play another (?seed=, ILI-1454): start over on that seed.
+    setSeed: (seed: number) => set(keepBase(initialState(state.settings, state.timer.totalMs, state.resources.ledger.opening, unlockedWeapons(state), state.upgrades, seed >>> 0))),
     // Tuning: start over with a different mission length (1 to 30 minutes).
     setMissionLength: (minutes: number) =>
-      set(keepBase(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000)))),
+      set(keepBase(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000), 0, [], [], state.seed))),
     // Tuning and tests: a fixed offset on ALPHA's intel gauge that survives restarts (ILI-1314).
     setIntelBase: (base: number) => set({ ...state, intel: { ...state.intel, base } }),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
