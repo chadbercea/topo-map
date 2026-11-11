@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
-import { freshness, targets } from '../sim/imagery';
+import { freshness } from '../sim/imagery';
 import { heldIntel, settled } from '../sim/intel';
 import { Details, Readouts, TeamWork } from './SquareCard';
+import { pins, useSeenVersion } from './pins';
 import { nextBlind } from '../sim/progress';
-import { CELL, squareAt, squareCenter } from '../map/grid';
+import { CELL, squareCenter } from '../map/grid';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
 import { OrionAvatar } from './OrionAvatar';
@@ -37,9 +38,7 @@ export function OrionPanel() {
   const result = sat.state === 'idle' ? sat.result : null;
   const picked = lookSquare(s); // the square HQ is working
   const tier = useTier();
-  // The fighters in ORION-3's picture: a tap on one opens their square's anchor, with its
-  // strikes (ILI-1302).
-  const marked = square ? targets(s).filter((t) => squareAt(t.x, t.y) === square) : [];
+  useSeenVersion(); // its targets follow what the map has bracketed (ILI-1444)
   const pings = square ? s.events.filter((e) => e.square === square && e.status !== 'resolved' && e.kind !== 'site') : [];
   // The larger square while ORION-3 is on it, or what it last saw; else the placeholder (ILI-1229).
   const showPicture = !tied && (live || (sat.state === 'idle' && !!square && !!snap));
@@ -161,20 +160,27 @@ export function OrionPanel() {
                   </span>
                 </button>
               ))}
+              {/* Everything bracketed in the square, hoverable and pinnable right here (ILI-1444):
+                  ORION-3's picture is where the detail lives. */}
               {square &&
-                marked.map((t, i) => {
-                  const o = squareCenter(square)!;
-                  return (
-                    <button
-                      key={i}
-                      className="o-target"
-                      style={{ left: `${50 + ((t.x - o.x) / CELL) * 100}%`, top: `${50 + ((t.y - o.y) / CELL) * 100}%` }}
-                      onClick={() => game.openEvent(`contact-${t.contactId}`)}
-                      aria-label={`Strike the fighters in ${square}`}
-                      data-testid="target-pin"
-                    />
-                  );
-                })}
+                pins
+                  .seen()
+                  .filter((t) => t.kind !== 'team' && t.kind !== 'event' && t.kind !== 'signal' && t.square === square)
+                  .map((t) => {
+                    const o = squareCenter(square)!;
+                    return (
+                      <button
+                        key={t.id}
+                        className={t.kind === 'hostile' ? 'o-target' : 'o-thing'}
+                        style={{ left: `${50 + ((t.x - o.x) / CELL) * 100}%`, top: `${50 + ((t.y - o.y) / CELL) * 100}%` }}
+                        onPointerEnter={() => pins.hover(t.id, 'orion')}
+                        onPointerLeave={() => pins.get().hovered === t.id && pins.hover(null, 'orion')}
+                        onClick={() => pins.toggle(t.id)}
+                        aria-label={t.kind === 'hostile' ? `Hostile in ${square}` : `${t.kind} in ${square}`}
+                        data-testid={t.kind === 'hostile' ? 'target-pin' : `pic-${t.id}`}
+                      />
+                    );
+                  })}
             </div>
           </div>
         ) : (

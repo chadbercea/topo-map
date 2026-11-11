@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { toScreen } from '../game/events';
+import { CELL, parseSquare } from '../map/grid';
 import { game, useGame } from '../sim/store';
 import { targets } from '../sim/imagery';
 import { activityOf, conditionOf, satOver, weaponOf } from '../sim/fighters';
@@ -34,10 +35,21 @@ export function SightingPanels() {
 
   const seen = new Map(pins.seen().filter(panelled).map((t) => [t.id, t]));
   const ids = [...pinned, ...(hovered && !pinned.includes(hovered) ? [hovered] : [])].filter((id) => seen.has(id));
+  // Where a panel goes (ILI-1444): a pin or an ORION-3 hover sits on ORION-3's picture, beside its
+  // thing there; a main-map hover sits on the map.
+  const pic = document.querySelector('[data-testid=satellite-inset]')?.getBoundingClientRect();
+  const sq = parseSquare(game.get().satellite.aim);
+  const onPicture = (t: Sighting) => {
+    if (!pic || !sq || !pic.width) return null;
+    const fx = (t.x - sq.col * CELL) / CELL;
+    const fy = (t.y - sq.row * CELL) / CELL;
+    return fx >= 0 && fx <= 1 && fy >= 0 && fy <= 1 ? { x: pic.left + fx * pic.width, y: pic.top + fy * pic.height } : null;
+  };
   const placed = ids.flatMap((id) => {
     const t = seen.get(id)!;
-    const at = toScreen(t.x, t.y);
-    return at ? [{ t, at, pin: pinned.includes(id) }] : [];
+    const pin = pinned.includes(id);
+    const at = pin || from === 'orion' ? onPicture(t) : toScreen(t.x, t.y);
+    return at ? [{ t, at, pin }] : [];
   });
   return (
     <div className="sighting-layer" data-testid="sighting-panels">
