@@ -34,6 +34,9 @@ test('the mission start card says the objective in plain words and stays until d
   await expect(card).toContainText("Recover the drone's black box at D3");
   await fastForward(page, 6_000);
   await expect(card).toBeVisible(); // no timeout any more
+  await page.waitForTimeout(5_000); // past the old 4 s fade, in real time (ILI-1431)
+  expect(await card.evaluate((el) => getComputedStyle(el).opacity)).toBe('1');
+  await expect(card.getByTestId('start-dismiss')).toHaveText('Begin mission');
   await expect(page.getByTestId('prompt')).toHaveCount(0); // ALPHA's ask waits for it
   await card.getByTestId('start-dismiss').click();
   await expect(card).toHaveCount(0);

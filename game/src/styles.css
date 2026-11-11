@@ -760,10 +760,10 @@ html, body {
 .timer-chip[data-phase='paused'] .clock { color: var(--dim); }
 .timer-chip .pause { min-height: 32px; }
 /* The mission start card (ILI-1392): the objective in plain words, a few seconds, never in the way. */
-.start-card { position: fixed; z-index: 11; left: 50%; top: 38%; transform: translate(-50%, -50%); display: grid; gap: 6px; justify-items: center; max-width: min(520px, calc(100vw - 32px)); padding: 16px 24px; text-align: center; pointer-events: none; background: rgba(11, 15, 13, 0.92); border: 1px solid #f2c14e; animation: start-card 4s ease-in-out forwards; }
+.start-card { position: fixed; z-index: 11; left: 50%; top: 38%; transform: translate(-50%, -50%); display: grid; gap: 6px; justify-items: center; max-width: min(520px, calc(100vw - 32px)); padding: 16px 24px; text-align: center; pointer-events: none; background: rgba(11, 15, 13, 0.92); border: 1px solid #f2c14e; animation: start-card 400ms ease-out both; }
 .start-card small { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
 .start-card p { margin: 0; font-size: 18px; color: #f2c14e; }
-@keyframes start-card { 0% { opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes start-card { from { opacity: 0; } } /* in, then it stays until HQ dismisses it (ILI-1431) */
 @media (prefers-reduced-motion: reduce) { .start-card { animation: none; } }
 .wrapup .race { margin: 4px 0 12px; }
 /* MISSION · BLACK BOX (ILI-1226): the contract window and the mission in one panel. */

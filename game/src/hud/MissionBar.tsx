@@ -76,7 +76,7 @@ export function StartCard() {
       <small>{name}</small>
       <p>{text}</p>
       <button className="start-go" onClick={startCard.dismiss} data-testid="start-dismiss" autoFocus>
-        Got it
+        Begin mission
       </button>
     </div>
   );
