@@ -15,15 +15,19 @@ test('the team panel is expanded by default; minimized it is the strip; they swa
     await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
     return;
   }
-  await expect(page.getByTestId('team-panel')).toBeVisible();
+  // One panel, two states: never a second panel (ILI-1439).
+  const panel = page.getByTestId('team-panel');
+  await expect(panel).toHaveAttribute('data-state', 'full');
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
-  await expect(strip).toBeHidden();
+  await expect(strip).toHaveCount(0);
   await page.getByTestId('team-minimize').click();
-  await expect(page.getByTestId('team-panel')).toBeHidden();
-  await expect(strip.locator('svg.ecg')).toHaveCount(5); // five heartbeats
+  await expect(panel).toHaveAttribute('data-state', 'min');
+  await expect(page.getByTestId('team-panel')).toHaveCount(1);
+  await expect(panel.getByTestId('heartbeat-strip').locator('svg.ecg')).toHaveCount(5); // five heartbeats, in the same panel
+  await expect(page.getByTestId('readout')).toHaveCount(0);
   await strip.click();
-  await expect(page.getByTestId('team-panel')).toBeVisible();
-  await expect(strip).toBeHidden();
+  await expect(panel).toHaveAttribute('data-state', 'full');
+  await expect(strip).toHaveCount(0);
 });
 
 test('an operator hit is a prompt; it opens the team panel with them highlighted', async ({ page }) => {

@@ -150,8 +150,8 @@ export function Hud() {
         )}
         {/* The heartbeat strip, tier one; the team panel is its drawer (ILI-1396). */}
         <div className="slot-team" data-overlay={!tabbed && teamOpen ? 'team' : undefined}>
-          {!tabbed && <HeartbeatStrip open={teamOpen} onToggle={toggleTeam} />}
-          <TeamPanel highlight={highlight} onMinimize={tabbed ? undefined : toggleTeam} />
+          {/* One panel, two display states (ILI-1439): expanded, or folded to the strip. */}
+          <TeamPanel highlight={highlight} minimized={!tabbed && !teamOpen} onToggle={tabbed ? undefined : toggleTeam} />
         </div>
       </div>
       <div className="slot-satcom" ref={satcomSlot} data-overlay={!tabbed && log ? 'log' : undefined}>

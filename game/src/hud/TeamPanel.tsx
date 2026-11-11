@@ -6,8 +6,10 @@ import { condition } from '../sim/team';
 // status, noise (ILI-1222), ammo and meds, always on screen, with what the team is doing over
 // it. Red while it's engaged. Titled ALPHA TEAM (ILI-1248); no team totals, each row carries
 // its own (ILI-1223).
-// onMinimize: on a wide screen the panel and the strip swap (ILI-1439); its header has the button.
-export function TeamPanel({ highlight, onMinimize }: { highlight?: string | null; onMinimize?: () => void }) {
+// On a wide screen it's one panel with two display states (ILI-1439): expanded, every operator's
+// row; minimized, the same panel folded to the heartbeat strip. Its header's button toggles it,
+// and so does a click on the strip. onToggle is only given there (a phone has the TEAM tab).
+export function TeamPanel({ highlight, minimized = false, onToggle }: { highlight?: string | null; minimized?: boolean; onToggle?: () => void }) {
   const callsign = useGame((s) => s.team.callsign);
   const activity = useGame((s) => s.team.activity);
   const fighting = useGame((s) => !!s.team.fight);
@@ -15,7 +17,7 @@ export function TeamPanel({ highlight, onMinimize }: { highlight?: string | null
   const operators = useGame((s) => s.team.operators);
 
   return (
-    <section className="panel team" data-testid="team-panel" data-fight={fighting} aria-label={`${callsign} team`}>
+    <section className="panel team" data-testid="team-panel" data-fight={fighting} data-state={minimized ? 'min' : 'full'} aria-label={`${callsign} team`}>
       <h2>
         <span className="callsign" data-testid="team-title">
           {callsign} TEAM
@@ -26,17 +28,21 @@ export function TeamPanel({ highlight, onMinimize }: { highlight?: string | null
             ALERTED
           </b>
         )}
-        {onMinimize && (
-          <button className="team-min" onClick={onMinimize} aria-label="Minimize the team panel" title="Minimize" data-testid="team-minimize">
-            ▁
+        {onToggle && (
+          <button className="team-min" onClick={onToggle} aria-expanded={!minimized} aria-label={minimized ? 'Expand the team panel' : 'Minimize the team panel'} title={minimized ? 'Expand' : 'Minimize'} data-testid={minimized ? 'team-expand' : 'team-minimize'}>
+            {minimized ? '▢' : '▁'}
           </button>
         )}
       </h2>
-      <ul className="readout" data-testid="readout">
-        {operators.map((o) => (
-          <OperatorRow key={o.id} o={o} highlight={o.id === highlight} />
-        ))}
-      </ul>
+      {minimized && onToggle ? (
+        <HeartbeatStrip open={false} onToggle={onToggle} />
+      ) : (
+        <ul className="readout" data-testid="readout">
+          {operators.map((o) => (
+            <OperatorRow key={o.id} o={o} highlight={o.id === highlight} />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
