@@ -1243,8 +1243,12 @@ export class MapScene extends Phaser.Scene {
     if (thing) return pins.toggle(thing.id);
     const event = this.eventAt(p.worldX, p.worldY);
     if (event) return game.openEvent(event.id);
+    // A square: picked, and if ORION-3 isn't over it, ORION-3 goes (ILI-1437); its menu opens on
+    // the lock.
     const id = squareAt(p.worldX, p.worldY);
-    if (id) game.selectSquare(id);
+    if (!id) return;
+    game.selectSquare(id);
+    if (game.get().map.selected === id && !lockedOn(game.get(), id)) game.lookAt(id);
   }
 
   private fingers() {

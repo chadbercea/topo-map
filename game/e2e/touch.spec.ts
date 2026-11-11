@@ -47,7 +47,9 @@ test('drag pans the map without picking a square; a tap still picks one', async 
 
   if (isMobile) await page.touchscreen.tap(m.x, m.y);
   else await page.mouse.click(m.x, m.y);
-  await expect(page.getByTestId(isMobile ? 'square-anchor' : 'square-card')).toBeVisible(); // on a phone the sheet folds for the square's menu (ILI-1397)
+  // A tap picks the square and sends ORION-3 there; its menu waits for the lock (ILI-1437).
+  await expect(page.getByTestId('selected-square')).not.toHaveText('—');
+  await expect.poll(() => page.evaluate(() => window.game.get().satellite.aim === window.game.get().map.selected)).toBe(true);
 });
 
 test('pinch (or the wheel) zooms in, and recentring zooms back out', async ({ page, isMobile }) => {
