@@ -121,7 +121,8 @@ const operatorHurt: Source = (s) => {
     .map((t) => ({ id: t.key, kind: 'operator' as const, priority: PRIORITY.operatorHurt, atMs: 0, square: squareAt(x, y) ?? s.team.route[0], operator: t.o.id, text: t.text, responses: [{ id: 'team', label: 'Open team' }] }));
 };
 
-const SOURCES: Source[] = [operatorHurt, intelNeeded, teamCall, enemyTraffic, intelReady];
+// Enemy traffic isn't in the queue (ILI-1452): it has its own lane, so nothing knocks it off mid-read.
+const SOURCES: Source[] = [operatorHurt, intelNeeded, teamCall, intelReady];
 
 // Most urgent first: by priority, then the one that's waited longest.
 export const byUrgency = (a: Prompt, b: Prompt) => a.priority - b.priority || a.atMs - b.atMs;
@@ -133,3 +134,11 @@ export function promptQueue(s: GameState): Prompt[] {
 
 // The one on screen.
 export const activePrompt = (s: GameState): Prompt | null => promptQueue(s)[0] ?? null;
+
+// Enemy traffic on screen (ILI-1452): its own small card beside the one prompt, never replaced by
+// it. It stays until HQ gets an asset in range (then it shows the progress, and goes once the
+// intercept starts) or dismisses it; dismissed, the traffic itself stays on the map.
+export const trafficPrompts = (s: GameState): Prompt[] => enemyTraffic(s).filter((p) => !s.acked.includes(p.id));
+
+// Any prompt HQ can answer: the queue's and the traffic's.
+export const allPrompts = (s: GameState): Prompt[] => [...promptQueue(s), ...trafficPrompts(s)];

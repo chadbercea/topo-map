@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { promptQueue } from './prompts';
+import { trafficPrompts } from './prompts';
 import { initialState } from './state';
 import { createStore } from './store';
 import { run } from './testkit';
@@ -7,7 +7,7 @@ import { run } from './testkit';
 // Mini games start from map tradeoffs, not buttons (ILI-1394): enemy traffic comes up near C2;
 // to listen, HQ gets an asset in range, each way with its cost on the button.
 const atTraffic = () => createStore(run(initialState(), 83_000));
-const traffic = (s: ReturnType<ReturnType<typeof atTraffic>['get']>) => promptQueue(s).find((p) => p.kind === 'enemy-traffic')!;
+const traffic = (s: ReturnType<ReturnType<typeof atTraffic>['get']>) => trafficPrompts(s).find((p) => p.kind === 'enemy-traffic')!;
 
 describe('getting in range of enemy traffic (ILI-1394)', () => {
   it('is a prompt at the traffic: listening is HQ’s job, ORION-3 goes (ILI-1435: no antenna)', () => {
