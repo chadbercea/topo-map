@@ -29,11 +29,10 @@ describe('upgrades', () => {
     expect(gauge(pushPhoto(withUp('analysts'), 'B1', 0).next)).toBe(gauge(pushPhoto(initialState(), 'B1', 0).next) * 1.5);
   });
 
-  it('a second video feed: video twice, the floor higher each time', () => {
+  it('video has no limit any more (ILI-1432): each one raises the floor', () => {
     const once = pushVideo(withUp('video2'));
-    expect(once.intel.videoUsed).toBe(false);
     const twice = pushVideo(once);
-    expect(twice.intel.videoUsed).toBe(true);
+    expect(twice.intel.videoUsed).toBe(false);
     expect(gauge(twice)).toBeGreaterThan(gauge(once));
   });
 

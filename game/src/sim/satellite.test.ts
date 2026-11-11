@@ -17,9 +17,11 @@ const onStation = (store: Store) => {
   expect(store.get().satellite.state).toBe('onStation');
 };
 
+// Video comes after a scan (ILI-1432).
 const look = (store: Store, square: string, mode: 'photo' | 'video' = 'photo') => {
   store.lookAt(square);
   onStation(store);
+  if (mode === 'video') store.scan(square);
   store.capture(mode);
 };
 
@@ -41,14 +43,14 @@ describe('ORION-3 tasking', () => {
     expect(s.satellite.arriveMs - s.elapsedMs).toBe(Math.round((SETTLE_MS + Math.SQRT2 * SLEW_MS_PER_SQUARE) / 100) * 100);
   });
 
-  it('a photo images the square', () => {
+  it('a scan images the square (ILI-1432: its intel waits for Photo)', () => {
     const store = atStart();
     look(store, 'F4');
     const s = store.get();
     expect(s.map.scanned).toContain('F4');
     expect(s.satellite).toMatchObject({ state: 'idle', aim: 'F4', result: { square: 'F4', mode: 'photo', fighters: 0 } });
     expect(s.imagery.F4).toMatchObject({ mode: 'photo', live: false, seen: [] });
-    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 collection complete \(photo\): nothing there\. Analysts: [a-z -]+ pushed to ALPHA\./.test(m.text))).toBe(true);
+    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 collection complete \(photo\): nothing there\. Analysts: [a-z -]+, ready for ALPHA on Photo\./.test(m.text))).toBe(true); // a scan holds it (ILI-1432)
   });
 
   it('a look at E3 finds the checkpoint: every fighter, and that they have not noticed ALPHA', () => {
@@ -106,7 +108,7 @@ describe('fog of war', () => {
     expect(photo.get().imagery.C2.seen[0].to).toBeNull();
   });
 
-  it('video is live while it runs and while ORION-3 stays over; tasked away, it becomes an ordinary look (ILI-1423)', () => {
+  it('video is live while it runs, and stays live for good even once ORION-3 is tasked away (ILI-1423, ILI-1432)', () => {
     const store = createStore(walkingPatrol());
     look(store, 'C2', 'video');
     store.set(run(store.get(), 2_000));
@@ -114,7 +116,7 @@ describe('fog of war', () => {
     store.set(run(store.get(), 14_000));
     expect(store.get().imagery.C2.live).toBe(true); // still over it: real time
     store.lookAt('E3');
-    expect(store.get().imagery.C2.live).toBe(false);
+    expect(store.get().imagery.C2.live).toBe(true); // video is live for good (ILI-1432)
   });
 
   it('a look ages: fresh, then a ghost, then stale', () => {
@@ -218,17 +220,14 @@ describe("the satellite's name", () => {
 
 // Video is real time (ILI-1423): its square stays live while ORION-3 stays over it.
 describe('video stays live', () => {
-  it('keeps refreshing while ORION-3 stays over the square, and ages once it is tasked away', () => {
+  it('keeps refreshing for good, wherever ORION-3 goes (ILI-1432)', () => {
     const store = atStart();
     look(store, 'G4', 'video');
     for (let i = 0; i < 200 && store.get().satellite.state === 'capturing'; i++) store.tick(100);
+    store.lookAt('F4');
     for (let i = 0; i < (GHOST_MS + 5_000) / 100; i++) store.tick(100); // long past any look's life
     const s = store.get();
     expect(s.imagery.G4?.live).toBe(true);
     expect(freshness(s.imagery.G4!, s.elapsedMs)).toBe('live');
-    store.lookAt('F4');
-    store.tick(100);
-    expect(store.get().imagery.G4?.live).toBe(false);
-    expect(freshness(store.get().imagery.G4!, store.get().elapsedMs)).toBe('fresh'); // ages from now
   });
 });

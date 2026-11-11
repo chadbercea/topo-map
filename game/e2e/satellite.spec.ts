@@ -43,8 +43,11 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(sat.getByTestId('orion-placeholder')).toHaveCount(0);
   const picture = sat.getByTestId('satellite-inset');
   await expect(picture).toBeVisible();
-  await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveCount(2); // Photo and Video: no burst (ILI-1314)
+  // Scan is the primary action (ILI-1432); once the square's settled, Photo and Video take its place.
+  await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveText([/^Scan E3/]);
   await expect(sat.getByTestId('look-here')).toHaveCount(0); // the shots took its place
+  await sat.getByTestId('capture-scan').click();
+  await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveCount(2);
   await sat.getByTestId('capture-video').click();
   await expect(sat).toHaveAttribute('data-state', 'capturing');
   await expect(picture).toHaveAttribute('data-state', 'capturing');
@@ -126,8 +129,11 @@ test('over a square it has already shot, no Reposition and no Rescan: the shots 
   await page.evaluate(() => window.game.selectSquare('E3'));
   if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
   await expect(sat.getByTestId('look-here')).toHaveCount(0);
-  await sat.getByTestId('capture-photo').click();
-  await expect(sat.getByTestId('satellite-result')).toContainText('Photo:');
+  // Already scanned and its intel sent (ILI-1432): Photo reads "sent", Video is there to press.
+  await expect(sat.getByTestId('capture-photo')).toBeDisabled();
+  await expect(sat.getByTestId('capture-photo')).toContainText('sent to ALPHA');
+  await expect(sat.getByTestId('capture-video')).toBeEnabled();
+  await expect(sat.getByTestId('capture-scan')).toHaveCount(0); // no Rescan: it's settled
   // A different square: back to Reposition.
   await page.evaluate(() => window.game.selectSquare('F4'));
   await expect(sat.getByTestId('look-here')).toHaveText(/^Reposition\s*to F4/);
@@ -202,6 +208,7 @@ test('ORION-3 never scrolls, and nothing in it moves through a scan; the picture
   await page.evaluate(() => {
     const g = window.game;
     for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
+    g.scan('E3'); // video comes after the scan (ILI-1432)
     g.capture('video');
     g.tick(2000);
   });
