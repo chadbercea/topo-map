@@ -19,8 +19,7 @@ test('the title screen, then ORION-3; the clock starts and ALPHA sets off', asyn
   await expect(orion).toBeVisible();
   await press(orion, isMobile);
   await expect(page.getByTestId('intro-login')).toContainText('OPERATOR AUTH');
-  await expect(page.getByTestId('intro-link')).toContainText('SATCOM link established', { ignoreCase: true, timeout: 20_000 });
-  expect(await page.evaluate(() => window.game.get().phase)).toBe('standby'); // still held
+  await expect(page.getByTestId('intro-link')).toHaveCount(0); // no SATCOM link modal (ILI-1433)
 
   await expect(page.getByTestId('intro')).toHaveCount(0, { timeout: 20_000 });
   await expect.poll(() => page.evaluate(() => window.game.get().phase)).toBe('running');

@@ -51,7 +51,7 @@ export function Hud() {
   // The panels power on in turn as the war room comes online (ILI-1281), on the way in and on a
   // restart (intro.ts).
   const stage = useIntro();
-  const boot = stage === 'panels' || stage === 'link';
+  const boot = stage === 'panels';
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
   // on the map itself (ILI-1201), so the dock stays where it is.
   // A new event marks its square on the map, and its report lands in COMMS (ILI-1225): that
