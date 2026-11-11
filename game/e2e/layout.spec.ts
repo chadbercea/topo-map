@@ -97,15 +97,23 @@ test('no toolbox: the budget is a chip beside the clock, $10M less deployment, a
   // Measure once the HUD has powered on and the chips have stopped moving (ILI-1456: on CI's
   // slow renderer the power-on animation could still be scaling the clock).
   await expect(page.locator('.hud')).not.toHaveAttribute('data-boot', /.+/);
-  const boxes = () => Promise.all([page.getByTestId('timer').boundingBox(), chip.boundingBox()]).then(([t, b]) => JSON.stringify([t, b]));
+  // Measure both chips in the same frame (ILI-1456). Measured one after the other, the clock
+  // could tick 10:00 → 9:59 in between, narrowing the timer and pulling the chip left of the old
+  // box. Then wait until they've stopped moving.
+  const boxes = () =>
+    page.evaluate(() =>
+      ['timer', 'budget-chip'].map((id) => {
+        const r = document.querySelector(`[data-testid="${id}"]`)!.getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width };
+      }),
+    );
   const still = async () => {
-    const before = await boxes();
+    const before = JSON.stringify(await boxes());
     await page.waitForTimeout(150);
-    return before === (await boxes());
+    return before === JSON.stringify(await boxes());
   };
   await expect.poll(still, { timeout: 10_000 }).toBe(true);
-  const t = (await page.getByTestId('timer').boundingBox())!;
-  const b = (await chip.boundingBox())!;
+  const [t, b] = await boxes();
   expect(b.x).toBeGreaterThanOrEqual(t.x + t.width - 0.5); // beside it, on its row
   expect(Math.abs(b.y - t.y)).toBeLessThan(4);
   expect(await page.evaluate(() => Object.values(window.game.get().ordnance).every((o) => o.unlocked))).toBe(true);
