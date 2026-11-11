@@ -1051,18 +1051,24 @@ export class MapScene extends Phaser.Scene {
       if (from && !quiet && !reducedMotion()) this.pulses.push({ from, at: time });
       else this.barFlash = time;
     }
-    const FLY = 700;
+    // An orange tracer that zips to the team (ILI-1440): a short streak along the line from
+    // where the intel came from, quick, with a glow, then the bar flashes as it lands.
+    const FLY = 480;
+    const ORANGE = 0xff8a2a;
     this.pulses = this.pulses.filter((p) => {
       const k = (time - p.at) / FLY;
       if (k >= 1) {
         this.barFlash = time;
         return false;
       }
-      const e = 1 - Math.pow(1 - k, 3);
-      const x = p.from.x + (at.x - p.from.x) * e;
-      const y = p.from.y + (at.y - p.from.y) * e;
-      g.lineStyle(1.5 * u, OPS, 0.35).lineBetween(p.from.x + (at.x - p.from.x) * Math.max(0, e - 0.15), p.from.y + (at.y - p.from.y) * Math.max(0, e - 0.15), x, y);
-      g.fillStyle(OPS, 1).fillCircle(x, y, 4 * u);
+      const head = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // eases in, then snaps home
+      const tail = Math.max(0, head - 0.28);
+      const hx = p.from.x + (at.x - p.from.x) * head;
+      const hy = p.from.y + (at.y - p.from.y) * head;
+      const tx = p.from.x + (at.x - p.from.x) * tail;
+      const ty = p.from.y + (at.y - p.from.y) * tail;
+      g.lineStyle(7 * u, ORANGE, 0.18).lineBetween(tx, ty, hx, hy); // glow
+      g.lineStyle(2.5 * u, ORANGE, 1).lineBetween(tx, ty, hx, hy);
       return true;
     });
     const v = gauge(st) / GAUGE_MAX;
