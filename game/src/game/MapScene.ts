@@ -383,8 +383,9 @@ export class MapScene extends Phaser.Scene {
           const { x, y } = unitSpot(o, u);
           cx += x / units.length;
           cy += y / units.length;
-          g.fillStyle(0x0b0f0d, alpha * 0.8).fillCircle(x, y, 7 * px);
-          g.fillStyle(0xe5484d, alpha).fillCircle(x, y, 5 * px);
+          // A red outline ring over a dark halo, not a filled dot (ILI-1442).
+          g.lineStyle(4 * px, 0x0b0f0d, alpha * 0.7).strokeCircle(x, y, 5 * px);
+          g.lineStyle(1.8 * px, 0xe5484d, alpha).strokeCircle(x, y, 5 * px);
           if (age === 'ghost') g.lineStyle(1 * px, 0xe5484d, 0.35).strokeCircle(x, y, (CELL / BOARD) * 0.45);
         }
         const to = seen.to && squareCenter(seen.to);
