@@ -11,10 +11,11 @@ test('a scan settles its square: a stamp on the map, its reports in the square�
   await photo(page, 'F4'); // the square ALPHA is heading into
   await expect(page.getByTestId('intel-panel')).toHaveCount(0); // results live on the map now
   await page.evaluate(() => window.game.selectSquare('F4'));
-  const menu = page.getByTestId('square-anchor');
-  await expect(menu.getByTestId('square-settled')).toContainText(/Settled · (clear|\d reports?)/);
-  await expect(menu.getByTestId('square-intel-item').first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
-  await expect(menu.getByTestId('scan-square')).toHaveCount(0); // one scan settles it
+  // Its reports are in ORION-3's view of it now (ILI-1438); the map menu keeps the actions.
+  const detail = page.getByTestId('orion-detail');
+  await expect(detail.getByTestId('square-settled')).toContainText(/Settled · (clear|\d reports?)/);
+  await expect(detail.getByTestId('square-intel-item').first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
+  await expect(page.getByTestId('square-anchor').getByTestId('scan-square')).toHaveCount(0); // one scan settles it
 });
 
 test('an event is a card that waits, a record only: nothing on it starts anything (ILI-1348, ILI-1393)', async ({ page, isMobile }) => {

@@ -47,8 +47,8 @@ for (const [name, width, height] of SIZES) {
       g.capture('photo');
     });
     await expect(page.locator('.hud')).toHaveAttribute('data-tab', 'orion');
-    // Its details are in its menu on the map now (ILI-1400); ORION-3's rail has the picture.
-    await expect(page.getByTestId('square-anchor').getByTestId('square-card')).toHaveAttribute('data-square', 'E3');
+    // Its details are in ORION-3's view with its picture (ILI-1438); the map menu has the actions.
+    await expect(page.getByTestId('orion-detail').getByTestId('square-card')).toHaveAttribute('data-square', 'E3');
     const sat = await box(page.getByTestId('satellite'));
     expect(sat.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
     const card = page.getByTestId('square-anchor');

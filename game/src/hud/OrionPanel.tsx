@@ -140,7 +140,7 @@ export function OrionPanel() {
       <div className="o-frame">
         {/* The square's details, under its picture (ILI-1438): its intel, ALPHA's work there, its
             ground. Only for the square ORION-3 is over and locked on. */}
-        {showPicture && lockedOn(s, sat.aim) && (
+        {!tied && lockedOn(s, sat.aim) && (
           <div className="o-detail square-card" data-testid="orion-detail">
             <Readouts s={s} square={sat.aim} />
             <TeamWork s={s} square={sat.aim} />
