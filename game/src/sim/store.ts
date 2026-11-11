@@ -13,7 +13,7 @@ import { sendToSearch } from './buildings';
 import { sendPhoto } from './intel';
 import { spend } from './sites';
 import { sendResupply } from './support';
-import { jam, listenWith, sendDecoded, tune, type ListenVia } from './signal';
+import { jam, listenWith, sendDecoded, tune } from './signal';
 import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
@@ -136,7 +136,7 @@ export function createStore(initial: GameState = initialState()) {
         else set(there.satellite.aim === grid ? { ...there, satellite: { ...there.satellite, autoScan: grid } } : there);
       }
       // Get an asset in range of enemy traffic; the intercept starts once it is (ILI-1394).
-      if (p.kind === 'enemy-traffic' && (response === 'satellite' || response === 'antenna')) set(listenWith(state, p.id, response as ListenVia));
+      if (p.kind === 'enemy-traffic' && response === 'satellite') set(listenWith(state, p.id, 'satellite')); // HQ listens; no antenna (ILI-1435)
       if (p.kind === 'intel-ready' && response === 'send') set(sendDecoded(state, p.id));
       // An operator in trouble (ILI-1396): seen to. The HUD opens the team drawer on it.
       if (p.kind === 'operator') set({ ...state, acked: [...state.acked, p.id] });

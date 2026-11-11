@@ -11,7 +11,7 @@ test('intercept: get ORION-3 in range through the prompt, follow their wave, and
   const prompt = page.getByTestId('prompt');
   await expect(prompt).toHaveAttribute('data-kind', 'enemy-traffic');
   await expect(prompt).toHaveAttribute('data-square', 'C2');
-  await expect(prompt.getByTestId('prompt-response')).toHaveText([/^ORION-3 · \d:\d\d there, off ALPHA’s route$/, 'ALPHA sets up antenna · holds 0:30']);
+  await expect(prompt.getByTestId('prompt-response')).toHaveText([/^ORION-3 listens · \d:\d\d there$/]); // HQ's job: no antenna (ILI-1435)
   await expect(page.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0); // no button starts it
   await prompt.locator('[data-response=satellite]').click();
   await expect(prompt.getByTestId('prompt-response')).toHaveText([/ORION-3 on its way/]);
