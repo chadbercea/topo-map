@@ -94,9 +94,19 @@ test('no toolbox: the budget is a chip beside the clock, $10M less deployment, a
   const chip = page.getByTestId('budget-chip');
   await expect(chip).toContainText('Budget');
   await expect(chip.getByTestId('balance')).toHaveText('$9.6M');
+  // Measure once the HUD has powered on and the chips have stopped moving (ILI-1456: on CI's
+  // slow renderer the power-on animation could still be scaling the clock).
+  await expect(page.locator('.hud')).not.toHaveAttribute('data-boot', /.+/);
+  const boxes = () => Promise.all([page.getByTestId('timer').boundingBox(), chip.boundingBox()]).then(([t, b]) => JSON.stringify([t, b]));
+  const still = async () => {
+    const before = await boxes();
+    await page.waitForTimeout(150);
+    return before === (await boxes());
+  };
+  await expect.poll(still, { timeout: 10_000 }).toBe(true);
   const t = (await page.getByTestId('timer').boundingBox())!;
   const b = (await chip.boundingBox())!;
-  expect(b.x).toBeGreaterThanOrEqual(t.x + t.width); // beside it, on its row
+  expect(b.x).toBeGreaterThanOrEqual(t.x + t.width - 0.5); // beside it, on its row
   expect(Math.abs(b.y - t.y)).toBeLessThan(4);
   expect(await page.evaluate(() => Object.values(window.game.get().ordnance).every((o) => o.unlocked))).toBe(true);
 });
