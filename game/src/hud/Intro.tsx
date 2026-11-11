@@ -3,6 +3,7 @@ import type { Castle, Spots } from './castleScene'; // types only: the scene loa
 import { intro, LINE_MS, LOGIN_LINES, useIntro, WIPE_MS, type Stage } from './intro';
 import { MapViews } from './MapViews';
 import { game, useGame } from '../sim/store';
+import { startText } from './MissionBar';
 
 // The way in (ILI-1280): Castle House's idle terminal, the wipe, the login, and the link with
 // ALPHA. The HUD's own panels power on after the login (Hud.tsx, styles.css); no link step (ILI-1433).
@@ -31,6 +32,7 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'live'
   const [spots, setSpots] = useState<Spots | null>(null);
   const [flat, setFlat] = useState(false); // no WebGL: a still mark, and ORION-3 at a fixed spot
   const [sheet, setSheet] = useState<'about' | 'settings' | null>(null);
+  const [tasking, setTasking] = useState(false); // ORION-3's tasking panel (ILI-1445)
   const wiping = stage === 'wipe';
   const title = stage === 'title';
   const closeSheet = useCallback(() => setSheet(null), []);
@@ -94,13 +96,19 @@ function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'live'
           data-side={innerWidth < 480 ? 'below' : at.x > innerWidth * 0.6 ? 'left' : undefined}
           hidden={!at.visible}
           disabled={wiping}
-          onClick={intro.engage}
+          onClick={() => setTasking((t) => !t)}
+          aria-expanded={tasking}
           data-testid="intro-orion"
-          aria-label={`${satellite}, uplink ready: log in`}
+          aria-label={`${satellite}, uplink ready: missions`}
         >
           <span className="castle-ping" aria-hidden />
-          <span className="castle-label">{satellite} · uplink ready</span>
+          {!tasking && <span className="castle-label">{satellite} · uplink ready</span>}
         </button>
+      )}
+      {/* The mission brief lives here now (ILI-1445): a tasking panel out of ORION-3's side, tracking
+          the satellite. Accept logs in and the mission starts. */}
+      {!title && !wiping && tasking && at?.visible && (
+        <Tasking at={at} left={innerWidth >= 480 && at.x > innerWidth * 0.6} below={innerWidth < 480} close={() => setTasking(false)} />
       )}
       {/* The rest of the constellation: not in service yet. */}
       {!wiping &&
@@ -219,5 +227,45 @@ function RookMark({ small }: { small?: boolean }) {
     <svg className={small ? 'rook-mark small' : 'rook-mark'} viewBox="0 0 40 52" aria-hidden>
       <path d="M6 50h28v-4l-3-3h-2l-2-24 4-4V5h-5v4h-4V5h-4v4h-4V5H9v10l4 4-2 24H9l-3 3z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+// ORION-3's tasking panel (ILI-1445): the missions on offer (one, for now), terse, tacti-cool.
+// The card expands to its type, teams and clock; Accept logs in and the mission starts.
+function Tasking({ at, left, below, close }: { at: { x: number; y: number }; left: boolean; below: boolean; close: () => void }) {
+  const satellite = useGame((s) => s.mission.satellite);
+  const name = useGame((s) => s.mission.name);
+  const goal = useGame(startText);
+  const callsign = useGame((s) => s.team.callsign);
+  const operators = useGame((s) => s.team.operators.length);
+  const minutes = useGame((s) => Math.round(s.timer.totalMs / 60_000));
+  const [open, setOpen] = useState(false);
+  const side = below ? 'below' : left ? 'left' : 'right';
+  return (
+    <section className="tasking" data-side={side} style={{ left: at.x, top: at.y }} role="dialog" aria-label={`${satellite} tasking`} data-testid="intro-tasking">
+      <header>
+        <span>{satellite} · TASKING</span>
+        <button className="t-x" onClick={close} aria-label="Close" data-testid="tasking-close">
+          ✕
+        </button>
+      </header>
+      <article className="t-card" data-open={open || undefined}>
+        <button className="t-head" onClick={() => setOpen((o) => !o)} aria-expanded={open} data-testid="tasking-expand">
+          <i aria-hidden>{open ? '▾' : '▸'}</i>
+          <b>{name}</b>
+        </button>
+        <p className="t-goal">{goal}</p>
+        {open && (
+          <dl className="t-specs" data-testid="tasking-specs">
+            <div><dt>TYPE</dt><dd>RECOVERY</dd></div>
+            <div><dt>TEAMS</dt><dd>1 · {callsign} ×{operators}</dd></div>
+            <div><dt>CLOCK</dt><dd>{minutes}:00</dd></div>
+          </dl>
+        )}
+        <button className="t-accept" onClick={intro.engage} data-testid="tasking-accept">
+          Accept
+        </button>
+      </article>
+    </section>
   );
 }
