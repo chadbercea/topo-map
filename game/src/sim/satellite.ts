@@ -1,4 +1,4 @@
-import { GRADE_LABEL, holdScan, pushVideo, sendPhoto, settled } from './intel';
+import { GRADE_LABEL, holdScan, pushVideo, settled } from './intel';
 import { maybeBuilding } from './buildings';
 import { slewFactor } from './upgrades';
 import { parseSquare, squareId, type SquareId } from '../map/grid';
@@ -39,7 +39,6 @@ export type Satellite = {
   captureUntilMs: number;
   callId: string | null; // ALPHA's call waiting on this look
   result: LookResult | null; // the last look, for the panel until closed
-  autoScan?: SquareId | null; // Scan grids (ILI-1414): scan this square the moment it's locked on
   watching?: SquareId | null; // a look was taken here: its picture stays live while ORION-3 stays over (ILI-1423, ILI-1430)
 };
 
@@ -131,7 +130,6 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     mode: null,
     callId: callId ?? null,
     result: null,
-    autoScan: null, // a new tasking calls off any scan Scan grids had waiting (ILI-1414)
     watching: null, // and ends any live feed (ILI-1423)
   };
   // Leaving a square it was watching live (ILI-1423): that picture stops being live and ages
@@ -224,11 +222,8 @@ export function describe(r: LookResult): string {
 export const satelliteSystem: System = (s) => {
   const sat = s.satellite;
   if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs) {
-    // It says what's next (ILI-1257): the shot is HQ's to take, unless Scan grids already took
-    // it (ILI-1414).
-    const auto = sat.autoScan === sat.aim; // Scan grids: scan, then the photo straight to ALPHA (ILI-1432)
-    const there = log({ ...s, satellite: { ...sat, state: 'onStation', autoScan: null } }, radio(s, satName(s), `station-${s.elapsedMs}`, auto ? `On station over ${sat.aim}. Scanning.` : `On station over ${sat.aim}. Ready for collection.`));
-    return auto ? sendPhoto(scan(there), sat.aim) : there;
+    // It says what's next (ILI-1257): the shot is HQ's to take, always by hand (ILI-1451).
+    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, satName(s), `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready for collection.`));
   }
   // Video is real time (ILI-1423): once it's run on a square, the picture stays live for as long
   // as ORION-3 stays over it. No rescan.

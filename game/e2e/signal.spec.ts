@@ -1,12 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, lockOn, start, openEvent, hasEvent } from './helpers';
+import { fastForward, freeze, lockOn, start, untilTraffic, openEvent, hasEvent } from './helpers';
 
 test('intercept: get ORION-3 in range through the prompt, follow their wave, and send what is decoded to ALPHA (ILI-1394)', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
-  await fastForward(page, 83_000);
+  await untilTraffic(page);
   // Enemy traffic is a card at C2, in its own lane (ILI-1394, ILI-1452).
   const traffic = page.getByTestId('traffic-prompt');
   await expect(traffic).toHaveAttribute('data-kind', 'enemy-traffic');
@@ -57,7 +57,7 @@ test('the traffic card stays when a more urgent prompt comes up, until HQ dismis
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
-  await fastForward(page, 83_000);
+  await untilTraffic(page);
   const traffic = page.getByTestId('traffic-prompt');
   await expect(traffic).toHaveAttribute('data-kind', 'enemy-traffic');
   // An operator hit: the most urgent prompt there is. The traffic card stays up beside it.
@@ -77,7 +77,7 @@ test('the traffic card stays when a more urgent prompt comes up, until HQ dismis
 test('jam instead: the traffic is gone, and HQ says what it costs', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
-  await fastForward(page, 83_000);
+  await untilTraffic(page);
   await lockOn(page, 'C2'); // ORION-3 over it, or nothing runs there (ILI-1397)
   await openEvent(page, 'signal', 'C2');
   await page.getByRole('button', { name: 'Jam', exact: true }).click();

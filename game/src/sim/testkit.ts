@@ -4,7 +4,7 @@ import { createStore } from './store';
 import { step } from './systems';
 import { initialOrdnance, WEAPONS } from './ordnance';
 import { LINK_MS } from './comms';
-import { initialSatellite, lockedOn as lockedOnSquare } from './satellite';
+import { initialSatellite } from './satellite';
 
 // The sim's tests run with ALPHA's intel gauge pinned full, unless they're about the gauge
 // (intel.test.ts): keeping the team fed is a game of its own (ILI-1314).
@@ -14,6 +14,15 @@ export const run = (s: GameState, ms: number) => {
   for (let t = 0; t < ms; t += 100) s = step(s, 100);
   return s;
 };
+
+// Run until a group talks on its net (ILI-1454): no fixed time, the mission's own rules and dice.
+// On the default seed the patrol at C2 is first, before a minute is up.
+export function untilTraffic(s: GameState, maxMs = 300_000) {
+  for (let t = 0; t < maxMs && !s.events.some((e) => e.kind === 'signal' && e.status !== 'resolved'); t += 100) s = step(s, 100);
+  return s;
+}
+// The enemy traffic up on the map (open, unless any will do).
+export const trafficId = (s: GameState, open = true) => s.events.find((e) => e.kind === 'signal' && (!open || e.status !== 'resolved'))!.id;
 
 // The team just walks: every square imaged and no contacts, so nothing stops it (not even
 // the salvage convoy that cuts the exfil, ILI-1192; convoy.test.ts plays that).
@@ -79,12 +88,16 @@ export function lockedStore(start?: GameState) {
   };
 }
 
-// Play ALPHA's intel prompt the way the player does (ILI-1395, ILI-1397): Scan grids opens the
-// grid square; its menu moves ORION-3 there, then Scan takes the photo.
-export function answerIntel(store: ReturnType<typeof createStore>, p: { id: string; kind: string; grid?: string } | null | undefined) {
+// Play ALPHA's intel prompt the way the player does (ILI-1451): each step by hand. Click the grid
+// square (ORION-3 goes), wait out the move, Scan in ORION-3, then Photo sends the intel to ALPHA.
+// Call it every tick: it does the one step the prompt is on.
+export function answerIntel(store: ReturnType<typeof createStore>, p: { kind: string; grid?: string; step?: string } | null | undefined) {
   if (p?.kind !== 'intel-needed' || !p.grid) return;
-  const s = store.get();
-  if (s.map.selected !== p.grid) store.answerPrompt(p.id, 'grids');
-  if (lockedOnSquare(store.get(), p.grid)) store.scan(p.grid);
-  else if (store.get().satellite.state === 'idle') store.moveSatellite(p.grid);
+  const grid = p.grid;
+  if (p.step === 'click') {
+    store.selectSquare(grid);
+    store.lookAt(grid);
+  }
+  if (p.step === 'scan') store.scan(grid);
+  if (p.step === 'photo') store.photo(grid);
 }

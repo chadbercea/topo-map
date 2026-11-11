@@ -61,7 +61,7 @@ const COUNT: Record<Grade | 'video', number> = { clear: 1, low: 1, medium: 2, hi
 
 // The reports a look brings in: one to three, of different random types.
 export function reports(s: GameState, square: string, grade: Grade | 'video', fighters = 0): IntelItem[] {
-  let h = (s.rng ^ Math.imul(s.intel.pushes.length + 1, 0x9e3779b1)) >>> 0;
+  let h = (s.seed ^ Math.imul(s.intel.pushes.length + 1, 0x9e3779b1)) >>> 0;
   for (const ch of square) h = Math.imul(h ^ ch.charCodeAt(0), 2654435761) >>> 0;
   const kinds: IntKind[] = [...INT_KINDS];
   const out: IntelItem[] = [];
@@ -103,7 +103,7 @@ export const burn = (s: GameState, units: number): GameState => ({ ...s, intel: 
 export function grade(s: GameState, square: string, fighters: number): Grade {
   if (s.intel.graded.includes(square)) return 'clear';
   if (fighters) return 'high';
-  let h = s.rng >>> 0;
+  let h = s.seed >>> 0;
   for (const ch of square) h = Math.imul(h ^ ch.charCodeAt(0), 2654435761) >>> 0;
   const r = (h % 1000) / 1000;
   return r < 0.45 ? 'clear' : r < 0.8 ? 'low' : r < 0.95 ? 'medium' : 'high';

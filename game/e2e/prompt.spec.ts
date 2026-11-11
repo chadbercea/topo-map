@@ -1,32 +1,60 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, running, start } from './helpers';
+import { fastForward, freeze, running, squarePoint, start, tapAt } from './helpers';
 
-// Tier two (ILI-1391): ALPHA needing intel is the one prompt on screen, pinned to its square,
-// following the map, answered right on it, and gone once handled.
+// Tier two (ILI-1391): ALPHA needing intel is the one prompt on screen, pinned to its grid square
+// (ILI-1450), following the map, worked by the player step by step (ILI-1451), and gone once handled.
 
 const fadeIn = (page: import('@playwright/test').Page) => page.waitForTimeout(250);
 
-test('ALPHA needing intel is a prompt on its marker; Scan grids moves ORION-3 there and scans on arrival, and the prompt goes (ILI-1395, ILI-1414)', async ({ page }) => {
+test('ALPHA needing intel points at the grid square, not a big button; the player clicks it, scans and sends the photo, and nothing happens unless they act (ILI-1450, ILI-1451)', async ({ page, isMobile }) => {
   await start(page, '?debug&gauge');
   await running(page);
   await freeze(page);
   await fastForward(page, 3_000);
-  const prompt = page.getByTestId('prompt');
-  await expect(prompt).toHaveCount(1); // one at a time
-  await expect(prompt).toHaveAttribute('data-square', 'G5'); // where ALPHA is
-  await expect(prompt.getByTestId('prompt-text')).toContainText('ALPHA holding, needs route intel to D3');
-  await expect(prompt.getByTestId('prompt-response')).toHaveText(['Scan grids']);
+  const tag = page.getByTestId('prompt');
+  await expect(tag).toHaveCount(1); // one at a time
+  await expect(tag).toHaveAttribute('data-kind', 'intel-needed');
+  await expect(tag).toHaveAttribute('data-square', 'F4'); // pinned to the grid square ALPHA needs
+  await expect(tag).toHaveAttribute('data-step', 'click');
+  await expect(tag.getByTestId('prompt-text')).toHaveText('ALPHA needs route intel · click F4');
+  await expect(page.getByTestId('prompt-response')).toHaveCount(0); // no big Scan grids button
   await expect(page.getByTestId('needs-hq')).toHaveCount(0); // no mission panel to double it (ILI-1392)
   await expect(page.getByTestId('event-card-stack').filter({ hasText: 'requests imagery' })).toHaveCount(0); // nor in COMMS
 
-  await prompt.getByTestId('prompt-response').click();
-  await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the grid square to scan; its menu waits for the lock (ILI-1437)
-  await expect(prompt.getByTestId('prompt-response')).toHaveText(['ORION-3 moving to F4…']); // one click: no more steps (ILI-1414)
+  // Left alone, nothing moves for the player.
+  const aim = await page.evaluate(() => window.game.get().satellite.aim);
   await fastForward(page, 30_000);
-  await expect.poll(() => page.evaluate(() => !!window.game.get().imagery.F4)).toBe(true);
+  expect(await page.evaluate(() => window.game.get().satellite.aim)).toBe(aim);
+  await expect(tag).toHaveAttribute('data-step', 'click');
+
+  // Step 1: click F4 on the map. It's picked, and ORION-3 goes.
+  await tapAt(page, isMobile, await squarePoint(page, 5, 3));
+  await expect(page.getByTestId('selected-square')).toHaveText('F4');
+  await expect(tag).toHaveAttribute('data-step', 'moving');
+  await expect(tag.getByTestId('prompt-text')).toHaveText('ORION-3 moving to F4…');
+
+  // Step 2: on its way. Locked on, it waits for the player: no scan by itself.
+  await fastForward(page, 30_000);
+  await expect(tag).toHaveAttribute('data-step', 'scan');
+  await expect(tag.getByTestId('prompt-text')).toHaveText('Scan F4 in ORION-3');
+  expect(await page.evaluate(() => !!window.game.get().imagery.F4)).toBe(false);
+
+  // Step 3: Scan in ORION-3, pulsing.
+  if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
+  const sat = page.getByTestId('satellite');
+  await expect(sat.getByTestId('capture-scan')).toHaveAttribute('data-cue', /.*/);
+  await sat.getByTestId('capture-scan').click();
+  await expect(tag).toHaveAttribute('data-step', 'photo');
+  await expect(tag.getByTestId('prompt-text')).toHaveText('Photo: send F4 to ALPHA');
+  await fastForward(page, 5_000);
+  await expect(tag).toHaveAttribute('data-step', 'photo'); // the intel waits with the analysts till it's sent
+
+  // Step 4: Photo, pulsing, sends it to ALPHA. F4's ask is answered and the tag goes.
+  await expect(sat.getByTestId('capture-photo')).toHaveAttribute('data-cue', /.*/);
+  await sat.getByTestId('capture-photo').click();
   await fastForward(page, 200);
-  // F4's request is answered (the next one, further on, may come up as ALPHA walks off the photo's intel).
   await expect.poll(() => page.evaluate(() => window.game.get().events.some((e) => e.id.startsWith('imagery-F4') && e.status !== 'resolved'))).toBe(false);
+  await expect(page.locator('[data-testid=prompt][data-square=F4]')).toHaveCount(0);
 });
 
 test('the prompt follows its square when the map moves', async ({ page, isMobile }) => {

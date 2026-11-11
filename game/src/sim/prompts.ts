@@ -7,6 +7,7 @@ import { squareAt } from '../map/grid';
 import { ammoLeft, condition } from './team';
 import { LOW } from './support';
 import { countdown } from './gameTime';
+import { heldIntel } from './intel';
 
 // The HUD's tiers (ILI-1391). Tier one is always on and tiny (the mission timer, the team's
 // heartbeat). Tier three is drawers HQ opens (the team, the comms log, square details). Tier two
@@ -27,8 +28,20 @@ export type Prompt = {
   grid?: string; // the grid square a response takes HQ to, when that's not where it's pinned (ILI-1395)
   operator?: string; // the operator it's about (ILI-1396)
   text: string;
-  responses: PromptResponse[]; // one to three
+  responses: PromptResponse[]; // one to three (none for ALPHA's intel ask: the player works the grid, ILI-1451)
+  step?: IntelStep; // ALPHA's intel ask: the step the player is on (ILI-1451)
+  hint?: string; // and what to do next, on the tag pinned to the grid square
 };
+
+// ALPHA's intel ask, step by step (ILI-1451): the player does each one by hand. Click the grid
+// square (ORION-3 goes), wait for the lock, Scan in ORION-3, then Photo sends the intel to ALPHA.
+export type IntelStep = 'click' | 'moving' | 'scan' | 'photo';
+export function intelStep(s: GameState, grid: string): IntelStep {
+  if (heldIntel(s, grid)) return 'photo';
+  if (lockedOn(s, grid)) return 'scan';
+  if (s.satellite.state === 'slewing' && s.satellite.aim === grid) return 'moving';
+  return 'click';
+}
 
 // The order calls to action wait in (ILI-1391): an operator hurt, then what the team asks for,
 // then enemy traffic, then finished analyst intel.
@@ -37,26 +50,34 @@ export const PRIORITY = { operatorHurt: 0, teamRequest: 1, enemyTraffic: 2, inte
 type Source = (s: GameState) => Prompt[];
 
 // ALPHA needs intel (ILI-1341, ILI-1349): out of it and holding, or running low on the move. It
-// asks for a look at the next square on its route, and a scan there answers it.
-// On the marker (ILI-1395): it's ALPHA's need, so it's pinned where ALPHA is and says where ALPHA
-// is going; Scan grids takes HQ to the grid square to scan, whose menu has the move, then Scan.
+// asks for a look at the next square on its route, and a scan there, sent with Photo, answers it.
+// On the grid (ILI-1450, ILI-1451): no big button and nothing done for the player. The prompt is
+// pinned to the grid square ALPHA needs, outlined on the map, and its tag says the next step.
 const intelNeeded: Source = (s) => {
   const req = openImageryRequest(s);
   if (!req) return [];
   const holding = s.team.activity.startsWith('Holding');
   const goal = s.mission.phase === 'exfil' || s.mission.phase === 'complete' ? s.mission.c : s.mission.b;
-  const { x, y } = s.team.position;
+  const grid = req.square;
+  const step = intelStep(s, grid);
+  const hint = {
+    click: `${s.team.callsign} needs route intel · click ${grid}`,
+    moving: `${satName(s)} moving to ${grid}…`,
+    scan: `Scan ${grid} in ${satName(s)}`,
+    photo: `Photo: send ${grid} to ${s.team.callsign}`,
+  }[step];
   return [
     {
       id: req.id,
       kind: 'intel-needed',
       priority: PRIORITY.teamRequest,
       atMs: req.atMs,
-      square: squareAt(x, y) ?? req.square,
-      grid: req.square,
+      square: grid,
+      grid,
       text: `${s.team.callsign} ${holding ? 'holding' : 'low on intel'}, needs route intel to ${goal}`,
-      // On its way (ILI-1414): the button says what's happening instead.
-      responses: [s.satellite.autoScan === req.square ? { id: 'grids', label: `ORION-3 moving to ${req.square}…`, disabled: true } : { id: 'grids', label: 'Scan grids' }],
+      responses: [],
+      step,
+      hint,
     },
   ];
 };

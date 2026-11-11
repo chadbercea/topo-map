@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { activePrompt, byUrgency, PRIORITY, promptQueue, trafficPrompts, type Prompt } from './prompts';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { run } from './testkit';
+import { run, trafficId, untilTraffic } from './testkit';
 
 // Tier two (ILI-1391): every call to action through one queue, one on screen at a time.
 const blindAhead = (): GameState => {
@@ -15,26 +15,37 @@ describe('the prompt queue', () => {
     expect(activePrompt(initialState())).toBeNull();
   });
 
-  it('ALPHA needing intel is a prompt: a square, one line, one to three responses', () => {
+  it('ALPHA needing intel is a prompt pinned on the grid square it needs, with no button (ILI-1450)', () => {
     const p = activePrompt(run(blindAhead(), 3_000))!;
-    expect(p).toMatchObject({ kind: 'intel-needed', priority: PRIORITY.teamRequest, square: 'G5', grid: 'F4' }); // on ALPHA's marker (ILI-1395)
+    expect(p).toMatchObject({ kind: 'intel-needed', priority: PRIORITY.teamRequest, square: 'F4', grid: 'F4', step: 'click', hint: 'ALPHA needs route intel · click F4' });
     expect(p.text).toBe('ALPHA holding, needs route intel to D3');
-    expect(p.responses.length).toBeGreaterThanOrEqual(1);
-    expect(p.responses.length).toBeLessThanOrEqual(3);
+    expect(p.responses).toEqual([]);
   });
 
-  it('Scan grids does it: ORION-3 goes to the grid square and scans it on arrival; the prompt shows progress, then goes (ILI-1414)', () => {
+  it('the player does every step; the prompt says the next one, and nothing happens on its own (ILI-1451)', () => {
     const store = createStore(run(blindAhead(), 3_000));
-    const p = activePrompt(store.get())!;
-    expect(p.responses).toEqual([{ id: 'grids', label: 'Scan grids' }]);
-    store.answerPrompt(p.id, 'grids');
-    expect(store.get().map.selected).toBe('F4');
-    expect(store.get().satellite.aim).toBe('F4'); // on its way, no more clicks
-    expect(activePrompt(store.get())?.responses[0]).toMatchObject({ label: 'ORION-3 moving to F4…', disabled: true });
-    for (let i = 0; i < 400 && !store.get().imagery.F4; i++) store.tick(100);
-    expect(store.get().imagery.F4).toBeDefined(); // scanned the moment it locked on
+    const p = () => activePrompt(store.get())!;
+    const aim = store.get().satellite.aim;
+    for (let i = 0; i < 300; i++) store.tick(100);
+    expect(store.get().satellite.aim).toBe(aim); // left alone, ORION-3 stays put
+    expect(p()).toMatchObject({ step: 'click', hint: 'ALPHA needs route intel · click F4' });
+    // Click F4 on the map: picked, and ORION-3 goes.
+    store.selectSquare('F4');
+    store.lookAt('F4');
+    expect(p()).toMatchObject({ step: 'moving', hint: 'ORION-3 moving to F4…' });
+    for (let i = 0; i < 400 && store.get().satellite.state === 'slewing'; i++) store.tick(100);
+    expect(p()).toMatchObject({ step: 'scan', hint: 'Scan F4 in ORION-3' });
+    for (let i = 0; i < 100; i++) store.tick(100);
+    expect(store.get().imagery.F4).toBeUndefined(); // locked on, nothing scanned for the player
+    store.scan('F4');
     store.tick(100);
-    expect(promptQueue(store.get()).some((x) => x.id === p.id)).toBe(false);
+    expect(p()).toMatchObject({ step: 'photo', hint: 'Photo: send F4 to ALPHA' });
+    for (let i = 0; i < 100; i++) store.tick(100);
+    expect(p()?.step).toBe('photo'); // the intel waits with the analysts till the player sends it
+    const id = p().id;
+    store.photo('F4');
+    store.tick(100);
+    expect(promptQueue(store.get()).some((x) => x.id === id)).toBe(false);
   });
 
   it('orders by priority, then the one that has waited longest', () => {
@@ -63,7 +74,7 @@ describe('operator prompts', () => {
 // Enemy traffic has its own lane (ILI-1452): nothing knocks it off mid-read; it stays until HQ
 // acts on it or dismisses it, and dismissing it leaves the traffic on the map.
 describe('the enemy-traffic card', () => {
-  const atTraffic = () => run(initialState(), 83_000);
+  const atTraffic = () => untilTraffic(initialState());
 
   it('is not in the one-prompt slot, so a more urgent prompt does not replace it', () => {
     const s = atTraffic();
@@ -75,7 +86,7 @@ describe('the enemy-traffic card', () => {
 
   it('acted on, it shows the progress and stays until the intercept starts', () => {
     const store = createStore(atTraffic());
-    store.answerPrompt('traffic-c2', 'satellite');
+    store.answerPrompt(trafficId(store.get()), 'satellite');
     expect(trafficPrompts(store.get())[0].responses[0]).toMatchObject({ label: expect.stringMatching(/ORION-3 on its way/), disabled: true });
     for (let i = 0; i < 300 && !store.get().minigame; i++) store.tick(100);
     expect(trafficPrompts(store.get())).toEqual([]);
@@ -83,8 +94,9 @@ describe('the enemy-traffic card', () => {
 
   it('dismissed, the card goes but the traffic stays on the map, unresolved', () => {
     const store = createStore(atTraffic());
-    store.dismissTraffic('traffic-c2');
+    const id = trafficId(store.get());
+    store.dismissTraffic(id);
     expect(trafficPrompts(store.get())).toEqual([]);
-    expect(store.get().events.find((e) => e.id === 'traffic-c2')).toMatchObject({ kind: 'signal', square: 'C2', status: expect.not.stringMatching('resolved') });
+    expect(store.get().events.find((e) => e.id === id)).toMatchObject({ kind: 'signal', square: 'C2', status: expect.not.stringMatching('resolved') });
   });
 });

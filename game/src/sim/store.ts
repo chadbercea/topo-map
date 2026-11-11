@@ -64,17 +64,19 @@ export function createStore(initial: GameState = initialState()) {
     resume: () => state.phase === 'paused' && set({ ...state, phase: 'running' }),
     // No saves in the MVP: retry and restart both start the mission over, live.
     // A new mission opens on the balance HQ carries in (ILI-1316): the last one's, unless given.
-    restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state), upgrades: readonly string[] = state.upgrades) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades))),
+    restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state), upgrades: readonly string[] = state.upgrades) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
     // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
-    setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades))),
+    setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
     // Send ALPHA to search a building a scan turned up (ILI-1316).
     // Like every action on a square, only with ORION-3 locked on it (ILI-1397).
     search: (square: string) => lockedOn(state, square) && set(sendToSearch(state, square)),
     // Buy a capability (ILI-1316).
     unlock: (w: Weapon) => set(unlock(state, w)),
+    // Replay a mission exactly, or play another (?seed=, ILI-1454): start over on that seed.
+    setSeed: (seed: number) => set(keepBase(initialState(state.settings, state.timer.totalMs, state.resources.ledger.opening, unlockedWeapons(state), state.upgrades, seed >>> 0))),
     // Tuning: start over with a different mission length (1 to 30 minutes).
     setMissionLength: (minutes: number) =>
-      set(keepBase(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000)))),
+      set(keepBase(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000), 0, [], [], state.seed))),
     // Tuning and tests: a fixed offset on ALPHA's intel gauge that survives restarts (ILI-1314).
     setIntelBase: (base: number) => set({ ...state, intel: { ...state.intel, base } }),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
@@ -127,14 +129,6 @@ export function createStore(initial: GameState = initialState()) {
     answerPrompt: (id: string, response: string) => {
       const p = allPrompts(state).find((x) => x.id === id);
       if (!p || p.responses.find((r) => r.id === response)?.disabled) return;
-      // Scan grids does what it says (ILI-1414): ORION-3 goes to the grid square ALPHA needs and
-      // scans it the moment it's locked on. The square stays picked, so its menu shows the way.
-      if (p.kind === 'intel-needed' && response === 'grids' && p.grid) {
-        const grid = p.grid;
-        const there = task({ ...state, map: { ...state.map, selected: grid }, openEvent: null }, grid);
-        if (lockedOn(there, grid)) set(sendPhoto(scanSquare(there, grid), grid)); // scan, then the photo to ALPHA (ILI-1432)
-        else set(there.satellite.aim === grid ? { ...there, satellite: { ...there.satellite, autoScan: grid } } : there);
-      }
       // Get an asset in range of enemy traffic; the intercept starts once it is (ILI-1394).
       if (p.kind === 'enemy-traffic' && response === 'satellite') set(listenWith(state, p.id, 'satellite')); // HQ listens; no antenna (ILI-1435)
       if (p.kind === 'intel-ready' && response === 'send') set(sendDecoded(state, p.id));

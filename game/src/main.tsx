@@ -13,6 +13,9 @@ import './styles.css';
 // ?minutes=8 tunes the mission length (GDD: tune by feel; ten minutes by default since ILI-1251).
 const minutes = Number(new URLSearchParams(location.search).get('minutes'));
 if (minutes > 0) game.setMissionLength(minutes);
+// ?seed=42 plays the mission on another seed; the same seed replays it exactly (ILI-1454).
+const seed = new URLSearchParams(location.search).get('seed');
+if (seed && Number.isFinite(Number(seed))) game.setSeed(Number(seed));
 
 const saved = loadSettings();
 if (saved) game.setSettings(saved);

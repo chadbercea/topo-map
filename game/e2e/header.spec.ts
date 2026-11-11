@@ -33,5 +33,5 @@ test('no start card blocks the game: the brief is on the satellite screen now (I
   await freeze(page);
   await expect(page.getByTestId('start-card')).toHaveCount(0);
   await fastForward(page, 4_000);
-  await expect(page.getByTestId('prompt')).toHaveCount(1); // Scan grids, straight up
+  await expect(page.getByTestId('prompt')).toHaveCount(1); // ALPHA's intel ask on its grid square, straight up
 });
