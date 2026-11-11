@@ -20,7 +20,7 @@ test('the team moves along its route on its own and stops when paused', async ({
 test("each operator's noise is on their row; ALERTED is in the team panel's title (ILI-1222)", async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
-  await page.getByTestId(isMobile ? 'tab-team' : 'heartbeat-strip').click(); // a drawer, closed until opened (ILI-1396)
+  if (isMobile) await page.getByTestId('tab-team').click(); // on a wide screen it's expanded by default (ILI-1439)
   const gunner = page.getByTestId('noise-heavy').getByRole('meter');
   // On the move, only footfalls: orange (ILI-1266). Gunfire takes it red.
   await expect(page.getByTestId('noise-heavy')).not.toHaveAttribute('data-source', 'fire');

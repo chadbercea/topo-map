@@ -4,18 +4,26 @@ import { fastForward, freeze, running, start } from './helpers';
 // The team panel is a drawer off the heartbeat strip (ILI-1396): closed by default, opened from
 // the strip, and opened with an operator highlighted from their prompt.
 
-test('the team panel is closed until the heartbeat strip opens it', async ({ page, isMobile }) => {
+test('the team panel is expanded by default; minimized it is the strip; they swap, never both (ILI-1396, ILI-1439)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   const strip = page.getByTestId('heartbeat-strip');
-  await expect(strip.locator('svg.ecg')).toHaveCount(5); // five heartbeats, nothing else
-  await expect(page.getByTestId('team-panel')).toBeHidden();
-  await strip.click();
+  if (isMobile) {
+    // On a phone it's the TEAM tab of the sheet: the strip opens it.
+    await expect(strip.locator('svg.ecg')).toHaveCount(5);
+    await strip.click();
+    await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
+    return;
+  }
   await expect(page.getByTestId('team-panel')).toBeVisible();
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
-  if (isMobile) return; // on a phone it's the TEAM tab of the sheet
-  await strip.click();
+  await expect(strip).toBeHidden();
+  await page.getByTestId('team-minimize').click();
   await expect(page.getByTestId('team-panel')).toBeHidden();
+  await expect(strip.locator('svg.ecg')).toHaveCount(5); // five heartbeats
+  await strip.click();
+  await expect(page.getByTestId('team-panel')).toBeVisible();
+  await expect(strip).toBeHidden();
 });
 
 test('an operator hit is a prompt; it opens the team panel with them highlighted', async ({ page }) => {
@@ -39,13 +47,14 @@ test('an operator hit is a prompt; it opens the team panel with them highlighted
 test('the strip names each operator with their status; the open drawer hugs its rows', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
+  if (!isMobile) await page.getByTestId('team-minimize').click(); // the strip (ILI-1439)
   const strip = page.getByTestId('heartbeat-strip');
   await expect(strip.getByTestId('hb-lead')).toContainText('Reyes');
   await expect(strip.getByTestId('hb-lead')).toContainText('FINE');
   const s = (await strip.boundingBox())!;
   expect(s.x + s.width).toBeLessThanOrEqual(page.viewportSize()!.width); // fits on a phone
   if (isMobile) return; // on a phone the drawer is the TEAM tab of the sheet
-  await strip.click();
+  await strip.click(); // expanded again (ILI-1439)
   const panel = (await page.getByTestId('team-panel').boundingBox())!;
   const row = (await page.getByTestId('op-lead').boundingBox())!;
   expect(panel.width - row.width).toBeLessThan(40); // no dead space beside the rows

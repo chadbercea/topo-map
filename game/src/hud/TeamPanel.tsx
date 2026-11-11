@@ -6,7 +6,8 @@ import { condition } from '../sim/team';
 // status, noise (ILI-1222), ammo and meds, always on screen, with what the team is doing over
 // it. Red while it's engaged. Titled ALPHA TEAM (ILI-1248); no team totals, each row carries
 // its own (ILI-1223).
-export function TeamPanel({ highlight }: { highlight?: string | null }) {
+// onMinimize: on a wide screen the panel and the strip swap (ILI-1439); its header has the button.
+export function TeamPanel({ highlight, onMinimize }: { highlight?: string | null; onMinimize?: () => void }) {
   const callsign = useGame((s) => s.team.callsign);
   const activity = useGame((s) => s.team.activity);
   const fighting = useGame((s) => !!s.team.fight);
@@ -24,6 +25,11 @@ export function TeamPanel({ highlight }: { highlight?: string | null }) {
           <b className="alerted" data-testid="alerted">
             ALERTED
           </b>
+        )}
+        {onMinimize && (
+          <button className="team-min" onClick={onMinimize} aria-label="Minimize the team panel" title="Minimize" data-testid="team-minimize">
+            ▁
+          </button>
         )}
       </h2>
       <ul className="readout" data-testid="readout">
