@@ -36,12 +36,15 @@ describe('the never-stuck rule', () => {
     expect(requests(run(fed(blindAhead()), 30_000))).toHaveLength(0);
   });
 
-  it('a photo of the square answers it; still short, ALPHA asks for the next one', () => {
+  it('a scan of the square, sent with Photo, answers it; still short, ALPHA asks for the next one (ILI-1451)', () => {
     const store = createStore(run(blindAhead(), 1_000));
     expect(openImageryRequest(store.get())?.square).toBe('F4');
     store.lookAt('F4');
     store.set(run(store.get(), 30_000));
     store.capture('photo');
+    store.set(run(store.get(), 1_000));
+    expect(openImageryRequest(store.get())?.square).toBe('F4'); // scanned, the intel held: not answered till it's sent
+    store.photo('F4');
     store.set(run(store.get(), 15_000));
     const [first, ...rest] = requests(store.get());
     expect(first.status).toBe('resolved');
@@ -62,7 +65,7 @@ describe('the never-stuck rule', () => {
       store.tick(100);
       const s = store.get();
       const p = activePrompt(s); // answer the prompt on the map: move ORION-3 there, then Scan (ILI-1391, ILI-1397)
-      answerIntel(store, p); // Scan grids, the move, then Scan (ILI-1395, ILI-1397)
+      answerIntel(store, p); // click the square, wait for the lock, Scan, Photo (ILI-1451)
     }
     expect(store.get().team.waypoint).toBeGreaterThanOrEqual(crash);
   });

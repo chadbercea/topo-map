@@ -4,7 +4,7 @@ import { createStore } from './store';
 import { step } from './systems';
 import { initialOrdnance, WEAPONS } from './ordnance';
 import { LINK_MS } from './comms';
-import { initialSatellite, lockedOn as lockedOnSquare } from './satellite';
+import { initialSatellite } from './satellite';
 
 // The sim's tests run with ALPHA's intel gauge pinned full, unless they're about the gauge
 // (intel.test.ts): keeping the team fed is a game of its own (ILI-1314).
@@ -79,12 +79,16 @@ export function lockedStore(start?: GameState) {
   };
 }
 
-// Play ALPHA's intel prompt the way the player does (ILI-1395, ILI-1397): Scan grids opens the
-// grid square; its menu moves ORION-3 there, then Scan takes the photo.
-export function answerIntel(store: ReturnType<typeof createStore>, p: { id: string; kind: string; grid?: string } | null | undefined) {
+// Play ALPHA's intel prompt the way the player does (ILI-1451): each step by hand. Click the grid
+// square (ORION-3 goes), wait out the move, Scan in ORION-3, then Photo sends the intel to ALPHA.
+// Call it every tick: it does the one step the prompt is on.
+export function answerIntel(store: ReturnType<typeof createStore>, p: { kind: string; grid?: string; step?: string } | null | undefined) {
   if (p?.kind !== 'intel-needed' || !p.grid) return;
-  const s = store.get();
-  if (s.map.selected !== p.grid) store.answerPrompt(p.id, 'grids');
-  if (lockedOnSquare(store.get(), p.grid)) store.scan(p.grid);
-  else if (store.get().satellite.state === 'idle') store.moveSatellite(p.grid);
+  const grid = p.grid;
+  if (p.step === 'click') {
+    store.selectSquare(grid);
+    store.lookAt(grid);
+  }
+  if (p.step === 'scan') store.scan(grid);
+  if (p.step === 'photo') store.photo(grid);
 }

@@ -61,7 +61,7 @@ describe('the intel gauge', () => {
     for (let t = 0; t < 300_000; t += 100) {
       store.tick(100);
       const p = activePrompt(store.get());
-      answerIntel(store, p); // Scan grids, the move, then Scan (ILI-1395, ILI-1397)
+      answerIntel(store, p); // click the square, wait for the lock, Scan, Photo (ILI-1451)
     }
     expect(store.get().team.waypoint).toBeGreaterThan(start + 3);
   });
