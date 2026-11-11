@@ -1,36 +1,64 @@
 import { useEffect, useRef } from 'react';
 
-// Castle House's website (ILI-1333): the fictional PMC from PMC War Room. It reads in three
-// acts as you scroll. First, bland corporate (light, rounded, buzzwords). Then the shift: the
-// page darkens and the copy starts to crack. Last, full war propaganda: a hard recruitment pitch
-// whose every call to action launches the game, the test. All in-universe and satire: no real
-// company, person, agency or programme. The last act opens on the game's own title scene, live.
+// Castle House's recruitment site (ILI-1455): the fictional PMC from PMC War Room is hiring, and
+// the game is the recruitment test. Under the hero (the game's intro, ILI-1447) it reads as a
+// slick, cold careers site: open roles, the package, the test, what people say, the FAQ. Every
+// call to action is "take the test". All in-universe and satire: no real company, person,
+// agency, programme, job or service.
 
 const GAME = '../'; // the test is the game
 
-// Act one: the brochure.
-const SOLUTIONS: [string, string][] = [
-  ['Integrated Assurance', 'End-to-end support solutions that de-risk complex environments for the partners who need it most.'],
-  ['Insight Services', 'Best-in-class situational awareness, delivered through our proprietary ORION™ platform.'],
-  ['Mission Continuity', 'Flexible, scalable sustainment that keeps your priorities moving, whatever the terrain.'],
+const ROLES: { code: string; title: string; where: string; pitch: string; need: string[] }[] = [
+  {
+    code: 'ROA-01',
+    title: 'Remote Operations Analyst',
+    where: 'Remote · any time zone · the chair',
+    pitch: 'Sit in the chair. Watch a five-man team walk into ground nobody has looked at, and decide what they see before they see it.',
+    need: ['Calm with a lot on the screen and very little on the radio', 'Decides for people you will never meet', 'No military experience required. Or wanted.'],
+  },
+  {
+    code: 'ISR-07',
+    title: 'Imagery Analyst, ORION™',
+    where: 'Remote · 400 km up',
+    pitch: 'Point a satellite at a square of desert and say what is in it. Scan, photo, video. Be right.',
+    need: ['Can tell a goat from a technical at 30 cm', 'Comfortable being the only eyes', 'Owns their mistakes. Somebody has to.'],
+  },
+  {
+    code: 'SIG-12',
+    title: 'Signals Intercept Specialist',
+    where: 'Remote · 30–88 MHz',
+    pitch: 'Find their net, listen in, decode the plan, send it forward. Their radios carry further than they think.',
+    need: ['A steady hand on a dial', 'Patience with static', 'Discretion. Total.'],
+  },
 ];
-const VALUES = ['Integrity', 'Excellence', 'Partnership', 'Accountability'];
 
-// Act two: the cracks.
-const SHIFT: [string, string][] = [
-  ['Our people are our greatest asset.', 'Five of them are in the field right now.'],
-  ['We value work–life balance.', 'Their work is staying alive. Their balance is you.'],
-  ['We deliver results.', 'Somewhere a team is holding short of a square, waiting on a decision.'],
-  ['We are a trusted partner.', 'They trust whoever is in the chair. The chair is empty.'],
+const PACKAGE: [string, string][] = [
+  ['Fully remote', 'Command from your kitchen. The team is the one in the field.'],
+  ['Results-based pay', 'Contract money out of escrow when the job is done. Losses come out of the same pot.'],
+  ['Unlimited intel', 'As much as you can scan. ALPHA walks as far as you feed it.'],
+  ['Career growth', 'Start with one team. There is only one team.'],
+  ['Wellness', 'A medic in every squad. Not yours. Theirs.'],
+  ['Flexible hours', 'Ten minutes. The client sets the clock; you keep it.'],
 ];
 
-// Act three: the pitch.
-const ORDERS = ['Read the ground before they walk it.', 'Find them before they find the team.', 'Spend what it takes.', 'Bring everyone home.'];
-const TRAITS = [
-  'You stay calm with a lot on the screen and very little on the radio.',
-  'You can decide for people you will never meet.',
-  'You read a casualty as a line on a P&L, and it still bothers you. A little.',
-  'You don’t need to be thanked.',
+const TEST: [string, string][] = [
+  ['01', 'One team, one objective: ALPHA, five operators, a downed drone, its black box.'],
+  ['02', 'One satellite: ORION-3. Move it, scan, send what you find. ALPHA only moves on your intel.'],
+  ['03', 'Ten minutes on the client’s clock. Bring the box out. Bring everyone home.'],
+];
+
+const QUOTES: [string, string][] = [
+  ['I used to manage a regional logistics desk. Now I manage a regional logistics desk with consequences.', 'OVERWATCH-4 · Analyst, 2 contracts'],
+  ['The onboarding was ten minutes. I still think about minute seven.', 'KESTREL-2 · Imagery'],
+  ['They said the culture was flat. It is. The chain of command is me and the team.', 'LONGWAVE-9 · Signals'],
+];
+
+const FAQ: [string, string][] = [
+  ['Is this a real job?', 'No. Castle House is a fictional company from PMC War Room, a browser game. Nothing here describes a real company, person, job or service.'],
+  ['Do I need experience?', 'No. The test teaches you as you go. That is rather the point.'],
+  ['How long does the test take?', 'Ten minutes on the mission clock. Longer if you read the brief twice. Read the brief twice.'],
+  ['What is scored?', 'Whether the black box comes out, whether the team does, how much intel you got them, and what it all cost.'],
+  ['What happens if I fail?', 'You take it again. In the field there is no "again". Here there is.'],
 ];
 
 // The rook and the globe from the game's title, live.
@@ -111,125 +139,113 @@ export function Site() {
     <div className="ch" ref={root}>
       <IntroHero />
       <div className="ch-page">
-      {/* ACT ONE: the brochure. */}
-      <div className="ch-act1">
         <header className="ch-nav">
           <a className="ch-brand" href="#top">
             <Rook />
-            <span>Castle House</span>
+            <span>CASTLE HOUSE</span>
           </a>
           <nav aria-label="Site">
-            <a href="#solutions">Solutions</a>
-            <a href="#about">About us</a>
-            <a href="#careers">Careers</a>
+            <a href="#roles">Open roles</a>
+            <a href="#package">Package</a>
+            <a href="#test">The test</a>
+            <a href="#faq">FAQ</a>
           </nav>
+          <Enlist>Apply</Enlist>
         </header>
 
-        <section className="ch-hero1" id="top">
-          <p className="ch-kicker">Global support solutions</p>
-          <h1>Delivering assurance in a complex world.</h1>
-          <p className="ch-lede">Castle House partners with organisations operating in challenging environments to deliver the insight, support and continuity they need to achieve their mission.</p>
-          <div className="ch-actions">
-            <a className="ch-btn" href="#solutions">
-              Explore our solutions
-            </a>
-            <a className="ch-btn ghost" href="#about">
-              Our story
-            </a>
-          </div>
+        <section className="ch-lead" id="top">
+          <p className="ch-stamp">Recruiting now · remote</p>
+          <h2 className="ch-shout">
+            The team is moving.
+            <br />
+            The chair is <em>empty.</em>
+          </h2>
+          <p className="ch-lede">You won&rsquo;t fire a shot. You&rsquo;ll decide who does. Castle House is hiring remote operations staff to run intelligence for a team in the field. The interview is a live operation.</p>
         </section>
 
-        <section className="ch-sec1" id="solutions">
-          <p className="ch-kicker">What we do</p>
-          <h2>Solutions that move with you.</h2>
-          <div className="ch-cards">
-            {SOLUTIONS.map(([h, b]) => (
-              <article key={h} className="ch-card">
-                <h3>{h}</h3>
-                <p>{b}</p>
-                <span>Learn more →</span>
+        <section className="ch-sec" id="roles">
+          <p className="ch-stamp">Open roles · 3</p>
+          <h2>Positions available.</h2>
+          <div className="ch-roles">
+            {ROLES.map((r) => (
+              <article key={r.code} className="ch-role">
+                <header>
+                  <span className="ch-code">{r.code}</span>
+                  <span className="ch-where">{r.where}</span>
+                </header>
+                <h3>{r.title}</h3>
+                <p>{r.pitch}</p>
+                <ul>
+                  {r.need.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+                <a className="ch-role-apply" href={GAME}>
+                  Apply: take the test →
+                </a>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="ch-sec1 ch-about" id="about">
-          <div>
-            <p className="ch-kicker">About us</p>
-            <h2>A partner you can trust, wherever the work takes you.</h2>
-            <p>For over a decade, Castle House has helped its partners turn uncertainty into opportunity. Our people bring passion, expertise and a relentless focus on outcomes to every engagement.</p>
-          </div>
-          <ul className="ch-values" aria-label="Our values">
-            {VALUES.map((v) => (
-              <li key={v}>{v}</li>
+        <section className="ch-sec" id="package">
+          <p className="ch-stamp">The package</p>
+          <h2>Competitive. Considering.</h2>
+          <dl className="ch-package">
+            {PACKAGE.map(([k, v]) => (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
             ))}
-          </ul>
+          </dl>
         </section>
-      </div>
 
-      {/* ACT TWO: the shift. The page darkens, and the brochure starts to crack. */}
-      <div className="ch-act2" id="careers">
-        <section className="ch-sec2">
-          <p className="ch-kicker">Careers</p>
-          <h2>Join a team that makes a difference.</h2>
-          <ol className="ch-cracks">
-            {SHIFT.map(([said, meant]) => (
-              <li key={said}>
-                <span className="said">{said}</span>
-                <span className="meant">{meant}</span>
+        <section className="ch-sec ch-test" id="test">
+          <p className="ch-stamp">The recruitment test</p>
+          <h2>Every applicant runs a live operation.</h2>
+          <ol className="ch-steps">
+            {TEST.map(([n, t]) => (
+              <li key={n}>
+                <i>{n}</i>
+                {t}
               </li>
             ))}
           </ol>
-          <p className="ch-turn">We&rsquo;re not hiring for a role.</p>
-          <p className="ch-turn hard">We&rsquo;re hiring for a seat.</p>
+          <Enlist>Start the test</Enlist>
         </section>
-      </div>
 
-      {/* ACT THREE: the pitch. */}
-      <div className="ch-act3">
-        <section className="ch-hero3" id="enlist">
-          {/* The live rook and globe are the page's hero now (ILI-1447); one scene, not two. */}
-          <div className="ch-hero3-copy">
-            <p className="ch-stamp">Castle House needs you</p>
-            <h2 className="ch-shout">
-              The team is moving.
-              <br />
-              The chair is <em>empty.</em>
-            </h2>
-            <p className="ch-lede3">You won&rsquo;t fire a shot. You&rsquo;ll decide who does.</p>
-            <Enlist />
+        <section className="ch-sec" id="voices">
+          <p className="ch-stamp">From the chair</p>
+          <div className="ch-quotes">
+            {QUOTES.map(([q, who]) => (
+              <figure key={who}>
+                <blockquote>&ldquo;{q}&rdquo;</blockquote>
+                <figcaption>{who}</figcaption>
+              </figure>
+            ))}
           </div>
         </section>
 
-        <section className="ch-sec3">
-          <p className="ch-stamp">Your orders</p>
-          <ol className="ch-orders">
-            {ORDERS.map((o, i) => (
-              <li key={o}>
-                <i>0{i + 1}</i>
-                {o}
-              </li>
+        <section className="ch-sec" id="faq">
+          <p className="ch-stamp">Questions</p>
+          <div className="ch-faq">
+            {FAQ.map(([q, a]) => (
+              <details key={q}>
+                <summary>{q}</summary>
+                <p>{a}</p>
+              </details>
             ))}
-          </ol>
+          </div>
         </section>
 
-        <section className="ch-sec3 ch-test">
-          <p className="ch-stamp">Do you have what it takes?</p>
-          <ul className="ch-traits">
-            {TRAITS.map((t) => (
-              <li key={t}>{t}</li>
-            ))}
-          </ul>
-          <p className="ch-lede3">Most who sit in the chair don&rsquo;t last one contract. One live contract. Ten minutes on the clock. Five operators who will do exactly what you make possible.</p>
-          <Enlist>Prove it</Enlist>
-        </section>
-
-        <section className="ch-sec3 ch-final">
-          <Rook />
-          <h2 className="ch-shout">They&rsquo;re already on the ground.</h2>
-          <p className="ch-lede3">Sit down. The clock starts when you do.</p>
-          <Enlist>Take your seat</Enlist>
-          <p className="ch-fine">Castle House is an equal-liability employer. Performance is monitored at all times. Candidates who bankrupt the company will not be invited back.</p>
+        <section className="ch-close">
+          <h2 className="ch-shout">
+            Five operators. One satellite.
+            <br />
+            <em>Ten minutes.</em>
+          </h2>
+          <Enlist>Take the test</Enlist>
         </section>
 
         <footer className="ch-foot">
@@ -241,7 +257,6 @@ export function Site() {
             Castle House is a fictional company from <a href={GAME}>PMC War Room</a>, a browser game by Chad Bercea. This is satire: nothing on this page describes a real company, person, job or service. <a href="../design/">Design system</a>
           </p>
         </footer>
-      </div>
       </div>
     </div>
   );
