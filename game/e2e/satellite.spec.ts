@@ -66,7 +66,8 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await act.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
   await expect(act.getByTestId('fire-sniper')).toBeVisible();
   await page.getByTestId('square-anchor').getByRole('button', { name: 'Close' }).click();
-  await expect(card).toHaveCount(0); // closed: the look is filed
+  await expect(page.getByTestId('square-anchor')).toHaveCount(0); // closed: the look is filed
+  await expect(card).toHaveAttribute('data-square', 'E3'); // ORION-3 is still over it: its details stay in its view (ILI-1438)
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
 });
 
@@ -219,5 +220,5 @@ test('ORION-3 never scrolls, and nothing in it moves through a scan; the picture
   expect(new Set(seen.map((s) => s.buttons)).size).toBe(1); // the buttons never move
   await expect(page.getByTestId('satellite-inset')).toHaveCount(1); // the zoomed square is still up
   await expect(page.getByTestId('satellite-result')).toContainText(/Video: 5 fighters/);
-  await expect(page.getByTestId('square-anchor').getByTestId('square-card')).toHaveAttribute('data-square', 'E3'); // the square's details: its menu, tier three (ILI-1400)
+  await expect(page.getByTestId('orion-detail').getByTestId('square-card')).toHaveAttribute('data-square', 'E3'); // the square's details: ORION-3's view (ILI-1438)
 });

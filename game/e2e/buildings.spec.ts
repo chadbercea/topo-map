@@ -45,10 +45,10 @@ test('a search shows its bar filling in the square menu, then the find in its pl
     for (let i = 0; i < 50; i++) window.game.tick(100); // five seconds in
     if (window.game.get().map.selected !== 'G4') window.game.selectSquare('G4');
   });
-  await expect(anchor.getByTestId('work-bar')).toContainText('ALPHA searching the building');
+  await expect(page.getByTestId('orion-detail').getByTestId('work-bar')).toContainText('ALPHA searching the building'); // ORION-3's view (ILI-1438)
   await page.evaluate(() => {
     for (let i = 0; i < 400 && !window.game.get().comms.messages.some((m) => m.id === 'found-building-G4'); i++) window.game.tick(100);
   });
-  await expect(anchor.getByTestId('work-found')).toContainText(/ALPHA found .* · \+\$[\d,]+/);
-  await expect(anchor.getByTestId('work-bar')).toHaveCount(0);
+  await expect(page.getByTestId('orion-detail').getByTestId('work-found')).toContainText(/ALPHA found .* · \+\$[\d,]+/);
+  await expect(page.getByTestId('orion-detail').getByTestId('work-bar')).toHaveCount(0);
 });

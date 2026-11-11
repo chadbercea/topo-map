@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
+import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { freshness, targets } from '../sim/imagery';
 import { heldIntel, settled } from '../sim/intel';
+import { Details, Readouts, TeamWork } from './SquareCard';
 import { nextBlind } from '../sim/progress';
 import { CELL, squareAt, squareCenter } from '../map/grid';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
@@ -137,6 +138,15 @@ export function OrionPanel() {
 
       {/* The image area: the picture takes what's left (ILI-1400). */}
       <div className="o-frame">
+        {/* The square's details, under its picture (ILI-1438): its intel, ALPHA's work there, its
+            ground. Only for the square ORION-3 is over and locked on. */}
+        {!tied && lockedOn(s, sat.aim) && (
+          <div className="o-detail square-card" data-testid="orion-detail">
+            <Readouts s={s} square={sat.aim} />
+            <TeamWork s={s} square={sat.aim} />
+            <Details s={s} square={sat.aim} open />
+          </div>
+        )}
         {showPicture ? (
           <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`${name}'s picture of ${square}`}>
             {/* The fighters it shows, each a tap away from its strikes (ILI-1250). Phaser draws the
