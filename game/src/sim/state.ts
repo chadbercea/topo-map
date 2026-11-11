@@ -93,20 +93,22 @@ export type GameState = {
   stats: { searched: number; decoded: number; lost: string[] }; // for the wrap-up; lost: ids of operators who went down
   inbound: Inbound[]; // support on its way
   alerted: boolean; // the enemy knows a PMC is in the area
-  rng: number; // seed for chance in fights, kept in state so a mission replays exactly
+  seed: number; // the mission's seed: its dice (enemy.ts) and where the fight dice start, so a mission replays exactly (ILI-1454)
+  rng: number; // chance in fights, kept in state so a mission replays exactly; starts at the seed
   settings: Settings; // survives restart
 };
 
 // The mission being played; see missions/. Its route runs A (infil), B (the crash site), C (exfil).
 export const MISSION: MissionDef = BLACK_BOX;
 export const ROUTE: SquareId[] = MISSION.route;
+export const MISSION_SEED = 1234; // ?seed= plays another (ILI-1454)
 export const MISSION_MS = MISSION.durationMs; // GDD started at six minutes; ten since ILI-1251
 
 // missionMs: the mission's length, the script's ten minutes unless tuned (?minutes=). This is
 // how the game opens: live, ALPHA on the ground, the clock running.
 // opening: Castle House's balance coming into the mission, carried from the last; unlocked:
 // the capabilities it carries in (ILI-1316).
-export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS, opening = 0, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []): GameState {
+export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS, opening = 0, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = [], seed = MISSION_SEED): GameState {
   const operators = roster().map((o) => ({ ...o, meds: Math.round(o.meds * medsFactor(upgrades)) })); // a field hospital (ILI-1317)
   return {
     tick: 0,
@@ -162,7 +164,8 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     stats: { searched: 0, decoded: 0, lost: [] },
     inbound: [],
     alerted: false,
-    rng: 1234,
+    seed,
+    rng: seed,
     settings,
   };
 }

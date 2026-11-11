@@ -15,6 +15,15 @@ export const run = (s: GameState, ms: number) => {
   return s;
 };
 
+// Run until a group talks on its net (ILI-1454): no fixed time, the mission's own rules and dice.
+// On the default seed the patrol at C2 is first, before a minute is up.
+export function untilTraffic(s: GameState, maxMs = 300_000) {
+  for (let t = 0; t < maxMs && !s.events.some((e) => e.kind === 'signal' && e.status !== 'resolved'); t += 100) s = step(s, 100);
+  return s;
+}
+// The enemy traffic up on the map (open, unless any will do).
+export const trafficId = (s: GameState, open = true) => s.events.find((e) => e.kind === 'signal' && (!open || e.status !== 'resolved'))!.id;
+
 // The team just walks: every square imaged and no contacts, so nothing stops it (not even
 // the salvage convoy that cuts the exfil, ILI-1192; convoy.test.ts plays that).
 export const walking = (): GameState => {

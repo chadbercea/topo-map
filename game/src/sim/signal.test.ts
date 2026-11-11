@@ -3,24 +3,26 @@ import { describe, expect, it } from 'vitest';
 import { HOP_MS, match, RECEIVE_MS, TRANSMISSION_MS, transcript } from './signal';
 import { initialState, type GameState } from './state';
 import { lockedStore as createStore } from './testkit';
-import { run } from './testkit';
+import { run, trafficId, untilTraffic } from './testkit';
 
-// At 0:50 enemy traffic comes up near C2, where the patrol is hiding.
+// Enemy traffic comes up near C2, where the patrol is hiding: on the default seed it talks first,
+// before a minute is up (ILI-1454).
 const atTraffic = () => {
-  const store = createStore({ ...run(initialState(), 83_000), comms: initialState().comms });
+  const store = createStore({ ...untilTraffic(initialState()), comms: initialState().comms });
   return store;
 };
 
 describe('signal intercept', () => {
   it('enemy traffic comes up on the map and HQ flags it', () => {
-    const s = run(initialState(), 83_000);
+    const s = untilTraffic(initialState());
+    expect(s.elapsedMs).toBeLessThan(90_000);
     expect(s.events.find((e) => e.kind === 'signal')).toMatchObject({ square: 'C2', status: 'new' });
-    expect(s.comms.messages.find((m) => m.id === 'hq-traffic-c2')?.text).toMatch(/enemy radio traffic near C2/);
+    expect(s.comms.messages.find((m) => m.id === `hq-${trafficId(s)}`)?.text).toMatch(/enemy radio traffic near C2/);
   });
 
   it('intercepting opens the transmission; the match reads 100% on their frequency', () => {
     const store = atTraffic();
-    store.intercept('traffic-c2');
+    store.intercept(trafficId(store.get()));
     const g = store.get().minigame!.signal!;
     expect(store.get().minigame).toMatchObject({ kind: 'signal', status: 'active', durationMs: TRANSMISSION_MS });
     store.tune(g.target);
@@ -31,7 +33,7 @@ describe('signal intercept', () => {
 
   it('words come through only while the lines match, and never go backwards', () => {
     const store = atTraffic();
-    store.intercept('traffic-c2');
+    store.intercept(trafficId(store.get()));
     store.tune(store.get().minigame!.signal!.target + 4); // off
     store.set(run(store.get(), 2_000));
     expect(store.get().minigame!.signal!.progress).toBe(0);
@@ -44,7 +46,7 @@ describe('signal intercept', () => {
 
   it('they hop every few seconds, so the line has to follow', () => {
     const store = atTraffic();
-    store.intercept('traffic-c2');
+    store.intercept(trafficId(store.get()));
     const first = store.get().minigame!.signal!.target;
     store.set(run(store.get(), HOP_MS + 100));
     expect(store.get().minigame!.signal!.target).not.toBe(first);
@@ -53,7 +55,7 @@ describe('signal intercept', () => {
   // Follow them perfectly: re-tune onto their frequency every tick.
   const follow = (ms: number) => {
     const store = atTraffic();
-    store.intercept('traffic-c2');
+    store.intercept(trafficId(store.get()));
     for (let t = 0; t < ms && store.get().minigame?.status === 'active'; t += 100) {
       store.tune(store.get().minigame!.signal!.target);
       store.tick(100);
@@ -73,13 +75,13 @@ describe('signal intercept', () => {
     expect(s.decoded).toEqual([]);
     const patrol = s.contacts.find((c) => c.id === 'patrol')!;
     expect(patrol).toMatchObject({ status: 'revealed', planKnown: true, planTo: 'D3' });
-    expect(s.events.find((e) => e.id === 'traffic-c2')?.status).toBe('resolved');
+    expect(s.events.find((e) => e.kind === 'signal')?.status).toBe('resolved');
     expect(s.comms.messages.some((m) => m.from === 'SIGINT' && m.text === 'Decoded: "PATROL AT C2 MOVING TO D3 FOR THE DRONE".')).toBe(true);
   });
 
   it('part of it gives where they are but not their plan; nothing gives nothing', () => {
     const store = atTraffic();
-    store.intercept('traffic-c2');
+    store.intercept(trafficId(store.get()));
     store.set({ ...store.get(), minigame: { ...store.get().minigame!, signal: { ...store.get().minigame!.signal!, progress: 0.5 } } });
     store.abortMiniGame();
     const patrol = store.get().contacts.find((c) => c.id === 'patrol')!;
@@ -89,7 +91,7 @@ describe('signal intercept', () => {
     expect(store.get().comms.messages.at(-1)?.text).toMatch(/they're at C2, but not what they plan/);
 
     const deaf = atTraffic();
-    deaf.intercept('traffic-c2');
+    deaf.intercept(trafficId(deaf.get()));
     deaf.abortMiniGame(); // nothing came through
     expect(deaf.get().minigame).toBeNull();
     expect(deaf.get().comms.messages.at(-1)?.text).toBe('Lost the signal.');

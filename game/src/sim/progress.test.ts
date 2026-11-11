@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PATROL_MOVES_MS } from './missions/blackBox';
+import { planArriveMs } from './enemy';
 import { nextUp, race } from './progress';
 import { initialState } from './state';
 import { run, walking } from './testkit';
@@ -35,7 +35,7 @@ describe('mission progression', () => {
     const s = walking();
     expect(nextUp(s).tone).toBe('objective');
     const contacts = initialState().contacts.map((c) => (c.id === 'patrol' ? { ...c, status: 'revealed' as const } : c));
-    expect(nextUp({ ...s, contacts })).toEqual({ tone: 'threat', text: 'Patrol moves on D3', atMs: PATROL_MOVES_MS });
+    expect(nextUp({ ...s, contacts })).toEqual({ tone: 'threat', text: 'Patrol moves on D3', atMs: planArriveMs(s, contacts.find((c) => c.id === 'patrol')!) });
   });
 
 });

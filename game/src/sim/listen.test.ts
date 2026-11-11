@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { promptQueue } from './prompts';
 import { initialState } from './state';
 import { createStore } from './store';
-import { run } from './testkit';
+import { trafficId, untilTraffic } from './testkit';
 
-// Mini games start from map tradeoffs, not buttons (ILI-1394): enemy traffic comes up near C2;
+// Mini games start from map tradeoffs, not buttons (ILI-1394): enemy traffic comes up near C2
+// (the patrol talks first on the default seed, ILI-1454);
 // to listen, HQ gets an asset in range, each way with its cost on the button.
-const atTraffic = () => createStore(run(initialState(), 83_000));
+const atTraffic = () => createStore(untilTraffic(initialState()));
 const traffic = (s: ReturnType<ReturnType<typeof atTraffic>['get']>) => promptQueue(s).find((p) => p.kind === 'enemy-traffic')!;
 
 describe('getting in range of enemy traffic (ILI-1394)', () => {
@@ -23,7 +24,7 @@ describe('getting in range of enemy traffic (ILI-1394)', () => {
 
   it('ORION-3: it moves there, the intercept starts on arrival, and it is tied up while it listens', () => {
     const store = atTraffic();
-    store.answerPrompt('traffic-c2', 'satellite');
+    store.answerPrompt(trafficId(store.get()), 'satellite');
     expect(store.get().satellite).toMatchObject({ state: 'slewing', aim: 'C2' });
     expect(store.get().minigame).toBeNull();
     expect(traffic(store.get()).responses).toEqual([expect.objectContaining({ disabled: true, label: expect.stringMatching(/ORION-3 on its way/) })]);
@@ -35,7 +36,7 @@ describe('getting in range of enemy traffic (ILI-1394)', () => {
 
   it('sending ORION-3 elsewhere before it gets there drops the listen', () => {
     const store = atTraffic();
-    store.answerPrompt('traffic-c2', 'satellite');
+    store.answerPrompt(trafficId(store.get()), 'satellite');
     store.cancelLook();
     store.moveSatellite('F4');
     store.tick(100);

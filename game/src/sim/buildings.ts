@@ -21,9 +21,10 @@ export const FINDS = [
   { what: 'a local who knows the ground, and will talk for money', cash: 300_000 },
 ] as const;
 
-// The square's own dice, seeded by the mission: 0 to 1.
+// The square's own dice, seeded by the mission: 0 to 1. The mission's seed, not the fight dice,
+// so a square is the same whatever was fought before (ILI-1454).
 function roll(s: GameState, square: SquareId, salt: number): number {
-  let h = (s.rng ^ salt) >>> 0;
+  let h = (s.seed ^ salt) >>> 0;
   for (const ch of square) h = Math.imul(h ^ ch.charCodeAt(0), 2246822519) >>> 0;
   h ^= h >>> 15;
   return (Math.imul(h, 3266489917) >>> 0) / 4_294_967_296;
