@@ -3,6 +3,7 @@ import type { Message } from './comms';
 import { feed } from './intel';
 import { earn } from './sites';
 import type { GameState } from './state';
+import { LOADOUT } from './team';
 import type { System } from './systems';
 
 // Buildings (ILI-1316): the hunt. A photo of empty ground sometimes turns up a building worth a
@@ -29,6 +30,16 @@ function roll(s: GameState, square: SquareId, salt: number): number {
 }
 
 export const buildingId = (square: SquareId) => `building-${square}`;
+// Every search also turns up supplies (ILI-1434): half a loadout of ammo and of meds back for
+// each operator still standing, up to a full one.
+export const SUPPLY_SHARE = 0.5;
+export const resupplied = (s: GameState): GameState['team']['operators'] =>
+  s.team.operators.map((o) => {
+    if (o.health <= 0) return o;
+    const full = LOADOUT[o.role];
+    return { ...o, ammo: Math.min(full.ammo, o.ammo + Math.round(full.ammo * SUPPLY_SHARE)), meds: Math.min(full.meds, o.meds + Math.ceil(full.meds * SUPPLY_SHARE)) };
+  });
+
 export const findIn = (s: GameState, square: SquareId) => FINDS[Math.floor(roll(s, square, 7) * FINDS.length)];
 
 // After a photo of empty ground: a building, maybe. Nothing's marked for nothing.
@@ -81,9 +92,10 @@ export const buildingSystem: System = (s) => {
   const paid = feed(earn(s, find.cash), BUILDING_INTEL, { source: 'ALPHA', square: here, items: [{ kind: 'HUMINT', heat: 'some', text: `${s.team.callsign} searched the building` }] });
   return {
     ...paid,
+    team: { ...paid.team, operators: resupplied(paid) }, // and supplies, every time (ILI-1434)
     searching: paid.searching.filter((sq) => sq !== here),
     stats: { ...paid.stats, searched: paid.stats.searched + 1 },
     events: paid.events.map((e) => (e.id === id ? { ...e, status: 'resolved' as const } : e)),
-    comms: { ...paid.comms, messages: [...paid.comms.messages, radio(s, `found-building-${here}`, `Building in ${here} searched: ${find.what}. +$${find.cash.toLocaleString('en-US')}, and intel to keep us moving.`)] },
+    comms: { ...paid.comms, messages: [...paid.comms.messages, radio(s, `found-building-${here}`, `Building in ${here} searched: ${find.what}, plus ammo and medical supplies. +$${find.cash.toLocaleString('en-US')}, and intel to keep us moving.`)] },
   };
 };

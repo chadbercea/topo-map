@@ -507,7 +507,7 @@ function teamWork(s: GameState, square: string): { work: Work; found: Found } {
   const found: Found = [];
   if (s.events.some((e) => e.id === buildingId(square) && e.status === 'resolved')) {
     const f = findIn(s, square);
-    found.push({ id: `search-${square}`, kind: 'HUMINT', text: `${team.callsign} found ${f.what} · +$${f.cash.toLocaleString('en-US')}` });
+    found.push({ id: `search-${square}`, kind: 'HUMINT', text: `${team.callsign} found ${f.what} + ammo & meds · +$${f.cash.toLocaleString('en-US')}` });
   }
   if (mission.b === square && mission.blackBox) found.push({ id: 'recover', kind: 'IMINT', text: `${team.callsign} recovered the black box · +$${ESCROW_BOX.toLocaleString('en-US')}` });
   return { work, found };
