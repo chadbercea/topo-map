@@ -1712,3 +1712,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card .sc-found .int { border-color: var(--accent); color: var(--accent); }
 @keyframes found-in { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .square-card .sc-bar, .square-card .sc-found { animation: none; transition: none; } }
+
+/* ORION-3's buttons (ILI-1432): Scan is the primary action; once the square is settled, its
+   sub-actions (Photo to ALPHA, Video) slide into its place. */
+.orion .modes[data-step='send'] button { animation: opt-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.orion .modes[data-step='send'] button:nth-child(2) { animation-delay: 50ms; }
+@media (prefers-reduced-motion: reduce) { .orion .modes[data-step='send'] button { animation: none; } }

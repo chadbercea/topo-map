@@ -10,6 +10,7 @@ import { callSniper } from './sniper';
 import { unlock, unlockedWeapons, weaponBlocked, type Weapon } from './ordnance';
 import { perCall } from './upgrades';
 import { sendToSearch } from './buildings';
+import { sendPhoto } from './intel';
 import { spend } from './sites';
 import { sendResupply } from './support';
 import { jam, listenWith, sendDecoded, tune, type ListenVia } from './signal';
@@ -120,6 +121,8 @@ export function createStore(initial: GameState = initialState()) {
     moveSatellite: (square: string) => set(task(state, square)),
     // Scan from the square's menu (ILI-1367): the photo, once ORION-3 is locked on (ILI-1397).
     scan: (square: string) => set(scanSquare(state, square)),
+    // Photo (ILI-1432): a scanned square's intel to ALPHA, with ORION-3 locked on it.
+    photo: (square: string) => lockedOn(state, square) && set(sendPhoto(state, square)),
     // Answer the prompt on screen (ILI-1391): the response does what it says.
     answerPrompt: (id: string, response: string) => {
       const p = promptQueue(state).find((x) => x.id === id);
@@ -129,7 +132,7 @@ export function createStore(initial: GameState = initialState()) {
       if (p.kind === 'intel-needed' && response === 'grids' && p.grid) {
         const grid = p.grid;
         const there = task({ ...state, map: { ...state.map, selected: grid }, openEvent: null }, grid);
-        if (lockedOn(there, grid)) set(scanSquare(there, grid));
+        if (lockedOn(there, grid)) set(sendPhoto(scanSquare(there, grid), grid)); // scan, then the photo to ALPHA (ILI-1432)
         else set(there.satellite.aim === grid ? { ...there, satellite: { ...there.satellite, autoScan: grid } } : there);
       }
       // Get an asset in range of enemy traffic; the intercept starts once it is (ILI-1394).

@@ -66,17 +66,21 @@ describe('the intel gauge', () => {
     expect(store.get().team.waypoint).toBeGreaterThan(start + 3);
   });
 
-  it('video is one big fill, once; a second video is refused', () => {
+  it('video comes after a scan, is one big fill, and has no limit (ILI-1432)', () => {
     const store = createStore(blindAhead());
     store.lookAt('G5');
     store.capture('video');
+    expect(store.get().satellite.state).not.toBe('capturing'); // scan first
+    store.scan('G5');
+    store.capture('video');
     store.set(run(store.get(), 16_000));
-    expect(store.get().intel.videoUsed).toBe(true);
+    expect(store.get().intel.live).toContain('G5');
     expect(store.get().intel.fuel).toBeGreaterThan(VIDEO_INTEL - SQUARE_INTEL); // less what it has walked since
     store.lookAt('F4');
     store.set(run(store.get(), 20_000));
+    store.scan('F4');
     store.capture('video');
-    expect(store.get().satellite.state).not.toBe('capturing');
+    expect(store.get().satellite.state).toBe('capturing'); // a second video: no limit any more
   });
 
   it('a photo is graded by what it found: fighters are high grade, a square already gone through is all clear', () => {
@@ -115,12 +119,14 @@ describe('the intel gauge', () => {
     expect(gauge(s)).toBeGreaterThan(0);
   });
 
-  it('a photo through the store feeds ALPHA, and ORION-3 says what the analysts pushed', () => {
+  it('a scan holds the intel; Photo sends it to ALPHA (ILI-1432)', () => {
     const store = createStore(initialState());
     store.lookAt('G5');
-    store.capture('photo');
+    store.scan('G5');
+    expect(gauge(store.get())).toBe(0); // with the analysts
+    expect(store.get().comms.messages.at(-1)?.text).toMatch(/Analysts: (all clear|[a-z]+-grade intel), ready for ALPHA on Photo\./);
+    store.photo('G5');
     expect(gauge(store.get())).toBeGreaterThan(0);
-    expect(store.get().comms.messages.at(-1)?.text).toMatch(/Analysts: (all clear|[a-z]+-grade intel) pushed to ALPHA\./);
   });
 });
 

@@ -35,7 +35,8 @@ export const photo = (page: Page, square: string) =>
     const g = window.game;
     g.lookAt(sq);
     for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
-    g.capture('photo');
+    g.capture('photo'); // the scan (ILI-1432)
+    g.photo(sq); // and its intel to ALPHA
     g.closeLook();
   }, square);
 

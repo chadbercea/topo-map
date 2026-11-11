@@ -1,4 +1,4 @@
-import { GRADE_LABEL, pushPhoto, pushVideo } from './intel';
+import { GRADE_LABEL, holdScan, pushVideo, sendPhoto, settled } from './intel';
 import { maybeBuilding } from './buildings';
 import { slewFactor } from './upgrades';
 import { parseSquare, squareId, type SquareId } from '../map/grid';
@@ -137,7 +137,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
   // Leaving a square it was watching live (ILI-1423): that picture stops being live and ages
   // from now like any other look.
   const was = s.satellite.watching;
-  const left = was && was !== square && s.imagery[was]?.live ? { ...s.imagery, [was]: { ...s.imagery[was]!, live: false, atMs: s.elapsedMs } } : s.imagery;
+  const left = was && was !== square && s.imagery[was]?.live && !(s.intel.live ?? []).includes(was) ? { ...s.imagery, [was]: { ...s.imagery[was]!, live: false, atMs: s.elapsedMs } } : s.imagery;
   const next: GameState = {
     ...s,
     imagery: left,
@@ -155,7 +155,10 @@ export function scan(s: GameState): GameState {
 
 // On station: take the picture.
 export function capture(s: GameState, mode: CaptureMode): GameState {
-  if (s.satellite.state !== 'onStation' || (mode === 'video' && s.intel.videoUsed)) return s;
+  // On station, or idle and still locked on (ILI-1432: Photo and Video come after the Scan).
+  const sat0 = s.satellite;
+  const ready = sat0.state === 'onStation' || (sat0.state === 'idle' && lockedOn(s, sat0.aim));
+  if (!ready || (mode === 'video' && (!settled(s, sat0.aim) || (s.intel.live ?? []).includes(sat0.aim)))) return s;
   const sat = { ...s.satellite, state: 'capturing' as const, mode, captureUntilMs: s.elapsedMs + CAPTURE[mode].ms };
   const next = { ...s, satellite: sat };
   return mode === 'photo' ? finishLook(next) : next;
@@ -203,9 +206,10 @@ function finishLook(s: GameState): GameState {
     pushed = `Analysts: live feed to ${s.team.callsign} for the rest of the op`;
   } else {
     if (!fighters) next = maybeBuilding(next, square); // the hunt: empty ground can turn up a building (ILI-1316)
-    const p = pushPhoto(next, square, fighters);
+    // A scan (ILI-1432): the analysts hold its intel until HQ sends it to ALPHA with Photo.
+    const p = holdScan(next, square, fighters);
     next = p.next;
-    pushed = p.banked ? `Analysts: ${GRADE_LABEL[p.grade]} for ${s.team.callsign}, when it heads into ${square}` : `Analysts: ${GRADE_LABEL[p.grade]} pushed to ${s.team.callsign}`;
+    pushed = `Analysts: ${GRADE_LABEL[p.grade]}, ready for ${s.team.callsign} on Photo`;
   }
   next = log(next, radio(s, satName(s), `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. ${pushed}.`));
   return sat.callId ? log(next, radio(s, s.team.callsign, `look-${s.elapsedMs}-team`, 'Imagery received.')) : next;
@@ -222,18 +226,21 @@ export const satelliteSystem: System = (s) => {
   if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs) {
     // It says what's next (ILI-1257): the shot is HQ's to take, unless Scan grids already took
     // it (ILI-1414).
-    const auto = sat.autoScan === sat.aim;
+    const auto = sat.autoScan === sat.aim; // Scan grids: scan, then the photo straight to ALPHA (ILI-1432)
     const there = log({ ...s, satellite: { ...sat, state: 'onStation', autoScan: null } }, radio(s, satName(s), `station-${s.elapsedMs}`, auto ? `On station over ${sat.aim}. Scanning.` : `On station over ${sat.aim}. Ready for collection.`));
-    return auto ? scan(there) : there;
+    return auto ? sendPhoto(scan(there), sat.aim) : there;
   }
   // Video is real time (ILI-1423): once it's run on a square, the picture stays live for as long
   // as ORION-3 stays over it. No rescan.
   // The square ORION-3 is over is the one live square on the map (ILI-1430): once it's looked
   // there, it follows what moves for as long as it stays.
-  if (sat.state !== 'capturing') return sat.watching && sat.watching === sat.aim && sat.state !== 'slewing' ? record(s, snapshot(s, sat.aim, s.imagery[sat.aim]?.mode === 'video' ? 'video' : 'photo', true)) : s;
-  if (s.elapsedMs >= sat.captureUntilMs) return finishLook(s);
+  // Video squares are live for good (ILI-1432), wherever ORION-3 is.
+  let next = s;
+  for (const sq of s.intel.live ?? []) next = record(next, snapshot(next, sq, 'video', true));
+  if (sat.state !== 'capturing') return sat.watching && sat.watching === sat.aim && sat.state !== 'slewing' && !(s.intel.live ?? []).includes(sat.aim) ? record(next, snapshot(next, sat.aim, next.imagery[sat.aim]?.mode === 'video' ? 'video' : 'photo', true)) : next;
+  if (s.elapsedMs >= sat.captureUntilMs) return finishLook(next);
   // Video is live: the map follows them while it runs.
-  return sat.mode === 'video' ? record(s, snapshot(s, sat.aim, 'video', true)) : s;
+  return sat.mode === 'video' ? record(next, snapshot(next, sat.aim, 'video', true)) : next;
 };
 
 // One line for the mission bar.

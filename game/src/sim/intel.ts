@@ -1,5 +1,5 @@
 import type { GameState } from './state';
-import { photoFactor, videos } from './upgrades';
+import { photoFactor } from './upgrades';
 import { CELL } from '../map/grid';
 
 // ALPHA's intel gauge (ILI-1314): what keeps the team moving. The team is autonomous and has
@@ -29,13 +29,14 @@ export const GRADE_LABEL: Record<Grade, string> = { clear: 'all clear', low: 'lo
 // base: a fixed offset that survives a restart and never burns (tests and tuning run with the
 // gauge full); fuel: what HQ has pushed and ALPHA hasn't walked off yet; graded: squares the
 // analysts have already been through.
-export type Intel = { base: number; fuel: number; videoUsed: boolean; videosShot: number; graded: string[]; banked: { square: string; amount: number }[]; pushes: Push[] };
+export type Intel = { base: number; fuel: number; videoUsed: boolean; videosShot: number; graded: string[]; banked: { square: string; amount: number }[]; pushes: Push[]; live: string[] }; // live: squares on video, live for good (ILI-1432)
 
 // Every push of intel to ALPHA, in order (ILI-1346). A banked push turns fed when it pays out.
 // source: who produced it (IMINT for ORION-3's looks, SIGINT for a decode, ALPHA for what the
 // team found itself). items: what the push says, as intel reports (ILI-1362).
 export type PushSource = 'IMINT' | 'SIGINT' | 'ALPHA';
-export type Push = { id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; amount: number; state: 'fed' | 'banked'; fedMs?: number; items?: IntelItem[] };
+// held: a scan's intel, with the analysts until Photo sends it to ALPHA (ILI-1432).
+export type Push = { id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; amount: number; state: 'fed' | 'banked' | 'held'; fedMs?: number; items?: IntelItem[] };
 export type PushFrom = { source: PushSource; square?: string; grade?: Grade | 'video'; items?: IntelItem[] };
 
 // The five types of intel (ILI-1362): the five real intelligence disciplines. Every ORION-3
@@ -74,7 +75,7 @@ export function reports(s: GameState, square: string, grade: Grade | 'video', fi
   return out;
 }
 
-export const initialIntel = (): Intel => ({ base: 0, fuel: 0, videoUsed: false, videosShot: 0, graded: [], banked: [], pushes: [] });
+export const initialIntel = (): Intel => ({ base: 0, fuel: 0, videoUsed: false, videosShot: 0, graded: [], banked: [], pushes: [], live: [] });
 
 const record = (s: GameState, from: PushFrom, amount: number, state: Push['state']): GameState => ({
   ...s,
@@ -132,6 +133,26 @@ export function pushPhoto(s: GameState, square: string, fighters: number): { nex
   return { next: { ...next, intel: { ...next.intel, graded: [...new Set([...next.intel.graded, square])] } }, grade: g, banked };
 }
 
+// Scan (ILI-1432): the analysts go through the square and its reports land on it; the square is
+// settled. The intel waits with them until HQ sends it to ALPHA with Photo.
+export function holdScan(s: GameState, square: string, fighters: number): { next: GameState; grade: Grade } {
+  const g = grade(s, square, fighters);
+  const amount = GRADE_INTEL[g] * photoFactor(s);
+  const next = record(s, { source: 'IMINT', square, grade: g, items: reports(s, square, g, fighters) }, amount, 'held');
+  return { next: { ...next, intel: { ...next.intel, graded: [...new Set([...next.intel.graded, square])] } }, grade: g };
+}
+
+// Photo (ILI-1432): a scanned square's intel goes to ALPHA, now or banked for when it heads in.
+export const heldIntel = (s: GameState, square: string) => s.intel.pushes.find((p) => p.square === square && p.state === 'held');
+export function sendPhoto(s: GameState, square: string): GameState {
+  const p = heldIntel(s, square);
+  if (!p) return s;
+  const banked = ahead(s, square);
+  const pushes = s.intel.pushes.map((x) => (x === p ? { ...x, state: banked ? ('banked' as const) : ('fed' as const), ...(banked ? {} : { fedMs: s.elapsedMs }) } : x));
+  const intel = banked ? { ...s.intel, pushes, banked: [...s.intel.banked, { square, amount: p.amount }] } : { ...s.intel, pushes, fuel: Math.min(GAUGE_MAX, s.intel.fuel + p.amount) };
+  return { ...s, intel };
+}
+
 // The bank pays out as ALPHA starts the leg into a square HQ scanned ahead (ILI-1316), or
 // at once if ALPHA's route no longer goes there (it went around it, ILI-1315): the intel did
 // its work either way.
@@ -149,8 +170,9 @@ export const intelSystem = (s: GameState): GameState => {
 };
 
 // Video: one big fill, once a session (twice with a second feed, ILI-1317).
+// Video (ILI-1432): no limit any more, and its square goes live on the map for good.
 export const pushVideo = (s: GameState): GameState => {
-  const shot = s.intel.videosShot + 1;
-  const fed = feed(s, VIDEO_INTEL, { source: 'IMINT', square: s.satellite.aim, grade: 'video', items: reports(s, s.satellite.aim ?? '', 'video') });
-  return { ...fed, intel: { ...fed.intel, videosShot: shot, videoUsed: shot >= videos(s) } };
+  const square = s.satellite.aim;
+  const fed = feed(s, VIDEO_INTEL, { source: 'IMINT', square, grade: 'video', items: reports(s, square ?? '', 'video') });
+  return { ...fed, intel: { ...fed.intel, videosShot: s.intel.videosShot + 1, live: [...new Set([...(fed.intel.live ?? []), square])] } };
 };
