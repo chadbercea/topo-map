@@ -7,14 +7,14 @@ test('intercept: get ORION-3 in range through the prompt, follow their wave, and
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await untilTraffic(page);
-  // Enemy traffic is a prompt at C2: two ways to get in range, each with its cost (ILI-1394).
-  const prompt = page.getByTestId('prompt');
-  await expect(prompt).toHaveAttribute('data-kind', 'enemy-traffic');
-  await expect(prompt).toHaveAttribute('data-square', 'C2');
-  await expect(prompt.getByTestId('prompt-response')).toHaveText([/^ORION-3 listens · \d:\d\d there$/]); // HQ's job: no antenna (ILI-1435)
+  // Enemy traffic is a card at C2, in its own lane (ILI-1394, ILI-1452).
+  const traffic = page.getByTestId('traffic-prompt');
+  await expect(traffic).toHaveAttribute('data-kind', 'enemy-traffic');
+  await expect(traffic).toHaveAttribute('data-square', 'C2');
+  await expect(traffic.getByTestId('prompt-response')).toHaveText([/^ORION-3 listens · \d:\d\d there$/]); // HQ's job: no antenna (ILI-1435)
   await expect(page.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0); // no button starts it
-  await prompt.locator('[data-response=satellite]').click();
-  await expect(prompt.getByTestId('prompt-response')).toHaveText([/ORION-3 on its way/]);
+  await traffic.locator('[data-response=satellite]').click();
+  await expect(traffic.getByTestId('prompt-response')).toHaveText([/ORION-3 on its way/]);
   // In range, the intercept starts by itself.
   await page.evaluate(() => {
     for (let i = 0; i < 400 && !window.game.get().minigame; i++) window.game.tick(100);
@@ -42,6 +42,8 @@ test('intercept: get ORION-3 in range through the prompt, follow their wave, and
   // Over: no after-action panel. What came through is a marker on the map, for HQ to send to
   // ALPHA (ILI-1394); sent, the patrol's plan is known.
   await expect(panel).toHaveCount(0);
+  await expect(traffic).toHaveCount(0); // the intercept ran: the card's gone
+  const prompt = page.getByTestId('prompt');
   await expect(prompt).toHaveAttribute('data-kind', 'intel-ready');
   await expect(prompt.getByTestId('prompt-text')).toContainText('PATROL AT C2 MOVING TO D3');
   await prompt.getByTestId('prompt-response').click();
@@ -49,6 +51,27 @@ test('intercept: get ORION-3 in range through the prompt, follow their wave, and
   if (isMobile) await page.getByTestId('tab-satcom').click();
   await expect(page.getByTestId('comms-feed')).toContainText('Sent to ALPHA');
   await expect.poll(() => hasEvent(page, 'contact', 'C2')).toBe(true);
+});
+
+test('the traffic card stays when a more urgent prompt comes up, until HQ dismisses it (ILI-1452)', async ({ page }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  await untilTraffic(page);
+  const traffic = page.getByTestId('traffic-prompt');
+  await expect(traffic).toHaveAttribute('data-kind', 'enemy-traffic');
+  // An operator hit: the most urgent prompt there is. The traffic card stays up beside it.
+  await page.evaluate(() => {
+    const s = window.game.get();
+    window.game.set({ ...s, team: { ...s.team, operators: s.team.operators.map((o, i) => (i === 1 ? { ...o, health: 10 } : o)) } });
+  });
+  await expect(page.getByTestId('prompt')).toHaveAttribute('data-kind', 'operator');
+  await expect(traffic).toBeVisible();
+  await expect(traffic).toHaveAttribute('data-square', 'C2');
+  // Dismissed: the card goes, the traffic stays on the map for HQ to act on later.
+  await traffic.getByTestId('traffic-dismiss').click();
+  await expect(traffic).toHaveCount(0);
+  await expect.poll(() => hasEvent(page, 'signal', 'C2')).toBe(true);
 });
 
 test('jam instead: the traffic is gone, and HQ says what it costs', async ({ page }) => {

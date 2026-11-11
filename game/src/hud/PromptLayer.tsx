@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
-import { promptQueue } from '../sim/prompts';
+import { promptQueue, trafficPrompts, type Prompt } from '../sim/prompts';
 import { alphaBox, overlaysNamed, pick, squareBox, type Box } from './overlays';
 import { useTier } from './tier';
 
@@ -11,7 +11,17 @@ const GAP = 12; // between the prompt and its square
 // Tier two on screen (ILI-1391): the one prompt at the head of the queue, pinned to its square on
 // the map and following it as the map pans and zooms. The loudest thing on screen: one line
 // saying what's happening and its responses. The rest wait their turn; a count says how many.
+// Enemy traffic has its own lane beside it (ILI-1452): a small card nothing replaces.
 export function PromptLayer() {
+  return (
+    <>
+      <MainPrompt />
+      <TrafficPrompts />
+    </>
+  );
+}
+
+function MainPrompt() {
   const s = useGame((x) => x);
   const queue = promptQueue(s);
   const p = queue[0];
@@ -116,6 +126,115 @@ export function PromptLayer() {
             +{queue.length - 1} waiting
           </small>
         )}
+      </section>
+    </>
+  );
+}
+
+const TW = 210; // the traffic card's width: smaller than the prompt, out of its way (ILI-1452)
+
+// Enemy traffic (ILI-1452): a compact card pinned to the traffic's square, apart from the one
+// prompt so nothing knocks it off mid-read. It stays until HQ acts on it or dismisses it.
+function TrafficPrompts() {
+  const s = useGame((x) => x);
+  return (
+    <>
+      {trafficPrompts(s).map((p) => (
+        <TrafficPrompt key={p.id} live={p} team={s.team.position} />
+      ))}
+    </>
+  );
+}
+
+function TrafficPrompt({ live, team }: { live: Prompt; team: { x: number; y: number } }) {
+  const ref = useRef<HTMLElement>(null);
+  const [h, setH] = useState(0);
+  const [, redraw] = useState(0);
+  // While the pointer is on it, it holds still: same words, same spot, until HQ clicks.
+  const [hover, setHover] = useState(false);
+  const held = useRef<{ p: Prompt; at: Box } | null>(null);
+  useEffect(() => {
+    const again = () => redraw((n) => n + 1);
+    bus.on(EV.camera, again);
+    bus.on(EV.mapRect, again);
+    bus.on(EV.overlays, again);
+    return () => {
+      bus.off(EV.camera, again);
+      bus.off(EV.mapRect, again);
+      bus.off(EV.overlays, again);
+    };
+  }, []);
+  // The one prompt moved or came up: get out of its way (it's placed first, so this settles).
+  const seen = useRef('');
+  useLayoutEffect(() => {
+    const now = ref.current?.offsetHeight ?? 0;
+    if (now && Math.abs(now - h) > 1) setH(now);
+    const main = JSON.stringify(overlaysNamed(['prompt']));
+    if (main !== seen.current) {
+      seen.current = main;
+      redraw((n) => n + 1);
+    }
+  });
+
+  const area = getMapRect();
+  if (!area) return null;
+  const width = Math.min(TW, area.width - 16);
+  let p = live;
+  let at: Box;
+  if (hover && held.current) ({ p, at } = held.current);
+  else {
+    // Clear of the one prompt, the square's menu, the toolbox, the timer, the log and ALPHA.
+    const strip = overlaysNamed(['prompt', 'actions', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']);
+    at = place(squareBox(p.square), area, width, h || 72, [alphaBox(team), ...strip]);
+    held.current = { p, at };
+  }
+  const sq = squareBox(p.square);
+  const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
+  const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 72))) };
+
+  return (
+    <>
+      {target && near && (
+        <svg className="prompt-leader traffic-leader" aria-hidden>
+          <line x1={near.x} y1={near.y} x2={target.x} y2={target.y} />
+          <circle cx={target.x} cy={target.y} r="3" />
+        </svg>
+      )}
+      <section
+        ref={ref}
+        className="traffic-prompt"
+        data-testid="traffic-prompt"
+        data-overlay="traffic"
+        data-kind={p.kind}
+        data-square={p.square}
+        style={{ left: at.x, top: at.y, width }}
+        role="dialog"
+        aria-label={p.text}
+        onPointerEnter={() => setHover(true)}
+        onPointerLeave={() => setHover(false)}
+      >
+        <p className="prompt-text" data-testid="prompt-text">
+          <b>{p.square}</b> {p.text}
+        </p>
+        <button className="traffic-dismiss" onClick={() => game.dismissTraffic(p.id)} data-testid="traffic-dismiss" aria-label="Dismiss">
+          ✕
+        </button>
+        <div className="prompt-responses">
+          {p.responses.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => {
+                held.current = null; // what HQ just did shows straight away
+                game.answerPrompt(p.id, r.id);
+              }}
+              disabled={r.disabled}
+              data-response={r.id}
+              data-testid="prompt-response"
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
       </section>
     </>
   );

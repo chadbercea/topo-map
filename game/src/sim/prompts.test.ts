@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { activePrompt, byUrgency, PRIORITY, promptQueue, type Prompt } from './prompts';
+import { activePrompt, byUrgency, PRIORITY, promptQueue, trafficPrompts, type Prompt } from './prompts';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { run } from './testkit';
+import { run, trafficId, untilTraffic } from './testkit';
 
 // Tier two (ILI-1391): every call to action through one queue, one on screen at a time.
 const blindAhead = (): GameState => {
@@ -68,5 +68,35 @@ describe('operator prompts', () => {
     const store = createStore(hurt);
     store.answerPrompt(q[0].id, 'team');
     expect(promptQueue(store.get()).some((p) => p.id === q[0].id)).toBe(false);
+  });
+});
+
+// Enemy traffic has its own lane (ILI-1452): nothing knocks it off mid-read; it stays until HQ
+// acts on it or dismisses it, and dismissing it leaves the traffic on the map.
+describe('the enemy-traffic card', () => {
+  const atTraffic = () => untilTraffic(initialState());
+
+  it('is not in the one-prompt slot, so a more urgent prompt does not replace it', () => {
+    const s = atTraffic();
+    const hurt = { ...s, team: { ...s.team, operators: s.team.operators.map((o, i) => (i === 1 ? { ...o, health: 10 } : o)) } };
+    expect(activePrompt(hurt)?.kind).toBe('operator');
+    expect(promptQueue(hurt).some((p) => p.kind === 'enemy-traffic')).toBe(false);
+    expect(trafficPrompts(hurt)).toEqual([expect.objectContaining({ kind: 'enemy-traffic', square: 'C2' })]);
+  });
+
+  it('acted on, it shows the progress and stays until the intercept starts', () => {
+    const store = createStore(atTraffic());
+    store.answerPrompt(trafficId(store.get()), 'satellite');
+    expect(trafficPrompts(store.get())[0].responses[0]).toMatchObject({ label: expect.stringMatching(/ORION-3 on its way/), disabled: true });
+    for (let i = 0; i < 300 && !store.get().minigame; i++) store.tick(100);
+    expect(trafficPrompts(store.get())).toEqual([]);
+  });
+
+  it('dismissed, the card goes but the traffic stays on the map, unresolved', () => {
+    const store = createStore(atTraffic());
+    const id = trafficId(store.get());
+    store.dismissTraffic(id);
+    expect(trafficPrompts(store.get())).toEqual([]);
+    expect(store.get().events.find((e) => e.id === id)).toMatchObject({ kind: 'signal', square: 'C2', status: expect.not.stringMatching('resolved') });
   });
 });

@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { initialState, type GameState, type Settings } from './state';
 import type { MapEvent } from './events';
 import { dismiss, respond, send } from './comms';
-import { promptQueue } from './prompts';
+import { allPrompts } from './prompts';
 import { cancelLook, capture, closeLook, lockedOn, lookAt, lookSquare, scan, slewMs, type CaptureMode } from './satellite';
 import { abortMiniGame } from './minigame';
 import { launch } from './air';
@@ -127,7 +127,7 @@ export function createStore(initial: GameState = initialState()) {
     photo: (square: string) => lockedOn(state, square) && set(sendPhoto(state, square)),
     // Answer the prompt on screen (ILI-1391): the response does what it says.
     answerPrompt: (id: string, response: string) => {
-      const p = promptQueue(state).find((x) => x.id === id);
+      const p = allPrompts(state).find((x) => x.id === id);
       if (!p || p.responses.find((r) => r.id === response)?.disabled) return;
       // Get an asset in range of enemy traffic; the intercept starts once it is (ILI-1394).
       if (p.kind === 'enemy-traffic' && response === 'satellite') set(listenWith(state, p.id, 'satellite')); // HQ listens; no antenna (ILI-1435)
@@ -137,6 +137,8 @@ export function createStore(initial: GameState = initialState()) {
       // ALPHA's call (ILI-1393): a reply, or a plain Copy.
       if (p.kind === 'team-call') set(send(state, p.id, response === 'copy' ? null : response));
     },
+    // Dismiss the enemy-traffic card (ILI-1452): the card goes, the traffic stays on the map.
+    dismissTraffic: (id: string) => !state.acked.includes(id) && set({ ...state, acked: [...state.acked, id] }),
     // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first
     // (ILI-1250).
     capture: (mode: CaptureMode) => {

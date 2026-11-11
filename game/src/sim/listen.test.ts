@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { promptQueue } from './prompts';
+import { trafficPrompts } from './prompts';
 import { initialState } from './state';
 import { createStore } from './store';
 import { trafficId, untilTraffic } from './testkit';
@@ -8,7 +8,7 @@ import { trafficId, untilTraffic } from './testkit';
 // (the patrol talks first on the default seed, ILI-1454);
 // to listen, HQ gets an asset in range, each way with its cost on the button.
 const atTraffic = () => createStore(untilTraffic(initialState()));
-const traffic = (s: ReturnType<ReturnType<typeof atTraffic>['get']>) => promptQueue(s).find((p) => p.kind === 'enemy-traffic')!;
+const traffic = (s: ReturnType<ReturnType<typeof atTraffic>['get']>) => trafficPrompts(s).find((p) => p.kind === 'enemy-traffic')!;
 
 describe('getting in range of enemy traffic (ILI-1394)', () => {
   it('is a prompt at the traffic: listening is HQ’s job, ORION-3 goes (ILI-1435: no antenna)', () => {
