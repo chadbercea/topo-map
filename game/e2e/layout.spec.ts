@@ -25,15 +25,18 @@ test('the team panel shows what the team is doing', async ({ page, isMobile }) =
   await expect(page.getByTestId('team-title')).toHaveText('ALPHA TEAM'); // ILI-1248
   await expect(page.getByTestId('team-panel')).toContainText(/Moving to F4|Holding · needs intel/); // it sets off on its own (ILI-1315)
   if (isMobile) return; // on a phone it's the TEAM tab of the sheet
-  // Expanded by default; minimized, it's the strip of five heartbeats; never both (ILI-1439).
+  // The bar at rest, its table a drawer (ILI-1472): five heartbeats on the bar; the table opens over
+  // the map and closes again, and the bar never moves.
   const panel = page.getByTestId('team-panel');
-  await expect(panel).toHaveAttribute('data-state', 'full');
-  await expect(page.getByTestId('heartbeat-strip')).toHaveCount(0);
-  await page.getByTestId('team-minimize').click();
-  await expect(panel).toHaveAttribute('data-state', 'min'); // the same panel, folded
+  await expect(panel).toHaveAttribute('data-state', 'min');
   await expect(panel.getByTestId('heartbeat-strip').locator('svg.ecg')).toHaveCount(5);
-  await page.getByTestId('heartbeat-strip').click();
+  const bar = await page.getByTestId('heartbeat-strip').boundingBox();
+  await page.getByTestId('team-expand').click();
   await expect(panel).toHaveAttribute('data-state', 'full');
+  await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
+  expect(await page.getByTestId('heartbeat-strip').boundingBox()).toEqual(bar);
+  await page.keyboard.press('Escape');
+  await expect(panel).toHaveAttribute('data-state', 'min');
 });
 
 test('layout A: the map from the left edge with the timer and the comms log button in its corner, ENVIRONMENT over ORION-3 down the right, TEAM along the bottom (ILI-1226, ILI-1218, ILI-1392, ILI-1393)', async ({ page, isMobile }) => {
@@ -47,7 +50,6 @@ test('layout A: the map from the left edge with the timer and the comms log butt
     }
     return;
   }
-  await page.getByTestId('team-minimize').click(); // the strip, minimized (ILI-1439)
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
   const bar = await box('mission-bar');
@@ -131,7 +133,6 @@ test('no toolbox: the budget is a chip beside the clock, $10M less deployment, a
 test('one spacing rule: a 16 px margin and gutter everywhere, and every panel title on one line (ILI-1353)', async ({ page, isMobile }) => {
   test.skip(isMobile, 'a phone stacks a sheet; this is the wide layout');
   await start(page);
-  await page.getByTestId('team-minimize').click(); // the strip, minimized (ILI-1439)
   await page.waitForTimeout(500);
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;

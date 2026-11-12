@@ -134,3 +134,11 @@ export const lockOn = (page: Page, square: string) =>
     const from = { col: sq.charCodeAt(0) - 65, row: Number(sq.slice(1)) - 1 };
     window.game.set({ ...s, satellite: { ...s.satellite, state: 'idle', aim: sq, from, startMs: 0, arriveMs: 0, mode: null, callId: null, result: null } });
   }, square);
+
+// The team panel's table (ILI-1472): on a phone the TEAM target; on a wide screen or a fold upright
+// the bar's drawer, which is closed at rest.
+export async function openTeam(page: Page, isMobile: boolean) {
+  if (isMobile) return page.getByTestId('tab-team').click();
+  const expand = page.getByTestId('team-expand');
+  if (await expand.count()) await expand.click();
+}

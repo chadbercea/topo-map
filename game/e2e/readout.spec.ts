@@ -1,15 +1,13 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, start } from './helpers';
+import { fastForward, start, openTeam } from './helpers';
 
 test('the team panel shows every operator: heartbeat, status, ammo and meds, under TEAM (ILI-1223)', async ({ page, isMobile }) => {
   await start(page);
-  if (isMobile) await page.getByTestId('tab-team').click(); // on a wide screen it's expanded by default (ILI-1439)
+  await openTeam(page, isMobile); // the table is a drawer (ILI-1472)
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
   await expect(page.getByTestId('readout').locator('svg.ecg')).toHaveCount(5);
-  // Ammo and meds as pictures, not words (ILI-1265); the meters keep their names.
-  await expect(page.getByTestId('op-medic')).not.toContainText('MEDS');
-  await expect(page.getByTestId('meds-medic').locator('svg.cross')).toBeVisible();
-  await expect(page.getByTestId('ammo-medic').locator('svg.rounds')).toBeVisible();
+  // Ammo, meds and noise are labelled columns now (ILI-1472); the meters keep their names.
+  if (!isMobile) await expect(page.getByTestId('team-drawer').locator('.team-cols')).toContainText(/Ammo.*Meds.*Noise/s);
   await expect(page.getByTestId('meds-medic').getByRole('meter')).toHaveAccessibleName(/meds/);
   await expect(page.getByTestId('team-title')).toHaveText('ALPHA TEAM');
   await expect(page.getByTestId('team-condition')).toHaveCount(0); // no team totals: each row has its own
@@ -18,7 +16,7 @@ test('the team panel shows every operator: heartbeat, status, ammo and meds, und
 test('a wound shows on the operator’s heartbeat and status, then heals', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
-  if (isMobile) await page.getByTestId('tab-team').click();
+  await openTeam(page, isMobile); // the table is a drawer (ILI-1472)
   await page.evaluate(() => {
     const s = window.game.get();
     const operators = s.team.operators.map((o) => (o.id === 'gunner' ? { ...o, health: 50 } : o));

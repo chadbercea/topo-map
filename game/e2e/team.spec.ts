@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { start, running } from './helpers';
+import { start, running, openTeam } from './helpers';
 
 test('the team moves along its route on its own and stops when paused', async ({ page }) => {
   await start(page, '?debug');
@@ -20,11 +20,10 @@ test('the team moves along its route on its own and stops when paused', async ({
 test("each operator's noise is on their row; ALERTED is in the team panel's title (ILI-1222)", async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
-  if (isMobile) await page.getByTestId('tab-team').click(); // on a wide screen it's expanded by default (ILI-1439)
+  await openTeam(page, isMobile); // the table is a drawer (ILI-1472)
   const gunner = page.getByTestId('noise-heavy').getByRole('meter');
   // On the move, only footfalls: orange (ILI-1266). Gunfire takes it red.
   await expect(page.getByTestId('noise-heavy')).not.toHaveAttribute('data-source', 'fire');
-  await expect(page.getByTestId('noise-heavy').locator('svg.sound')).toBeVisible();
   await expect(page.getByTestId('alerted')).toHaveCount(0);
   await page.evaluate(() => {
     const s = window.game.get();

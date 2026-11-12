@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { fastForward, start } from './helpers';
+import { fastForward, start, openTeam } from './helpers';
 
 const tick = async (page: Page) => Number(await page.getByTestId('tick').textContent());
 const menu = (page: Page) => page.getByTestId('pause-menu');
@@ -14,7 +14,7 @@ test('no briefing: the game opens live, ALPHA on the ground and the clock runnin
   await expect(page.getByTestId('briefing')).toHaveCount(0);
   await expect(page.getByTestId('sitrep')).toHaveCount(0);
   await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3');
-  if (isMobile) await page.getByTestId('tab-team').click();
+  await openTeam(page, isMobile); // the table is a drawer (ILI-1472)
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
   if (isMobile) await page.getByTestId('tab-satcom').click();
   // Only this mission's intel: the analysts' notes on the crash to start with.

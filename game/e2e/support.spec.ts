@@ -57,5 +57,5 @@ test('combat ineffective: ALPHA asks for a resupply bird, and replacements arriv
   await expect.poll(() => page.evaluate(() => window.game.get().inbound.length)).toBe(1);
   await fastForward(page, 33_500);
   // Replacements are standing: no one down (each row shows its own status, ILI-1223).
-  await expect(page.getByTestId('readout').locator('li[data-condition="down"]')).toHaveCount(0);
+  await expect(page.getByTestId('heartbeat-strip').or(page.getByTestId('readout')).first().locator('[data-condition="down"]')).toHaveCount(0);
 });
