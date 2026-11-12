@@ -91,6 +91,21 @@ export function OrionPanel() {
   const held = !!heldIntel(s, sat.aim);
   const onVideo = (s.intel.live ?? []).includes(sat.aim);
   const inPosition = live || sat.state === 'capturing' || (sat.state === 'idle' && !!picked && away === 0);
+  // Every satellite action lives here, and only here (ILI-1459, ILI-1465): Scan, Photo and Video
+  // under the picture, always in their places, lit when they can be used; Reposition in the header.
+  const ready = inPosition && !tied;
+  const wide = tier === 'wide';
+  const canMove = !!picked && !tied && sat.state === 'idle' && !satelliteBusy(s) && away > 0;
+  // The square's details (ILI-1438): its intel, ALPHA's work there, its ground. Only for the square
+  // ORION-3 is over and locked on. On a wide screen they sit under the buttons; narrower, under
+  // the picture.
+  const detail = !tied && lockedOn(s, sat.aim) && (
+    <div className="o-detail square-card" data-testid="orion-detail">
+      <Readouts s={s} square={sat.aim} />
+      <TeamWork s={s} square={sat.aim} />
+      <Details s={s} square={sat.aim} open />
+    </div>
+  );
 
   // The priority ladder (ILI-1400): the panel never scrolls. As it gets shorter, what ranks
   // lowest drops first (styles.css, container queries on the panel's own height): 8 the weather
@@ -105,6 +120,10 @@ export function OrionPanel() {
           <SatelliteIcon />
           <span className="o-name-text">{name}</span>
         </span>
+        <button className="o-repo" disabled={!canMove} onClick={() => picked && game.lookAt(picked)} data-testid="look-here" title={`Reposition ${name} over the picked square`}>
+          {sat.state === 'slewing' && !tied ? 'Moving' : '⇄ Reposition'}
+          {canMove && <small> to {picked} · {countdown(away)}</small>}
+        </button>
         <span className="o-state" data-testid="orion-state" data-cloud={cloud}>
           {stateLine}
         </span>
@@ -115,6 +134,7 @@ export function OrionPanel() {
 
       {/* ORION-3 itself (ILI-1235): the 3D satellite, its outline when space is short, and its
           telemetry. */}
+      {!wide && (
       <div className="o-satpanel" data-testid="orion-avatar" data-state={avatar}>
         <OrionAvatar state={avatar} fallback={<SatelliteMark />} />
         <span className="o-mark" aria-hidden>
@@ -131,6 +151,7 @@ export function OrionPanel() {
           </div>
         </dl>
       </div>
+      )}
 
       {/* The AO's weather, three and three (ILI-1249); on a fold or phone it's the slim line. */}
       {tier === 'wide' && <EnvWidget />}
@@ -139,13 +160,7 @@ export function OrionPanel() {
       <div className="o-frame">
         {/* The square's details, under its picture (ILI-1438): its intel, ALPHA's work there, its
             ground. Only for the square ORION-3 is over and locked on. */}
-        {!tied && lockedOn(s, sat.aim) && (
-          <div className="o-detail square-card" data-testid="orion-detail">
-            <Readouts s={s} square={sat.aim} />
-            <TeamWork s={s} square={sat.aim} />
-            <Details s={s} square={sat.aim} open />
-          </div>
-        )}
+        {!wide && detail}
         {showPicture ? (
           <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`${name}'s picture of ${square}`}>
             {/* The fighters it shows, each a tap away from its strikes (ILI-1250). Phaser draws the
@@ -199,39 +214,27 @@ export function OrionPanel() {
       {/* The one Last look (rank 8). */}
       <p className="o-last">Last look {last ? `${last.square} · ${last.mode} ${zulu(last.atMs)} · ${freshness(last, now)}` : 'none yet'}</p>
 
-      {/* ORION-3's buttons (rank 1): 60 px, pinned to the bottom, each lit when it can be used.
-          On station, Photo pulses: it's the next thing to do (ILI-1257). */}
+      {/* ORION-3's buttons (rank 1), pinned under the picture, never hidden: Scan across the width,
+          then Photo and Video. Each is lit when it can be used, and the next thing to do pulses
+          (ILI-1257, ILI-1432). Scan settles the square; Photo sends its intel to ALPHA to keep it
+          moving; Video keeps the square live on the map for good. */}
       <div className="o-buttons" data-testid="orion-buttons">
-        {inPosition && !tied ? (
-          <div className="modes" data-testid="capture-modes" data-step={done ? 'send' : 'scan'}>
-            {/* Scan is ORION-3's primary action (ILI-1432). Once the square is settled, its
-                sub-actions take Scan's place: Photo sends the intel to ALPHA to keep it moving,
-                Video keeps the square live on the map for good. The next thing to do pulses. */}
-            {!done ? (
-              <button className="o-scan" disabled={busy} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title="Settle the square: its intel lands on it" data-cue={!busy || undefined}>
-                Scan {sat.aim}
-                <small>settles the square</small>
-              </button>
-            ) : (
-              <>
-                <button disabled={busy || !held} onClick={() => game.photo(sat.aim)} data-testid="capture-photo" title={`Send ${sat.aim}'s intel to ${s.team.callsign}`} data-cue={(held && !busy) || undefined}>
-                  Photo
-                  <small>{held ? `send to ${s.team.callsign}` : `sent to ${s.team.callsign}`}</small>
-                </button>
-                <button disabled={busy || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title="Keep the square live on the map for good">
-                  Video
-                  <small>{onVideo ? 'live' : busy ? 'filming' : 'live for good'}</small>
-                </button>
-              </>
-            )}
-          </div>
-        ) : (
-          <button className="o-reposition" disabled={!picked || tied || sat.state !== 'idle' || satelliteBusy(s)} onClick={() => picked && game.lookAt(picked)} data-testid="look-here" title={`Reposition ${name} over the picked square`}>
-            {sat.state === 'slewing' && !tied ? `Repositioning to ${sat.aim}` : 'Reposition'}
-            <small>{tied ? 'tied up by the intercept' : sat.state === 'slewing' ? 'on its way' : picked ? `to ${picked} · ${countdown(away)}` : 'pick a square'}</small>
+        <div className="modes" data-testid="capture-modes" data-step={done ? 'send' : 'scan'}>
+          <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title="Settle the square: its intel lands on it" data-cue={(ready && !busy && !done) || undefined}>
+            Scan {sat.aim}
+            <small>{tied ? 'tied up by the intercept' : done ? 'settled' : ready ? 'settles the square' : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
           </button>
-        )}
+          <button disabled={!ready || busy || !done || !held} onClick={() => game.photo(sat.aim)} data-testid="capture-photo" title={`Send ${sat.aim}'s intel to ${s.team.callsign}`} data-cue={(ready && done && held && !busy) || undefined}>
+            Photo
+            <small>{!done ? 'after a scan' : held ? `send to ${s.team.callsign}` : `sent to ${s.team.callsign}`}</small>
+          </button>
+          <button disabled={!ready || busy || !done || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title="Keep the square live on the map for good">
+            Video
+            <small>{onVideo ? 'live' : busy ? 'filming' : !done ? 'after a scan' : 'live for good'}</small>
+          </button>
+        </div>
       </div>
+      {wide && detail}
     </section>
   );
 }

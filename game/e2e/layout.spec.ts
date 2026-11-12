@@ -71,11 +71,16 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   expect(orion.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
   expect(orion.x + orion.width).toBeGreaterThan(view.width - 40);
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
-  // ENVIRONMENT is inside ORION-3, six tiles under the satellite and over the picture (ILI-1249).
-  const sat = await box('orion-avatar');
+  // ORION-3 on a wide screen (ILI-1465): no 3D satellite; the picture at the top, the buttons under
+  // it, and the weather's six tiles at the foot (ILI-1249).
+  await expect(page.getByTestId('orion-avatar')).toHaveCount(0);
+  const pic = await box('satellite-inset');
+  const buttons = await box('orion-buttons');
+  expect(pic.y - orion.y).toBeLessThan(48);
+  expect(buttons.y).toBeGreaterThanOrEqual(pic.y + pic.height - 1);
   expect(env.x).toBeGreaterThanOrEqual(orion.x);
   expect(env.x + env.width).toBeLessThanOrEqual(orion.x + orion.width + 1);
-  expect(env.y).toBeGreaterThanOrEqual(sat.y + sat.height - 1);
+  expect(env.y).toBeGreaterThan(buttons.y + buttons.height);
   await expect(page.getByTestId('satellite').getByTestId('conditions').locator('.env-tile')).toHaveCount(6);
   await expect(page.getByTestId('small-widgets')).toHaveCount(0);
   // Along the bottom: the heartbeat strip (ILI-1396), under the map. No ALPHA nav box (ILI-1395).
