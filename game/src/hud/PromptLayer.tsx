@@ -291,9 +291,10 @@ function JamButton({ id, square, onAct }: { id: string; square: string; onAct: (
   );
 }
 
-// Callout tags (ILI-1469, the ILI-1459 design): a thing on the map HQ can act on gets a tag at its
-// square, like the red map's cars: a dot on the square, a short leader, and the tag with its own
-// button. A building worth a search gets Search; once ALPHA is on its way, the tag says so.
+// Callout tags (ILI-1469, the ILI-1459 design, after the red-map reference): a thing on the map HQ can
+// act on gets a tag at its square: a dot on the square, a short leader, and the tag with its own
+// button. A picked square's tags dock on its flyout's top edge instead (ILI-1475), so a tag never
+// covers the square's report.
 function PlaceTags() {
   const s = useGame((x) => x);
   const [, redraw] = useState(0);
@@ -308,72 +309,97 @@ function PlaceTags() {
   }, []);
   const area = getMapRect();
   if (!area) return null;
-  const buildings = s.events.filter((e) => e.kind === 'building' && e.status !== 'resolved');
-  // CONTACT tags (ILI-1474): a square whose fresh look shows fighters, or with a strike under way.
-  const contactSquares = [...new Set(s.events.filter((e) => e.kind === 'contact' && e.status !== 'resolved').map((e) => e.square))];
+  const docked = s.map.selected;
+  const at = (square: string, fy: number) => {
+    const sq = squareBox(square);
+    if (!sq || square === docked) return null;
+    const p = { left: sq.x + sq.w / 2, top: sq.y + sq.h * fy };
+    return p.left < area.x || p.left > area.x + area.width || p.top < area.y || p.top > area.y + area.height ? null : p;
+  };
   return (
     <>
-      {contactSquares.map((square) => {
-        const st = strikeState(s, square);
-        const work = strikeWork(s, square);
-        if (!st.seen && !work) return null;
-        const sq = squareBox(square);
-        if (!sq) return null;
-        const cx = sq.x + sq.w / 2;
-        const cy = sq.y + sq.h * 0.25;
-        if (cx < area.x || cx > area.x + area.width || cy < area.y || cy > area.y + area.height) return null;
-        const open = s.events.some((e) => e.id === s.openEvent && e.kind === 'contact' && e.square === square);
+      {tagSquares(s).contacts.map((square) => {
+        const p = at(square, 0.25);
         return (
-          <div key={`contact-${square}`} className="place-tag contact-tag" data-testid="contact-tag" data-kind="contact" data-square={square} data-open={open || undefined} style={{ left: cx, top: cy }}>
-            <i className="pt-dot" aria-hidden />
-            <i className="pt-lead" aria-hidden />
-            <div className="pt-tag" role="group" aria-label={`Contact · ${square}`}>
-              <span>
-                Contact · {square}
-                {st.marked.length > 0 && <b data-testid="contact-count"> · {st.marked.length}</b>}
-              </span>
-              {work ? (
-                <em data-testid="strike-work">{work}</em>
-              ) : (
-                <button
-                  onClick={() => st.strikes[0] && (open ? game.dropEvent() : game.openEvent(st.strikes[0].id))}
-                  disabled={!st.can}
-                  title={st.can ? `Strike ${square}` : `${satName(s)} has to be over ${square} to watch the strike land`}
-                  data-testid="contact-strike"
-                  aria-expanded={open}
-                >
-                  Strike
-                </button>
-              )}
+          p && (
+            <div key={`contact-${square}`} className="place-tag contact-tag" data-testid="contact-tag" data-kind="contact" data-square={square} style={p}>
+              <i className="pt-dot" aria-hidden />
+              <i className="pt-lead" aria-hidden />
+              <ContactTag square={square} />
             </div>
-          </div>
+          )
         );
       })}
-      {buildings.map((e) => {
-        const sq = squareBox(e.square);
-        if (!sq) return null;
-        const cx = sq.x + sq.w / 2;
-        const cy = sq.y + sq.h / 2;
-        if (cx < area.x || cx > area.x + area.width || cy < area.y || cy > area.y + area.height) return null;
-        const going = s.searching.includes(e.square);
+      {tagSquares(s).buildings.map((e) => {
+        const p = at(e.square, 0.5);
         return (
-          <div key={e.id} className="place-tag" data-testid="place-tag" data-kind={e.kind} data-square={e.square} style={{ left: cx, top: cy }}>
-            <i className="pt-dot" aria-hidden />
-            <i className="pt-lead" aria-hidden />
-            <div className="pt-tag" role="group" aria-label={`${e.title} · ${e.square}`}>
-              <span>Building · {e.square}</span>
-              {going ? (
-                <em data-testid="search-going">{s.team.callsign} on its way</em>
-              ) : (
-                <button onClick={() => game.search(e.square)} data-testid="send-search">
-                  Search
-                </button>
-              )}
+          p && (
+            <div key={e.id} className="place-tag" data-testid="place-tag" data-kind={e.kind} data-square={e.square} style={p}>
+              <i className="pt-dot" aria-hidden />
+              <i className="pt-lead" aria-hidden />
+              <BuildingTag id={e.id} />
             </div>
-          </div>
+          )
         );
       })}
     </>
+  );
+}
+
+// Which squares have tags: contacts whose fresh look shows fighters, or with a strike under way
+// (ILI-1474); buildings worth a search (ILI-1469).
+export function tagSquares(s: GameState) {
+  const contacts = [...new Set(s.events.filter((e) => e.kind === 'contact' && e.status !== 'resolved').map((e) => e.square))].filter((sq) => strikeState(s, sq).seen || !!strikeWork(s, sq));
+  const buildings = s.events.filter((e) => e.kind === 'building' && e.status !== 'resolved');
+  return { contacts, buildings };
+}
+
+// A square's CONTACT tag (ILI-1474): its fighters and Strike, or how the strike under way is going.
+export function ContactTag({ square }: { square: string }) {
+  const s = useGame((x) => x);
+  const st = strikeState(s, square);
+  const work = strikeWork(s, square);
+  const open = s.events.some((e) => e.id === s.openEvent && e.kind === 'contact' && e.square === square);
+  return (
+    <div className="pt-tag" role="group" aria-label={`Contact · ${square}`} data-open={open || undefined}>
+      <span>
+        Contact · {square}
+        {st.marked.length > 0 && <b data-testid="contact-count"> · {st.marked.length}</b>}
+      </span>
+      {work ? (
+        <em data-testid="strike-work">{work}</em>
+      ) : (
+        <button
+          onClick={() => st.strikes[0] && (open ? game.dropEvent() : game.openEvent(st.strikes[0].id))}
+          disabled={!st.can}
+          title={st.can ? `Strike ${square}` : `${satName(s)} has to be over ${square} to watch the strike land`}
+          data-testid="contact-strike"
+          aria-expanded={open}
+        >
+          Strike
+        </button>
+      )}
+    </div>
+  );
+}
+
+// A building's tag (ILI-1316, ILI-1469): Search sends ALPHA; then it says ALPHA's on its way.
+export function BuildingTag({ id }: { id: string }) {
+  const s = useGame((x) => x);
+  const e = s.events.find((x) => x.id === id);
+  if (!e) return null;
+  const going = s.searching.includes(e.square);
+  return (
+    <div className="pt-tag" role="group" aria-label={`${e.title} · ${e.square}`}>
+      <span>Building · {e.square}</span>
+      {going ? (
+        <em data-testid="search-going">{s.team.callsign} on its way</em>
+      ) : (
+        <button onClick={() => game.search(e.square)} data-testid="send-search">
+          Search
+        </button>
+      )}
+    </div>
   );
 }
 

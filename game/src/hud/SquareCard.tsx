@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
+import { BuildingTag, ContactTag, tagSquares } from './PromptLayer';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, lockedOn, satName } from '../sim/satellite';
 import { isImageryRequest } from '../sim/imageryRequest';
@@ -21,7 +22,7 @@ import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
 import { RECOVER_MS } from '../sim/mission';
 import { ESCROW_BOX } from '../sim/prices';
 
-const ANCHOR_W = 260; // the menu's width off its square's edge
+const ANCHOR_W = 300; // the flyout's width off its square's edge: room for its full report (ILI-1475)
 
 // The square's anchor (ILI-1278, ILI-1302, ILI-1308): the contextual menu for the square HQ
 // picked, pinned beside it on the map, so what's done there stays tied to its ground however
@@ -73,9 +74,8 @@ export function SquareCard() {
   if (!square) return null;
   const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, s.team.position, ANCHOR_W);
   const locked = lockedOn(s, square);
-  // Only once ORION-3 is over it (ILI-1437): no menu for a square it isn't watching, but a mini
-  // game playing there.
-  if (!locked && !playing) return null;
+  // Any square HQ clicks opens its flyout (ILI-1475): its intel is stored on the square, not in the
+  // satellite, so it's there wherever ORION-3 is.
   return (
     <>
       <Leader square={square} area={area} anchor={{ x: at.left, y: at.top, w: at.width, h: Math.min(actHeight || 200, at.maxHeight) }} />
@@ -215,47 +215,60 @@ export function strikeState(s: GameState, square: string) {
 function AnchorBody({ s, square }: { s: GameState; square: string }) {
   const { marked } = strikeState(s, square);
   const locked = lockedOn(s, square);
+  const sat = s.satellite;
+  const coming = sat.state === 'slewing' && sat.aim === square;
+  const tags = tagSquares(s);
+  const contact = tags.contacts.includes(square);
+  const buildings = tags.buildings.filter((e) => e.square === square);
   return (
     <>
       <header className="sc-head">
         <b>{square}</b>
         <span className="sc-status" data-testid="lock-status">
-          {locked ? `${satName(s)} locked on` : `${satName(s)} not over it`}
+          {locked ? `${satName(s)} locked on` : coming ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `${satName(s)} not over it`}
         </span>
         <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
           ×
         </button>
       </header>
 
-      {/* What its scan turned up (ILI-1399): the detail readouts, tier three, opened by tapping the
-          square. One scan settled it, so there's no Scan here again. */}
-      {/* Its details live in ORION-3's view now (ILI-1438): this menu is the square's actions. */}
+      {/* The square's own tags dock here, on the flyout's top edge, with their buttons (ILI-1475): a
+          tag never floats over the square's report. */}
+      {(contact || buildings.length > 0) && (
+        <div className="sc-tags" data-testid="docked-tags">
+          {contact && (
+            <div className="place-tag contact-tag docked" data-testid="contact-tag" data-kind="contact" data-square={square}>
+              <ContactTag square={square} />
+            </div>
+          )}
+          {buildings.map((e) => (
+            <div key={e.id} className="place-tag docked" data-testid="place-tag" data-kind="building" data-square={square}>
+              <BuildingTag id={e.id} />
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304).
-          Work already under way, so it shows locked or not. */}
+      {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304). */}
       <SniperPanel square={square} />
       <AirPanel weapon="drone" square={square} />
       <AirPanel weapon="heli" square={square} />
 
-      {locked && (
-        <>
-          <SquareFacts s={s} square={square} />
-
-          {/* Its fighters, counted (read-only). The strikes are ORION-3's now (ILI-1467): its Strike
-              button opens them beside it. */}
-          {marked.length > 0 && (
-            <p className="sc-marked" data-testid="fighters-marked">
-              {marked.length} {marked.length === 1 ? 'fighter' : 'fighters'} marked
-            </p>
-          )}
-
-          {/* Team actions come out of the same menu (ILI-1397). */}
-          {hasActions(s, square) && (
-            <section className="sc-actions" data-testid="action-panel" aria-label={`Act on ${square}`}>
-              <Actions s={s} square={square} />
-            </section>
-          )}
-        </>
+      {/* The square's report (ILI-1475): what's known of it, stored on the square. Its intel, item by
+          item; ALPHA's work there; its fighters; its ground. */}
+      <SquareFacts s={s} square={square} />
+      <Readouts s={s} square={square} />
+      <TeamWork s={s} square={square} />
+      {marked.length > 0 && (
+        <p className="sc-marked" data-testid="fighters-marked">
+          {marked.length} {marked.length === 1 ? 'fighter' : 'fighters'} marked
+        </p>
+      )}
+      <Details s={s} square={square} open />
+      {hasActions(s, square) && (
+        <section className="sc-actions" data-testid="action-panel" aria-label={`Act on ${square}`}>
+          <Actions s={s} square={square} />
+        </section>
       )}
     </>
   );
@@ -292,7 +305,6 @@ function SquareFacts({ s, square }: { s: GameState; square: string }) {
   const done = settled(s, square);
   const items = done ? squareReports(s, square) : [];
   const clear = done && squareFindings(s, square) === 'clear';
-  const g = ground(s, square);
   const busy = s.satellite.state === 'capturing' && s.satellite.aim === square;
   return (
     <section className="sc-facts" data-testid="square-details" aria-label={`${square} details`}>
@@ -300,18 +312,10 @@ function SquareFacts({ s, square }: { s: GameState; square: string }) {
       <dl className="facts">
         <dt>Intel</dt>
         <dd data-testid="square-intel-state" data-none={!done || undefined}>
-          {!done ? 'none yet · nothing has looked' : clear ? 'settled · clear' : `settled · ${items.length} ${items.length === 1 ? 'report' : 'reports'}`}
+          {!done ? 'none yet · nothing has looked' : clear ? 'settled · clear' : `settled · ${items.length} ${items.length === 1 ? 'report' : 'reports'} below`}
         </dd>
-        {g && (
-          <>
-            <dt>Ground</dt>
-            <dd>
-              {g.slope} · {g.features.length ? g.features.join(', ') : 'open ground'}
-            </dd>
-          </>
-        )}
         <dt>{satName(s)}</dt>
-        <dd data-testid="scan-in-orion">{busy ? 'locked on · looking now' : done ? 'locked on' : <b>locked on · Scan it there ▸</b>}</dd>
+        <dd data-testid="scan-in-orion">{busy ? 'looking now' : !lockedOn(s, square) ? (done ? 'not over it · last look stays here' : 'not over it · on its way when you click') : done ? 'locked on' : <b>locked on · Scan it there ▸</b>}</dd>
       </dl>
     </section>
   );

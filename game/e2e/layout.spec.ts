@@ -141,7 +141,8 @@ test('one spacing rule: a 16 px margin and gutter everywhere, and every panel ti
   const near = (a: number, b: number) => expect(Math.abs(a - b)).toBeLessThanOrEqual(1);
   // The margin round the screen.
   near(map.x, 16); near(map.y, 16); near(orion.y, 16); // no mission panel (ILI-1392), COMMS a drawer (ILI-1393): the map takes the corner
-  near(view.width - (orion.x + orion.width), 16); near(view.height - (orion.y + orion.height), 16); near(view.height - (team.y + team.height), 16);
+  near(view.width - (orion.x + orion.width), 16); near(view.height - (team.y + team.height), 16);
+  expect(view.height - (orion.y + orion.height)).toBeGreaterThanOrEqual(16); // imagery tools only: it sizes to them (ILI-1475)
   // The gutter, down and across.
   near(team.y - (map.y + map.height), 16);
   near(team.x, 16);

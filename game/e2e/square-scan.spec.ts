@@ -4,14 +4,14 @@ import { fastForward, freeze, lockOn, running, squarePoint, start, tapAt, untilT
 // The square's panel shows its details (ILI-1466); every satellite action is ORION-3's (ILI-1459):
 // a tap sends ORION-3, and Scan is in ORION-3, not on the square. The mini game still plays there.
 
-test('a square ORION-3 is not over has no panel; a tap sends ORION-3, and on arrival its details open, Scan in ORION-3 (ILI-1437, ILI-1466)', async ({ page, isMobile }) => {
+test('a tap opens the square\u2019s flyout and sends ORION-3; Scan is in ORION-3; the report lands on the square (ILI-1466, ILI-1475)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
   await tapAt(page, isMobile, await squarePoint(page, 5, 3)); // F4
   const anchor = page.getByTestId('square-anchor');
   await expect(page.getByTestId('selected-square')).toHaveText('F4');
-  await expect(anchor).toHaveCount(0); // nothing until ORION-3 is over it
+  await expect(anchor.getByTestId('lock-status')).toHaveText(/ORION-3 on its way/); // its flyout opens at once (ILI-1475)
   expect(await page.evaluate(() => window.game.get().satellite.aim)).toBe('F4'); // on its way
   await fastForward(page, 30_000);
   await expect(anchor).toHaveAttribute('data-locked', 'true');
@@ -23,7 +23,8 @@ test('a square ORION-3 is not over has no panel; a tap sends ORION-3, and on arr
   if (isMobile) await page.getByTestId('tab-orion').click();
   await page.getByTestId('satellite').getByTestId('capture-scan').click();
   await expect.poll(() => page.evaluate(() => !!window.game.get().imagery.F4)).toBe(true);
-  await expect(anchor.getByTestId('square-intel-state')).toHaveText(/^settled · (clear|\d reports?)$/);
+  await expect(anchor.getByTestId('square-intel-state')).toHaveText(/^settled · (clear|\d reports? below)$/);
+  await expect(anchor.getByTestId('square-settled')).toBeVisible(); // the full report, on the square (ILI-1475)
 });
 
 test('the menu grows out of the square’s edge (ILI-1397)', async ({ page, isMobile }) => {

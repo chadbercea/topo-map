@@ -18,7 +18,8 @@ test('a building’s tag sends ALPHA to search it; ALPHA reports the find and it
   const before = await page.evaluate(() => window.game.get().resources.budget);
   const tag = page.locator('[data-testid=place-tag][data-square=G4]');
   await expect(tag).toContainText('Building · G4');
-  await expect(anchor.getByTestId('send-search')).toHaveCount(0); // not in the square's panel: it's read-only
+  await expect(tag).toHaveCount(1); // docked on the picked square's flyout, not floating over it (ILI-1475)
+  await expect(anchor.getByTestId('docked-tags')).toContainText('Building · G4');
   await tag.getByTestId('send-search').click();
   await expect(tag.getByTestId('search-going')).toHaveText('ALPHA on its way');
   await expect(anchor).toContainText('ALPHA is on its way to search it');
@@ -48,10 +49,10 @@ test('a search shows its bar filling in the square menu, then the find in its pl
     for (let i = 0; i < 50; i++) window.game.tick(100); // five seconds in
     if (window.game.get().map.selected !== 'G4') window.game.selectSquare('G4');
   });
-  await expect(page.getByTestId('orion-detail').getByTestId('work-bar')).toContainText('ALPHA searching the building'); // ORION-3's view (ILI-1438)
+  await expect(page.getByTestId('square-anchor').getByTestId('work-bar')).toContainText('ALPHA searching the building'); // the square's flyout (ILI-1475)
   await page.evaluate(() => {
     for (let i = 0; i < 400 && !window.game.get().comms.messages.some((m) => m.id === 'found-building-G4'); i++) window.game.tick(100);
   });
-  await expect(page.getByTestId('orion-detail').getByTestId('work-found')).toContainText(/ALPHA found .* · \+\$[\d,]+/);
-  await expect(page.getByTestId('orion-detail').getByTestId('work-bar')).toHaveCount(0);
+  await expect(page.getByTestId('square-anchor').getByTestId('work-found')).toContainText(/ALPHA found .* · \+\$[\d,]+/);
+  await expect(page.getByTestId('square-anchor').getByTestId('work-bar')).toHaveCount(0);
 });
