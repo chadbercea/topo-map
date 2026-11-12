@@ -106,6 +106,10 @@ export class MapScene extends Phaser.Scene {
   private labels: Phaser.GameObjects.Text[] = [];
   private pointer = 'none';
   private unsubscribe?: () => void;
+  // ORION-3's picture's own copies of the marks (ILI-1471), drawn at its zoom so a mark is the same
+  // 1 px, same-size thing there as on the map: the picture shows more ground, never bigger marks.
+  private static TWINS = ['gridGfx', 'selectGfx', 'missionGfx', 'routeGfx', 'intelGfx', 'satGfx', 'markerGfx', 'blindGfx', 'fightGfx', 'modeGfx', 'droneGfx', 'wipeGfx'] as const;
+  private twins = new Map<(typeof MapScene.TWINS)[number], Phaser.GameObjects.Graphics>();
   // Phaser owns the frame clock; the sim advances in fixed ticks from it.
   private loop = createLoop((dt) => game.tick(dt));
 
@@ -169,6 +173,16 @@ export class MapScene extends Phaser.Scene {
     // ORION-3's inset: a second camera on the square it's looking at. Taps go to the map.
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
+    // Its own copies of the marks (ILI-1471): each twin sits just over its original, the map's
+    // camera ignores the twins, the picture ignores the originals.
+    for (const k of MapScene.TWINS) {
+      const orig = this[k];
+      const twin = this.add.graphics().setDepth(orig.depth);
+      this.cameras.main.ignore(twin);
+      this.inset.ignore(orig);
+      this.twins.set(k, twin);
+    }
+    this.inset.ignore(this.teamGfx); // the picture shows the team as its own arrows (ILI-1419)
     this.inset.ignore([...this.labels, this.teamLabel, this.airLabels.drone, this.airLabels.heli, this.exfilLabel, this.hoverLabel]); // the caption names the square; ORION-3's panel has its own hovers
     this.inset.ignore([this.stampGfx, this.bracketGfx, this.dotGfx, this.seenGfx]); // a square's INTEL / CLEAR tag is a map note; the satellite doesn't see it (ILI-1407)
     // ?debug: tests read the live camera to turn world points into screen taps.
@@ -227,6 +241,21 @@ export class MapScene extends Phaser.Scene {
     this.layout();
   }
 
+  // Draw into ORION-3's picture's copies at its zoom (ILI-1471): swap the twins in, draw, swap back.
+  private forInset(draw: () => void) {
+    if (!this.inset.visible) return;
+    const self = this as unknown as Record<string, Phaser.GameObjects.Graphics>;
+    const saved = new Map<string, Phaser.GameObjects.Graphics>();
+    for (const [k, twin] of this.twins) (saved.set(k, self[k]), (self[k] = twin));
+    this.drawZoom = this.inset.zoom;
+    try {
+      draw();
+    } finally {
+      this.drawZoom = null;
+      for (const [k, g] of saved) self[k] = g;
+    }
+  }
+
   // Elapsed time: wall time, but never more than Phaser's smoothed delta and never more
   // than MAX_FRAME_MS. With the 30 fps cap Phaser's delta runs ahead of wall time (the
   // clock ran fast); on a slow renderer (CI) the smoothed delta keeps the sim in slow motion.
@@ -263,6 +292,20 @@ export class MapScene extends Phaser.Scene {
     this.drawWipes(_time);
     this.drawStrikes();
     this.drawBlind();
+    this.forInset(() => {
+      this.drawSelection();
+      this.drawRoute();
+      this.drawMission(_time);
+      this.drawMarkers(_time);
+      this.drawFight(_time);
+      this.drawIntel();
+      this.drawPlans();
+      this.drawSatellite(_time);
+      this.drawMiniGame(_time);
+      this.drawWipes(_time);
+      this.drawStrikes();
+      this.drawBlind();
+    });
     this.reveal();
   }
 
@@ -334,14 +377,13 @@ export class MapScene extends Phaser.Scene {
     const px = DPR / this.zoom;
     const r = 5 * px;
     const cross = (x: number, y: number) => {
-      g.lineStyle(3.5 * px, 0x0b0f0d, 0.8).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
-      g.lineStyle(2 * px, 0xe5484d, 1).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
+      g.lineStyle(px, 0xe5484d, 1).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
     };
     // OVERWATCH's crosshairs on the map, on the fighter it shoots next (ILI-1303).
     const aim = s.sniper && !s.sniper.done ? s.sniper.shots.find((x) => x.atMs > now) : null;
     if (aim) {
       const cr = 12 * px;
-      for (const [w, c, a] of [[3.5 * px, 0x0b0f0d, 0.7], [1.5 * px, 0xe5484d, 1]] as const) {
+      for (const [w, c, a] of [[px, 0xe5484d, 1]] as const) {
         g.lineStyle(w, c, a).strokeCircle(aim.x, aim.y, cr);
         g.lineBetween(aim.x - cr * 1.5, aim.y, aim.x - cr * 0.5, aim.y).lineBetween(aim.x + cr * 0.5, aim.y, aim.x + cr * 1.5, aim.y);
         g.lineBetween(aim.x, aim.y - cr * 1.5, aim.x, aim.y - cr * 0.5).lineBetween(aim.x, aim.y + cr * 0.5, aim.x, aim.y + cr * 1.5);
@@ -350,13 +392,13 @@ export class MapScene extends Phaser.Scene {
     for (const shot of s.sniper?.shots ?? []) {
       if (shot.atMs > now) continue;
       if (shot.hit) cross(shot.x, shot.y);
-      else g.lineStyle(1.5 * px, 0xcfe8dc, 0.6).strokeCircle(shot.x, shot.y, r);
+      else g.lineStyle(px, 0xcfe8dc, 0.6).strokeCircle(shot.x, shot.y, r);
     }
     // Every vehicle is the same outlined triangle pointing the way it's going, in the map's
     // wireframe over a dark halo so it reads on the contours, with its callsign under it
     // (ILI-1289, ILI-1294): REAPER-1, HAMMER-2, the exfil transport.
     const arrow = (x: number, y: number, z: number, dir: number, color: number) => {
-      for (const [w, c, a] of [[3.5 * px, 0x0b0f0d, 0.8], [1.6 * px, color, 1]])
+      for (const [w, c, a] of [[px, color, 1]])
         g.lineStyle(w, c, a).strokeTriangle(x + z * dir, y, x - z * dir, y - z * 0.8, x - z * dir, y + z * 0.8);
     };
     for (const w of ['drone', 'heli'] as const) {
@@ -365,24 +407,26 @@ export class MapScene extends Phaser.Scene {
       for (const k of run?.kills ?? []) if (k.atMs <= now) cross(k.x, k.y);
       const at = run && aircraftAt(run, now);
       if (!at) {
-        label.setVisible(false);
+        if (this.onMain) label.setVisible(false);
         continue;
       }
       const z = 7 * px;
       const dir = at.east ? 1 : -1;
       arrow(at.x, at.y, z, dir, 0xe5484d);
-      label.setText(AIR[w].callsign).setScale(1 / this.zoom).setPosition(at.x, at.y + z * 1.1).setVisible(true);
+      if (this.onMain) label.setText(AIR[w].callsign).setScale(1 / this.zoom).setPosition(at.x, at.y + z * 1.1).setVisible(true);
     }
     // The exfil transport (ILI-1264): an orange arrow into the square, down at the marker while
     // ALPHA boards, then out the other side.
     const t = s.exfil && transportAt(s.exfil, now);
-    if (!t) this.exfilLabel.setVisible(false);
+    if (!t) {
+      if (this.onMain) this.exfilLabel.setVisible(false);
+    }
     else {
       const z = 9 * px;
       const dir = t.east ? 1 : -1;
       arrow(t.x, t.y, z, dir, 0xff8a2a);
       // Under it; down at the marker, under the marker's own label (drawMission).
-      this.exfilLabel.setText(TRANSPORT.callsign).setScale(1 / this.zoom).setPosition(t.x, t.y + (t.down ? 32 * px : z * 1.1)).setVisible(true);
+      if (this.onMain) this.exfilLabel.setText(TRANSPORT.callsign).setScale(1 / this.zoom).setPosition(t.x, t.y + (t.down ? 32 * px : z * 1.1)).setVisible(true);
     }
   }
 
@@ -399,7 +443,8 @@ export class MapScene extends Phaser.Scene {
       const color = b.found ? 0xe5484d : TEAL;
       const a = 1 - (now - b.atMs) / BLIND_MS;
       g.fillStyle(color, 0.18 * a).fillRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
-      g.lineStyle(2.5 * px, color, a).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+      g.lineStyle(px, color, a).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+      if (!this.onMain) return;
       const label = (this.blindLabels[i] ??= this.add
         .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${12 * DPR}px`, fontStyle: 'bold', stroke: '#0b0f0d', strokeThickness: 4 * DPR })
         .setOrigin(0.5, 0.5)
@@ -413,20 +458,20 @@ export class MapScene extends Phaser.Scene {
         .setPosition((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL)
         .setVisible(true);
     });
-    this.blindLabels.slice(shown.length).forEach((l) => l.setVisible(false));
+    if (this.onMain) this.blindLabels.slice(shown.length).forEach((l) => l.setVisible(false));
   }
 
   // Mini game mode: the signal pulses where it comes from.
   private drawMiniGame(time: number) {
     const g = this.modeGfx.clear();
     const m = game.get().minigame;
-    this.modeLabels.forEach((l) => l.setVisible(false));
+    if (this.onMain) this.modeLabels.forEach((l) => l.setVisible(false));
     if (!m) return;
     // Roughly where the signal comes from: the square and its neighbours, pulsing.
     const sq = parseSquare(m.square)!;
     const a = 0.08 + 0.08 * Math.abs(Math.sin(time / 300));
     g.fillStyle(0x8fb8ff, a).fillRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
-    g.lineStyle((1.5 * DPR) / this.zoom, 0x8fb8ff, 0.7).strokeRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
+    g.lineStyle(DPR / this.zoom, 0x8fb8ff, 0.7).strokeRect((sq.col - 1) * CELL, (sq.row - 1) * CELL, CELL * 3, CELL * 3);
   }
 
   // What HQ has seen (ILI-1167): each look's fighters at the positions they were seen in.
@@ -453,8 +498,7 @@ export class MapScene extends Phaser.Scene {
       drawn.add(c.id);
       for (const u of c.units) {
         const { x, y } = unitSpot(o, u);
-        g.lineStyle(4 * px, 0x0b0f0d, 0.7).strokeCircle(x, y, 5 * px);
-        g.lineStyle(1.8 * px, 0xe5484d, 1).strokeCircle(x, y, 5 * px);
+        g.lineStyle(px, 0xe5484d, 1).strokeCircle(x, y, 5 * px);
       }
     }
     for (const snap of Object.values(imagery)) {
@@ -475,9 +519,8 @@ export class MapScene extends Phaser.Scene {
           cx += x / units.length;
           cy += y / units.length;
           // A red outline ring over a dark halo, not a filled dot (ILI-1442).
-          g.lineStyle(4 * px, 0x0b0f0d, alpha * 0.7).strokeCircle(x, y, 5 * px);
-          g.lineStyle(1.8 * px, 0xe5484d, alpha).strokeCircle(x, y, 5 * px);
-          if (age === 'ghost') g.lineStyle(1 * px, 0xe5484d, 0.35).strokeCircle(x, y, (CELL / BOARD) * 0.45);
+          g.lineStyle(px, 0xe5484d, alpha).strokeCircle(x, y, 5 * px);
+          if (age === 'ghost') g.lineStyle(px, 0xe5484d, 0.35).strokeCircle(x, y, (CELL / BOARD) * 0.45);
         }
         const to = seen.to && squareCenter(seen.to);
         if (to && units.length && age !== 'stale') {
@@ -488,7 +531,7 @@ export class MapScene extends Phaser.Scene {
           const ux = (ex - cx) / len;
           const uy = (ey - cy) / len;
           const h = 7 * px;
-          g.lineStyle(1.5 * px, 0xe5484d, alpha).lineBetween(cx, cy, ex, ey);
+          g.lineStyle(px, 0xe5484d, alpha).lineBetween(cx, cy, ex, ey);
           g.lineBetween(ex, ey, ex - ux * h - uy * h * 0.6, ey - uy * h + ux * h * 0.6);
           g.lineBetween(ex, ey, ex - ux * h + uy * h * 0.6, ey - uy * h - ux * h * 0.6);
         }
@@ -531,7 +574,7 @@ export class MapScene extends Phaser.Scene {
       const y = p.row * CELL;
       const k = CELL * 0.14;
       const i = 3 * px;
-      g.lineStyle(2 * px, TEAL, 0.95);
+      g.lineStyle(px, TEAL, 0.95);
       for (const [cx, cy, dx, dy] of [[x + i, y + i, 1, 1], [x + CELL - i, y + i, -1, 1], [x + i, y + CELL - i, 1, -1], [x + CELL - i, y + CELL - i, -1, -1]] as const) {
         g.lineBetween(cx, cy, cx + dx * k, cy);
         g.lineBetween(cx, cy, cx, cy + dy * k);
@@ -567,7 +610,7 @@ export class MapScene extends Phaser.Scene {
       const d = Math.hypot(b.x - a.x, b.y - a.y);
       const ux = (b.x - a.x) / d;
       const uy = (b.y - a.y) / d;
-      g.lineStyle(2 * px, 0xe5484d, 0.8);
+      g.lineStyle(px, 0xe5484d, 0.8);
       for (let t = 0; t < d; t += 14 * px) g.lineBetween(a.x + ux * t, a.y + uy * t, a.x + ux * Math.min(d, t + 8 * px), a.y + uy * Math.min(d, t + 8 * px));
       const h = 9 * px;
       g.lineBetween(b.x, b.y, b.x - ux * h - uy * h * 0.6, b.y - uy * h + ux * h * 0.6);
@@ -591,7 +634,7 @@ export class MapScene extends Phaser.Scene {
     const dashedRect = (rx: number, ry: number, alpha: number) => {
       const dash = 10 * px;
       const gap = 7 * px;
-      g.lineStyle(2 * px, TEAL, alpha);
+      g.lineStyle(px, TEAL, alpha);
       for (const [ax, ay, bx, by] of [[rx, ry, rx + CELL, ry], [rx + CELL, ry, rx + CELL, ry + CELL], [rx + CELL, ry + CELL, rx, ry + CELL], [rx, ry + CELL, rx, ry]]) {
         const len = Math.hypot(bx - ax, by - ay);
         const ux = (bx - ax) / len;
@@ -606,20 +649,20 @@ export class MapScene extends Phaser.Scene {
       const ay = y + CELL / 2;
       const ux = ((to.col - p.col) * CELL) / d;
       const uy = ((to.row - p.row) * CELL) / d;
-      g.lineStyle(2 * px, TEAL, 0.85);
+      g.lineStyle(px, TEAL, 0.85);
       for (let t = 0; t < d; t += 12 * px) g.lineBetween(ax + ux * t, ay + uy * t, ax + ux * Math.min(d, t + 6 * px), ay + uy * Math.min(d, t + 6 * px));
       dashedRect(to.col * CELL, to.row * CELL, 0.8);
     } else {
       // Locked on: solid.
       g.fillStyle(TEAL, 0.07).fillRect(x, y, CELL, CELL);
-      g.lineStyle(1.5 * px, TEAL, 0.7).strokeRect(x, y, CELL, CELL);
+      g.lineStyle(px, TEAL, 0.7).strokeRect(x, y, CELL, CELL);
     }
     // The ghost: picked, and neither where it is nor where it's going.
     const picked = s.map.selected && parseSquare(s.map.selected);
     if (picked && !s.minigame && s.map.selected !== sat.aim) dashedRect(picked.col * CELL, picked.row * CELL, 0.45 + 0.2 * Math.abs(Math.sin(time / 400)));
     if (sat.state === 'capturing') g.fillStyle(TEAL, 0.06 + 0.06 * Math.abs(Math.sin(time / 250))).fillRect(x, y, CELL, CELL);
     const k = CELL * 0.22;
-    g.lineStyle(3 * px, TEAL, 0.95);
+    g.lineStyle(px, TEAL, 0.95);
     for (const [cx, cy, dx, dy] of [[x, y, 1, 1], [x + CELL, y, -1, 1], [x + CELL, y + CELL, -1, -1], [x, y + CELL, 1, -1]]) {
       g.lineBetween(cx, cy, cx + dx * k, cy);
       g.lineBetween(cx, cy, cx, cy + dy * k);
@@ -634,7 +677,7 @@ export class MapScene extends Phaser.Scene {
     const r = (10 * DPR) / this.zoom;
     for (const phase of [0, 0.5]) {
       const t = ((time / 700 + phase) % 1);
-      g.lineStyle((2 * DPR) / this.zoom, 0xe5484d, 1 - t).strokeCircle(position.x, position.y, r * (1 + t * 2.5));
+      g.lineStyle(DPR / this.zoom, 0xe5484d, 1 - t).strokeCircle(position.x, position.y, r * (1 + t * 2.5));
     }
   }
 
@@ -661,35 +704,33 @@ export class MapScene extends Phaser.Scene {
         const a = 0.35 * (1 - age / FLASH_MS) * (0.6 + 0.4 * Math.abs(Math.sin(time / 120)));
         g.fillStyle(color, a).fillRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
       }
-      if (e.id === openEvent) g.lineStyle(3 * px, color, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+      if (e.id === openEvent) g.lineStyle(px, color, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
       // The grid square ALPHA needs intel on (ILI-1450): outlined in amber and pulsing, so the
       // player knows where to click, until its intel is sent.
-      else if (isImageryRequest(e)) g.lineStyle(3 * px, color, 0.45 + 0.5 * Math.abs(Math.sin(time / 450))).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+      else if (isImageryRequest(e)) g.lineStyle(px, color, 0.45 + 0.5 * Math.abs(Math.sin(time / 450))).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
       if (e.status === 'new') {
         // Pulse until the player looks at it.
         const t = (time % 1200) / 1200;
-        g.lineStyle((2 * DPR) / this.zoom, color, 1 - t).strokeCircle(x, y, r * (1 + t * 1.6));
+        g.lineStyle(DPR / this.zoom, color, 1 - t).strokeCircle(x, y, r * (1 + t * 1.6));
       }
-      g.fillStyle(0x0b0f0d, 0.9).fillCircle(x, y, r);
-      g.lineStyle((2 * DPR) / this.zoom, color, 1).strokeCircle(x, y, r);
-      g.fillStyle(color, e.id === openEvent ? 1 : 0.7).fillCircle(x, y, r * 0.45);
+      g.lineStyle(px, color, 1).strokeCircle(x, y, r);
+      g.lineStyle(px, color, e.id === openEvent ? 1 : 0.7).strokeCircle(x, y, r * 0.45);
     }
     // Decoded traffic waiting for HQ to send it to ALPHA (ILI-1394): a SIGINT diamond on its square.
     for (const d of game.get().decoded) {
       const { x, y } = this.markerPos(d.square);
       const k = r * 1.3;
       const pts = [new Phaser.Math.Vector2(x, y - k), new Phaser.Math.Vector2(x + k, y), new Phaser.Math.Vector2(x, y + k), new Phaser.Math.Vector2(x - k, y)];
-      g.fillStyle(0x0b0f0d, 0.9).fillPoints(pts, true);
-      g.lineStyle((2 * DPR) / this.zoom, EVENT_COLOR.signal, 0.6 + 0.4 * Math.abs(Math.sin(time / 300))).strokePoints(pts, true);
-      g.fillStyle(EVENT_COLOR.signal, 1).fillCircle(x, y, r * 0.35);
+      g.lineStyle(px, EVENT_COLOR.signal, 0.6 + 0.4 * Math.abs(Math.sin(time / 300))).strokePoints(pts, true);
+      g.lineStyle(px, EVENT_COLOR.signal, 1).strokeCircle(x, y, r * 0.35);
     }
     // Hovered (ILI-1297): a ring round the ping and a tag saying what it is.
     const hover = events.find((e) => e.id === this.hovered && e.status !== 'resolved');
-    this.hoverLabel.setVisible(!!hover);
-    if (hover) {
+    if (this.onMain) this.hoverLabel.setVisible(!!hover);
+    if (hover && this.onMain) {
       const { x, y } = this.markerPos(hover.square);
       const color = EVENT_COLOR[hover.kind];
-      g.lineStyle(1.5 * px, color, 0.9).strokeCircle(x, y, r * 1.7);
+      g.lineStyle(px, color, 0.9).strokeCircle(x, y, r * 1.7);
       this.hoverLabel
         .setText(`${hover.square} · ${hover.title}`)
         .setColor(`#${color.toString(16).padStart(6, '0')}`)
@@ -756,8 +797,7 @@ export class MapScene extends Phaser.Scene {
       const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2; // the intro's ease, near enough
       const bar = x0 + e * CELL;
       g.fillStyle(0x0b0f0d, 1).fillRect(bar, y0, x0 + CELL - bar, CELL);
-      g.fillStyle(TEAL, 0.25).fillRect(bar - 9 * px, y0, 18 * px, CELL); // its glow
-      g.fillStyle(TEAL, 1).fillRect(bar - 1.5 * px, y0, 3 * px, CELL);
+      g.lineStyle(px, TEAL, 1).lineBetween(bar, y0, bar, y0 + CELL);
     }
   }
 
@@ -776,11 +816,11 @@ export class MapScene extends Phaser.Scene {
         : t.kind === 'aircraft' ? [14, t.id === 'air:exfil' ? 0xff8a2a : 0xe5484d]
         : t.kind === 'signal' ? [MARKER_R * 1.3 + 4, EVENT_COLOR.signal]
         : [MARKER_R + 4, eventColor(t.id)];
-      const size = picture && t.kind === 'operator' ? line : px;
+      const size = picture ? line : px; // the picture's brackets are its own size, like every mark there (ILI-1471)
       const h = half * size;
       const k = Math.max(3, half * 0.4) * size; // each corner's arms
       const { x, y } = t;
-      g.lineStyle(1.2 * line, color, t.age === 'ghost' ? 0.45 : 0.9);
+      g.lineStyle(line, color, t.age === 'ghost' ? 0.45 : 0.9);
       for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const) {
         const cx = x + sx * h;
         const cy = y + sy * h;
@@ -810,12 +850,25 @@ export class MapScene extends Phaser.Scene {
     this.inset.setViewport(Math.round(frame.x * DPR), Math.round(frame.y * DPR), w, h).setVisible(true);
     // The square fills the frame's shorter side (ILI-1206, ILI-1354), a sliver of its neighbours
     // round it: whole in a wide frame or a tall one.
-    this.inset.setZoom(Math.min(w, h) / CELL);
+    const z = Math.min(w, h) / CELL;
+    const was = this.inset.zoom;
+    this.inset.setZoom(z);
     this.inset.centerOn((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL);
+    if (z !== was || !this.insetGrid) {
+      this.insetGrid = true;
+      this.forInset(() => this.drawGrid());
+    }
   }
 
+  // The zoom marks are drawn for: the map's camera, or ORION-3's while its picture's own copies
+  // are drawn (ILI-1471: marks are a fixed size on screen in both).
+  private drawZoom: number | null = null;
+  private insetGrid = false;
   private get zoom() {
-    return this.cameras.main.zoom;
+    return this.drawZoom ?? this.cameras.main.zoom;
+  }
+  private get onMain() {
+    return this.drawZoom === null;
   }
 
   // Keep ALPHA, the team HQ has selected, centred in the open map (ILI-1227): ease after it as
@@ -1092,14 +1145,14 @@ export class MapScene extends Phaser.Scene {
       const y = sq.row * CELL;
       const t = CELL * 0.12;
       g.fillStyle(TEAL, 0.07).fillRect(x, y, CELL, CELL);
-      g.lineStyle((1.5 * DPR) / this.zoom, TEAL, 0.7).lineBetween(x + CELL - t, y + 4 / this.zoom, x + CELL - 4 / this.zoom, y + 4 / this.zoom);
+      g.lineStyle(DPR / this.zoom, TEAL, 0.7).lineBetween(x + CELL - t, y + 4 / this.zoom, x + CELL - 4 / this.zoom, y + 4 / this.zoom);
       g.lineBetween(x + CELL - 4 / this.zoom, y + 4 / this.zoom, x + CELL - 4 / this.zoom, y + t);
     }
     const id = game.get().map.selected;
     const sq = id && parseSquare(id);
     if (!sq) return;
     g.fillStyle(TEAL, 0.12).fillRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
-    g.lineStyle((2 * DPR) / this.zoom, TEAL, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
+    g.lineStyle(DPR / this.zoom, TEAL, 0.95).strokeRect(sq.col * CELL, sq.row * CELL, CELL, CELL);
   }
 
   // What's known about every scanned square, on the square itself (ILI-1399): a CLEAR stamp when
@@ -1127,7 +1180,7 @@ export class MapScene extends Phaser.Scene {
       const w = label.width / this.zoom + 8 * px;
       const h = label.height / this.zoom + 4 * px;
       g.fillStyle(0x0b0f0d, 0.85).fillRect(x, y - h, w, h);
-      g.lineStyle(1.2 * px, found ? TEAM : TEAL, found ? 0.9 : 0.6).strokeRect(x, y - h, w, h);
+      g.lineStyle(px, found ? TEAM : TEAL, found ? 0.9 : 0.6).strokeRect(x, y - h, w, h);
     }
   }
 
@@ -1143,13 +1196,14 @@ export class MapScene extends Phaser.Scene {
       const p = squareCenter(sq)!;
       const r = (14 * DPR) / this.zoom;
       const now = letter === goal;
-      g.lineStyle((2 * DPR) / this.zoom, TEAM, 0.9).strokeCircle(p.x, p.y, r);
+      g.lineStyle(DPR / this.zoom, TEAM, 0.9).strokeCircle(p.x, p.y, r);
       if (now) {
         const k = r * (1.9 + 0.25 * Math.sin(time / 350));
         const pts = [new Phaser.Math.Vector2(p.x, p.y - k), new Phaser.Math.Vector2(p.x + k, p.y), new Phaser.Math.Vector2(p.x, p.y + k), new Phaser.Math.Vector2(p.x - k, p.y)];
-        g.lineStyle((2 * DPR) / this.zoom, TEAM, 0.95).strokePoints(pts, true);
-        g.fillStyle(TEAM, 0.9).fillCircle(p.x, p.y, r * 0.35);
+        g.lineStyle(DPR / this.zoom, TEAM, 0.95).strokePoints(pts, true);
+        g.lineStyle(DPR / this.zoom, TEAM, 0.95).strokeCircle(p.x, p.y, r * 0.35);
       }
+      if (!this.onMain) return;
       const label = (this.missionLabels[i] ??= this.add
         .text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color: '#f2c14e' })
         .setOrigin(0.5, 0));
@@ -1163,7 +1217,7 @@ export class MapScene extends Phaser.Scene {
   private drawRoute() {
     const s = game.get();
     const { route, waypoint, position } = s.team;
-    const w = (1.5 * DPR) / this.zoom;
+    const w = DPR / this.zoom;
     const g = this.routeGfx.clear();
     // The way it goes over the ground (ILI-1191): legs walked, the rest of this leg from
     // where ALPHA stands, then the legs ahead.
@@ -1181,7 +1235,7 @@ export class MapScene extends Phaser.Scene {
       const pts = n === 0 && current ? [position, ...current] : n === 0 ? [position, to] : legPath(route[waypoint + n - 1], id);
       g.lineStyle(w, contact ? EVENT_COLOR.contact : TEAM, contact ? 0.8 : 0.55);
       trail(pts, !contact && !s.map.scanned.includes(id));
-      g.fillStyle(contact ? EVENT_COLOR.contact : TEAM, 0.8).fillCircle(to.x, to.y, (3 * DPR) / this.zoom);
+      g.lineStyle(w, contact ? EVENT_COLOR.contact : TEAM, 0.8).strokeCircle(to.x, to.y, (3 * DPR) / this.zoom);
     });
   }
 
@@ -1242,8 +1296,7 @@ export class MapScene extends Phaser.Scene {
       const hy = p.from.y + (at.y - p.from.y) * head;
       const tx = p.from.x + (at.x - p.from.x) * tail;
       const ty = p.from.y + (at.y - p.from.y) * tail;
-      g.lineStyle(7 * u, ORANGE, 0.18).lineBetween(tx, ty, hx, hy); // glow
-      g.lineStyle(2.5 * u, ORANGE, 1).lineBetween(tx, ty, hx, hy);
+      g.lineStyle(u, ORANGE, 1).lineBetween(tx, ty, hx, hy);
       return true;
     });
     const v = gauge(st) / GAUGE_MAX;
@@ -1256,7 +1309,7 @@ export class MapScene extends Phaser.Scene {
     g.fillStyle(0x0b0f0d, 0.85).fillRect(x0 - u, y0 - u, w + 2 * u, h + 2 * u);
     g.fillStyle(color, 0.18).fillRect(x0, y0, w, h);
     g.fillStyle(color, 1).fillRect(x0, y0, w * Math.min(1, v), h);
-    if (flash) g.lineStyle(1.5 * u, OPS, flash).strokeRect(x0 - 2 * u, y0 - 2 * u, w + 4 * u, h + 4 * u);
+    if (flash) g.lineStyle(u, OPS, flash).strokeRect(x0 - 2 * u, y0 - 2 * u, w + 4 * u, h + 4 * u);
   }
 
   private drawTeam(time = 0) {
@@ -1290,8 +1343,7 @@ export class MapScene extends Phaser.Scene {
         const h = 11 * u;
         const { x, y } = position;
         g.fillStyle(0x0b0f0d, 0.85).fillRect(x - w / 2, y - h / 2, w, h);
-        g.lineStyle(1.4 * u, 0xb8c4bf, 0.95).strokeRect(x - w / 2, y - h / 2, w, h);
-        g.lineStyle(1.4 * u, 0x0b0f0d, 1).lineBetween(x - 2.5 * u, y + h / 2, x + 2.5 * u, y + h / 2); // its door
+        g.lineStyle(u, 0xb8c4bf, 0.95).strokeRect(x - w / 2, y - h / 2, w, h);
       }
       const tag = `${st.team.callsign} · SEARCHING`;
       if (this.teamLabel.text !== tag) this.teamLabel.setText(tag).setColor('#35d0a5');
@@ -1310,10 +1362,10 @@ export class MapScene extends Phaser.Scene {
       const pushing = ['attack', 'push'].includes(st.team.decisions[route[waypoint]] ?? '');
       const pts = [position, ...(st.team.pathTo === route[waypoint] ? path : []), goal];
       if (pushing) {
-        g.lineStyle(3 * u, OPS, 0.9);
+        g.lineStyle(u, OPS, 0.9);
         for (let i = 1; i < pts.length; i++) g.lineBetween(pts[i - 1].x, pts[i - 1].y, pts[i].x, pts[i].y);
       } else {
-        g.lineStyle(1.6 * u, OPS, 0.85);
+        g.lineStyle(u, OPS, 0.85);
         for (let i = 1; i < pts.length; i++) this.dashed(g, pts[i - 1], pts[i], 7 * u, i);
       }
     }
@@ -1329,7 +1381,7 @@ export class MapScene extends Phaser.Scene {
       const tip = { x: x + fx * z, y: y + fy * z };
       const l = { x: x - fx * z + fy * z * 0.8, y: y - fy * z - fx * z * 0.8 };
       const r = { x: x - fx * z - fy * z * 0.8, y: y - fy * z + fx * z * 0.8 };
-      arrows.lineStyle(1.2 * iu, OPS, down ? 0.45 : 1).strokeTriangle(tip.x, tip.y, l.x, l.y, r.x, r.y);
+      arrows.lineStyle(iu, OPS, down ? 0.45 : 1).strokeTriangle(tip.x, tip.y, l.x, l.y, r.x, r.y);
     };
     operators.forEach((o, i) => {
       if (gone.includes(o.id)) return;
@@ -1348,10 +1400,10 @@ export class MapScene extends Phaser.Scene {
         if (!p) this.pings.set(o.id, (p = { at: -Infinity, next: time + nextGap() }));
         if (time >= p.next) (p.at = time), (p.next = time + nextGap());
         const t = (time - p.at) / 900; // 0..1 over the ring's life
-        if (t < 1) dots.lineStyle(1.2 * u, OPS, 0.7 * (1 - t)).strokeCircle(x, y, (3 + 11 * t) * u);
+        if (t < 1) dots.lineStyle(u, OPS, 0.7 * (1 - t)).strokeCircle(x, y, (3 + 11 * t) * u);
       }
-      if (down) dots.lineStyle(1.2 * u, OPS, 0.45).strokeCircle(x, y, 2.6 * u);
-      else dots.fillStyle(OPS, 1).fillCircle(x, y, 3.2 * u).lineStyle(1.2 * u, 0x0b0f0d, 1).strokeCircle(x, y, 3.2 * u);
+      if (down) dots.lineStyle(u, OPS, 0.45).strokeCircle(x, y, 2.6 * u);
+      else dots.lineStyle(u, OPS, 1).strokeCircle(x, y, 3.2 * u);
       arrow(x, y, down);
     });
     this.drawFeed(g, time, position, u);
