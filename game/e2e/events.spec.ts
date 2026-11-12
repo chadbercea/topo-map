@@ -17,7 +17,7 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
   await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25, -0.25));
   const card = page.getByTestId('square-anchor');
   const act = page.getByTestId('action-panel');
-  await expect(page.getByTestId('orion-detail').getByTestId('square-card')).toHaveAttribute('data-square', 'F4'); // its details: ORION-3's view (ILI-1438)
+  await expect(page.getByTestId('square-anchor').getByTestId('square-card')).toHaveAttribute('data-square', 'F4'); // its report: on the square's flyout (ILI-1475)
   await expect(act.getByTestId('event-card')).toContainText('Test contact');
   await expect.poll(status).toBe('seen'); // seen, so no longer flagged
   await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the event picks its square

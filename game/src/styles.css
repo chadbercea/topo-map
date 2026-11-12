@@ -2052,3 +2052,21 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .contact-tag .pt-tag button:hover:not(:disabled), .contact-tag[data-open] .pt-tag button { background: #f08a8d; color: #0b0f0d; }
 .contact-tag .pt-tag button:disabled { color: #f08a8d; background: none; cursor: default; }
 .contact-tag { z-index: 8; }
+
+/* ORION-3 is imagery tools only (ILI-1475): its header, the picture, its buttons, and one line of
+   what it last saw. No square detail: that's the square's flyout. It sizes to what it holds. */
+.hud[data-tier='wide'] .slot-orion { align-self: start; }
+.hud[data-tier='wide'] .orion { height: auto; grid-template-rows: auto auto 100px auto auto; grid-template-areas: 'head' 'frame' 'buttons' 'saw' 'last'; }
+.hud[data-tier='wide'] .orion > :is(.o-saw, .o-last) { display: block; padding: 6px 12px; }
+.hud[data-layout='fold'] .orion { grid-template-rows: auto 100px auto auto 1fr; grid-template-areas: 'head head' 'frame buttons' 'frame saw' 'frame last' 'frame .'; }
+.hud[data-layout='fold'] .orion > :is(.o-saw, .o-last) { display: block; padding: 4px 12px 4px 0; }
+/* The square's flyout (ILI-1475): its own tags docked on its top edge, then its full report. */
+.square-card.anchor .sc-tags { display: grid; gap: 4px; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+.place-tag.docked { position: static; transform: none; display: block; }
+.place-tag.docked .pt-tag { width: 100%; justify-content: space-between; }
+.place-tag.docked .pt-tag > span { flex: 1; }
+.square-card.anchor .sc-intel ul { max-height: none; }
+.hud[data-tier='wide'] .slot-orion { align-self: start !important; display: block; }
+.hud[data-tier='wide'] .orion { height: auto !important; max-height: none; }
+.hud[data-tier='wide'] .orion > .o-frame { height: auto; }
+.hud[data-tier='wide'] .slot-orion { container-type: normal; } /* sized to its content now: no height ladder on a wide screen (ILI-1475) */

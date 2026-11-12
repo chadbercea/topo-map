@@ -11,8 +11,8 @@ test('a scan settles its square: a stamp on the map, its reports in the square�
   await photo(page, 'F4'); // the square ALPHA is heading into
   await expect(page.getByTestId('intel-panel')).toHaveCount(0); // results live on the map now
   await page.evaluate(() => window.game.selectSquare('F4'));
-  // Its reports are in ORION-3's view of it now (ILI-1438); the map menu keeps the actions.
-  const detail = page.getByTestId('orion-detail');
+  // Its reports are on the square's flyout (ILI-1475): the satellite doesn't store intel.
+  const detail = page.getByTestId('square-anchor');
   await expect(detail.getByTestId('square-settled')).toContainText(/Settled · (clear|\d reports?)/);
   await expect(detail.getByTestId('square-intel-item').first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
   await expect(page.getByTestId('square-anchor').getByTestId('square-intel-state')).toHaveText(/^settled · /); // one scan settles it

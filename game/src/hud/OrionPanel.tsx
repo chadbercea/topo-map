@@ -1,9 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
+import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
 import { heldIntel, settled } from '../sim/intel';
-import { Details, Readouts, TeamWork } from './SquareCard';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { pins, useSeenVersion } from './pins';
@@ -117,16 +116,6 @@ export function OrionPanel() {
   const fold = useFold();
   const wide = tier === 'wide' || fold; // a fold upright lays ORION-3 out like a wide screen, side to side (ILI-1461)
   const canMove = !!picked && !tied && sat.state === 'idle' && !satelliteBusy(s) && away > 0;
-  // The square's details (ILI-1438): its intel, ALPHA's work there, its ground. Only for the square
-  // ORION-3 is over and locked on. On a wide screen they sit under the buttons; narrower, under
-  // the picture.
-  const detail = !tied && lockedOn(s, sat.aim) && (
-    <div className="o-detail square-card" data-testid="orion-detail">
-      <Readouts s={s} square={sat.aim} />
-      <TeamWork s={s} square={sat.aim} />
-      <Details s={s} square={sat.aim} open />
-    </div>
-  );
 
   // The priority ladder (ILI-1400): the panel never scrolls. As it gets shorter, what ranks
   // lowest drops first (styles.css, container queries on the panel's own height): 8 the weather
@@ -180,7 +169,6 @@ export function OrionPanel() {
       <div className="o-frame">
         {/* The square's details, under its picture (ILI-1438): its intel, ALPHA's work there, its
             ground. Only for the square ORION-3 is over and locked on. */}
-        {!wide && detail}
         {showPicture ? (
           <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} data-targeting={hit ? 'true' : undefined} aria-label={`${name}'s picture of ${square}`}>
             {hit && (
@@ -265,7 +253,6 @@ export function OrionPanel() {
           </button>
         </div>
       </div>
-      {wide && detail}
     </section>
   );
 }
