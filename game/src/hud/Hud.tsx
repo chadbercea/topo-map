@@ -16,7 +16,7 @@ import { Recentre } from './Recentre';
 import { bus, EV } from '../game/events';
 import { PauseMenu } from './PauseMenu';
 import { Intro } from './Intro';
-import { firstBoot, useIntro } from './intro';
+import { useIntro } from './intro';
 import { WrapUp } from './WrapUp';
 import { PromptLayer } from './PromptLayer';
 import { useFlash, useUnseen, useUnseenCount } from './attention';
@@ -48,10 +48,10 @@ export function Hud() {
 
   const tier = useTier();
   const satellite = useGame((s) => s.mission.satellite); // its name, from the mission's config (ILI-1401)
-  // The panels power on in turn as the war room comes online (ILI-1281), on the way in and on a
-  // restart (intro.ts).
+  // The panels stay dark while the map boots, then power on in turn (ILI-1281, ILI-1462), on the
+  // way in and on a restart (intro.ts).
   const stage = useIntro();
-  const boot = stage === 'panels';
+  const boot = stage === 'map' ? 'map' : stage === 'panels' ? 'first' : undefined;
   // On a phone the dock follows the action. A square picked on the map opens its zoomed view
   // on the map itself (ILI-1201), so the dock stays where it is.
   // A new event marks its square on the map, and its report lands in COMMS (ILI-1225): that
@@ -122,7 +122,7 @@ export function Hud() {
   });
 
   return (
-    <div className="hud" data-boot={boot ? (firstBoot() ? 'first' : 'again') : undefined} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined} data-team={teamOpen || undefined}>
+    <div className="hud" data-boot={boot} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined} data-team={teamOpen || undefined}>
       <div className="slot-widget">
         <TimerChip />
         <BudgetChip />

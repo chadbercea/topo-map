@@ -99,10 +99,10 @@ export function Motion() {
         <Spec name="The panel" rule="A 1px line border on a translucent panel fill over the map. A header: the name, tracked uppercase, on the left; a live reading on the right.">
           <Panel title={`${SAT}`} rows={['Status · Standby', 'Over · G5']} />
         </Spec>
-        <Spec wide name="Power-on, quick" rule="Restart, Retry, Play again, menus and the AAR. The frame opens from a point to a line to full (420 ms), content flickers on in rows, panels a beat apart. Reduced motion: none.">
+        <Spec wide name="Power-on, quick" rule="Menus and the AAR. The frame opens from a point to a line to full (420 ms), content flickers on in rows, panels a beat apart. Reduced motion: none.">
           <Boot mode="again" />
         </Spec>
-        <Spec wide name="Power-on, first boot" rule="The first time in only (ILI-1307): panel by panel, each finishing before the next, lists line by line, then a beat on the link before the clock starts.">
+        <Spec wide name="Power-on, first boot" rule="After the map boot, on the way in and on every restart (ILI-1307, ILI-1462): panel by panel over about 7 s, each finishing before the next, lists line by line. Each panel works as it lands; the clock starts once the last is in.">
           <Boot mode="first" />
         </Spec>
         <Spec name="Power-off" rule={`START on the title: the logo collapses to a line, then a point (360 ms), as the camera flies in on ${SAT}.`}>
