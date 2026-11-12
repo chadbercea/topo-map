@@ -10,7 +10,7 @@ const CLOUD_WARN = 70; // cloud cover where the tile warns that ORION-3 could so
 // wide screen a six-stack, three and three, inside ORION-3 under the satellite (ILI-1249): the
 // weather is what limits the picture, so it sits beside it, and the cloud tile warns as cover
 // nears what would blind the satellite. On a fold or phone (slim) one line of icons and values.
-export function EnvWidget({ slim = false }: { slim?: boolean }) {
+export function EnvWidget({ slim = false, strip = false }: { slim?: boolean; strip?: boolean }) {
   const s = useGame((x) => x);
   const wx = weather(s);
   const cloud = !imageryOk(wx) ? 'red' : wx.cloudPct >= CLOUD_WARN ? 'amber' : undefined;
@@ -22,6 +22,23 @@ export function EnvWidget({ slim = false }: { slim?: boolean }) {
     { key: 'light', label: 'Light', icon: wx.light === 'Day' ? <Sun /> : <Moon dawn={wx.light === 'First light'} />, value: wx.light },
     { key: 'cloud', label: 'Cloud cover', icon: <Cloud />, value: `${wx.cloudPct}%`, warn: cloud },
   ];
+
+  // The atmospherics strip (ILI-1473): all six readings, icon and value, in one row along the
+  // mission bar's foot, on every screen; the cloud reading warns as it nears blinding ORION-3.
+  if (strip)
+    return (
+      <dl className="atmo" data-testid="conditions" data-wx={wx.light} aria-label={`Environment: ${describe(wx)}`}>
+        {tiles.map((t) => (
+          <div key={t.key} className="atmo-bit" data-key={t.key} data-warn={t.warn} title={t.label} data-testid={t.key === 'cloud' ? 'cloud-tile' : undefined}>
+            <dt>
+              {t.icon}
+              <span className="atmo-k">{t.label}</span>
+            </dt>
+            <dd>{t.value}</dd>
+          </div>
+        ))}
+      </dl>
+    );
 
   if (slim)
     return (

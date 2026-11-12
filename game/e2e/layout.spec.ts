@@ -71,23 +71,23 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   expect(Math.abs(bar.x - map.x)).toBeLessThan(2);
   expect(Math.abs(bar.x + bar.width - (map.x + map.width))).toBeLessThan(2);
   expect(Math.abs(bar.y - map.y)).toBeLessThan(2);
-  expect(bar.height).toBe(52);
+  expect(bar.height).toBe(78); // 52 + 24, the weather along its foot (ILI-1473), and its border
   await expect(page.getByTestId('timer').getByTestId('clock')).toBeVisible();
   // ORION-3 down the right, right of the map.
   expect(orion.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
   expect(orion.x + orion.width).toBeGreaterThan(view.width - 40);
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
-  // ORION-3 on a wide screen (ILI-1465): no 3D satellite; the picture at the top, the buttons under
-  // it, and the weather's six tiles at the foot (ILI-1249).
+  // ORION-3 on a wide screen (ILI-1465): no 3D satellite; the picture at the top, the buttons under it.
   await expect(page.getByTestId('orion-avatar')).toHaveCount(0);
   const pic = await box('satellite-inset');
   const buttons = await box('orion-buttons');
   expect(pic.y - orion.y).toBeLessThan(48);
   expect(buttons.y).toBeGreaterThanOrEqual(pic.y + pic.height - 1);
-  expect(env.x).toBeGreaterThanOrEqual(orion.x);
-  expect(env.x + env.width).toBeLessThanOrEqual(orion.x + orion.width + 1);
-  expect(env.y).toBeGreaterThan(buttons.y + buttons.height);
-  await expect(page.getByTestId('satellite').getByTestId('conditions').locator('.env-tile')).toHaveCount(6);
+  // The weather runs along the mission bar's foot (ILI-1473), all six readings; none in ORION-3.
+  expect(env.y).toBeGreaterThanOrEqual(bar.y + 40);
+  expect(env.y + env.height).toBeLessThanOrEqual(bar.y + bar.height + 1);
+  await expect(page.getByTestId('mission-bar').getByTestId('conditions').locator('.atmo-bit')).toHaveCount(6);
+  await expect(page.getByTestId('satellite').getByTestId('conditions')).toHaveCount(0);
   await expect(page.getByTestId('small-widgets')).toHaveCount(0);
   // Along the bottom: the heartbeat strip (ILI-1396), under the map. No ALPHA nav box (ILI-1395).
   await expect(page.getByTestId('call-box')).toHaveCount(0);
