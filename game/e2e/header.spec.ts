@@ -1,19 +1,20 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, lockOn, start } from './helpers';
 
-// The mission panel is broken up (ILI-1392): only the timer is left, small, in the map's corner;
-// the objective is a start card and a marker on the map; the race is in the debrief.
+// The mission bar (ILI-1464): one bar across the map's top, the client's deadline biggest, with the
+// phase, what's next, the budget and pause; on a phone just the deadline, budget and pause. The
+// objective is a marker on the map too; the race is in the debrief.
 
-test('only the timer is left: the client deadline, small, in the map’s corner, with pause', async ({ page, isMobile }) => {
+test('the mission bar: the client deadline, what’s next, the budget and pause', async ({ page, isMobile }) => {
   await page.goto('?debug');
-  await expect(page.getByTestId('mission-strip')).toHaveCount(0);
+  await expect(page.getByTestId('mission-bar')).toBeVisible();
   const timer = page.getByTestId('timer');
   await expect(timer).toContainText('Client deadline');
   await expect(timer.getByTestId('clock')).toBeVisible();
-  await expect(timer.getByTestId('pause-toggle')).toBeVisible();
+  await expect(page.getByTestId('mission-bar').getByTestId('pause-toggle')).toBeVisible();
   await expect(page.getByTestId('race')).toHaveCount(0); // the debrief's now
   await expect(page.getByTestId('needs-hq')).toHaveCount(0); // ALPHA needing intel is a prompt (ILI-1391)
-  await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3'); // for a screen reader; on the map it's a marker
+  await expect(page.getByTestId('objective')).toContainText('Recover the black box at D3'); // the bar's Next cell, on a wide screen (a marker on the map too)
   await fastForward(page, 15_000);
   await expect(page.getByTestId('clock')).toHaveText(/^9:4[0-5]$/);
 

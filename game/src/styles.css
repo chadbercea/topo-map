@@ -74,7 +74,8 @@ html, body {
 .slot-satcom { min-width: 0; min-height: 0; display: grid; } /* COMMS: a drawer on a wide screen (ILI-1393), a tab on a narrower one */
 .dock-tabs { display: none; }
 
-.slot-widget { grid-area: map; justify-self: start; align-self: start; min-width: 0; position: relative; z-index: 5; margin: 10px 0 0 10px; } /* the timer, in the map's corner (ILI-1392) */
+.slot-widget { grid-area: map; align-self: start; min-width: 0; position: relative; z-index: 5; } /* the mission bar across the map's top (ILI-1464); the map fits below it */
+.hud:not([data-tier='wide']) .slot-widget { justify-self: start; margin: 10px 0 0 10px; } /* a fold or phone: just the deadline, budget and pause, in the map's corner */
 .map-area { grid-area: map; min-height: 0; }
 /* Recentre (ILI-1227): over the right end of TEAM's title line, so the panel never reflows. */
 .team { position: relative; }
@@ -88,12 +89,31 @@ html, body {
 .band-cards { display: grid; gap: 6px; justify-items: center; align-content: end; min-width: 0; }
 .band-cards > * { width: min(420px, 100%); }
 /* The budget (ILI-1405): tier one, a chip beside the clock, the same weight. */
-.slot-widget { display: flex; align-items: stretch; gap: 6px; }
-.budget-chip { display: flex; align-items: center; gap: 10px; padding: 4px 10px; background: rgba(11, 15, 13, 0.9); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); pointer-events: auto; }
-.budget-chip .t-label { color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
-.budget-chip b { font-size: 16px; line-height: 1; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--accent); }
-.budget-chip[data-red] { border-color: color-mix(in srgb, #e5484d 45%, transparent); }
-.budget-chip[data-red] b { color: #e5484d; }
+/* The mission bar (ILI-1464): a small label over a big value in each cell; the deadline biggest. */
+.mission-bar { display: flex; align-items: stretch; height: 52px; padding: 0; background: rgba(11, 15, 13, 0.9); }
+.mission-bar .mb-cell { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 18px; border-right: 1px solid rgba(53, 208, 165, 0.18); min-width: 0; }
+.mission-bar small { display: block; font-size: 9px; line-height: 1; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); white-space: nowrap; }
+.mission-bar b { font-weight: 400; font-size: 14px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mission-bar .mb-op { flex-direction: row; align-items: center; gap: 10px; }
+.mission-bar .mb-op b { color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; font-size: 13px; }
+.mb-rook { width: 14px; flex: none; color: var(--accent); }
+.timer-cell { --tone: var(--accent); }
+.timer-cell[data-warn='amber'] { --tone: #f2c14e; }
+.timer-cell[data-warn='red'] { --tone: #e5484d; }
+.mission-bar .timer-cell .clock { font-size: 26px; line-height: 1; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--tone); overflow: visible; }
+.timer-cell[data-phase='paused'] .clock { color: var(--dim); }
+.mb-steps { display: inline-flex; gap: 3px; margin-left: 8px; vertical-align: 1px; }
+.mb-steps i { width: 8px; height: 8px; border: 1px solid var(--accent); }
+.mb-steps i[data-on] { background: var(--accent); }
+.mission-bar .mb-next { flex: 0 1 auto; }
+.mission-bar .budget-chip b { color: var(--accent); font-variant-numeric: tabular-nums; }
+.mission-bar .budget-chip[data-red] b { color: #e5484d; }
+.mb-end { margin-left: auto; display: flex; align-items: center; padding: 0 9px; }
+.mission-bar .pause { min-height: 34px; min-width: 34px; }
+.hud:not([data-tier='wide']) .mission-bar { height: 44px; }
+.hud:not([data-tier='wide']) .mission-bar :is(.mb-op, .mb-phase, .mb-next) { display: none; }
+.hud:not([data-tier='wide']) .mission-bar .mb-cell { padding: 0 12px; }
+.hud:not([data-tier='wide']) .mission-bar .timer-cell .clock { font-size: 20px; }
 
 .event-card h2 { color: var(--accent); }
 .event-card[data-kind='contact'] h2 { color: #e5484d; }
@@ -752,13 +772,7 @@ html, body {
 @keyframes blink { 50% { opacity: 0.2; } }
 
 /* The timer (ILI-1392): tier one, small, in the map's corner: the client's deadline and pause. */
-.timer-chip { --tone: var(--accent); display: flex; align-items: center; gap: 10px; padding: 4px 4px 4px 10px; background: rgba(11, 15, 13, 0.9); border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent); pointer-events: auto; }
-.timer-chip[data-warn='amber'] { --tone: #f2c14e; }
-.timer-chip[data-warn='red'] { --tone: #e5484d; }
-.timer-chip .t-label { color: var(--dim); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; }
-.timer-chip .clock { font-size: 20px; line-height: 1; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--tone); }
-.timer-chip[data-phase='paused'] .clock { color: var(--dim); }
-.timer-chip .pause { min-height: 32px; }
+
 /* The mission start card (ILI-1392): the objective in plain words, a few seconds, never in the way. */
 .start-card { position: fixed; z-index: 11; left: 50%; top: 38%; transform: translate(-50%, -50%); display: grid; gap: 6px; justify-items: center; max-width: min(520px, calc(100vw - 32px)); padding: 16px 24px; text-align: center; pointer-events: none; background: rgba(11, 15, 13, 0.92); border: 1px solid #f2c14e; animation: start-card 400ms ease-out both; }
 .start-card small { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
