@@ -44,7 +44,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   const picture = sat.getByTestId('satellite-inset');
   await expect(picture).toBeVisible();
   // Scan is the primary action (ILI-1432), lit and cued; Photo and Video wait for it (ILI-1465).
-  await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveText([/^Scan E3/, /^Photo/, /^Video/, /^Strike/]);
+  await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveText([/^Scan E3/, /^Photo/, /^Video/]); // the eye only: no Strike (ILI-1474)
   await expect(sat.getByTestId('capture-scan')).toHaveAttribute('data-cue', 'true');
   await expect(sat.getByTestId('capture-video')).toBeDisabled();
   await expect(sat.getByTestId('look-here')).toBeDisabled(); // it's there already
@@ -62,22 +62,25 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(page.getByTestId('comms-feed')).toContainText(/E3 collection complete \(video\): 5 fighters.*Analysts: live feed to ALPHA/);
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
-  // The strikes are ORION-3's (ILI-1467): its Strike opens them in a flyout beside it; none at the square.
+  // ORION-3 is the eye, not the gun (ILI-1474): the square's CONTACT tag has Strike; none in ORION-3.
   await expect(page.getByTestId('action-panel')).toHaveCount(0); // nothing else to do here
   await expect(page.getByTestId('square-anchor').getByTestId('strike-menu')).toHaveCount(0);
-  await sat.getByTestId('capture-strike').click();
+  await expect(sat.getByTestId('capture-strike')).toHaveCount(0);
+  await page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
   const act = page.getByTestId('strike-flyout').getByTestId('strike-menu');
   await expect(card.getByTestId('event-card')).toHaveCount(0);
   await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
   await act.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
   await expect(act.getByTestId('fire-sniper')).toBeVisible();
+  await page.getByTestId('strike-flyout').getByRole('button', { name: 'Close' }).click(); // the menu first
+  await expect(page.getByTestId('strike-flyout')).toHaveCount(0);
   await page.getByTestId('square-anchor').getByRole('button', { name: 'Close' }).click();
   await expect(page.getByTestId('square-anchor')).toHaveCount(0); // closed: the look is filed
   await expect(card).toHaveAttribute('data-square', 'E3'); // ORION-3 is still over it: its details stay in its view (ILI-1438)
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over E3');
 });
 
-test('ORION-3\u2019s Strike is lit only over a square with fighters in view; a fighter\u2019s panel opens the same flyout (ILI-1444, ILI-1467)', async ({ page, isMobile }) => {
+test('a square with fighters in view gets a CONTACT tag; its Strike, or a fighter\u2019s panel, opens the strike menu (ILI-1444, ILI-1474)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
@@ -88,7 +91,7 @@ test('ORION-3\u2019s Strike is lit only over a square with fighters in view; a f
   await photo(page, 'E3'); // finds the checkpoint
   await page.evaluate(() => window.game.selectSquare('E3'));
   await expect(page.getByTestId('strike-flyout')).toHaveCount(0);
-  await expect(sat.getByTestId('capture-strike')).toBeEnabled(); // locked on E3, fighters in a fresh look
+  await expect(page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike')).toBeEnabled(); // locked on E3, fighters in a fresh look (ILI-1474)
   const pins = sat.getByTestId('target-pin');
   await expect(pins).toHaveCount(5); // one per fighter it saw
   // A click in ORION-3's picture pins his full panel there (ILI-1444); its Strike opens the square's strikes.
@@ -106,7 +109,7 @@ test('ORION-3\u2019s Strike is lit only over a square with fighters in view; a f
   await expect(page.getByTestId('strike-flyout')).toHaveCount(0);
   await expect(sat.getByTestId('targeting')).toContainText(/Targeting · Drone · REAPER-1/i);
   await expect(sat.getByTestId('targeting-line')).toHaveText(/^Impact 0:\d\d$/);
-  await expect(sat.getByTestId('capture-strike')).toBeDisabled();
+  await expect(page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('strike-work')).toHaveText(/^REAPER-1 · 0:\d\d$/); // the tag says how it's going
 });
 
 test('a fighter on the map opens its strikes too, from his pinned panel (ILI-1250, ILI-1411)', async ({ page, isMobile }) => {
@@ -132,7 +135,7 @@ test('a fighter on the map opens its strikes too, from his pinned panel (ILI-125
   await page.mouse.move(p.x, p.y); // on the main map: a one-line tag (ILI-1443)
   await expect(page.locator('.sighting-panel[data-kind=hostile]').getByTestId('panel-tag')).toHaveText(/^HOSTILE · TANGO-\d+$/);
   await page.mouse.click(p.x, p.y); // a click picks his square: ORION-3 is over it, so its Strike is lit
-  await page.getByTestId('capture-strike').click();
+  await page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
   await expect(page.getByTestId('strike-flyout').getByTestId('fire-sniper')).toBeVisible();
 });
 

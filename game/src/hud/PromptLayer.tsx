@@ -3,6 +3,11 @@ import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { promptQueue, trafficPrompts, type Prompt } from '../sim/prompts';
 import { lockedOn, satName } from '../sim/satellite';
+import { strikeState } from './SquareCard';
+import { AIR, airGone, arrived } from '../sim/air';
+import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
+import { countdown } from '../sim/gameTime';
+import type { GameState } from '../sim/state';
 import { alphaBox, overlaysNamed, pick, squareBox, type Box } from './overlays';
 import { useTier } from './tier';
 
@@ -304,8 +309,46 @@ function PlaceTags() {
   const area = getMapRect();
   if (!area) return null;
   const buildings = s.events.filter((e) => e.kind === 'building' && e.status !== 'resolved');
+  // CONTACT tags (ILI-1474): a square whose fresh look shows fighters, or with a strike under way.
+  const contactSquares = [...new Set(s.events.filter((e) => e.kind === 'contact' && e.status !== 'resolved').map((e) => e.square))];
   return (
     <>
+      {contactSquares.map((square) => {
+        const st = strikeState(s, square);
+        const work = strikeWork(s, square);
+        if (!st.seen && !work) return null;
+        const sq = squareBox(square);
+        if (!sq) return null;
+        const cx = sq.x + sq.w / 2;
+        const cy = sq.y + sq.h * 0.25;
+        if (cx < area.x || cx > area.x + area.width || cy < area.y || cy > area.y + area.height) return null;
+        const open = s.events.some((e) => e.id === s.openEvent && e.kind === 'contact' && e.square === square);
+        return (
+          <div key={`contact-${square}`} className="place-tag contact-tag" data-testid="contact-tag" data-kind="contact" data-square={square} data-open={open || undefined} style={{ left: cx, top: cy }}>
+            <i className="pt-dot" aria-hidden />
+            <i className="pt-lead" aria-hidden />
+            <div className="pt-tag" role="group" aria-label={`Contact · ${square}`}>
+              <span>
+                Contact · {square}
+                {st.marked.length > 0 && <b data-testid="contact-count"> · {st.marked.length}</b>}
+              </span>
+              {work ? (
+                <em data-testid="strike-work">{work}</em>
+              ) : (
+                <button
+                  onClick={() => st.strikes[0] && (open ? game.dropEvent() : game.openEvent(st.strikes[0].id))}
+                  disabled={!st.can}
+                  title={st.can ? `Strike ${square}` : `${satName(s)} has to be over ${square} to watch the strike land`}
+                  data-testid="contact-strike"
+                  aria-expanded={open}
+                >
+                  Strike
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
       {buildings.map((e) => {
         const sq = squareBox(e.square);
         if (!sq) return null;
@@ -332,4 +375,16 @@ function PlaceTags() {
       })}
     </>
   );
+}
+
+// What's hitting a square right now, for its CONTACT tag (ILI-1474): the asset's callsign and how
+// it's going.
+function strikeWork(s: GameState, square: string): string | null {
+  const now = s.elapsedMs;
+  if (s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now)) return `${SNIPER_CALLSIGN} · ${s.sniper.done ? 'done' : 'firing'}`;
+  for (const w of ['drone', 'heli'] as const) {
+    const r = w === 'drone' ? s.drone : s.heli;
+    if (r && r.square === square && !airGone(r, now)) return `${AIR[w].callsign} · ${r.doneMs !== null ? 'done' : arrived(r, now) ? 'over target' : countdown(r.arriveMs - now)}`;
+  }
+  return null;
 }
