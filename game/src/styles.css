@@ -1914,3 +1914,40 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .map-zoom:hover, .map-zoom:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
 .hud[data-tier='compact'] .map-zoom { display: none; } /* a phone pinches */
 .hud[data-tier='wide'] .team { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(11, 15, 13, 0.9); } /* a solid fill like the bar and the strip; the blur over the map left a black patch in software rendering */
+
+/* A fold upright, a tablet held tall (ILI-1461, the ILI-1459 frame folded): the mission bar across
+   the map's top, the map, ORION-3 docked under it side to side (its picture left, every satellite
+   action right), and the team strip and comms strip along the bottom. No tabs. */
+@media (min-width: 700px) and (max-width: 1199px) and (orientation: portrait) {
+  .hud[data-layout='fold'] { gap: 8px; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) min(412px, 40dvh) 48px; grid-template-areas: 'map' 'orion' 'bottom'; }
+  .hud[data-layout='fold'] .slot-widget { justify-self: stretch; margin: 0; }
+  .hud[data-layout='fold'] .mission-bar { height: 52px; }
+  .hud[data-layout='fold'] .mission-bar :is(.mb-op, .mb-phase, .mb-next) { display: flex; }
+  .hud[data-layout='fold'] .mission-bar .mb-cell { padding: 0 14px; }
+  .hud[data-layout='fold'] .mission-bar .timer-cell .clock { font-size: 26px; }
+  .hud[data-layout='fold'] .dock-tabs, .hud[data-layout='fold'] .slot-small { display: none; }
+  .hud[data-layout='fold'] .slot-orion { grid-area: orion; display: grid; align-self: stretch; max-height: none; }
+  .hud[data-layout='fold'] .orion { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 100px minmax(0, 1fr) auto; grid-template-areas: 'head head' 'frame buttons' 'frame detail' 'frame env'; column-gap: 12px; }
+  .hud[data-layout='fold'] .orion > .o-frame { aspect-ratio: 1; height: 100%; width: auto; min-height: 0; }
+  .hud[data-layout='fold'] .orion > .o-buttons { height: 100px; padding: 8px 12px 8px 0; }
+  .hud[data-layout='fold'] .orion > .o-buttons .modes { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  .hud[data-layout='fold'] .orion > .o-buttons .modes .o-scan { grid-column: 1 / -1; }
+  .hud[data-layout='fold'] .orion > .o-detail { grid-area: detail; min-height: 0; overflow: hidden; align-content: start; padding-right: 12px; }
+  .hud[data-layout='fold'] .orion > .env-stack { grid-area: env; padding-left: 0; }
+  .hud[data-layout='fold'] .orion > :is(.o-saw, .o-last) { display: none; }
+  .hud[data-layout='fold'] .orion .o-icon { display: block; }
+  .hud[data-layout='fold'] .slot-bottom { grid-area: bottom; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
+  .hud[data-layout='fold'] .slot-team { grid-area: auto; display: block; position: relative; height: 48px; min-height: 0; max-height: none; align-self: stretch; }
+  .hud[data-layout='fold'] .slot-team .team { height: 48px; overflow: hidden; }
+  .hud[data-layout='fold'] .slot-team .team[data-state='full'] { position: absolute; left: 0; right: 0; bottom: 0; height: auto; max-height: 260px; overflow: auto; z-index: 8; background: rgba(11, 15, 13, 0.96); }
+  .hud[data-layout='fold'] .team { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(11, 15, 13, 0.9); }
+  .hud[data-layout='fold'] .comms-strip { height: 48px; width: 100%; }
+  .hud[data-layout='fold'] .comms-strip .slot-satcom { display: grid; }
+  .hud[data-layout='fold']:not([data-log]) .comms-strip .slot-satcom { display: none; }
+  .hud[data-layout='fold'] .orion .env-stack { display: grid; } /* the dock is short, but the weather has its own row */
+  .hud[data-layout='fold'] .team[data-state='min'] { display: flex; align-items: center; gap: 12px; padding: 0 10px; }
+  .hud[data-layout='fold'] .team[data-state='min'] > h2 { flex: none; margin: 0; }
+  .hud[data-layout='fold'] .team[data-state='min'] > h2 .activity { display: none; }
+  .hud[data-layout='fold'] .team[data-state='min'] .heartbeat-strip { flex: 1; min-width: 0; }
+  .hud[data-layout='fold'] .strike-flyout { left: auto; right: max(10px, env(safe-area-inset-right)); top: auto; bottom: calc(min(412px, 40dvh) + 48px + 26px); width: 280px; }
+}
