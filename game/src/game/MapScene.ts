@@ -194,6 +194,7 @@ export class MapScene extends Phaser.Scene {
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT,F', false) as Record<string, Phaser.Input.Keyboard.Key>;
     this.keys.F.on('down', () => !typing() && this.recentre());
     bus.on(EV.recentre, this.recentre, this);
+    bus.on(EV.zoom, this.zoomStep, this);
     // Touch and mouse (ILI-1214): drag pans, a tap (released where it went down) selects, two
     // fingers pinch-zoom, and so does the wheel.
     this.input.addPointer(1);
@@ -219,6 +220,7 @@ export class MapScene extends Phaser.Scene {
       bus.off(EV.mapRect, this.layout, this);
       bus.off(EV.inset, this.placeInset, this);
       bus.off(EV.recentre, this.recentre, this);
+      bus.off(EV.zoom, this.zoomStep, this);
       this.unsubscribe?.();
     });
 
@@ -1427,6 +1429,16 @@ export class MapScene extends Phaser.Scene {
     if (!id) return;
     game.selectSquare(id);
     if (game.get().map.selected === id && !lockedOn(game.get(), id)) game.lookAt(id);
+  }
+
+  // The map controls' + and − (ILI-1470): a step in or out about the open map's middle, then the
+  // lines and labels redraw for the new zoom, as after a pinch.
+  private zoomStep(factor: number) {
+    if (this.bootAt !== null) return;
+    const { width, height } = this.scale;
+    const a = this.openArea(getMapRect(), width, height);
+    this.zoomAt(factor, a.x + a.w / 2, a.y + a.h / 2);
+    this.layout();
   }
 
   private fingers() {
