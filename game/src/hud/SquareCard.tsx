@@ -9,8 +9,8 @@ import { freshness, targets } from '../sim/imagery';
 import { squareAt } from '../map/grid';
 import { SniperPanel } from './SniperPanel';
 import { AirPanel } from './AirPanel';
-import { AIR, airGone, arrived } from '../sim/air';
-import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
+import { airGone } from '../sim/air';
+import { sniperGone } from '../sim/sniper';
 import { ground, weather } from '../sim/conditions';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { EVENT_LABEL } from '../sim/stream';
@@ -70,15 +70,14 @@ export function SquareCard() {
 
   const area = getMapRect();
   if (!area) return null;
-  if (!square) return <Busy s={s} area={area} picked={null} />;
+  if (!square) return null;
   const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, s.team.position, ANCHOR_W);
   const locked = lockedOn(s, square);
   // Only once ORION-3 is over it (ILI-1437): no menu for a square it isn't watching, but a mini
   // game playing there.
-  if (!locked && !playing) return <Busy s={s} area={area} picked={square} />;
+  if (!locked && !playing) return null;
   return (
     <>
-      <Busy s={s} area={area} picked={square} />
       <Leader square={square} area={area} anchor={{ x: at.left, y: at.top, w: at.width, h: Math.min(actHeight || 200, at.maxHeight) }} />
       <section
         ref={actRef}
@@ -99,39 +98,7 @@ export function SquareCard() {
   );
 }
 
-// Many at once (ILI-1306): a strike running on a square that isn't the picked one keeps a
-// small grey chip at that square, saying who's at work there and how it's going; a tap opens
-// the square's anchor. (ALPHA waiting on HQ has its own orange flag, and a new find its red
-// ping: those already pull the eye.)
-function Busy({ s, area, picked }: { s: GameState; area: Area; picked: string | null }) {
-  const now = s.elapsedMs;
-  const work: { square: string; text: string }[] = [];
-  if (s.sniper && !sniperGone(s.sniper, now)) work.push({ square: s.sniper.square, text: `${SNIPER_CALLSIGN} · ${s.sniper.done ? 'done' : 'firing'}` });
-  for (const w of ['drone', 'heli'] as const) {
-    const r = w === 'drone' ? s.drone : s.heli;
-    if (!r || airGone(r, now)) continue;
-    const text = r.doneMs !== null ? 'done' : arrived(r, now) ? 'over target' : countdown(r.arriveMs - now);
-    work.push({ square: r.square, text: `${AIR[w].callsign} · ${text}` });
-  }
-  const bySquare = new Map<string, string[]>();
-  for (const w of work) if (w.square !== picked) bySquare.set(w.square, [...(bySquare.get(w.square) ?? []), w.text]);
-  return (
-    <>
-      {[...bySquare].map(([square, lines]) => {
-        const sq = squareBox(square);
-        if (!sq || sq.x + sq.w < area.x || sq.x > area.x + area.width || sq.y + sq.h < area.y || sq.y > area.y + area.height) return null;
-        return (
-          <button key={square} className="busy-chip" style={{ left: Math.max(area.x + 4, sq.x + 4), top: Math.max(area.y + 4, sq.y + 4) }} onClick={() => game.selectSquare(square)} data-testid="busy-chip" data-square={square}>
-            <b>{square}</b>
-            {lines.map((l) => (
-              <span key={l}>{l}</span>
-            ))}
-          </button>
-        );
-      })}
-    </>
-  );
-}
+// A strike under way on another square shows on that square's CONTACT tag now (ILI-1474).
 
 // The anchor's leader (ILI-1305): a line from the anchor to its square, so the two read as one
 // however far apart they sit. When the square is off the open map, the line stops at the map's
@@ -234,7 +201,7 @@ const settle = (was: number, now: number) => (now > was || was - now > SLACK ? n
 // What can be struck on a square, and whether it can be now (ILI-1467): only the square ORION-3 is
 // locked on, only once a look (photo or video) shows fighters there and isn't stale (ILI-1417: a
 // radio report of a contact is a report, not a target), and not while a strike is already under
-// way there (ILI-1425). ORION-3's Strike and its flyout read this.
+// way there (ILI-1425). The square's CONTACT tag and its strike menu read this (ILI-1474).
 export function strikeState(s: GameState, square: string) {
   const marked = targets(s).filter((t) => squareAt(t.x, t.y) === square);
   const look = s.imagery[square];
@@ -242,7 +209,7 @@ export function strikeState(s: GameState, square: string) {
   const running = (!!s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now)) || [s.drone, s.heli].some((r) => !!r && r.square === square && !airGone(r, now));
   const seenHere = !!look && freshness(look, now) !== 'stale' && marked.length > 0;
   const strikes = s.events.filter((e) => e.square === square && strikeable(e) && e.status !== 'resolved');
-  return { marked, running, strikes, can: lockedOn(s, square) && seenHere && strikes.length > 0 && !running };
+  return { marked, running, strikes, seen: seenHere && strikes.length > 0, locked: lockedOn(s, square), can: lockedOn(s, square) && seenHere && strikes.length > 0 && !running };
 }
 
 function AnchorBody({ s, square }: { s: GameState; square: string }) {

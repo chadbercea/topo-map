@@ -101,15 +101,11 @@ test('heli: HAMMER-2 counts down, strafes the rows it can see fighters in, Tango
   await expect(panel).toHaveCount(0);
 });
 
-test('a strike running on a square that isn’t picked keeps a chip there; a tap opens its anchor (ILI-1306)', async ({ page }) => {
+test('a strike under way shows on its square\u2019s CONTACT tag, picked or not (ILI-1474)', async ({ page }) => {
   await targetE3(page);
   await page.getByTestId('fire-drone').click();
   await page.evaluate(() => window.game.closeSquare());
-  const chip = page.getByTestId('busy-chip');
-  await expect(chip).toHaveAttribute('data-square', 'E3');
-  await expect(chip).toContainText(/REAPER-1 · 0:\d\d/);
-  await chip.dispatchEvent('click');
-  await expect(page.getByTestId('square-anchor')).toHaveAttribute('data-square', 'E3');
-  await expect(page.getByTestId('square-anchor').getByTestId('drone-panel')).toBeVisible();
-  await expect(chip).toHaveCount(0); // its square is picked: the anchor says it all
+  const tag = page.locator('[data-testid=contact-tag][data-square=E3]');
+  await expect(tag.getByTestId('strike-work')).toHaveText(/^REAPER-1 · 0:\d\d$/);
+  await expect(tag.getByTestId('contact-strike')).toHaveCount(0); // nothing more to call in while it runs
 });
