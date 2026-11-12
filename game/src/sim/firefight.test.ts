@@ -5,6 +5,7 @@ import type { GameState } from './state';
 import { step } from './systems';
 import { LOADOUT } from './team';
 import { playUntil, run, walking } from './testkit';
+import { wrapUp } from './wrapup';
 
 // The team standing in E3 with a contact there: found and attacked, or never found.
 const inContact = (status: Contact['status'] = 'revealed', attack = true): GameState => {
@@ -32,11 +33,24 @@ describe('firefight', () => {
     expect(step(inContact('revealed', false), 100).team.fight!.full).toBe(100);
   });
 
-  it('a contact nobody found is an ambush: full strength and an opening volley', () => {
+  it('a contact nobody found is an ambush, and an ambush kills: the team goes down one by one in about 6 s and the mission is lost (ILI-1453)', () => {
     const s = step(inContact('hidden', false), 100);
-    expect(s.team.fight!.full).toBe(100);
+    expect(s.team.fight).toMatchObject({ square: 'E3', ambush: true });
     expect(s.comms.messages.at(-1)?.text).toBe('Ambush in E3! Returning fire.');
-    expect(totalHealth(s)).toBeLessThan(500 - 20);
+    // A second in, one operator is badly hit and nobody is down yet.
+    const early = run(s, 1_000);
+    expect(early.team.operators.filter((o) => o.health > 0)).toHaveLength(5);
+    expect(early.team.operators.filter((o) => o.health < 100)).toHaveLength(1);
+    // Half way, some are down; each one on the radio.
+    const mid = run(s, 3_000);
+    expect(mid.team.operators.filter((o) => o.health <= 0).length).toBeGreaterThanOrEqual(2);
+    expect(mid.comms.messages.some((m) => /is down! \d left\.$/.test(m.text) && m.alert)).toBe(true);
+    // Too fast for anything HQ has: in about 6 s, nobody is left, and the mission is over.
+    const end = run(s, 6_500);
+    expect(end.team.operators.every((o) => o.health <= 0)).toBe(true);
+    expect(end.phase).toBe('ended');
+    expect(end.comms.messages.at(-1)).toMatchObject({ from: 'HQ', text: 'ALPHA is not responding.' });
+    expect(wrapUp(end)).toMatchObject({ outcome: 'failed', reason: 'ALPHA walked into E3 without a look. No survivors.' });
   });
 
   it('burns ammo by role, wounds the team, and holds it in place', () => {
@@ -75,7 +89,7 @@ describe('firefight', () => {
   });
 
   it('the medic treats the wounded with their own meds, then the team moves on', () => {
-    const s = run(inContact('hidden', false), 60_000);
+    const s = run(inContact('revealed', false), 60_000);
     const medic = s.team.operators.find((o) => o.role === 'Medic')!;
     expect(medic.meds).toBeLessThan(LOADOUT.Medic.meds);
     expect(s.team.operators.filter((o) => o.health > 0).every((o) => o.health >= 90)).toBe(true);

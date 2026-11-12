@@ -10,12 +10,13 @@ import { ALERT_AMBUSH, makeNoise, NOISE, NOISE_PER_ROUND } from './noise';
 
 // Contact resolves on its own (GDD: the player doesn't control the team). Walking into a
 // square with a live contact starts a firefight: an attack on a found contact has surprise
-// (half strength); a contact nobody found is an ambush at full strength with an opening
-// volley. Then everyone with ammo shoots, rounds
+// (half strength). A contact nobody found is an ambush, and an ambush kills (ILI-1453): caught
+// in the open, the team goes down one by one inside a few seconds, faster than HQ could send
+// anything, and the mission is lost. Scanning ahead is what keeps them alive. In a fight, everyone with ammo shoots, rounds
 // drain by role, the enemy wears down, and hits land on the team. Afterwards the medic
 // treats the wounded one at a time, spending time and meds. A downed operator stays down.
 
-export type Fight = { contactId: string; eventId: string; square: string; enemy: number; full: number; units: number; startedMs: number };
+export type Fight = { contactId: string; eventId: string; square: string; enemy: number; full: number; units: number; startedMs: number; ambush?: boolean };
 export type Treatment = { patient: string; doneMs: number };
 
 const ENEMY_STRENGTH = 100;
@@ -24,7 +25,8 @@ const HIT_PER_ROUND = 0.45; // enemy strength removed per round fired
 const ENEMY_DPS = 16; // total health per second the enemy deals at full strength
 const TREAT_MS = 4_000;
 const TREAT_HP = 35;
-const AMBUSH_HIT = 12; // the opening volley, on two operators
+// An ambush drains one operator at a time, in a seeded order: about 6 s for the team of five.
+const AMBUSH_DOWN_MS = 1_200; // per operator; an alerted enemy is quicker (ALERT_AMBUSH)
 const WOUNDED_BELOW = 90; // the medic only bothers below this
 
 // Small seeded generator kept in state so fights replay the same way.
@@ -59,35 +61,23 @@ export const firefightSystem: System = (s, dt) => {
       const ambush = contact.status === 'hidden';
       const surprise = !ambush && team.decisions[contact.square] === 'attack';
       const enemy = ENEMY_STRENGTH * effectiveStrength(contact) * (surprise ? 0.5 : 1);
-      let rng = s.rng;
-      let operators = team.operators;
-      if (ambush) {
-        for (let k = 0; k < 2; k++) {
-          const standing = operators.filter(alive);
-          let r: number;
-          [r, rng] = nextRandom(rng);
-          const target = standing[Math.floor(r * standing.length)];
-          const hit = AMBUSH_HIT * (s.alerted ? ALERT_AMBUSH : 1); // an alerted enemy is waiting
-          operators = operators.map((o) => (o === target ? { ...o, health: Math.max(0, o.health - hit) } : o));
-        }
-      }
       const text = ambush ? `Ambush in ${contact.square}! Returning fire.` : `Contact! Engaging in ${contact.square}.`;
       return {
         ...makeNoise(s, NOISE.firefight),
-        rng,
         contacts: ambush ? s.contacts.map((c) => (c === contact ? { ...c, status: 'revealed' as const } : c)) : s.contacts,
         team: {
           ...team,
-          operators,
           holdFor: null,
-          fight: { contactId: contact.id, eventId: `contact-${contact.id}`, square: contact.square, enemy, full: enemy, units: contact.units.length, startedMs: s.elapsedMs },
-          activity: `Engaged in ${contact.square}`,
+          fight: { contactId: contact.id, eventId: `contact-${contact.id}`, square: contact.square, enemy, full: enemy, units: contact.units.length, startedMs: s.elapsedMs, ...(ambush ? { ambush: true } : {}) },
+          activity: ambush ? `Ambushed in ${contact.square}` : `Engaged in ${contact.square}`,
         },
         // An ambush is news nobody saw coming: a banner. A planned fight shows on the map.
         comms: { ...s.comms, messages: [...s.comms.messages, { ...radio(s, `fight-${contact.id}`, text), alert: ambush }] },
       };
     }
   }
+
+  if (team.fight?.ambush) return ambushed(s, dt);
 
   if (team.fight) {
     const fight = team.fight;
@@ -139,6 +129,35 @@ export const firefightSystem: System = (s, dt) => {
   // Treatment: the medic works through the wounded, worst first.
   return treat(s);
 };
+
+// Caught in the open (ILI-1453): one operator at a time takes the fire until they're down, then
+// the next, picked by the fight dice. Nothing HQ has can get there in time; when the last one
+// falls, the mission is lost (missionSystem).
+function ambushed(s: GameState, dt: number): GameState {
+  const { team } = s;
+  let rng = s.rng;
+  const standing = team.operators.filter(alive);
+  if (!standing.length) return s;
+  // Whoever is already hit stays the target until they're down.
+  let target = standing.find((o) => o.health < 100);
+  if (!target) {
+    let r: number;
+    [r, rng] = nextRandom(rng);
+    target = standing[Math.floor(r * standing.length)];
+  }
+  const rate = (100 / AMBUSH_DOWN_MS) * (s.alerted ? ALERT_AMBUSH : 1);
+  const health = Math.max(0, target.health - rate * dt);
+  const operators = team.operators.map((o) => (o === target ? { ...o, health } : o));
+  const fell = health <= 0;
+  const left = operators.filter(alive).length;
+  const text = left ? `${target.name} is down! ${left} left.` : '';
+  return {
+    ...s,
+    rng,
+    team: { ...team, operators },
+    comms: fell && left ? { ...s.comms, messages: [...s.comms.messages, { ...radio(s, `ambush-down-${target.id}`, text), alert: true }] } : s.comms,
+  };
+}
 
 // Fighters fall as the fight wears them down, so whoever is watching sees them drop (ILI-1275).
 function dropFighters(s: GameState): GameState {
