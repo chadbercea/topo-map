@@ -3,7 +3,9 @@ import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
 import { heldIntel, settled } from '../sim/intel';
-import { Details, Readouts, TeamWork } from './SquareCard';
+import { Details, Readouts, strikeState, TeamWork } from './SquareCard';
+import { AIR, airGone, arrived } from '../sim/air';
+import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { pins, useSeenVersion } from './pins';
 import { nextBlind } from '../sim/progress';
 import { CELL, squareCenter } from '../map/grid';
@@ -94,6 +96,17 @@ export function OrionPanel() {
   // Every satellite action lives here, and only here (ILI-1459, ILI-1465): Scan, Photo and Video
   // under the picture, always in their places, lit when they can be used; Reposition in the header.
   const ready = inPosition && !tied;
+  // Strike (ILI-1467): only on the square ORION-3 is locked on, once a look shows fighters there.
+  const strike = strikeState(s, sat.aim);
+  // A strike under way on the square ORION-3 is over: its picture goes to targeting (ILI-1467).
+  const hit = (() => {
+    if (s.sniper && s.sniper.square === sat.aim && !sniperGone(s.sniper, now)) return { who: SNIPER_CALLSIGN, what: 'Sniper', line: s.sniper.done ? 'Done' : 'Firing' };
+    for (const w of ['drone', 'heli'] as const) {
+      const r = w === 'drone' ? s.drone : s.heli;
+      if (r && r.square === sat.aim && !airGone(r, now)) return { who: AIR[w].callsign, what: w === 'drone' ? 'Drone' : 'Heli', line: r.doneMs !== null ? 'Done' : arrived(r, now) ? 'Over target' : `Impact ${countdown(r.arriveMs - now)}` };
+    }
+    return null;
+  })();
   const wide = tier === 'wide';
   const canMove = !!picked && !tied && sat.state === 'idle' && !satelliteBusy(s) && away > 0;
   // The square's details (ILI-1438): its intel, ALPHA's work there, its ground. Only for the square
@@ -162,7 +175,18 @@ export function OrionPanel() {
             ground. Only for the square ORION-3 is over and locked on. */}
         {!wide && detail}
         {showPicture ? (
-          <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} aria-label={`${name}'s picture of ${square}`}>
+          <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} data-targeting={hit ? 'true' : undefined} aria-label={`${name}'s picture of ${square}`}>
+            {hit && (
+              <div className="o-targeting" data-testid="targeting" aria-live="polite">
+                <i className="o-reticle" aria-hidden />
+                <span className="o-tt">
+                  Targeting · {hit.what} · {hit.who}
+                </span>
+                <span className="o-tc" data-testid="targeting-line">
+                  {hit.line}
+                </span>
+              </div>
+            )}
             {/* The fighters it shows, each a tap away from its strikes (ILI-1250). Phaser draws the
                 dots; these sit on them, in the square's width at the picture's middle. */}
             <div className="o-targets">
@@ -231,6 +255,10 @@ export function OrionPanel() {
           <button disabled={!ready || busy || !done || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title="Keep the square live on the map for good">
             Video
             <small>{onVideo ? 'live' : busy ? 'filming' : !done ? 'after a scan' : 'live for good'}</small>
+          </button>
+          <button className="o-strike" disabled={!ready || !strike.can} onClick={() => strike.strikes[0] && game.openEvent(strike.strikes[0].id)} data-testid="capture-strike" aria-pressed={s.events.some((e) => e.id === s.openEvent && e.kind === 'contact' && e.square === sat.aim)} title={`Strike ${sat.aim}`}>
+            Strike
+            <small>{hit ? 'under way' : strike.can ? 'this square' : 'no targets'}</small>
           </button>
         </div>
       </div>
