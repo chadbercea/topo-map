@@ -681,6 +681,45 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .l61 .g .ptabs em { font-style: normal; color: var(--amber); }
 .l61 .g .hb5.s { flex: none; gap: 2px; }
 .l61 .g .hb5.s i { width: 12px; padding: 0; height: 10px; background-size: 12px 10px; }
+
+/* ILI-1472: the team panel redesign. */
+.l72-today { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.l72-today figure:last-child { grid-column: 1 / -1; }
+.l72-img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; display: block; }
+.l72-states { display: grid; gap: 18px; }
+.l72 .g .tbar { position: absolute; height: 48px; box-sizing: border-box; display: flex; align-items: stretch; background: rgba(11, 15, 13, 0.92); border: 1px solid var(--hair); border-left: 3px solid var(--teal); cursor: pointer; }
+.l72 .g .tbar.alert { border-left-color: var(--red); }
+.l72 .g .tbar.open { border-color: var(--teal); }
+.l72 .g .tb-name { display: grid; align-content: center; gap: 2px; padding: 0 12px; border-right: 1px solid rgba(53, 208, 165, 0.18); min-width: 104px; }
+.l72 .g .tb-name b { color: var(--teal); letter-spacing: 0.18em; font-weight: 600; font-size: 12px; }
+.l72 .g .tb-name em { font-style: normal; font-size: 10px; color: var(--ink); white-space: nowrap; }
+.l72 .g .tbar.alert .tb-name em { color: #f08a8d; }
+.l72 .g .tb-ops { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); }
+.l72 .g .tb-ops .op { font-style: normal; display: grid; align-content: center; justify-items: center; gap: 3px; border-right: 1px solid rgba(53, 208, 165, 0.1); --c: var(--teal); }
+.l72 .g .tb-ops .op b { font-weight: 400; font-size: 10px; letter-spacing: 0.04em; color: var(--ink); }
+.l72 .g .tb-ops .op.caution { --c: var(--amber); }
+.l72 .g .tb-ops .op.danger { --c: var(--red); background: rgba(229, 72, 77, 0.12); }
+.l72 .g .tb-ops .op.caution b, .l72 .g .tb-ops .op.danger b { color: var(--c); }
+.l72 .g .ecg { display: block; width: 52px; height: 12px; background: var(--c, var(--teal)); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 12'%3E%3Cpath d='M0 7h18l3-5 4 9 3-6 2 2h22' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E") center / 100% 100% no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 12'%3E%3Cpath d='M0 7h18l3-5 4 9 3-6 2 2h22' fill='none' stroke='black' stroke-width='1'/%3E%3C/svg%3E") center / 100% 100% no-repeat; }
+.l72 .g .ecg.w { width: 90px; --c: var(--teal); }
+.l72 .g .td-row.caution .ecg.w { --c: var(--amber); }
+.l72 .g .tb-tog { display: grid; place-items: center; width: 40px; border-left: 1px solid rgba(53, 208, 165, 0.18); color: var(--dim); }
+.l72 .g .tdrawer { position: absolute; box-sizing: border-box; padding: 6px 12px 8px; background: rgba(11, 15, 13, 0.96); border: 1px solid var(--teal); border-bottom: 0; }
+.l72 .g .td-cols, .l72 .g .td-row { display: grid; grid-template-columns: 1.3fr 96px 0.8fr 0.7fr 0.7fr 0.7fr; align-items: center; column-gap: 10px; }
+.l72 .g .td-cols { padding: 4px 0 6px; border-bottom: 1px solid rgba(53, 208, 165, 0.18); }
+.l72 .g .td-cols span { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+.l72 .g .td-row { height: 34px; padding-left: 8px; margin: 0 -8px; border-bottom: 1px solid rgba(53, 208, 165, 0.08); }
+.l72 .g .td-row .st { text-align: left; }
+.l72 .g .td-row .who { display: grid; }
+.l72 .g .td-row .who b { font-weight: 400; } .l72 .g .td-row .who small { display: block; font-size: 9px; letter-spacing: 0.08em; text-transform: none; }
+.l72 .g .td-row .st { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--teal); }
+.l72 .g .td-row.caution { background: rgba(242, 193, 78, 0.07); box-shadow: inset 3px 0 0 var(--amber); }
+.l72 .g .td-row.caution .st { color: var(--amber); }
+.l72 .g .td-row .bar { width: 100%; height: 4px; }
+.l72 .g .td-row .bar.n { background: linear-gradient(90deg, var(--dim) var(--v), rgba(111, 138, 125, 0.2) var(--v)); }
+.l72 .g .tprompt { position: absolute; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 7px 9px; background: var(--bg); border: 1px solid var(--amber); border-left-width: 3px; font-size: 11px; }
+.l72 .g .tprompt b { color: var(--amber); letter-spacing: 0.08em; }
+.l72 .g .tprompt button { margin-left: auto; padding: 4px 10px; background: var(--amber); color: #0b0f0d; border: 0; letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px; }
 </style>
 </head>
 <body>
@@ -688,10 +727,124 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 <main>
 <header>
   <p class="mono"><a href="../review/">← Review hub: everything up for review</a></p>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03 · ILI-1358 step 2 added · ILI-1363 step 3 added 2026-11-05 · ILI-1459 desktop design pass added 2026-11-12 · ILI-1461 Fold and phone added 2026-11-12</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03 · ILI-1358 step 2 added · ILI-1363 step 3 added 2026-11-05 · ILI-1459 desktop design pass added 2026-11-12 · ILI-1461 Fold and phone added 2026-11-12 · ILI-1472 team panel added 2026-11-12</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
+
+<section class="l59 l72" id="team-1472">
+  <div class="sect-head">
+    <p class="eyebrow">ILI-1472 · ALPHA team panel · full redesign and interaction set · 2026-11-12 · desktop, Fold, phone</p>
+    <h2>One bar on the bottom edge that never moves; the table opens out of it like a drawer</h2>
+    <p>Your note: the information is good and the visual base is there, but the size, the way it responds to the screen, how it sits on the page, and its full and minimized modes are a mess. The operators, heartbeats, status and bars all stay. What changes is the frame they sit in and how you open and close it.</p>
+  </div>
+
+  <h3>Today</h3>
+  <div class="l72-today">
+    <figure class="l59-shot"><img src="img-1472/today-full.png" alt="Team panel full, today" class="l72-img"><figcaption>Desktop, full</figcaption></figure>
+    <figure class="l59-shot"><img src="img-1472/today-min.png" alt="Team panel minimized, today" class="l72-img"><figcaption>Desktop, minimized</figcaption></figure>
+    <figure class="l59-shot"><img src="img-1472/today-fold.png" alt="Team panel on a Fold, today" class="l72-img"><figcaption>Fold, minimized</figcaption></figure>
+  </div>
+  <ol class="l59-probs">
+    <li><b>The two modes are different heights</b> (152 px full, 108 px minimized), and neither is the 48 px of the comms strip beside it. The bottom edge is never one line, and toggling moves the map.</li>
+    <li><b>Minimized still has a header</b> and stacks the heartbeats under it, so it barely saves any space.</li>
+    <li><b>The bars have no labels.</b> Which bar is ammo, which is meds and which is noise lives only in tiny icons.</li>
+    <li><b>The table uses about 70% of its width.</b> The right side is empty.</li>
+    <li><b>The toggle is a lone ▁ / ▢ in the corner</b> that doesn't say what it does.</li>
+    <li><b>On a Fold the strip is cramped:</b> the status words are clipped at the bottom, and "ALPHA TEAM" and the button eat the room.</li>
+  </ol>
+
+  <h3>Proposed: three states</h3>
+  <div class="l72-states">
+    <figure class="l59-shot">
+      <div class="stage" data-w="1060" style="aspect-ratio: 1060 / 320"><div class="canvas g" style="width:1060px;height:320px">
+        <div class="map" style="background:url(img-1459/map.png) 0 -580px / 1440px 900px"></div>
+        <div class="tbar" style="left:16px;top:256px;width:520px">
+          <span class="tb-name"><b>ALPHA</b><em>Moving to F4</em></span>
+          <span class="tb-ops">
+            <i class="op"><b>Reyes</b><span class="ecg"></span></i><i class="op caution"><b>Okafor</b><span class="ecg"></span></i><i class="op"><b>Lind</b><span class="ecg"></span></i><i class="op"><b>Tanaka</b><span class="ecg"></span></i><i class="op"><b>Brandt</b><span class="ecg"></span></i>
+          </span>
+          <span class="tb-tog">▴</span>
+        </div>
+        <div class="comms" style="left:552px;top:256px;width:492px"><small>Comms</small><span class="line"><b>ALPHA</b> Moving to F4. Eyes on the treeline.</span><button>Log ▴</button></div>
+      </div></div>
+      <figcaption><b>1 · At rest.</b> A 48 px bar, the same height as the comms strip, so the bottom edge is one line. It shows ALPHA, what it's doing, and each operator's name over their heartbeat in their condition's colour. Okafor is amber here.</figcaption>
+    </figure>
+
+    <figure class="l59-shot">
+      <div class="stage" data-w="1060" style="aspect-ratio: 1060 / 320"><div class="canvas g" style="width:1060px;height:320px">
+        <div class="map" style="background:url(img-1459/map.png) 0 -580px / 1440px 900px"></div>
+        <div class="tdrawer" style="left:16px;top:52px;width:520px">
+          <div class="td-cols"><span>Operator</span><span>Heartbeat</span><span>Status</span><span>Ammo</span><span>Meds</span><span>Noise</span></div>
+          <div class="td-row"><span class="who"><b>Reyes</b><small>Squad lead</small></span><span class="ecg w"></span><span class="st">Fine</span><i class="bar" style="--v:90%"></i><i class="bar" style="--v:100%"></i><i class="bar n" style="--v:20%"></i></div>
+          <div class="td-row caution"><span class="who"><b>Okafor</b><small>Gunner</small></span><span class="ecg w"></span><span class="st">Caution</span><i class="bar" style="--v:60%"></i><i class="bar" style="--v:70%"></i><i class="bar n" style="--v:35%"></i></div>
+          <div class="td-row"><span class="who"><b>Lind</b><small>Medic</small></span><span class="ecg w"></span><span class="st">Fine</span><i class="bar" style="--v:95%"></i><i class="bar" style="--v:100%"></i><i class="bar n" style="--v:10%"></i></div>
+          <div class="td-row"><span class="who"><b>Tanaka</b><small>Comms</small></span><span class="ecg w"></span><span class="st">Fine</span><i class="bar" style="--v:85%"></i><i class="bar" style="--v:90%"></i><i class="bar n" style="--v:45%"></i></div>
+          <div class="td-row"><span class="who"><b>Brandt</b><small>Heavy gunner</small></span><span class="ecg w"></span><span class="st">Fine</span><i class="bar" style="--v:70%"></i><i class="bar" style="--v:100%"></i><i class="bar n" style="--v:15%"></i></div>
+        </div>
+        <div class="tbar open" style="left:16px;top:256px;width:520px">
+          <span class="tb-name"><b>ALPHA</b><em>Moving to F4</em></span>
+          <span class="tb-ops">
+            <i class="op"><b>Reyes</b><span class="ecg"></span></i><i class="op caution"><b>Okafor</b><span class="ecg"></span></i><i class="op"><b>Lind</b><span class="ecg"></span></i><i class="op"><b>Tanaka</b><span class="ecg"></span></i><i class="op"><b>Brandt</b><span class="ecg"></span></i>
+          </span>
+          <span class="tb-tog">▾</span>
+        </div>
+        <div class="comms" style="left:552px;top:256px;width:492px"><small>Comms</small><span class="line"><b>ALPHA</b> Moving to F4. Eyes on the treeline.</span><button>Log ▴</button></div>
+      </div></div>
+      <figcaption><b>2 · Open.</b> The table slides up out of the bar, over the map, at the same width. The bar stays where it is, so nothing else moves. The columns fill the width and are labelled: operator, heartbeat, status, ammo, meds and noise.</figcaption>
+    </figure>
+
+    <figure class="l59-shot">
+      <div class="stage" data-w="1060" style="aspect-ratio: 1060 / 320"><div class="canvas g" style="width:1060px;height:320px">
+        <div class="map" style="background:url(img-1459/map.png) 0 -580px / 1440px 900px"></div>
+        <div class="tprompt" style="left:16px;top:196px;width:340px"><b>OKAFOR</b> "I'm hit, still in the fight." <button>Open team</button></div>
+        <div class="tbar alert" style="left:16px;top:256px;width:520px">
+          <span class="tb-name"><b>ALPHA</b><em>In contact</em></span>
+          <span class="tb-ops">
+            <i class="op"><b>Reyes</b><span class="ecg"></span></i><i class="op danger flash"><b>Okafor</b><span class="ecg"></span></i><i class="op"><b>Lind</b><span class="ecg"></span></i><i class="op"><b>Tanaka</b><span class="ecg"></span></i><i class="op"><b>Brandt</b><span class="ecg"></span></i>
+          </span>
+          <span class="tb-tog">▴</span>
+        </div>
+        <div class="comms" style="left:552px;top:256px;width:492px"><small>Comms</small><span class="line"><b>OKAFOR</b> I'm hit, still in the fight.</span><button>Log <em>1 new</em> ▴</button></div>
+      </div></div>
+      <figcaption><b>3 · Something's wrong.</b> The hurt operator's slot turns red and blinks twice, and the bar's left edge takes the worst colour. The prompt docks just above the bar, and its Open team opens the drawer with that row highlighted. The panel never opens by itself.</figcaption>
+    </figure>
+  </div>
+
+  <div class="l59-why">
+    <div>
+      <h3>The interaction set</h3>
+      <ul>
+        <li><b>Open:</b> click anywhere on the bar, or the operator slot you want (that row is highlighted). The table slides up in 200 ms.</li>
+        <li><b>Close:</b> click the bar again (▾), press <code>Esc</code>, or click the map.</li>
+        <li><b>One drawer at a time:</b> opening the team closes the comms log, and the other way round, the same as the phone's one-panel rule.</li>
+        <li><b>Hover:</b> hovering an operator's slot or row brackets them on the map, and hovering them on the map lights their slot.</li>
+        <li><b>It never opens by itself.</b> Alerts show on the bar (colour, a blink) and in the docked prompt. You decide when to open it.</li>
+        <li><b>The bar never moves or resizes,</b> so the map never reflows when the drawer opens or closes.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Sizes, every screen</h3>
+      <ul>
+        <li><b>Desktop:</b> a 520 × 48 bar at bottom left beside the comms strip, with the same baseline. The drawer is 520 wide and as tall as its rows (about 190 px).</li>
+        <li><b>Fold upright:</b> the bar is half the bottom row. Its slots show names only (no role), and the drawer opens up over ORION-3's dock at the same width.</li>
+        <li><b>Phone:</b> the TEAM target is the bar. Tapping it slides the same table up as the one open panel. The role drops into a second line and the bars narrow.</li>
+        <li><b>Fold sideways and tablet sideways:</b> the TEAM tab in the rail shows the same table.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="lean">
+    <p><b>Calls for you:</b></p>
+    <ol>
+      <li><b>The bar plus drawer:</b> a 48 px bar that never moves, with the table opening upward out of it. Approve it, or say what to change.</li>
+      <li><b>Labelled columns</b> (Ammo, Meds, Noise) in place of icon-only bars. Yes or no?</li>
+      <li><b>One drawer at a time</b> with the comms log on desktop and Fold. Yes or no?</li>
+    </ol>
+  </div>
+</section>
+
+
 
 <section class="l59 l61" id="layout-1461">
   <div class="sect-head">
