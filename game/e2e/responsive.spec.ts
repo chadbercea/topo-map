@@ -55,11 +55,13 @@ for (const [name, width, height] of SIZES) {
     // Its strikes open from a fighter in ORION-3's picture (ILI-1250).
     await page.getByTestId('target-pin').first().click(); // pins his panel in ORION-3's picture (ILI-1444)
     await page.locator('.sighting-panel[data-kind=hostile][data-pinned]').getByTestId('panel-strike').click();
-    const menu = page.getByTestId('strike-menu');
+    const menu = page.getByTestId('strike-flyout').getByTestId('strike-menu'); // ORION-3's strike flyout (ILI-1467)
     await menu.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
     await expect(menu.getByTestId('fire-sniper')).toBeVisible();
     expect(inside(await box(menu.getByTestId('fire-sniper')), width, height)).toBe(true);
 
+    await page.getByTestId('strike-flyout').getByRole('button', { name: 'Close' }).click();
+    await expect(page.getByTestId('strike-flyout')).toHaveCount(0);
     await card.getByRole('button', { name: 'Close' }).click();
     await expect(card).toHaveCount(0);
     await expect(page.getByTestId('satellite')).toBeVisible();

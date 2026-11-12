@@ -7,6 +7,7 @@ import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
 import { MissionBar } from './MissionBar';
+import { StrikeFlyout } from './StrikeFlyout';
 import { SightingPanels } from './SightingPanels';
 import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
@@ -140,6 +141,7 @@ export function Hud() {
       <div className="slot-orion" data-overlay="orion" ref={orionSlot}>
         <OrionPanel />
       </div>
+      <StrikeFlyout />
       <div className="slot-bottom">
         {tier !== 'wide' && (
           <div className="slot-small" data-testid="small-widgets">
