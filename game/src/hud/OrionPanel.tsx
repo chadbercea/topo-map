@@ -12,7 +12,7 @@ import { CELL, squareCenter } from '../map/grid';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
 import { OrionAvatar } from './OrionAvatar';
-import { useTier } from './tier';
+import { useFold, useTier } from './tier';
 import { EnvWidget } from './EnvWidget';
 import { imageryOk, weather } from '../sim/conditions';
 
@@ -107,7 +107,8 @@ export function OrionPanel() {
     }
     return null;
   })();
-  const wide = tier === 'wide';
+  const fold = useFold();
+  const wide = tier === 'wide' || fold; // a fold upright lays ORION-3 out like a wide screen, side to side (ILI-1461)
   const canMove = !!picked && !tied && sat.state === 'idle' && !satelliteBusy(s) && away > 0;
   // The square's details (ILI-1438): its intel, ALPHA's work there, its ground. Only for the square
   // ORION-3 is over and locked on. On a wide screen they sit under the buttons; narrower, under
@@ -167,7 +168,7 @@ export function OrionPanel() {
       )}
 
       {/* The AO's weather, three and three (ILI-1249); on a fold or phone it's the slim line. */}
-      {tier === 'wide' && <EnvWidget />}
+      {wide && <EnvWidget />}
 
       {/* The image area: the picture takes what's left (ILI-1400). */}
       <div className="o-frame">

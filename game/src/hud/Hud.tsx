@@ -5,7 +5,7 @@ import { MapArea } from './MapArea';
 import { ExfilPanel } from './ExfilPanel';
 import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
-import { useTier } from './tier';
+import { useTier, useFold } from './tier';
 import { MissionBar } from './MissionBar';
 import { CommsLine } from './CommsLine';
 import { StrikeFlyout } from './StrikeFlyout';
@@ -49,6 +49,8 @@ export function Hud() {
   const [log, setLog] = useState(false);
 
   const tier = useTier();
+  const fold = useFold(); // ILI-1461: ORION-3 docked under the map, the team and comms along the bottom
+  useEffect(() => void (fold && setTeamOpen(false)), [fold]); // folded to its strip there: it opens upward over ORION-3
   const satellite = useGame((s) => s.mission.satellite); // its name, from the mission's config (ILI-1401)
   // The panels stay dark while the map boots, then power on in turn (ILI-1281, ILI-1462), on the
   // way in and on a restart (intro.ts).
@@ -86,7 +88,7 @@ export function Hud() {
   }, [minigame, picked, tier]);
   // News in a panel out of sight dots its tab; a panel in view flashes its frame (ILI-1287).
   // ALPHA waiting on HQ lights TEAM's tab whole: its call box is there.
-  const tabbed = tier !== 'wide';
+  const tabbed = tier !== 'wide' && !fold;
   const shown = (t: Tab) => !tabbed || (tab === t && !(tier === 'compact' && sheet === 'peek'));
   const commsNews = useGame((s) => s.comms.messages.length + s.stream.items.length);
   const orionNews = useGame((s) => `${s.satellite.state}|${s.satellite.aim}|${s.satellite.result ? 'look' : ''}`);
@@ -124,7 +126,7 @@ export function Hud() {
   });
 
   return (
-    <div className="hud" data-boot={boot} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined} data-team={teamOpen || undefined}>
+    <div className="hud" data-boot={boot} data-playing={playing} data-tab={tab} data-tier={tier} data-layout={fold ? 'fold' : undefined} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined} data-team={teamOpen || undefined}>
       <div className="slot-widget" data-overlay="widget">
         <MissionBar />
       </div>

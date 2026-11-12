@@ -22,3 +22,18 @@ export function useTier(): Tier {
   }, []);
   return t;
 }
+
+// A fold open upright, or a tablet held tall (ILI-1461): the medium tier on a screen taller than it is
+// wide. The map on top, ORION-3 docked under it, the team and comms along the bottom.
+export const FOLD = '(min-width: 700px) and (max-width: 1199px) and (orientation: portrait)';
+export const isFold = () => matchMedia(FOLD).matches;
+export function useFold(): boolean {
+  const [f, setF] = useState(isFold);
+  useEffect(() => {
+    const q = matchMedia(FOLD);
+    const on = () => setF(q.matches);
+    q.addEventListener('change', on);
+    return () => q.removeEventListener('change', on);
+  }, []);
+  return f;
+}

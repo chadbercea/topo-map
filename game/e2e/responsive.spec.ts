@@ -4,10 +4,11 @@ import { askResupply, freeze, start, running } from './helpers';
 // The medium tier (ILI-1213): a fold open either way, a tablet, a phone on its side. The map
 // on the left, the panels in a rail on the right behind tabs; a picked square shows in
 // ORION-3's tab, its actions floating over the map (ILI-1228).
+// Held upright (taller than wide) the medium tier docks ORION-3 under the map instead (ILI-1461):
+// see the fold test below.
 const SIZES = [
-  ['fold upright', 750, 832],
   ['fold sideways', 832, 750],
-  ['tablet', 820, 1180],
+  ['tablet sideways', 1180, 820],
   ['phone sideways', 844, 390],
 ] as const;
 
@@ -76,3 +77,36 @@ test('the tier follows the width alone: a near-square screen keeps its layout as
     await expect(page.locator('.hud')).toHaveAttribute('data-tier', tier);
   }
 });
+
+// A fold upright, a tablet held tall (ILI-1461): the mission bar on top, the map, ORION-3 docked
+// under it with every satellite action, and the team and comms strips along the bottom. No tabs.
+for (const [name, width, height] of [['fold upright', 884, 1104], ['tablet upright', 820, 1180], ['small fold upright', 750, 832]] as const) {
+  test(`${name} (${width}×${height}): ORION-3 docked under the map, team and comms along the bottom`, async ({ page, isMobile }) => {
+    test.skip(isMobile, 'sets its own viewport');
+    await page.setViewportSize({ width, height });
+    await start(page, '?debug');
+    await running(page);
+    await freeze(page);
+    const hud = page.locator('.hud');
+    await expect(hud).toHaveAttribute('data-tier', 'medium');
+    await expect(hud).toHaveAttribute('data-layout', 'fold');
+    await expect(page.locator('.dock-tabs')).toBeHidden();
+    const bar = await box(page.getByTestId('mission-bar'));
+    const map = await box(page.getByTestId('map-area'));
+    const orion = await box(page.getByTestId('satellite'));
+    const strip = await box(page.getByTestId('comms-strip'));
+    const team = await box(page.getByTestId('team-panel'));
+    expect(bar.width).toBeGreaterThan(width - 40); // across the top
+    expect(orion.y).toBeGreaterThanOrEqual(map.y + map.height - 1); // under the map
+    expect(orion.width).toBeGreaterThan(width - 40);
+    expect(strip.y).toBeGreaterThanOrEqual(orion.y + orion.height - 1); // the bottom edge
+    expect(Math.abs(team.y - strip.y)).toBeLessThan(2);
+    for (const b of [bar, orion, strip, team]) expect(inside(b, width, height)).toBe(true);
+    // The picture on the left, the buttons beside it.
+    const pic = await box(page.getByTestId('satellite-inset'));
+    const buttons = await box(page.getByTestId('orion-buttons'));
+    expect(buttons.x).toBeGreaterThanOrEqual(pic.x + pic.width - 1);
+    await expect(page.getByTestId('capture-scan')).toBeVisible();
+    await expect(page.getByTestId('satellite').getByTestId('conditions')).toBeVisible();
+  });
+}
