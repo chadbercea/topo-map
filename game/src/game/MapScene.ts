@@ -17,7 +17,7 @@ import { teamStatus } from '../sim/team';
 import { searchingIn } from '../sim/buildings';
 import { gauge, GAUGE_MAX, LOW_AT } from '../sim/intel';
 import { squareFindings } from '../sim/intel';
-import { follows, freshness, GHOST_MS, shownAt, unitSpot } from '../sim/imagery';
+import { follows, freshness, GHOST_MS, groupOrigin, shownAt, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 import { sightings, type Sighting } from '../sim/sightings';
@@ -99,6 +99,8 @@ export class MapScene extends Phaser.Scene {
   private hoverLabel!: Phaser.GameObjects.Text; // what a hovered ping is (ILI-1297)
   private hovered: string | null = null;
   private intelGfx!: Phaser.GameObjects.Graphics; // what ORION-3 and ALPHA have seen
+  private seenGfx!: Phaser.GameObjects.Graphics; // how old each square's look is: a photo's draining bar, a feed's brackets (ILI-1468)
+  private seenTags = new Map<string, Phaser.GameObjects.Text>();
   private satGfx!: Phaser.GameObjects.Graphics; // ORION-3's reticle
   private modeLabels: Phaser.GameObjects.Text[] = [];
   private labels: Phaser.GameObjects.Text[] = [];
@@ -124,6 +126,7 @@ export class MapScene extends Phaser.Scene {
     this.stampGfx = this.add.graphics();
     this.routeGfx = this.add.graphics();
     this.intelGfx = this.add.graphics();
+    this.seenGfx = this.add.graphics();
     this.satGfx = this.add.graphics();
     this.markerGfx = this.add.graphics();
     this.blindGfx = this.add.graphics();
@@ -167,11 +170,12 @@ export class MapScene extends Phaser.Scene {
     this.inset = this.cameras.add(0, 0, 1, 1).setVisible(false).setBackgroundColor(0x0b0f0d);
     this.inset.inputEnabled = false;
     this.inset.ignore([...this.labels, this.teamLabel, this.airLabels.drone, this.airLabels.heli, this.exfilLabel, this.hoverLabel]); // the caption names the square; ORION-3's panel has its own hovers
-    this.inset.ignore([this.stampGfx, this.bracketGfx, this.dotGfx]); // a square's INTEL / CLEAR tag is a map note; the satellite doesn't see it (ILI-1407)
+    this.inset.ignore([this.stampGfx, this.bracketGfx, this.dotGfx, this.seenGfx]); // a square's INTEL / CLEAR tag is a map note; the satellite doesn't see it (ILI-1407)
     // ?debug: tests read the live camera to turn world points into screen taps.
     if (new URLSearchParams(location.search).has('debug'))
       Object.assign(window, {
         mapSightings: () => pins.seen(), // what's bracketed, in world points (ILI-1410)
+        mapSeenTags: () => Object.fromEntries([...this.seenTags].map(([k, l]) => [k, l.text])), // photo ages and feeds on the map (ILI-1468)
         mapCamera: () => {
           const c = this.cameras.main;
           return { scrollX: c.scrollX, scrollY: c.scrollY, zoom: c.zoom, width: c.width, height: c.height, dpr: DPR };
@@ -249,6 +253,7 @@ export class MapScene extends Phaser.Scene {
     this.drawMarkers(_time);
     this.drawFight(_time);
     this.drawIntel();
+    this.drawSeen(_time);
     this.drawPlans();
     this.drawSatellite(_time);
     this.drawMiniGame(_time);
@@ -312,7 +317,7 @@ export class MapScene extends Phaser.Scene {
     this.labels.forEach((l) => show(l, on(settle + grid * 0.6)));
     for (const o of [this.teamGfx, this.dotGfx, this.teamLabel]) show(o, on(marks + MAP_BOOT.team));
     for (const o of [this.missionGfx, ...this.missionLabels, this.exfilLabel]) show(o, on(marks + MAP_BOOT.mission));
-    const known = [this.routeGfx, this.stampGfx, ...this.stamps.values(), this.markerGfx, this.intelGfx, this.blindGfx, ...this.blindLabels, this.fightGfx, this.modeGfx, ...this.modeLabels, this.droneGfx, this.airLabels.drone, this.airLabels.heli, this.bracketGfx, this.satGfx, this.selectGfx, this.wipeGfx];
+    const known = [this.routeGfx, this.stampGfx, ...this.stamps.values(), this.seenGfx, ...this.seenTags.values(), this.markerGfx, this.intelGfx, this.blindGfx, ...this.blindLabels, this.fightGfx, this.modeGfx, ...this.modeLabels, this.droneGfx, this.airLabels.drone, this.airLabels.heli, this.bracketGfx, this.satGfx, this.selectGfx, this.wipeGfx];
     for (const o of known) show(o, on(marks + MAP_BOOT.known));
   }
 
@@ -428,15 +433,35 @@ export class MapScene extends Phaser.Scene {
   // show who was moving, and where to.
   private drawIntel() {
     const g = this.intelGfx.clear();
-    const { imagery, contacts, elapsedMs: now } = game.get();
+    const st = game.get();
+    const { imagery, contacts, elapsedMs: now } = st;
     const px = DPR / this.zoom;
+    // The square ORION-3 is locked on is watched live (ILI-1468): the fighters known there are drawn
+    // where they are now, not where the last look left them.
+    const watched = st.satellite.state !== 'slewing' && lockedOn(st, st.satellite.aim) ? st.satellite.aim : null;
+    const live = (c: (typeof contacts)[number]) => {
+      if (!watched || c.status !== 'revealed') return null;
+      const o = groupOrigin(c, now);
+      return squareAt(o.x + CELL / 2, o.y + CELL / 2) === watched ? o : null;
+    };
+    const drawn = new Set<string>();
+    for (const c of contacts) {
+      const o = live(c);
+      if (!o) continue;
+      drawn.add(c.id);
+      for (const u of c.units) {
+        const { x, y } = unitSpot(o, u);
+        g.lineStyle(4 * px, 0x0b0f0d, 0.7).strokeCircle(x, y, 5 * px);
+        g.lineStyle(1.8 * px, 0xe5484d, 1).strokeCircle(x, y, 5 * px);
+      }
+    }
     for (const snap of Object.values(imagery)) {
       const age = freshness(snap, now);
       // Old looks fade as they age (ILI-1430): full while live, then smoothly down to faint at stale.
       const alpha = age === 'live' ? 1 : age === 'stale' ? 0.18 : Math.max(0.18, 1 - ((now - snap.atMs) / GHOST_MS) * 0.82);
       for (const seen of snap.seen) {
         const c = contacts.find((x) => x.id === seen.contactId);
-        if (!c || c.status === 'cleared') continue;
+        if (!c || c.status === 'cleared' || drawn.has(c.id)) continue;
         // Live looks follow them; anything else shows where they were.
         const o = shownAt(snap, seen, c, now);
         if (!o) continue; // out of the picture: the fog closes over it (ILI-1416)
@@ -466,6 +491,62 @@ export class MapScene extends Phaser.Scene {
           g.lineBetween(ex, ey, ex - ux * h + uy * h * 0.6, ey - uy * h - ux * h * 0.6);
         }
       }
+    }
+  }
+
+  // How up to date each square's look is (ILI-1468). A photo square: a bar along its foot that
+  // drains as the photo ages, to empty when it goes stale, and a PHOTO · m:ss tag counting up. A
+  // square on video: corner brackets, ORION-3's frame, and FEED · LIVE with a blinking dot, for as
+  // long as the feed runs. The satellite's picture doesn't show these: they're map notes.
+  private drawSeen(time: number) {
+    const st = game.get();
+    const g = this.seenGfx.clear();
+    const px = DPR / this.zoom;
+    const now = st.elapsedMs;
+    const feeds = new Set(st.intel.live ?? []);
+    const want = new Map<string, { text: string; color: string; bg: string; x: number; y: number }>();
+    for (const snap of Object.values(st.imagery)) {
+      if (snap.mode !== 'photo' || snap.live || feeds.has(snap.square)) continue;
+      const p = parseSquare(snap.square);
+      if (!p) continue;
+      const x = p.col * CELL;
+      const y = p.row * CELL;
+      const left = Math.max(0, 1 - (now - snap.atMs) / GHOST_MS);
+      const stale = left <= 0;
+      const inset = 6 * px;
+      const w = CELL - inset * 2;
+      const h = 3 * px;
+      const by = y + CELL - inset - h;
+      g.fillStyle(0xf2c14e, 0.18).fillRect(x + inset, by, w, h);
+      if (left > 0) g.fillStyle(0xf2c14e, 0.95).fillRect(x + inset, by, w * left, h);
+      const secs = Math.floor((now - snap.atMs) / 1000);
+      want.set(`p:${snap.square}`, { text: stale ? 'PHOTO · STALE' : `PHOTO · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, color: stale ? '#6f8a7d' : '#f2c14e', bg: '#0b0f0dd9', x: x + CELL - 8 * px, y: y + 8 * px }); // top right: the INTEL / CLEAR stamp has the foot's left
+    }
+    for (const sq of feeds) {
+      const p = parseSquare(sq);
+      if (!p) continue;
+      const x = p.col * CELL;
+      const y = p.row * CELL;
+      const k = CELL * 0.14;
+      const i = 3 * px;
+      g.lineStyle(2 * px, TEAL, 0.95);
+      for (const [cx, cy, dx, dy] of [[x + i, y + i, 1, 1], [x + CELL - i, y + i, -1, 1], [x + i, y + CELL - i, 1, -1], [x + CELL - i, y + CELL - i, -1, -1]] as const) {
+        g.lineBetween(cx, cy, cx + dx * k, cy);
+        g.lineBetween(cx, cy, cx, cy + dy * k);
+      }
+      const blink = Math.floor(time / 600) % 2 === 0;
+      want.set(`f:${sq}`, { text: `${blink ? '●' : '○'} FEED · LIVE`, color: '#0b0f0d', bg: '#35d0a5', x: x + CELL - 8 * px, y: y + 8 * px });
+    }
+    for (const [key, label] of this.seenTags) if (!want.has(key)) (label.destroy(), this.seenTags.delete(key));
+    for (const [key, w] of want) {
+      let label = this.seenTags.get(key);
+      if (!label) {
+        label = this.add.text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${9.5 * DPR}px`, padding: { x: 5 * DPR, y: 2 * DPR } });
+        label.setOrigin(1, 0);
+        this.inset.ignore(label);
+        this.seenTags.set(key, label);
+      }
+      label.setText(w.text).setColor(w.color).setBackgroundColor(w.bg).setScale(1 / this.zoom).setPosition(w.x, w.y);
     }
   }
 
