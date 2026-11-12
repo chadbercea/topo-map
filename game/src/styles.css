@@ -1800,3 +1800,32 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .tasking .t-accept { min-height: 32px; font: inherit; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase; color: #0b0f0d; background: var(--o); border: 0; cursor: pointer; }
 .tasking .t-accept:hover, .tasking .t-accept:focus-visible { background: #ffa257; outline: none; }
 @media (prefers-reduced-motion: reduce) { .tasking, .tasking .t-specs { animation: none; } }
+
+/* ORION-3's satellite actions (ILI-1465, the ILI-1459 design): Reposition in the header; under the
+   picture, Scan across the width, then Photo and Video, always in their places. */
+.orion h2 .o-repo { flex: none; min-height: 22px; padding: 1px 8px; font: inherit; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); background: none; border: 1px solid var(--line); cursor: pointer; }
+.orion h2 .o-repo small { color: var(--dim); text-transform: none; letter-spacing: 0; }
+.orion h2 .o-repo:hover:not(:disabled) { color: #0b0f0d; background: var(--accent); border-color: var(--accent); }
+.orion h2 .o-repo:hover:not(:disabled) small { color: inherit; }
+.orion h2 .o-repo:disabled { opacity: 0.45; cursor: default; }
+.orion h2 .o-state { margin-left: auto; }
+.orion .o-buttons .modes { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; flex: 1; min-width: 0; }
+.orion .o-buttons .modes .o-scan { grid-column: 1 / -1; }
+.orion .o-buttons .modes button { min-height: 0; }
+.orion .o-buttons .modes .o-scan:not(:disabled) { border-color: #f2c14e; color: #f2c14e; background: rgba(242, 193, 78, 0.08); }
+.orion .o-buttons .modes .o-scan:hover:not(:disabled) { color: #0b0f0d; background: #f2c14e; }
+.hud[data-tier='compact'] .orion .o-buttons small { display: none; } /* a phone's row is short: the verbs only */
+
+/* On a wide screen (ILI-1465): the header, the picture at the top as a fixed square the panel's
+   width, the buttons under it, then the square's intel and ground, and the weather at the foot.
+   No 3D satellite: a glyph in the header names it. */
+.hud[data-tier='wide'] .orion { grid-template-rows: auto auto 100px minmax(0, 1fr) auto; grid-template-areas: 'head' 'frame' 'buttons' 'detail' 'env'; }
+.hud[data-tier='wide'] .orion > .o-frame { aspect-ratio: 1; height: auto; }
+.hud[data-tier='wide'] .orion > .o-buttons { height: 100px; }
+.hud[data-tier='wide'] .orion > .o-detail { grid-area: detail; min-height: 0; overflow: hidden; align-content: start; }
+.hud[data-tier='wide'] .orion > .env-stack { grid-area: env; }
+.hud[data-tier='wide'] .orion > :is(.o-saw, .o-last) { display: none; }
+.hud[data-tier='wide'] .orion .o-icon { display: block; }
+/* Narrower than wide, the three share one row: the 60 px rank-1 row stays as it was (ILI-1400). */
+.hud:not([data-tier='wide']) .orion .o-buttons .modes { grid-template-columns: 1.3fr 1fr 1fr; grid-template-rows: minmax(0, 1fr); }
+.hud:not([data-tier='wide']) .orion .o-buttons .modes .o-scan { grid-column: auto; }
