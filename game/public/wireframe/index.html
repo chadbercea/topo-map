@@ -591,6 +591,54 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .l59 .lov .gl { stroke: #ff8a2a; stroke-width: 1; opacity: .8; fill: none; }
 .l59 .lov .gt { font: 600 12px 'IBM Plex Mono', monospace; fill: #ff8a2a; paint-order: stroke; stroke: #0b0f0d; stroke-width: 4px; }
 .l59 .lov .gt.big { font-size: 20px; }
+
+/* rev 2: the satellite owns every action */
+.l59 .g .orion { grid-template-rows: 40px 360px 100px auto auto 1fr; }
+.l59 .g .o-btns { grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 40px 36px; }
+.l59 .g .o-btns .scan { grid-column: 1 / -1; background: rgba(242, 193, 78, .1); border-color: var(--amber); color: var(--amber); }
+.l59 .g .o-btns .strike { border-color: rgba(229, 72, 77, .55); color: #f08a8d; background: rgba(229, 72, 77, .06); }
+.l59 .g .repo { margin-left: 8px; height: 24px; padding: 0 8px; background: none; border: 1px solid var(--hair); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); }
+.l59 .g .sqd { margin: 0; padding: 10px; display: grid; grid-template-columns: 64px 1fr; row-gap: 6px; font-size: 11px; }
+.l59 .g .sqd dt { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); align-self: center; }
+.l59 .g .sqd dd { margin: 0; }
+.l59 .g .sqd dd.none { color: var(--dim); }
+.l59 .g .sqd dd b { color: var(--amber); font-weight: 400; }
+.l59 .g .callout .tag em + em { padding-left: 10px; }
+.l59 .g .photo, .l59 .g .feed { position: absolute; width: 143px; height: 143px; }
+.l59 .g .photo { background: rgba(242, 193, 78, .05); }
+.l59 .g .photo .drain { position: absolute; left: 6px; right: 6px; bottom: 6px; height: 4px; background: linear-gradient(90deg, var(--amber) var(--v), rgba(242, 193, 78, .18) var(--v)); }
+.l59 .g .photo .age { position: absolute; left: 6px; bottom: 14px; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); background: rgba(11, 15, 13, .85); padding: 2px 5px; }
+.l59 .g .ghost-h, .l59 .g .live-h { position: absolute; width: 10px; height: 10px; transform: translate(-50%, -50%) rotate(45deg); }
+.l59 .g .ghost-h { border: 1.5px dashed rgba(229, 72, 77, .6); }
+.l59 .g .live-h { background: var(--red); box-shadow: 0 0 0 3px rgba(229, 72, 77, .25); }
+.l59 .g .feed .brk { position: absolute; width: 18px; height: 18px; border: 0 solid var(--teal); }
+.l59 .g .feed .tlb { left: 3px; top: 3px; border-width: 2px 0 0 2px; } .l59 .g .feed .trb { right: 3px; top: 3px; border-width: 2px 2px 0 0; }
+.l59 .g .feed .blb { left: 3px; bottom: 3px; border-width: 0 0 2px 2px; } .l59 .g .feed .brb { right: 3px; bottom: 3px; border-width: 0 2px 2px 0; }
+.l59 .g .feed .ftag { position: absolute; right: 8px; top: 8px; display: flex; align-items: center; gap: 5px; font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: #0b0f0d; background: var(--teal); padding: 2px 6px; }
+.l59 .g .feed .ftag i { width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+.l59 .g .flyout, .l59 .g .target { display: none; }
+.l59 .stage[data-view="strike"] .g .flyout { display: block; position: absolute; left: 828px; top: 436px; width: 228px; background: var(--fill); border: 1px solid var(--red); box-shadow: -8px 0 24px rgba(0, 0, 0, .5); }
+.l59 .g .flyout .sq-h b { color: #f08a8d; }
+.l59 .g .fo-bal { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 10px 4px; }
+.l59 .g .fo-bal small { display: inline; } .l59 .g .fo-bal b { font-weight: 400; }
+.l59 .g .fo { display: grid; grid-template-columns: 1fr auto 52px; align-items: center; gap: 8px; width: calc(100% - 20px); margin: 6px 10px 0; height: 32px; padding: 0 10px; background: none; border: 1px solid var(--hair); text-transform: uppercase; letter-spacing: .1em; font-size: 11px; }
+.l59 .g .fo b { font-weight: 600; text-align: left; } .l59 .g .fo span { color: var(--dim); } .l59 .g .fo em { font-style: normal; color: var(--teal); text-align: right; }
+.l59 .g .fo.on { border-color: var(--red); background: rgba(229, 72, 77, .12); }
+.l59 .g .fo.off { opacity: .5; } .l59 .g .fo.off em { color: var(--dim); }
+.l59 .g .fo-n { margin: 8px 10px 10px; font-size: 9.5px; color: var(--dim); letter-spacing: .06em; }
+.l59 .stage[data-view="strike"] .g .target { display: block; position: absolute; left: 0; right: 0; top: 40px; height: 360px; pointer-events: none; }
+.l59 .g .target .ret { position: absolute; left: 50%; top: 50%; width: 120px; height: 120px; transform: translate(-50%, -50%); border: 1.5px solid var(--red); border-radius: 50%; background: linear-gradient(var(--red), var(--red)) center / 1px 100% no-repeat, linear-gradient(var(--red), var(--red)) center / 100% 1px no-repeat; opacity: .85; }
+.l59 .g .target .tb { position: absolute; width: 22px; height: 22px; transform: translate(-50%, -50%); outline: 2px solid var(--red); outline-offset: 2px; }
+.l59 .g .target .tt, .l59 .g .target .tc { position: absolute; left: 50%; transform: translateX(-50%); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; padding: 3px 8px; }
+.l59 .g .target .tt { top: 40px; background: var(--red); color: #0b0f0d; font-weight: 600; }
+.l59 .g .target .tc { bottom: 34px; background: #0b0f0d; color: #f08a8d; border: 1px solid var(--red); font-size: 13px; }
+.l59 .stage[data-view="strike"] .g .o-btns .strike { background: rgba(229, 72, 77, .2); color: #fff; border-color: var(--red); }
+.l59 .stage[data-view="strike"] .g .o-btns .strike small { color: #fff; }
+.l59 .stage[data-view="strike"] .g .pic .br { display: none; }
+.l59-rev { border-color: var(--accent) !important; }
+.l59 .g .o-h > * { white-space: nowrap; flex-shrink: 0; }
+.l59 .g .o-h .repo { height: 22px; padding: 0 6px; font-size: 9px; }
+.l59 .g .target .tt, .l59 .g .target .tc { white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -605,9 +653,21 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 
 <section class="l59" id="layout-1459">
   <div class="sect-head">
-    <p class="eyebrow">ILI-1459 · desktop design pass · 2026-11-12 · 1440 × 900 · references: Notion "Visual Reference"</p>
+    <p class="eyebrow">ILI-1459 · desktop design pass · 2026-11-12 · rev 2 · 1440 × 900 · references: Notion "Visual Reference"</p>
     <h2>One frame around the map: the mission on top, the satellite on the right, the team along the bottom</h2>
     <p>Your note: the layout is scattered. The amount of space is fine, but things are spread around the edges with dead gaps between them. This pass works out where the eye goes, where the hand goes, and how big everything is, then draws the screen. The moment shown is the same in both pictures: ALPHA is walking to F4, you've picked F4, ORION-3 is locked on it, and there's radio traffic near E3.</p>
+  </div>
+
+  <div class="lean l59-rev">
+    <p><b>Rev 2, after your review on 2026-11-12: the satellite owns every action.</b> Your six answers, all drawn below:</p>
+    <ol>
+      <li><b>Scan exists only in ORION-3.</b> Clicking a square still picks it and sends ORION-3 there. You press Scan on ORION-3 once it's locked on.</li>
+      <li><b>A strike can only hit the square ORION-3 is over.</b> Strike in ORION-3 opens a flyout from its left edge where you pick the asset. Then ORION-3's picture switches to a targeting overlay while the strike plays out on the square.</li>
+      <li><b>The square panel only shows details.</b> There's no intel until something has looked: a scan, a video feed, or the team on the ground.</li>
+      <li><b>The map shows the last place each hostile was seen, fading as that sighting gets old.</b> It shows live movement only on the square ORION-3 is over and on squares with a video feed. ALPHA is always live.</li>
+      <li><b>A photo square</b> gets a bar along its bottom edge that drains as the photo ages, plus a "PHOTO · 2:14" age tag. <b>A video square</b> gets corner brackets and a "FEED · LIVE" tag that stay on for as long as the feed runs.</li>
+      <li><b>Search and Listen / Jam become buttons inside the map tag at their square.</b></li>
+    </ol>
   </div>
 
   <div class="l59-refs">
@@ -652,6 +712,7 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
     <button aria-pressed="true" data-view="design">The design</button>
     <button aria-pressed="false" data-view="eye">Where the eye goes</button>
     <button aria-pressed="false" data-view="hand">Where the hand goes</button>
+    <button aria-pressed="false" data-view="strike">Striking</button>
     <button aria-pressed="false" data-view="grid">Grid and sizes</button>
   </div>
   <figure class="l59-shot">
@@ -659,12 +720,13 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
       <div class="map"></div>
       <div class="gutfix"></div>
 
-      <!-- on-map: callouts and the square menu -->
-      <div class="callout hostile" style="left:262px;top:92px"><i class="dot"></i><span class="lead"></span><span class="tag">SIGINT · radio traffic · E3 <em>Listen</em></span></div>
+      <!-- on-map: a photo going stale (E4), a live feed (H4), a callout with its own buttons (E3), the picked square's details (F4) -->
+      <div class="photo" style="left:192px;top:172px"><i class="ghost-h" style="left:58%;top:40%"></i><span class="age">Photo · 2:14</span><i class="drain" style="--v:45%"></i></div>
+      <div class="feed" style="left:48px;top:315px"><i class="brk tlb"></i><i class="brk trb"></i><i class="brk blb"></i><i class="brk brb"></i><span class="ftag"><i></i>Feed · live</span><i class="live-h" style="left:40%;top:55%"></i><i class="live-h" style="left:52%;top:62%"></i></div>
+      <div class="callout hostile" style="left:262px;top:92px"><i class="dot"></i><span class="lead"></span><span class="tag">SIGINT · radio traffic · E3 <em>Listen</em><em>Jam</em></span></div>
       <div class="sqmenu" style="left:486px;top:172px">
-        <div class="sq-h"><b>F4</b><span>ORION-3 locked on</span><i class="x">×</i></div>
-        <button class="act cue"><b>Scan F4</b><span>settles the square</span></button>
-        <div class="sq-row dim"><span>Strike</span><span>no contacts</span></div>
+        <div class="sq-h"><b>F4</b><span>details</span><i class="x">×</i></div>
+        <dl class="sqd"><dt>Intel</dt><dd class="none">none yet · nothing has looked</dd><dt>Ground</dt><dd>rolling · open ground</dd><dt>ORION-3</dt><dd>locked on · <b>Scan it there ▸</b></dd></dl>
       </div>
 
       <!-- top bar -->
@@ -679,7 +741,7 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 
       <!-- ORION-3 -->
       <aside class="orion">
-        <div class="o-h"><svg viewBox="0 0 24 14" class="sat"><path d="M1 4h7v6H1zM16 4h7v6h-7zM8 7h8M10 3h4v8h-4z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><b>ORION-3</b><span class="st"><i></i>On station · F4</span></div>
+        <div class="o-h"><svg viewBox="0 0 24 14" class="sat"><path d="M1 4h7v6H1zM16 4h7v6h-7zM8 7h8M10 3h4v8h-4z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><b>ORION-3</b><button class="repo">⇄ Reposition</button><span class="st"><i></i>On station · F4</span></div>
         <div class="pic">
           <div class="crop"></div>
           <i class="cx" style="left:25%;top:25%"></i><i class="cx" style="left:75%;top:25%"></i><i class="cx" style="left:25%;top:75%"></i><i class="cx" style="left:75%;top:75%"></i>
@@ -687,7 +749,8 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
           <span class="bl">CLOUD 60% · VIS 6 KM</span><span class="br">NOT YET SCANNED</span>
           <i class="brk tlb"></i><i class="brk trb"></i><i class="brk blb"></i><i class="brk brb"></i>
         </div>
-        <div class="o-btns"><button>Photo<small>to ALPHA</small></button><button>Video<small>live feed</small></button><button class="ghost">Reposition</button></div>
+        <div class="o-btns"><button class="scan">Scan F4<small>settles the square</small></button><button>Photo<small>to ALPHA</small></button><button>Video<small>live feed</small></button><button class="strike">Strike<small>this square</small></button></div>
+        <div class="target"><i class="ret"></i><i class="tb" style="left:46%;top:40%"></i><span class="tt">Targeting · Drone · H-01</span><span class="tc">Impact 00:06</span></div>
         <div class="o-sec"><div class="o-sh"><small>Intel · F4</small><span>waiting on a scan</span></div>
           <ul class="intel"><li class="empty">Scan F4 and what it finds lands here, newest first</li><li class="empty"></li><li class="empty"></li><li class="empty"></li></ul>
         </div>
@@ -696,6 +759,15 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
         </div>
         <div class="env"><div><small>Cloud</small><b>High</b></div><div><small>Vis</small><b>6 km</b></div><div><small>Wind</small><b>NW 10</b></div><div><small>Temp</small><b>8°C</b></div><div><small>Light</small><b>Night</b></div><div><small>Rain</small><b>60%</b></div></div>
       </aside>
+
+      <div class="flyout">
+        <div class="sq-h"><b>Strike · F4</b><span>ORION-3 over it</span><i class="x">×</i></div>
+        <div class="fo-bal"><small>Budget</small><b>$9.6M</b></div>
+        <button class="fo"><b>Sniper</b><span>$40k</span><em>Ready</em></button>
+        <button class="fo on"><b>Drone</b><span>$90k</span><em>Ready</em></button>
+        <button class="fo off"><b>Heli</b><span>$150k</span><em>2:10</em></button>
+        <p class="fo-n">1 · pick the asset here &nbsp; 2 · ORION-3's picture targets</p>
+      </div>
 
       <!-- bottom: team dock + comms strip + map controls -->
       <div class="team">
@@ -736,15 +808,15 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
       <svg class="lov hand" viewBox="0 0 1440 900" aria-hidden="true">
         <rect class="dim" width="1440" height="900"/>
         <rect x="16" y="84" width="1032" height="632" class="z1"/>
-        <text x="40" y="700" class="zl">A · the map and the square menu · most clicks</text>
-        <rect x="1064" y="424" width="360" height="56" class="z2"/>
-        <text x="1074" y="502" class="zl">B · ORION-3's buttons</text>
+        <text x="40" y="700" class="zl">A · the map: pick a square, press a tag's button</text>
+        <rect x="1064" y="416" width="360" height="100" class="z2"/>
+        <text x="1074" y="538" class="zl">B · every satellite action</text>
         <rect x="16" y="16" width="1032" height="52" class="z3"/>
         <rect x="16" y="732" width="520" height="152" class="z3"/>
         <rect x="552" y="836" width="496" height="48" class="z3"/>
         <text x="560" y="826" class="zl">C · glance, open when needed</text>
-        <path d="M600 230 L 1140 452" class="travel"/>
-        <text x="760" y="320" class="zl t">≈ 580 px, square menu to ORION-3's buttons (today ≈ 870)</text>
+        <path d="M410 244 L 1150 440" class="travel"/>
+        <text x="560" y="372" class="zl t">one trip across per square; after that, Scan, Photo, Video and Strike are 40 px apart</text>
       </svg>
       <svg class="lov grid" viewBox="0 0 1440 900" aria-hidden="true">
         <path d="M16 0V900M1048 0V900M1064 0V900M1424 0V900M0 16H1440M0 68H1440M0 84H1440M0 716H1440M0 732H1440M0 884H1440M536 700V900M552 700V900" class="gl"/>
@@ -755,6 +827,7 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
         <text x="556" y="852" class="gt">comms · 496 × 48</text>
         <text x="600" y="400" class="gt big">open map · 1032 × 632</text>
         <text x="1068" y="72" class="gt">picture · 360 × 360, fixed</text>
+        <text x="1068" y="530" class="gt">buttons · 360 × 100</text>
       </svg>
     </div></div>
     <figcaption>Proposed, 1440 × 900. The map behind is a real frame from the game. The panels are drawn here and not built yet.</figcaption>
@@ -766,9 +839,9 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
       <ol>
         <li><b>The clock,</b> top left, the biggest number on screen. You glance at it when the mission starts and again whenever you check how you're doing.</li>
         <li><b>ALPHA on the map.</b> The camera keeps it near the middle, so that's where your eye rests.</li>
-        <li><b>The square you pick.</b> Its menu opens on the square's right edge, the side ORION-3 is on.</li>
-        <li><b>ORION-3's picture,</b> at the same height as the menu. After Scan your eye moves straight across, not down.</li>
-        <li><b>Photo and Video,</b> right under the picture they send.</li>
+        <li><b>The square you pick.</b> Its details open on its right edge, read-only, and ORION-3 heads there.</li>
+        <li><b>ORION-3's picture,</b> at the same height as the details. Your eye moves straight across, not down.</li>
+        <li><b>Scan, then Photo or Video,</b> right under the picture they act on.</li>
         <li><b>The intel lines,</b> under the buttons, newest first.</li>
         <li><b>Back to ALPHA,</b> who walks on what you sent.</li>
         <li><b>8, 9: only when something lights up.</b> A vitals bar turns amber in the team dock, or the log count goes up in the comms strip. Both sit on the bottom edge, outside the loop.</li>
@@ -778,10 +851,10 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
     <div>
       <h3>Where the hand goes</h3>
       <ul>
-        <li><b>A · the map and the square menu.</b> Picking squares, Scan, strikes and the callouts' own buttons (Listen on E3). Most clicks happen here.</li>
-        <li><b>B · ORION-3's button row.</b> Photo, Video and Reposition, the satellite's own controls (they stay with their owner). It sits right under the picture, mid-height, so the hand moves along the middle band from the square menu: about 580 px, against about 870 px today.</li>
+        <li><b>A · the map.</b> Pick a square, and ORION-3 heads there. Press the buttons in callout tags: Listen or Jam on E3, Search where ALPHA reaches a building.</li>
+        <li><b>B · ORION-3's buttons, right under the picture.</b> Scan, Photo, Video and Strike, with Reposition in the header. Every action that uses the satellite is here, and only here. The hand crosses the screen once per square, then works inside a 360 × 100 block.</li>
+        <li><b>The strike flyout</b> opens off ORION-3's left edge, right beside the Strike button. It never opens somewhere else on the map.</li>
         <li><b>C · the edges.</b> Pause, the log drawer and the team drawer. They're rarely used, so they sit in corners where you can't hit them by accident.</li>
-        <li><b>Scan lives only in the square menu.</b> It's a square action. ORION-3 loses its duplicate Scan button.</li>
       </ul>
     </div>
   </div>
@@ -793,11 +866,14 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
       <tr><td class="name">Mission bar</td><td>Top, across the map column</td><td>1032 × 52</td><td>The deadline, budget and pause chips plus the objective line become one bar. Each reading is a small label over a big value, and the clock is the largest. It no longer covers the D3 marker, because the map fits below the bar.</td></tr>
       <tr><td class="name">ORION-3</td><td>Right column, full height</td><td>360 × 868</td><td>Header (name and status in one line, a small satellite glyph instead of the 140 px model), then the picture at the top, then the button row, intel, ground and weather. Fixed sections, never scrolls.</td></tr>
       <tr><td class="name">· picture</td><td>ORION-3, top</td><td>360 × 360</td><td>Moves up from y 250 to y 56. Telemetry goes in its four corners instead of separate rows. It stays this size all the time.</td></tr>
-      <tr><td class="name">· buttons</td><td>Under the picture</td><td>360 × 48</td><td>Photo, Video, Reposition. Moves from the panel's bottom edge to directly under the picture. Scan is removed (it's in the square menu).</td></tr>
+      <tr><td class="name">· buttons</td><td>Under the picture</td><td>360 × 100</td><td>Scan across the full width, then Photo, Video and Strike. Reposition moves into the header. The buttons move from the panel's bottom edge to directly under the picture. They're the only place any of these exist.</td></tr>
+      <tr><td class="name">· strike flyout</td><td>Out of ORION-3's left edge</td><td>228 wide</td><td>Opens from Strike, and only for the square ORION-3 is over. You pick Sniper, Drone or Heli, with cost and readiness. Then ORION-3's picture switches to a targeting overlay while the strike plays out on the square.</td></tr>
       <tr><td class="name">· intel</td><td>Under the buttons</td><td>360 × 4 rows</td><td>The last scan's items, INT tag first, newest at the top. A fixed four rows; older items fold into a count.</td></tr>
       <tr><td class="name">· ground + weather</td><td>ORION-3, bottom</td><td>360 × 3 rows, then 6 cells</td><td>The ground rows lose their empty space. The six weather cells move from the panel's top to its foot, because they're context, not the loop.</td></tr>
-      <tr><td class="name">Square menu</td><td>On the picked square's right edge</td><td>232 wide</td><td>Same as today, with one primary action at a time (Scan, then strikes once there's a contact).</td></tr>
-      <tr><td class="name">Callouts</td><td>On the map, at their square</td><td>fits its text</td><td>Every prompt that has a place (traffic, ALPHA's intel ask, contacts) becomes a tag on that place, with its button inside the tag. Prompts with no place (an operator hit, a team call) go in the team dock's header.</td></tr>
+      <tr><td class="name">Square details</td><td>On the picked square's right edge</td><td>232 wide</td><td>Read-only: intel, ground, and where ORION-3 is. No buttons. "None yet" until a scan, a feed or the team has looked.</td></tr>
+      <tr><td class="name">Photo square</td><td>On the square</td><td>edge bar + tag</td><td>A bar along the bottom edge drains as the photo ages, with a "PHOTO · 2:14" tag. Hostiles stay at their last-known spots and fade with it.</td></tr>
+      <tr><td class="name">Video square</td><td>On the square</td><td>brackets + tag</td><td>Corner brackets plus "FEED · LIVE" with a blinking dot, on for as long as the feed runs. Hostiles move live inside it.</td></tr>
+      <tr><td class="name">Callouts</td><td>On the map, at their square</td><td>fits its text</td><td>Every prompt that has a place (traffic, ALPHA's intel ask, contacts, a building) becomes a tag on that place, with its own buttons inside: Listen and Jam, or Search. Prompts with no place (an operator hit, a team call) go in the team dock's header.</td></tr>
       <tr><td class="name">Team dock</td><td>Bottom left</td><td>520 × 152</td><td>ALPHA's status and its intel gauge go in the header. One 20 px row per operator: name, role, heartbeat, two short bars, state. The same inset as everything else.</td></tr>
       <tr><td class="name">Comms strip</td><td>Bottom, beside the team dock</td><td>496 × 48</td><td>Replaces the comms log button in the top-left corner. It shows the latest radio line, and Log opens the drawer upward over the map.</td></tr>
       <tr><td class="name">Map controls</td><td>Map's bottom-right corner</td><td>3 small buttons</td><td>Recentre on ALPHA, zoom in, zoom out, together in one place.</td></tr>
@@ -805,13 +881,13 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
   </table></div>
 
   <div class="lean">
-    <p><b>Calls for you:</b></p>
+    <p><b>Where the three calls landed (2026-11-12):</b></p>
     <ol>
-      <li><b>The frame:</b> map on the left, ORION-3 down the full right side, mission across the top, team and comms along the bottom. Approve it, or say what to move.</li>
-      <li><b>Scan only in the square menu</b> (ORION-3 loses its Scan button). Yes or no?</li>
-      <li><b>Every prompt with a place becomes a tag on the map,</b> with no floating prompt cards. Yes or no?</li>
+      <li><b>The frame:</b> approved ("overall, good work").</li>
+      <li><b>Scan:</b> the reverse of my proposal. It lives only in ORION-3, along with every other satellite action.</li>
+      <li><b>Prompts with a place become map tags,</b> with their buttons inside.</li>
     </ol>
-    <p class="dim">Once the frame is approved, ILI-1460 builds it and ILI-1463 powers the panels on in this order: bar, ORION-3, team, comms.</p>
+    <p class="dim">Next, ILI-1460 builds this one piece per PR, and ILI-1463 powers the panels on in this order: bar, ORION-3, team, comms.</p>
   </div>
 </section>
 
