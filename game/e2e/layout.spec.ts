@@ -60,8 +60,12 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   // runs from the left edge; the bar spans it, the comms log's button under it.
   await expect(page.getByTestId('satcom')).toBeHidden();
   expect(map.x).toBeLessThan(40);
-  expect(logButton.y).toBeGreaterThanOrEqual(bar.y + bar.height);
-  expect(logButton.x - map.x).toBeLessThan(24);
+  // The log's button is in the comms strip on the bottom edge (ILI-1470), beside the team dock.
+  const strip = await box('comms-strip');
+  expect(logButton.x).toBeGreaterThanOrEqual(strip.x);
+  expect(logButton.x + logButton.width).toBeLessThanOrEqual(strip.x + strip.width + 1);
+  expect(strip.y + strip.height).toBeGreaterThan(view.height - 40);
+  expect(strip.x).toBeGreaterThanOrEqual(team.x + team.width);
   expect(Math.abs(bar.x - map.x)).toBeLessThan(2);
   expect(Math.abs(bar.x + bar.width - (map.x + map.width))).toBeLessThan(2);
   expect(Math.abs(bar.y - map.y)).toBeLessThan(2);

@@ -79,12 +79,15 @@ function MainPrompt() {
       </div>
     );
   }
-  const sq = squareBox(p.square);
-  const width = Math.min(W, area.width - 16);
+  // A prompt with no place of its own (an operator hit, a team call) sits on the team dock, not on
+  // the map (ILI-1470): right over the team panel's header, no leader.
+  const team = tier === 'wide' && (p.kind === 'operator' || p.kind === 'team-call') ? document.querySelector('.slot-team')?.getBoundingClientRect() : null;
+  const sq = team ? null : squareBox(p.square);
+  const width = Math.min(team ? Math.min(W + 60, team.width) : W, area.width - 16);
   // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
   // on a phone a strip along the map's foot), the toolbox, the timer and the log.
   const strip = overlaysNamed(['actions', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']); // the square's menu, the toolbox, the timer (ILI-1392), the log (ILI-1393)
-  const at = place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
+  const at = team ? { x: team.left, y: team.top - 8 - (h || 96), w: width, h: h || 96 } : place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
   const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
   const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 96))) };
 
@@ -104,6 +107,7 @@ function MainPrompt() {
         data-kind={p.kind}
         data-square={p.square}
         data-tier={tier}
+        data-docked={team ? 'team' : undefined}
         style={{ left: at.x, top: at.y, width }}
         role="alertdialog"
         aria-label={p.text}

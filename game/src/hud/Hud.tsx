@@ -7,6 +7,7 @@ import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
 import { MissionBar } from './MissionBar';
+import { CommsLine } from './CommsLine';
 import { StrikeFlyout } from './StrikeFlyout';
 import { SightingPanels } from './SightingPanels';
 import { EnvWidget } from './EnvWidget';
@@ -153,22 +154,34 @@ export function Hud() {
           {/* One panel, two display states (ILI-1439): expanded, or folded to the strip. */}
           <TeamPanel highlight={highlight} minimized={!tabbed && !teamOpen} onToggle={tabbed ? undefined : toggleTeam} />
         </div>
+        {/* The comms strip (ILI-1470), beside the team: the latest radio line, and Log, which opens
+            the comms log upward over the map. It replaces the log button in the map's corner. */}
+        {!tabbed && (
+          <div className="comms-strip" data-testid="comms-strip">
+            <small>Comms</small>
+            <CommsLine />
+            <button className="log-toggle" data-overlay="logtoggle" onClick={() => setLog((o) => !o)} aria-expanded={log} data-testid="log-toggle" data-update={unseen.satcom || undefined}>
+              Log
+              {newComms > 0 && (
+                <>
+                  <span className="tab-dot" aria-hidden />
+                  <b className="new-count" data-testid="comms-new">
+                    {newComms} new
+                  </b>
+                </>
+              )}
+              <span aria-hidden>{log ? '▾' : '▴'}</span>
+            </button>
+            <div className="slot-satcom" ref={satcomSlot} data-overlay={log ? 'log' : undefined}>
+              <CommsPanel />
+            </div>
+          </div>
+        )}
       </div>
-      <div className="slot-satcom" ref={satcomSlot} data-overlay={!tabbed && log ? 'log' : undefined}>
-        <CommsPanel />
-      </div>
-      {!tabbed && (
-        <button className="log-toggle" data-overlay="logtoggle" onClick={() => setLog((o) => !o)} aria-expanded={log} data-testid="log-toggle" data-update={unseen.satcom || undefined}>
-          Comms log
-          {newComms > 0 && (
-            <>
-              <span className="tab-dot" aria-hidden />
-              <b className="new-count" data-testid="comms-new">
-                {newComms} new
-              </b>
-            </>
-          )}
-        </button>
+      {tabbed && (
+        <div className="slot-satcom" ref={satcomSlot}>
+          <CommsPanel />
+        </div>
       )}
       {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
       <nav className="dock-tabs" aria-label="Panels">
