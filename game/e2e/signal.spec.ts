@@ -80,7 +80,7 @@ test('jam instead: the traffic is gone, and HQ says what it costs', async ({ pag
   await untilTraffic(page);
   await lockOn(page, 'C2'); // ORION-3 over it, or nothing runs there (ILI-1397)
   await openEvent(page, 'signal', 'C2');
-  await page.getByRole('button', { name: 'Jam', exact: true }).click();
+  await page.getByTestId('traffic-prompt').getByTestId('traffic-jam').click(); // Jam is on the traffic's tag (ILI-1469)
   await expect(page.getByTestId('event-card')).toHaveCount(0);
   const log = await page.evaluate(() => window.game.get().comms.messages.map((m) => m.text));
   expect(log.some((t) => /Jamming their net near C2/.test(t))).toBe(true);

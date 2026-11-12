@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { freeze, lockOn, running, start } from './helpers';
 
-// Buildings (ILI-1316): one a scan turned up is pinged on its square; its anchor sends ALPHA to
-// search it, and what it finds pays on the spot.
-test('a building’s anchor sends ALPHA to search it; ALPHA reports the find and it pays', async ({ page, isMobile }) => {
+// Buildings (ILI-1316): one a scan turned up gets a callout tag on its square (ILI-1469); its Search
+// sends ALPHA to search it, and what it finds pays on the spot.
+test('a building’s tag sends ALPHA to search it; ALPHA reports the find and it pays', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
@@ -16,7 +16,11 @@ test('a building’s anchor sends ALPHA to search it; ALPHA reports the find and
   const anchor = page.getByTestId('square-anchor');
   await expect(anchor).toContainText('BUILDING · G4');
   const before = await page.evaluate(() => window.game.get().resources.budget);
-  await anchor.getByTestId('send-search').click();
+  const tag = page.locator('[data-testid=place-tag][data-square=G4]');
+  await expect(tag).toContainText('Building · G4');
+  await expect(anchor.getByTestId('send-search')).toHaveCount(0); // not in the square's panel: it's read-only
+  await tag.getByTestId('send-search').click();
+  await expect(tag.getByTestId('search-going')).toHaveText('ALPHA on its way');
   await expect(anchor).toContainText('ALPHA is on its way to search it');
   await page.evaluate(() => {
     for (let i = 0; i < 1500 && !window.game.get().comms.messages.some((m) => m.id === 'found-building-G4'); i++) window.game.tick(100);
@@ -38,8 +42,7 @@ test('a search shows its bar filling in the square menu, then the find in its pl
     window.game.set({ ...s, events: [...s.events, { id: 'building-G4', kind: 'building', square: 'G4', title: 'A building worth a search', atMs: 0, status: 'new' }] });
     window.game.selectSquare('G4');
   });
-  const anchor = page.getByTestId('square-anchor');
-  await anchor.getByTestId('send-search').click();
+  await page.locator('[data-testid=place-tag][data-square=G4]').getByTestId('send-search').click();
   await page.evaluate(() => {
     for (let i = 0; i < 1500 && !window.game.get().team.activity.startsWith('Searching'); i++) window.game.tick(100);
     for (let i = 0; i < 50; i++) window.game.tick(100); // five seconds in
