@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { start } from './helpers';
 
-test('walking blind into the hidden checkpoint is an ambush; the team panel goes red and the medic patches them up', async ({ page }) => {
+test('walking blind into the hidden checkpoint is an ambush, and an ambush kills: the team goes down one by one and the mission is lost (ILI-1453)', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
 
@@ -11,17 +11,25 @@ test('walking blind into the hidden checkpoint is an ambush; the team panel goes
     for (let i = 0; i < 3000 && !g.get().team.fight; i++) g.tick(100);
   });
   const panel = page.getByTestId('team-panel');
-  await expect(panel).toContainText('Engaged in E3');
-  const log = await page.evaluate(() => window.game.get().comms.messages.map((m) => m.text));
-  expect(log).toContain('Ambush in E3! Returning fire.');
+  await expect(panel).toContainText('Ambushed in E3');
   await expect(panel).toHaveAttribute('data-fight', 'true'); // the team panel goes red
   await expect(page.getByTestId('comms-feed')).toContainText('Ambush in E3');
 
+  // Two seconds in: one down, called on the radio, and the rest still standing.
   await page.evaluate(() => {
-    const done = () => window.game.get().comms.messages.some((m) => m.text === 'Patched up. Moving.');
-    for (let i = 0; i < 2400 && !done(); i++) window.game.tick(100);
+    for (let i = 0; i < 20; i++) window.game.tick(100);
   });
-  const radio = await page.evaluate(() => window.game.get().comms.messages.map((m) => m.text));
-  expect(radio.some((t) => /^E3 clear\./.test(t))).toBe(true);
-  expect(radio).toContain('Patched up. Moving.');
+  const two = await page.evaluate(() => window.game.get());
+  expect(two.team.operators.filter((o) => o.health <= 0)).toHaveLength(1);
+  expect(two.comms.messages.some((m) => /is down! 4 left\.$/.test(m.text))).toBe(true);
+
+  // Faster than anything HQ can send: within about 6 s nobody is left, and the mission is over.
+  await page.evaluate(() => {
+    for (let i = 0; i < 50 && window.game.get().phase !== 'ended'; i++) window.game.tick(100);
+  });
+  const end = await page.evaluate(() => window.game.get());
+  expect(end.team.operators.every((o) => o.health <= 0)).toBe(true);
+  expect(end.phase).toBe('ended');
+  expect(end.comms.messages.at(-1)?.text).toBe('ALPHA is not responding.');
+  await expect(page.getByText('ALPHA walked into E3 without a look. No survivors.')).toBeVisible();
 });

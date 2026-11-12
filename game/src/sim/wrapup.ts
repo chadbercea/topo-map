@@ -30,6 +30,9 @@ export function outcomeOf(s: GameState): Outcome {
   return down ? 'casualties' : 'win';
 }
 
+// The square of the ambush that wiped the team, if one did (ILI-1453).
+const blindAmbush = (s: GameState) => (s.team.fight?.ambush ? s.team.fight.square : undefined);
+
 export function wrapUp(s: GameState): WrapUp {
   const outcome = outcomeOf(s);
   const down = casualties(s);
@@ -41,7 +44,9 @@ export function wrapUp(s: GameState): WrapUp {
       : outcome === 'casualties'
         ? `Black box recovered, but ${down} operator${down > 1 ? 's' : ''} down.`
         : wiped
-          ? 'The team was lost.'
+          ? blindAmbush(s)
+            ? `${s.team.callsign} walked into ${blindAmbush(s)} without a look. No survivors.`
+            : 'The team was lost.'
           : 'Time ran out before exfil.';
 
   const found = s.contacts.filter((c) => c.status !== 'hidden').length;

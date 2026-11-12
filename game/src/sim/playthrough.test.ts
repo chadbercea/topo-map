@@ -35,9 +35,11 @@ describe('playthrough', () => {
     expect(s.comms.messages.filter((m) => m.from === 'ALPHA' && m.responses).every((m) => m.node === 'resupply')).toBe(true); // nothing else asked
   });
 
-  it('a silent HQ: ALPHA walks in blind, and the checkpoint it never heard about ambushes it', () => {
+  it('a silent HQ: ALPHA walks in blind, and the checkpoint it never heard about ambushes it and kills them all (ILI-1453)', () => {
     const s = play('silent');
     expect(s.team.waypoint).toBeGreaterThan(1);
     expect(s.comms.messages.some((m) => m.text.startsWith('Ambush'))).toBe(true);
+    expect(s.team.operators.every((o) => o.health <= 0)).toBe(true);
+    expect(s.phase).toBe('ended');
   });
 });
