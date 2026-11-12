@@ -4,7 +4,7 @@ import { fastForward, freeze, running, start } from './helpers';
 // The team panel is a drawer off the heartbeat strip (ILI-1396): closed by default, opened from
 // the strip, and opened with an operator highlighted from their prompt.
 
-test('the team panel is expanded by default; minimized it is the strip; they swap, never both (ILI-1396, ILI-1439)', async ({ page, isMobile }) => {
+test('the team panel is a bar at rest; a slot opens its table with them highlighted; one drawer at a time (ILI-1472)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   const strip = page.getByTestId('heartbeat-strip');
@@ -15,19 +15,21 @@ test('the team panel is expanded by default; minimized it is the strip; they swa
     await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
     return;
   }
-  // One panel, two states: never a second panel (ILI-1439).
+  // One panel: a bar at rest, the table a drawer out of it (ILI-1472). A slot opens it with that
+  // operator highlighted; opening it closes the comms log, one drawer at a time.
   const panel = page.getByTestId('team-panel');
+  await expect(panel).toHaveAttribute('data-state', 'min');
+  await expect(panel.getByTestId('heartbeat-strip').locator('svg.ecg')).toHaveCount(5);
+  await expect(page.getByTestId('readout')).toHaveCount(0);
+  await page.getByTestId('log-toggle').click();
+  await expect(page.locator('.hud')).toHaveAttribute('data-log', 'true');
+  await page.getByTestId('hb-medic').click();
   await expect(panel).toHaveAttribute('data-state', 'full');
-  await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
-  await expect(strip).toHaveCount(0);
+  await expect(page.getByTestId('op-medic')).toHaveAttribute('data-highlight', 'true');
+  await expect(page.locator('.hud')).not.toHaveAttribute('data-log', /./);
+  await expect(page.getByTestId('team-panel')).toHaveCount(1);
   await page.getByTestId('team-minimize').click();
   await expect(panel).toHaveAttribute('data-state', 'min');
-  await expect(page.getByTestId('team-panel')).toHaveCount(1);
-  await expect(panel.getByTestId('heartbeat-strip').locator('svg.ecg')).toHaveCount(5); // five heartbeats, in the same panel
-  await expect(page.getByTestId('readout')).toHaveCount(0);
-  await strip.click();
-  await expect(panel).toHaveAttribute('data-state', 'full');
-  await expect(strip).toHaveCount(0);
 });
 
 test('an operator hit is a prompt; it opens the team panel with them highlighted', async ({ page }) => {
@@ -48,19 +50,16 @@ test('an operator hit is a prompt; it opens the team panel with them highlighted
 });
 
 // Names and status on the strip; the drawer as wide as its rows (ILI-1406).
-test('the strip names each operator with their status; the open drawer hugs its rows', async ({ page, isMobile }) => {
+test('the bar names each operator; the drawer\u2019s rows fill its width (ILI-1472)', async ({ page, isMobile }) => {
   test.skip(isMobile, 'a phone has no strip: its TEAM target says how the team is (ILI-1461)');
   await start(page, '?debug');
   await running(page);
-  if (!isMobile) await page.getByTestId('team-minimize').click(); // the strip (ILI-1439)
   const strip = page.getByTestId('heartbeat-strip');
   await expect(strip.getByTestId('hb-lead')).toContainText('Reyes');
-  await expect(strip.getByTestId('hb-lead')).toContainText('FINE');
   const s = (await strip.boundingBox())!;
   expect(s.x + s.width).toBeLessThanOrEqual(page.viewportSize()!.width); // fits on a phone
-  if (isMobile) return; // on a phone the drawer is the TEAM tab of the sheet
-  await strip.click(); // expanded again (ILI-1439)
-  const panel = (await page.getByTestId('team-panel').boundingBox())!;
+  await page.getByTestId('team-expand').click();
+  const panel = (await page.getByTestId('team-drawer').boundingBox())!;
   const row = (await page.getByTestId('op-lead').boundingBox())!;
-  expect(panel.width - row.width).toBeLessThan(40); // no dead space beside the rows
+  expect(panel.width - row.width).toBeLessThan(40); // the rows fill the drawer
 });

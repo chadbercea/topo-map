@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { pins } from './pins';
 import { ammoLeft, condition, medsLeft, type Operator } from '../sim/team';
 import { LOW } from '../sim/support';
 import { SUSPICIOUS_NOISE } from '../sim/imagery';
@@ -90,7 +91,15 @@ export function OperatorRow({ o, highlight }: { o: Operator; highlight?: boolean
   const levels = [supply(ammoLeft(o)), supply(medsLeft(o)), loudness(o.noise)];
   const flag = c === 'down' ? 'down' : c === 'danger' || levels.includes('out') ? 'danger' : c === 'caution' || levels.includes('low') ? 'caution' : undefined;
   return (
-    <li className="op" data-condition={c} data-flag={flag} data-highlight={highlight || undefined} data-testid={`op-${o.id}`}>
+    <li
+      className="op"
+      data-condition={c}
+      data-flag={flag}
+      data-highlight={highlight || undefined}
+      data-testid={`op-${o.id}`}
+      onPointerEnter={() => pins.hover(`op:${o.id}`, 'map')} // brackets them on the map (ILI-1472)
+      onPointerLeave={() => pins.get().hovered === `op:${o.id}` && pins.hover(null, 'map')}
+    >
       <div className="who">
         <RankIcon grade={o.rank.grade} title={o.rank.title} />
         <span className="name">{o.name}</span>

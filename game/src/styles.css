@@ -1897,7 +1897,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud[data-tier='wide'] .slot-bottom { display: grid; grid-template-columns: 520px minmax(0, 1fr); align-items: end; gap: var(--gutter); }
 .hud[data-tier='wide'] .comms-strip { width: 100%; justify-self: stretch; }
 .hud[data-tier='wide'] .slot-team { width: 520px; max-width: 520px; }
-.hud[data-tier='wide'] .team[data-state='full'] { height: 152px; max-height: 152px; }
 .hud[data-tier='wide'] .team .readout { gap: 2px; }
 .comms-strip { position: relative; display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 0 0 12px; min-width: 0; pointer-events: auto; background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); font-size: 12px; }
 .comms-strip > small { flex: none; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
@@ -1937,18 +1936,10 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .hud[data-layout='fold'] .orion > :is(.o-saw, .o-last) { display: none; }
   .hud[data-layout='fold'] .orion .o-icon { display: block; }
   .hud[data-layout='fold'] .slot-bottom { grid-area: bottom; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
-  .hud[data-layout='fold'] .slot-team { grid-area: auto; display: block; position: relative; height: 48px; min-height: 0; max-height: none; align-self: stretch; }
-  .hud[data-layout='fold'] .slot-team .team { height: 48px; overflow: hidden; }
-  .hud[data-layout='fold'] .slot-team .team[data-state='full'] { position: absolute; left: 0; right: 0; bottom: 0; height: auto; max-height: 260px; overflow: auto; z-index: 8; background: rgba(11, 15, 13, 0.96); }
-  .hud[data-layout='fold'] .team { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(11, 15, 13, 0.9); }
   .hud[data-layout='fold'] .comms-strip { height: 48px; width: 100%; }
   .hud[data-layout='fold'] .comms-strip .slot-satcom { display: grid; }
   .hud[data-layout='fold']:not([data-log]) .comms-strip .slot-satcom { display: none; }
   .hud[data-layout='fold'] .orion .env-stack { display: grid; } /* the dock is short, but the weather has its own row */
-  .hud[data-layout='fold'] .team[data-state='min'] { display: flex; align-items: center; gap: 12px; padding: 0 10px; }
-  .hud[data-layout='fold'] .team[data-state='min'] > h2 { flex: none; margin: 0; }
-  .hud[data-layout='fold'] .team[data-state='min'] > h2 .activity { display: none; }
-  .hud[data-layout='fold'] .team[data-state='min'] .heartbeat-strip { flex: 1; min-width: 0; }
   .hud[data-layout='fold'] .strike-flyout { left: auto; right: max(10px, env(safe-area-inset-right)); top: auto; bottom: calc(min(412px, 40dvh) + 48px + 26px); width: 280px; }
 }
 
@@ -1984,3 +1975,49 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @media (max-width: 699px) { .hud[data-tier='compact'] :is(.slot-team, .slot-satcom) > .panel, .hud[data-tier='compact'] .orion > :not(.o-frame) { background: rgba(11, 15, 13, 0.95); backdrop-filter: none; -webkit-backdrop-filter: none; } }
 @media (max-width: 699px) { .hud[data-tier='compact'] .sighting-layer { z-index: 9; } } /* a fighter's pinned panel stays over the phone's sliding panels (ILI-1461) */
 @media (max-width: 699px) { .hud[data-tier='compact'] .orion .o-icon { display: block; } }
+
+/* The team panel (ILI-1472): a 48 px bar on the bottom edge that never moves, the table a drawer
+   that slides up out of it at the same width, over the map. Wide and fold upright; on a phone and in
+   a sideways rail it's a tab with the table alone. */
+.hud:is([data-tier='wide'], [data-layout='fold']) .slot-team { grid-area: auto; position: relative; height: 48px; min-height: 0; max-height: none; width: auto; max-width: none; display: block; align-self: end; }
+.hud[data-tier='wide'] .slot-team { width: 520px; }
+.hud:is([data-tier='wide'], [data-layout='fold']) .team { position: relative; width: 100%; height: 48px; max-height: none; overflow: visible; padding: 0; display: block; background: rgba(11, 15, 13, 0.92); backdrop-filter: none; -webkit-backdrop-filter: none; border-left: 3px solid var(--accent); }
+.hud:is([data-tier='wide'], [data-layout='fold']) .team[data-worst='caution'] { border-left-color: #f2c14e; }
+.hud:is([data-tier='wide'], [data-layout='fold']) .team:is([data-worst='danger'], [data-worst='down']) { border-left-color: #e5484d; }
+.team-bar { display: flex; align-items: stretch; height: 100%; }
+.team-bar > h2 { flex: none; display: grid; align-content: center; gap: 2px; width: 112px; margin: 0; padding: 0 12px; border-right: 1px solid rgba(53, 208, 165, 0.18); }
+.team-bar > h2 .callsign { font-size: 11px; letter-spacing: 0.16em; }
+.team-bar > h2 .activity { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team-bar > h2 .alerted { font-size: 9px; }
+.team-bar .heartbeat-strip { flex: 1; min-width: 0; height: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; padding: 0; margin: 0; background: none; border: 0; cursor: pointer; }
+.team-bar .hb { display: grid; align-content: center; justify-items: center; gap: 1px; min-width: 0; border-right: 1px solid rgba(53, 208, 165, 0.1); cursor: pointer; }
+.team-bar .hb:hover, .team-bar .hb[data-hover] { background: rgba(53, 208, 165, 0.08); }
+.team-bar .hb .hb-name { font-size: 10px; letter-spacing: 0.04em; text-transform: none; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.team-bar .hb .ecg { width: 44px; height: 12px; }
+.team-bar .hb .hb-status { display: none; }
+.team-bar .hb[data-condition='caution'] .hb-name { color: #f2c14e; }
+.team-bar .hb:is([data-condition='danger'], [data-condition='down']) { background: rgba(229, 72, 77, 0.12); }
+.team-bar .hb:is([data-condition='danger'], [data-condition='down']) .hb-name { color: #e5484d; }
+.team-bar .hb[data-blink] { animation: hb-blink 360ms steps(2, jump-none) 2; }
+@keyframes hb-blink { 50% { background: rgba(229, 72, 77, 0.45); } }
+.team-bar .team-min { flex: none; width: 40px; height: 100%; min-height: 0; padding: 0; font: inherit; font-size: 12px; color: var(--dim); background: none; border: 0; border-left: 1px solid rgba(53, 208, 165, 0.18); cursor: pointer; }
+.team-bar .team-min:hover { color: var(--accent); }
+.hud:is([data-tier='wide'], [data-layout='fold']) .team[data-state='full'] { border-color: var(--accent); }
+.hud:is([data-tier='wide'], [data-layout='fold']) .team-drawer { position: absolute; left: -4px; right: -1px; bottom: 100%; padding: 6px 12px 8px; background: rgba(11, 15, 13, 0.97); border: 1px solid var(--accent); border-bottom: 0; animation: drawer-up 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both; z-index: 8; }
+@keyframes drawer-up { from { transform: translateY(12px); opacity: 0; } }
+.team-drawer .op, .team-drawer .team-cols { --cols: 12px 7ch minmax(0, 1fr) 48px 7ch minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.8fr); --bar: 100%; justify-content: stretch; column-gap: 10px; }
+.team-drawer .team-cols { display: grid; grid-template-columns: var(--cols); align-items: end; padding: 2px 0 6px; border-bottom: 1px solid rgba(53, 208, 165, 0.18); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+.team-drawer .team-cols .c-who { grid-column: 1 / 4; }
+.team-drawer .team-cols .c-vitals { grid-column: 4 / 6; }
+.team-drawer .readout { margin: 4px 0 0; gap: 2px; }
+.team-drawer .op { min-height: 26px; padding: 0 4px; margin: 0 -4px; }
+.team-drawer .op[data-highlight] { background: rgba(53, 208, 165, 0.1); box-shadow: inset 2px 0 0 var(--accent); }
+.team-drawer .op .gauge { width: 100%; }
+.team-drawer .op .gauge .bar { flex: 1; }
+.team-drawer .op .gauge .k { display: none; } /* the column says what it is */
+@media (prefers-reduced-motion: reduce) { .team-drawer, .team-bar .hb[data-blink] { animation: none !important; } }
+.hud[data-layout='fold'] .slot-bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.hud[data-layout='fold'] .team-drawer { max-height: min(260px, 40dvh); overflow: auto; }
+.team-bar > h2 { width: 116px; }
+.team-bar > h2 .callsign { white-space: nowrap; font-size: 10px; letter-spacing: 0.12em; }
+.team-drawer .op[data-flag]::before { left: -4px; }

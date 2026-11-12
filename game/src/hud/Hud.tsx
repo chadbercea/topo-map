@@ -43,14 +43,13 @@ export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   // ORION-3 first: the team panel is a drawer now (ILI-1396), closed until HQ opens it.
   const [tab, setTab] = useState<Tab>('orion');
-  const [teamOpen, setTeamOpen] = useState(true); // expanded by default; minimizes to the strip (ILI-1439)
+  const [teamOpen, setTeamOpen] = useState(false); // the bar at rest; its table is a drawer that never opens by itself (ILI-1472)
   const [highlight, setHighlight] = useState<string | null>(null);
   // On a wide screen the log is a drawer over the map's left edge, behind one small button (ILI-1393).
   const [log, setLog] = useState(false);
 
   const tier = useTier();
   const fold = useFold(); // ILI-1461: ORION-3 docked under the map, the team and comms along the bottom
-  useEffect(() => void (fold && setTeamOpen(false)), [fold]); // folded to its strip there: it opens upward over ORION-3
   const satellite = useGame((s) => s.mission.satellite); // its name, from the mission's config (ILI-1401)
   // The panels stay dark while the map boots, then power on in turn (ILI-1281, ILI-1462), on the
   // way in and on a restart (intro.ts).
@@ -125,13 +124,30 @@ export function Hud() {
   const openTeam = (id: string | null = null) => {
     setHighlight(id);
     if (tabbed) pick('team');
-    else setTeamOpen(true);
+    else {
+      setTeamOpen(true);
+      setLog(false); // one drawer at a time (ILI-1472)
+    }
   };
   const toggleTeam = () => {
     setHighlight(null);
     if (tabbed) return tab === 'team' && shown('team') ? pick('orion') : pick('team');
     setTeamOpen((o) => !o);
+    setLog(false); // one drawer at a time (ILI-1472)
   };
+  // The drawers close with Esc, or a click on the map (ILI-1472).
+  useEffect(() => {
+    if (tabbed) return;
+    const close = () => (setTeamOpen(false), setLog(false));
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && close();
+    const canvas = document.getElementById('game');
+    window.addEventListener('keydown', key);
+    canvas?.addEventListener('pointerdown', close);
+    return () => {
+      window.removeEventListener('keydown', key);
+      canvas?.removeEventListener('pointerdown', close);
+    };
+  }, [tabbed]);
   useEffect(() => {
     const on = (id: string | null) => openTeam(id);
     bus.on(EV.openTeam, on);
@@ -175,7 +191,7 @@ export function Hud() {
           <div className="comms-strip" data-testid="comms-strip">
             <small>Comms</small>
             <CommsLine />
-            <button className="log-toggle" data-overlay="logtoggle" onClick={() => setLog((o) => !o)} aria-expanded={log} data-testid="log-toggle" data-update={unseen.satcom || undefined}>
+            <button className="log-toggle" data-overlay="logtoggle" onClick={() => (setLog((o) => !o), setTeamOpen(false))} aria-expanded={log} data-testid="log-toggle" data-update={unseen.satcom || undefined}>
               Log
               {newComms > 0 && (
                 <>
