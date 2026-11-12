@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, lockedOn, satName, slewMs } from '../sim/satellite';
+import { CAPTURE, lockedOn, satName } from '../sim/satellite';
 import { isImageryRequest } from '../sim/imageryRequest';
 import { settled, squareFindings, squareReports } from '../sim/intel';
 import { MiniGamePanel } from './MiniGamePanel';
@@ -265,11 +265,9 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       <AirPanel weapon="drone" square={square} />
       <AirPanel weapon="heli" square={square} />
 
-      {!locked ? (
-        <MoveHere s={s} square={square} />
-      ) : (
+      {locked && (
         <>
-          {settled(s, square) ? null : <Scan s={s} square={square} />}
+          <SquareFacts s={s} square={square} />
 
           {/* Its fighters, and every way to hit them (ILI-1230, ILI-1270), here at their square. */}
           {/* The options fold away while a strike runs, and slide back after (ILI-1425). */}
@@ -325,39 +323,36 @@ export function Readouts({ s, square }: { s: GameState; square: string }) {
   );
 }
 
-// The slew step (ILI-1397): on a square ORION-3 isn't over, the menu's one action is to move it
-// here, with how long that takes. It slews in real time; on arrival the reticle locks and the
-// square's actions take this one's place.
-function MoveHere({ s, square }: { s: GameState; square: string }) {
-  const sat = s.satellite;
-  const now = s.elapsedMs;
-  const coming = sat.state === 'slewing' && sat.aim === square;
-  const busy = sat.state === 'capturing';
-  const waiting = s.events.filter((e) => e.square === square && e.status !== 'resolved' && e.kind !== 'site').length;
-  return (
-    <div className="sc-scan sc-move" data-testid="square-move">
-      {waiting > 0 && <p className="sc-asked">{waiting === 1 ? 'Something here to act on' : `${waiting} things here to act on`}</p>}
-      <button onClick={() => game.moveSatellite(square)} disabled={coming || busy} data-testid="move-here">
-        <span>{coming ? `${satName(s)} on its way` : `Move ${satName(s)} here`}</span>
-        <small>{coming ? `Locks on in ${countdown(sat.arriveMs - now)}` : busy ? `Busy over ${sat.aim}` : `${countdown(slewMs(s, square))} to get here`}</small>
-      </button>
-    </div>
-  );
-}
-
-// Scan (ILI-1367): the square's own way to get a look, the photo now. Only with ORION-3 locked on
-// (ILI-1397). It pulses when ALPHA is asking for imagery of this square.
-function Scan({ s, square }: { s: GameState; square: string }) {
+// The square's details (ILI-1466): read-only. Every satellite action is ORION-3's (ILI-1459), so
+// there's no Scan here: its intel once something has looked (a scan, a feed, the team), else none
+// yet; its ground; and where ORION-3 is, pointing to its Scan.
+function SquareFacts({ s, square }: { s: GameState; square: string }) {
   const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
-  const busy = s.satellite.state === 'capturing';
+  const done = settled(s, square);
+  const items = done ? squareReports(s, square) : [];
+  const clear = done && squareFindings(s, square) === 'clear';
+  const g = ground(s, square);
+  const busy = s.satellite.state === 'capturing' && s.satellite.aim === square;
   return (
-    <div className="sc-scan" data-testid="square-scan">
+    <section className="sc-facts" data-testid="square-details" aria-label={`${square} details`}>
       {asked && <p className="sc-asked">{asked.title}</p>}
-      <button onClick={() => game.scan(square)} disabled={busy} data-testid="scan-square" data-cue={(!!asked && !busy) || undefined}>
-        <span>Scan {square}</span>
-        <small>{busy ? `${satName(s)} busy over ${s.satellite.aim}` : 'Photo now'}</small>
-      </button>
-    </div>
+      <dl className="facts">
+        <dt>Intel</dt>
+        <dd data-testid="square-intel-state" data-none={!done || undefined}>
+          {!done ? 'none yet · nothing has looked' : clear ? 'settled · clear' : `settled · ${items.length} ${items.length === 1 ? 'report' : 'reports'}`}
+        </dd>
+        {g && (
+          <>
+            <dt>Ground</dt>
+            <dd>
+              {g.slope} · {g.features.length ? g.features.join(', ') : 'open ground'}
+            </dd>
+          </>
+        )}
+        <dt>{satName(s)}</dt>
+        <dd data-testid="scan-in-orion">{busy ? 'locked on · looking now' : done ? 'locked on' : <b>locked on · Scan it there ▸</b>}</dd>
+      </dl>
+    </section>
   );
 }
 

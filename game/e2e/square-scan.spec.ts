@@ -1,11 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, lockOn, running, squarePoint, start, tapAt, untilTraffic } from './helpers';
 
-// What happens on a square stays with the square (ILI-1367): Scan is in its menu, and the mini
-// game plays there. The satellite is the player's avatar (ILI-1397): on a square it isn't over,
-// the menu is the move step; locked on, the square's actions.
+// The square's panel shows its details (ILI-1466); every satellite action is ORION-3's (ILI-1459):
+// a tap sends ORION-3, and Scan is in ORION-3, not on the square. The mini game still plays there.
 
-test('a square ORION-3 is not over has no menu; a tap sends ORION-3, and on arrival the menu opens with Scan (ILI-1397, ILI-1437)', async ({ page, isMobile }) => {
+test('a square ORION-3 is not over has no panel; a tap sends ORION-3, and on arrival its details open, Scan in ORION-3 (ILI-1437, ILI-1466)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
@@ -17,10 +16,14 @@ test('a square ORION-3 is not over has no menu; a tap sends ORION-3, and on arri
   await fastForward(page, 30_000);
   await expect(anchor).toHaveAttribute('data-locked', 'true');
   await expect(anchor.getByTestId('lock-status')).toHaveText('ORION-3 locked on');
-  const scan = anchor.getByTestId('scan-square');
-  await expect(scan).toContainText('Scan F4');
-  await scan.click();
+  // Read-only: no intel until something has looked, and no Scan here.
+  await expect(anchor.getByTestId('square-intel-state')).toHaveText('none yet · nothing has looked');
+  await expect(anchor.getByTestId('scan-in-orion')).toContainText('Scan it there');
+  await expect(anchor.getByRole('button', { name: /scan/i })).toHaveCount(0);
+  if (isMobile) await page.getByTestId('tab-orion').click();
+  await page.getByTestId('satellite').getByTestId('capture-scan').click();
   await expect.poll(() => page.evaluate(() => !!window.game.get().imagery.F4)).toBe(true);
+  await expect(anchor.getByTestId('square-intel-state')).toHaveText(/^settled · (clear|\d reports?)$/);
 });
 
 test('the menu grows out of the square’s edge (ILI-1397)', async ({ page, isMobile }) => {
@@ -40,7 +43,7 @@ test('the menu grows out of the square’s edge (ILI-1397)', async ({ page, isMo
   expect(box.width).toBeGreaterThan(0);
 });
 
-test('ALPHA asking for imagery cues Scan on that square', async ({ page }) => {
+test('ALPHA asking for imagery shows on the square, and cues Scan in ORION-3', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
@@ -49,7 +52,8 @@ test('ALPHA asking for imagery cues Scan on that square', async ({ page }) => {
   await page.evaluate(() => window.game.selectSquare('F2'));
   const anchor = page.getByTestId('square-anchor');
   await expect(anchor).toContainText('ALPHA requests imagery');
-  await expect(anchor.getByTestId('scan-square')).toHaveAttribute('data-cue', 'true');
+  if (isMobile) await page.getByTestId('tab-orion').click();
+  await expect(page.getByTestId('satellite').getByTestId('capture-scan')).toHaveAttribute('data-cue', 'true');
 });
 
 test('the radio mini game plays in its square’s menu, at C2', async ({ page }) => {
