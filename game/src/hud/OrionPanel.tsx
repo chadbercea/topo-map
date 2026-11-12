@@ -13,7 +13,6 @@ import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
 import { OrionAvatar } from './OrionAvatar';
 import { useFold, useTier } from './tier';
-import { EnvWidget } from './EnvWidget';
 import { imageryOk, weather } from '../sim/conditions';
 
 const CLOUD_WARN = 70; // cloud cover where ORION-3 could soon be blind (as EnvWidget's tile)
@@ -178,8 +177,6 @@ export function OrionPanel() {
       )}
 
       {/* The AO's weather, three and three (ILI-1249); on a fold or phone it's the slim line. */}
-      {wide && <EnvWidget />}
-      {tier === 'compact' && <EnvWidget slim />}
 
       {/* The image area: the picture takes what's left (ILI-1400). */}
       <div className="o-frame">

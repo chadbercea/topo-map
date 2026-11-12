@@ -11,7 +11,6 @@ import { ChipStatus } from './ChipStatus';
 import { CommsLine } from './CommsLine';
 import { StrikeFlyout } from './StrikeFlyout';
 import { SightingPanels } from './SightingPanels';
-import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
 import { CommsPanel } from './CommsPanel';
 import { HeartbeatStrip, TeamPanel } from './TeamPanel';
@@ -175,11 +174,6 @@ export function Hud() {
       </div>
       <StrikeFlyout />
       <div className="slot-bottom">
-        {tier !== 'wide' && (
-          <div className="slot-small" data-testid="small-widgets">
-            <EnvWidget slim />
-          </div>
-        )}
         {/* The heartbeat strip, tier one; the team panel is its drawer (ILI-1396). */}
         <div className="slot-team" data-overlay={!tabbed && teamOpen ? 'team' : undefined}>
           {/* One panel, two display states (ILI-1439): expanded, or folded to the strip. */}

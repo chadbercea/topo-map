@@ -1,6 +1,7 @@
 import { game, useGame } from '../sim/store';
 import { race } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
+import { EnvWidget } from './EnvWidget';
 import type { GameState } from '../sim/state';
 
 // The contract window counts down real minutes, M:SS, rounding up (ILI-1251): ten minutes reads
@@ -27,6 +28,7 @@ export function MissionBar() {
   const step = mission.phase === 'complete' ? PHASES.length : PHASES.indexOf(mission.phase);
   return (
     <section className="panel mission-bar" data-testid="mission-bar" aria-label="Mission">
+      <div className="mb-row">
       <div className="mb-cell mb-op">
         <RookGlyph />
         <div>
@@ -64,6 +66,9 @@ export function MissionBar() {
           ❚❚
         </button>
       </div>
+      </div>
+      {/* The weather and atmospherics, along the bar's foot (ILI-1473): out of ORION-3's panel. */}
+      <EnvWidget strip />
     </section>
   );
 }

@@ -107,6 +107,6 @@ for (const [name, width, height] of [['fold upright', 884, 1104], ['tablet uprig
     const buttons = await box(page.getByTestId('orion-buttons'));
     expect(buttons.x).toBeGreaterThanOrEqual(pic.x + pic.width - 1);
     await expect(page.getByTestId('capture-scan')).toBeVisible();
-    await expect(page.getByTestId('satellite').getByTestId('conditions')).toBeVisible();
+    await expect(page.getByTestId('mission-bar').getByTestId('conditions')).toBeVisible(); // the weather under the bar (ILI-1473)
   });
 }
