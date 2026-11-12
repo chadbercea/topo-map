@@ -5,12 +5,14 @@ import { pins } from './pins';
 
 // The way into the war room (ILI-1280). Castle House's title screen comes first (ILI-1290):
 // START, ABOUT, SETTINGS over the blurred globe. START brings ORION-3 into focus, and the
-// terminal idles until HQ picks it (ILI-1283); a wipe (ILI-1284) opens on the login, the panels power on, ORION-3 links with
-// ALPHA, and only then does the clock start, with ALPHA's first call (ILI-1282). A restart
-// replays the short half: panels, link, go (ILI-1285). No briefing: nothing on the way in says
-// what the mission is.
+// terminal idles until HQ picks it (ILI-1283); a wipe (ILI-1284) opens on the login. Then the
+// system boots for the first time (ILI-1462): the map loads and the camera settles, the grid
+// draws, what's known pops in (the team, the objective, the exfil), a beat with just the map, and
+// then the panels, one at a time, each working as it lands. Only once everything is in does the
+// clock start. A restart replays the whole map boot, without the login. No briefing: nothing on
+// the way in says what the mission is.
 
-export type Stage = 'title' | 'idle' | 'wipe' | 'login' | 'panels' | 'live'; // no SATCOM link step (ILI-1433)
+export type Stage = 'title' | 'idle' | 'wipe' | 'login' | 'map' | 'panels' | 'live'; // no SATCOM link step (ILI-1433)
 
 export const WIPE_MS = 520;
 // The satellite's line carries its name on this mission (ILI-1401): SATELLITE is swapped for it.
@@ -24,12 +26,15 @@ export const LOGIN_LINES = [
 ] as const;
 export const LINE_MS = 230;
 const LOGIN_MS = LOGIN_LINES.length * LINE_MS + 450;
-const PANELS_MS = 1_800; // the last panel's rows are in (styles.css, power-on)
-// The first time in (ILI-1307) it comes up slower: panel by panel, line by line, so HQ gets
-// its bearings; then the link holds a beat before ALPHA's first hold lands.
-const PANELS_FIRST_MS = 7_000; // styles.css, .hud[data-boot='first']
-let first = false;
-export const firstBoot = () => first;
+// The map boot (ILI-1462), in ms from its start; MapScene plays it. The camera settles as the
+// ground fades up, the grid draws, the known marks pop in one group after another, then a beat.
+export const MAP_BOOT = { settle: 1_300, grid: 1_100, team: 0, mission: 250, known: 500, pop: 900, beat: 1_500 } as const;
+export const MAP_MS = MAP_BOOT.settle + MAP_BOOT.grid + MAP_BOOT.pop + MAP_BOOT.beat;
+// Then the panels, panel by panel and line by line (ILI-1307): about 7 s, never all at once.
+const PANELS_MS = 7_000; // styles.css, .hud[data-boot='first']
+// The login only on the way in: a restart's map boot has no login to fade out of.
+let loggedIn = false;
+export const fromLogin = () => loggedIn;
 
 // Under test automation the HUD opens live, as it always has, unless the URL asks for the intro.
 const automated = typeof navigator !== 'undefined' && navigator.webdriver === true;
@@ -74,19 +79,19 @@ export const intro = {
     if (game.get().settings.skipIntro) intro.engage();
     else set('idle');
   },
-  // HQ picks ORION-3: wipe, login, panels, link, go.
+  // HQ picks ORION-3: wipe, login, the map boot, the panels, go.
   engage() {
     if (stage !== 'idle' && stage !== 'title') return;
-    first = true;
-    run([['wipe', WIPE_MS], ['login', LOGIN_MS], ['panels', PANELS_FIRST_MS], ['live', 0]]);
+    loggedIn = true;
+    run([['wipe', WIPE_MS], ['login', LOGIN_MS], ['map', MAP_MS], ['panels', PANELS_MS], ['live', 0]]);
   },
-  // Restart, Retry, Play again: the mission over, and the war room powers back on.
+  // Restart, Retry, Play again: the mission over, and the whole map boot again, without the login.
   reboot() {
     (pins.clear(), game.restart(...opening()));
     if (!introOn) return;
     game.standby();
-    first = false;
-    run([['panels', PANELS_MS], ['live', 0]]);
+    loggedIn = false;
+    run([['map', MAP_MS], ['panels', PANELS_MS], ['live', 0]]);
   },
   // Exit, from the pause menu: the mission over, back to the title screen.
   home() {

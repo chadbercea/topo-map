@@ -1321,7 +1321,11 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud[data-boot='first'] .panel li:nth-child(7) { --j: 6; }
 .hud[data-boot='first'] .panel li:nth-child(8) { --j: 7; }
 .hud[data-boot='first'] .panel li:nth-child(n + 9) { --j: 8; }
-@media (prefers-reduced-motion: reduce) { .hud[data-boot] .panel, .hud[data-boot] .panel > *, .hud[data-boot] .panel li { animation: none; } }
+/* The map boot (ILI-1462): only the map while it comes up (MapScene), the panels and the rest of
+   the HUD dark. Then the panels' turn; what isn't a panel comes on with the last of them. */
+.hud[data-boot='map'] > :not(.map-area, .intro) { visibility: hidden; }
+.hud[data-boot='first'] > :is(.log-toggle, .heartbeat-strip, .dock-tabs, .recentre, .sheet-handle) { animation: power-content 300ms ease-out both; animation-delay: 5900ms; }
+@media (prefers-reduced-motion: reduce) { .hud[data-boot] .panel, .hud[data-boot] .panel > *, .hud[data-boot] .panel li, .hud[data-boot] > * { animation: none; } }
 
 /* Menus and the After Action Report power on the same way (ILI-1285). */
 :root:not([data-automated]) .overlay > .panel { --on: 0ms; animation: power-frame 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }

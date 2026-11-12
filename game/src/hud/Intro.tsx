@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Castle, Spots } from './castleScene'; // types only: the scene loads lazily
-import { intro, LINE_MS, LOGIN_LINES, useIntro, WIPE_MS, type Stage } from './intro';
+import { fromLogin, intro, LINE_MS, LOGIN_LINES, useIntro, WIPE_MS, type Stage } from './intro';
 import { MapViews } from './MapViews';
 import { game, useGame } from '../sim/store';
 import { startText } from './MissionBar';
@@ -13,7 +13,7 @@ export function Intro() {
   if (stage === 'live') return null;
   return (
     <div className="intro" data-stage={stage} data-testid="intro" style={{ '--wipe': `${WIPE_MS}ms` } as React.CSSProperties}>
-      {(stage === 'wipe' || stage === 'login' || stage === 'panels') && <Login running={stage !== 'wipe'} leaving={stage === 'panels'} />}
+      {(stage === 'wipe' || stage === 'login' || (stage === 'map' && fromLogin())) && <Login running={stage !== 'wipe'} leaving={stage === 'map'} />}
       {(stage === 'title' || stage === 'idle' || stage === 'wipe') && <Terminal stage={stage} />}
     </div>
   );
@@ -24,7 +24,7 @@ const LOGO_OUT_MS = 360;
 // Castle House at rest (ILI-1283). The title screen first (ILI-1290): the rook and the name
 // with START, ABOUT and SETTINGS, the globe and satellites blurred behind. START folds the
 // logo away, the globe comes into focus and the camera flies in on ORION-3, pinging to be picked.
-function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'panels' | 'live'> }) {
+function Terminal({ stage }: { stage: Exclude<Stage, 'login' | 'map' | 'panels' | 'live'> }) {
   const satellite = useGame((s) => s.mission.satellite); // its name, from the mission's config (ILI-1401)
   const back = useRef<HTMLDivElement>(null);
   const front = useRef<HTMLDivElement>(null);

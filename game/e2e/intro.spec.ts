@@ -77,3 +77,25 @@ test('Exit from the After Action Report goes back to the title screen too', asyn
   await expect(page.getByTestId('title-start')).toBeVisible();
   expect(await page.evaluate(() => window.game.get().phase)).toBe('standby');
 });
+
+// The map boot (ILI-1462): after the login only the map, the panels dark and the clock held; then
+// the panels power on, and the clock starts once they're all in. A restart runs the map boot again.
+test('the map boots first, then the panels, then the clock; a restart boots the map again', async ({ page, isMobile }) => {
+  await page.goto('?intro&debug');
+  await page.waitForFunction(() => window.game);
+  await page.evaluate(() => window.game.setSettings({ skipIntro: true }));
+  await press(page.getByTestId('title-start'), isMobile);
+  const hud = page.locator('.hud');
+  await expect(hud).toHaveAttribute('data-boot', 'map', { timeout: 10_000 });
+  await expect(page.getByTestId('heartbeat-strip').or(page.getByTestId('tab-team')).first()).toBeHidden();
+  expect(await page.evaluate(() => window.game.get().phase)).toBe('standby');
+  await expect(hud).toHaveAttribute('data-boot', 'first', { timeout: 10_000 });
+  expect(await page.evaluate(() => window.game.get().phase)).toBe('standby'); // panels coming in, clock held
+  await expect.poll(() => page.evaluate(() => window.game.get().phase), { timeout: 15_000 }).toBe('running');
+  await expect(hud).not.toHaveAttribute('data-boot');
+
+  await page.evaluate(() => window.game.set({ ...window.game.get(), phase: 'ended' }));
+  await press(page.getByTestId('wrapup').getByRole('button', { name: /Retry|Play again|new PMC/ }).first(), isMobile);
+  await expect(hud).toHaveAttribute('data-boot', 'map');
+  await expect(page.getByTestId('intro-login')).toHaveCount(0); // no login on a restart
+});

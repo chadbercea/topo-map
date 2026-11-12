@@ -23,6 +23,7 @@ import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 import { sightings, type Sighting } from '../sim/sightings';
 import { panelled, pins } from '../hud/pins';
 import { isImageryRequest } from '../sim/imageryRequest';
+import { intro, MAP_BOOT } from '../hud/intro';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the mission's points and route, in amber
@@ -206,7 +207,10 @@ export class MapScene extends Phaser.Scene {
       this.applyView();
       this.placeInset();
     });
+    // The map boot (ILI-1462): on the way in after the login, and on every restart.
+    const offIntro = intro.subscribe(() => intro.get() === 'map' && this.startBoot());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      offIntro();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.layout, this);
       bus.off(EV.mapRect, this.layout, this);
       bus.off(EV.inset, this.placeInset, this);
@@ -227,6 +231,7 @@ export class MapScene extends Phaser.Scene {
     this.lastFrame = now;
     this.pan(delta);
     this.follow(delta);
+    this.settle();
     this.drawTeam(_time);
     const st = game.get();
     const key = `${st.team.waypoint}|${st.team.route.join()}|${st.map.scanned.length}|${st.contacts.filter((c) => c.status === 'revealed').map((c) => c.square)}`;
@@ -251,6 +256,64 @@ export class MapScene extends Phaser.Scene {
     this.drawWipes(_time);
     this.drawStrikes();
     this.drawBlind();
+    this.reveal();
+  }
+
+  // The map boot (ILI-1462): the system coming up for the first time. The ground fades up as the
+  // camera settles in on ALPHA, the grid lines draw, then what's known pops in: the team, the
+  // mission's points, everything else that's marked. The beat after it, with only the map on
+  // screen, and the panels are the HUD's (intro.ts, styles.css). No input on the map meanwhile.
+  private bootAt: number | null = null;
+  private startBoot() {
+    this.bootAt = performance.now();
+    this.shownAll = false;
+    this.userZoom = 1;
+    this.camCenter = null; // layout() centres on ALPHA again
+    if (this.panned) bus.emit(EV.panned, (this.panned = false));
+    this.layout();
+    if (!reducedMotion()) this.cameras.main.fadeIn(MAP_BOOT.settle * 0.8, 11, 15, 13);
+    this.settle();
+    this.reveal();
+  }
+  private get bootT() {
+    return this.bootAt === null ? Infinity : performance.now() - this.bootAt;
+  }
+  // The camera eases in to its fit while the ground fades up; the grid draws after it.
+  private settle() {
+    if (this.bootAt === null) return;
+    const t = this.bootT;
+    const { settle, grid, pop } = MAP_BOOT;
+    if (reducedMotion() || t >= settle + grid + pop) {
+      this.bootAt = null;
+      this.layout(); // the fit, the full grid and its labels
+      return;
+    }
+    const k = 1 - Math.pow(1 - Math.min(1, t / settle), 3);
+    const cam = this.cameras.main;
+    cam.setZoom(this.fitZoom * this.userZoom * (0.82 + 0.18 * k));
+    if (this.camCenter) cam.centerOn(this.camCenter.x, this.camCenter.y);
+    this.drawGrid(Math.max(0, Math.min(1, (t - settle) / grid)));
+    this.labels.forEach((label) => label.setScale(1 / this.zoom));
+  }
+  // Each group of marks shows once its time comes: on, a blink off, on again, like the panels.
+  private shownAll = true;
+  private reveal() {
+    if (this.bootAt === null && this.shownAll) return;
+    this.shownAll = this.bootAt === null;
+    const t = this.bootT;
+    const { settle, grid } = MAP_BOOT;
+    const on = (at: number) => {
+      const u = t - at;
+      return u >= 0 && !(u > 90 && u < 170);
+    };
+    const id = this.cameras.main.id;
+    const show = (o: Phaser.GameObjects.GameObject, v: boolean) => void (o.cameraFilter = v ? o.cameraFilter & ~id : o.cameraFilter | id);
+    const marks = settle + grid;
+    this.labels.forEach((l) => show(l, on(settle + grid * 0.6)));
+    for (const o of [this.teamGfx, this.dotGfx, this.teamLabel]) show(o, on(marks + MAP_BOOT.team));
+    for (const o of [this.missionGfx, ...this.missionLabels, this.exfilLabel]) show(o, on(marks + MAP_BOOT.mission));
+    const known = [this.routeGfx, this.stampGfx, ...this.stamps.values(), this.markerGfx, this.intelGfx, this.blindGfx, ...this.blindLabels, this.fightGfx, this.modeGfx, ...this.modeLabels, this.droneGfx, this.airLabels.drone, this.airLabels.heli, this.bracketGfx, this.satGfx, this.selectGfx, this.wipeGfx];
+    for (const o of known) show(o, on(marks + MAP_BOOT.known));
   }
 
   // Air strikes (ILI-1252, ILI-1254): the aircraft crosses the square on each pass, with its
@@ -697,7 +760,7 @@ export class MapScene extends Phaser.Scene {
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private panned = false;
   private pan(delta: number) {
-    if (!this.camCenter || typing()) return;
+    if (!this.camCenter || typing() || this.bootAt !== null) return;
     const k = this.keys;
     const dx = (k.D.isDown || k.RIGHT.isDown ? 1 : 0) - (k.A.isDown || k.LEFT.isDown ? 1 : 0);
     const dy = (k.S.isDown || k.DOWN.isDown ? 1 : 0) - (k.W.isDown || k.UP.isDown ? 1 : 0);
@@ -763,7 +826,7 @@ export class MapScene extends Phaser.Scene {
     cam.centerOn(this.camCenter.x, this.camCenter.y);
     bus.emit(EV.camera);
     this.drawTerrain();
-    this.drawGrid();
+    if (this.bootAt === null) this.drawGrid();
     this.drawSelection();
     this.drawMission();
     this.lastTeam = { x: NaN, y: NaN }; // zoom changed: redraw at the new scale
@@ -905,14 +968,35 @@ export class MapScene extends Phaser.Scene {
   // which keeps full-screen layers (expensive on phones without much GPU) to a minimum.
   // The grid runs on past the play area across all the ground there is (ILI-1193), so the
   // screen never shows its edge. Only A1-H5 are labelled and in play.
-  private drawGrid() {
+  // While the map boots (ILI-1462) the lines draw in across the screen, p from 0 to 1: down from
+  // the top and in from the left, each line a little after the one before it.
+  private drawGrid(p = 1) {
     const g = this.gridGfx.clear().lineStyle(DPR / this.zoom, TEAL, 0.45);
     const c0 = Math.floor(COARSE.x / CELL);
     const c1 = Math.ceil((COARSE.x + COARSE.w) / CELL);
     const r0 = Math.floor(COARSE.y / CELL);
     const r1 = Math.ceil((COARSE.y + COARSE.h) / CELL);
-    for (let c = c0; c <= c1; c++) g.lineBetween(c * CELL, r0 * CELL, c * CELL, r1 * CELL);
-    for (let r = r0; r <= r1; r++) g.lineBetween(c0 * CELL, r * CELL, c1 * CELL, r * CELL);
+    if (p >= 1) {
+      for (let c = c0; c <= c1; c++) g.lineBetween(c * CELL, r0 * CELL, c * CELL, r1 * CELL);
+      for (let r = r0; r <= r1; r++) g.lineBetween(c0 * CELL, r * CELL, c1 * CELL, r * CELL);
+      return;
+    }
+    const cam = this.cameras.main;
+    const w = cam.width / cam.zoom;
+    const h = cam.height / cam.zoom;
+    const x0 = cam.midPoint.x - w / 2;
+    const y0 = cam.midPoint.y - h / 2;
+    const grow = (i: number, n: number) => Math.max(0, Math.min(1, p * 1.6 - (i / n) * 0.6));
+    const cols = [Math.floor(x0 / CELL), Math.ceil((x0 + w) / CELL)];
+    const rows = [Math.floor(y0 / CELL), Math.ceil((y0 + h) / CELL)];
+    for (let c = cols[0]; c <= cols[1]; c++) {
+      const k = grow(c - cols[0], cols[1] - cols[0]);
+      if (k > 0) g.lineBetween(c * CELL, y0, c * CELL, y0 + h * k);
+    }
+    for (let r = rows[0]; r <= rows[1]; r++) {
+      const k = grow(r - rows[0], rows[1] - rows[0]);
+      if (k > 0) g.lineBetween(x0, r * CELL, x0 + w * k, r * CELL);
+    }
   }
 
   private drawSelection() {
@@ -1202,7 +1286,7 @@ export class MapScene extends Phaser.Scene {
   private pinch: { d: number; zoom: number } | null = null;
   private onDown(p: Phaser.Input.Pointer) {
     this.track(p);
-    if (game.get().phase !== 'running') return;
+    if (game.get().phase !== 'running' || this.bootAt !== null) return;
     const [a, b] = this.fingers();
     if (a && b) {
       // A second finger: pinch, and the first finger's touch is no longer a tap.
@@ -1285,7 +1369,7 @@ export class MapScene extends Phaser.Scene {
   private fitZoom = 1;
   private relayout?: Phaser.Time.TimerEvent;
   private zoomAt(factor: number, sx: number, sy: number) {
-    if (!this.camCenter) return;
+    if (!this.camCenter || this.bootAt !== null) return;
     const next = Phaser.Math.Clamp(this.userZoom * factor, 1, MAX_ZOOM);
     if (next === this.userZoom) return;
     const cam = this.cameras.main;
