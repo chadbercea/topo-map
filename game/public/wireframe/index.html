@@ -464,6 +464,133 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .ia3 .lean { background: var(--paper); border: 1px solid var(--ok); border-radius: 6px; padding: 14px 16px; display: grid; gap: 6px; }
 @media (max-width: 860px) { .ia3 .small-row { grid-template-columns: minmax(0, 1fr) minmax(0, .6fr); } .ia3 .small-row .notes { grid-column: 1 / -1; } }
 
+
+/* ILI-1459: desktop design pass. The mock is drawn at 1440 × 900 in the game's own palette and scaled to fit (script at the end). */
+.l59 h3 { margin-top: 6px; }
+.l59 .dim { color: var(--dim); }
+.l59-refs { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; display: grid; gap: 10px; }
+.l59-refs ol, .l59-probs, .l59-why ol, .l59-why ul, .l59 .lean ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; max-width: 80ch; }
+.l59-shot { margin: 0; display: grid; gap: 8px; }
+.l59-shot figcaption { font: 12px var(--mono); color: var(--dim); }
+.l59 .stage { position: relative; width: 100%; aspect-ratio: 1440 / 900; overflow: hidden; border-radius: 6px; border: 1px solid var(--line); background: #0b0f0d; }
+.l59 .canvas { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; transform-origin: 0 0; transform: scale(var(--k, .5)); }
+.l59 .canvas > img { display: block; width: 1440px; height: 900px; }
+.l59 .pin { position: absolute; transform: translate(-50%, -50%); width: 34px; height: 34px; border-radius: 50%; background: #ff8a2a; color: #0b0f0d; font: 700 18px/34px var(--mono); text-align: center; font-style: normal; box-shadow: 0 0 0 3px #0b0f0d; }
+.l59-views { display: flex; flex-wrap: wrap; gap: 8px; }
+.l59-views button { font: 600 13px var(--mono); padding: 8px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; }
+.l59-views button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.l59-why { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.l59-why > div { display: grid; gap: 10px; align-content: start; }
+
+/* the mock: the game's palette */
+.l59 .g { --bg: #0b0f0d; --ink: #cfe8dc; --dim: #6f8a7d; --teal: #35d0a5; --amber: #f2c14e; --orange: #ff8a2a; --red: #e5484d; --hair: rgba(53, 208, 165, .35); --fill: rgba(11, 15, 13, .9);
+  font-family: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace; color: var(--ink); font-size: 12px; }
+.l59 .g .map { position: absolute; inset: 0; background: url(img-1459/map.png) 0 0 / 1440px 900px; }
+.l59 .g .gutfix { position: absolute; left: 1036px; top: 0; width: 40px; height: 900px; background: url(img-1459/map.png) -996px 0 / 1440px 900px; }
+.l59 .g small { display: block; font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
+.l59 .g button { font: inherit; color: inherit; cursor: default; }
+.l59 .g .bar { display: inline-block; width: 64px; height: 6px; background: linear-gradient(90deg, var(--teal) var(--v), rgba(53, 208, 165, .15) var(--v)); vertical-align: middle; }
+.l59 .g .bar.s { width: 40px; height: 4px; }
+
+.l59 .g header.mbar { position: absolute; left: 16px; top: 16px; width: 1032px; height: 52px; display: flex; align-items: stretch; background: var(--fill); border: 1px solid var(--hair); box-sizing: border-box; }
+.l59 .g header.mbar .cell { display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 0 18px; border-right: 1px solid rgba(53, 208, 165, .18); }
+.l59 .g header.mbar .cell b { font-weight: 400; font-size: 14px; white-space: nowrap; }
+.l59 .g header.mbar .cell.id { flex-direction: row; align-items: center; gap: 10px; }
+.l59 .g header.mbar .cell.id b { color: var(--teal); letter-spacing: .12em; text-transform: uppercase; font-size: 13px; }
+.l59 .g .rook { width: 18px; color: var(--teal); }
+.l59 .g header.mbar .cell.big b.clock { font-size: 26px; line-height: 1; color: var(--teal); font-variant-numeric: tabular-nums; }
+.l59 .g .phase { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.l59 .g .phase i { width: 8px; height: 8px; border: 1px solid var(--teal); }
+.l59 .g .phase i.on { background: var(--teal); }
+.l59 .g header.mbar .cell.end { margin-left: auto; border-right: 0; padding-right: 10px; }
+.l59 .g .pause { width: 34px; height: 34px; background: none; border: 1px solid var(--hair); color: var(--teal); font-size: 11px; }
+
+.l59 .g .orion { position: absolute; left: 1064px; top: 16px; width: 360px; height: 868px; background: var(--fill); border: 1px solid var(--hair); box-sizing: border-box; display: grid; grid-template-rows: 40px 360px 56px auto auto 1fr; }
+.l59 .g .o-h { display: flex; align-items: center; gap: 8px; padding: 0 12px; border-bottom: 1px solid rgba(53, 208, 165, .18); }
+.l59 .g .o-h b { color: var(--teal); letter-spacing: .18em; font-weight: 600; font-size: 12px; }
+.l59 .g .sat { width: 22px; color: var(--teal); }
+.l59 .g .st { margin-left: auto; color: var(--amber); display: flex; align-items: center; gap: 6px; }
+.l59 .g .st i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.l59 .g .pic { position: relative; margin: 0 -1px; overflow: hidden; border: 1px solid var(--teal); }
+.l59 .g .pic .crop { position: absolute; inset: 0; background: url(img-1459/map.png) -1008px -243px / 1386px 866px; }
+.l59 .g .pic span { position: absolute; font-size: 9.5px; letter-spacing: .1em; line-height: 1.5; color: var(--ink); text-shadow: 0 0 4px #0b0f0d, 0 0 2px #0b0f0d; }
+.l59 .g .pic .tl { left: 12px; top: 10px; } .l59 .g .pic .tr { right: 12px; top: 10px; text-align: right; }
+.l59 .g .pic .bl { left: 12px; bottom: 10px; } .l59 .g .pic .br { right: 12px; bottom: 10px; color: var(--amber); }
+.l59 .g .pic .cx { position: absolute; width: 14px; height: 14px; transform: translate(-50%, -50%); background: linear-gradient(var(--ink), var(--ink)) center / 1px 100% no-repeat, linear-gradient(var(--ink), var(--ink)) center / 100% 1px no-repeat; opacity: .55; }
+.l59 .g .pic .brk { position: absolute; width: 22px; height: 22px; border: 0 solid var(--teal); }
+.l59 .g .pic .tlb { left: 4px; top: 4px; border-width: 2px 0 0 2px; } .l59 .g .pic .trb { right: 4px; top: 4px; border-width: 2px 2px 0 0; }
+.l59 .g .pic .blb { left: 4px; bottom: 4px; border-width: 0 0 2px 2px; } .l59 .g .pic .brb { right: 4px; bottom: 4px; border-width: 0 2px 2px 0; }
+.l59 .g .o-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 8px 12px; }
+.l59 .g .o-btns button { background: rgba(53, 208, 165, .08); border: 1px solid var(--teal); color: var(--teal); letter-spacing: .12em; text-transform: uppercase; font-size: 11px; display: grid; place-content: center; gap: 2px; }
+.l59 .g .o-btns button small { font-size: 8px; letter-spacing: .1em; }
+.l59 .g .o-btns button.ghost { background: none; border-color: var(--hair); color: var(--ink); }
+.l59 .g .o-sec { padding: 10px 12px 4px; border-top: 1px solid rgba(53, 208, 165, .18); display: grid; gap: 8px; }
+.l59 .g .o-sh { display: flex; justify-content: space-between; align-items: baseline; }
+.l59 .g .o-sh span { color: var(--dim); font-size: 10px; }
+.l59 .g .intel { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.l59 .g .intel li { height: 22px; border: 1px dashed rgba(53, 208, 165, .2); display: flex; align-items: center; padding: 0 8px; color: var(--dim); font-size: 10px; }
+.l59 .g .ground { margin: 0; display: grid; grid-template-columns: 96px 1fr; row-gap: 4px; }
+.l59 .g .ground dt { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); align-self: center; }
+.l59 .g .ground dd { margin: 0; }
+.l59 .g .env { align-self: end; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 12px; border-top: 1px solid rgba(53, 208, 165, .18); }
+.l59 .g .env div { border: 1px solid rgba(53, 208, 165, .2); padding: 5px 8px; display: grid; gap: 2px; }
+.l59 .g .env b { font-weight: 400; }
+
+.l59 .g .team { position: absolute; left: 16px; top: 732px; width: 520px; height: 152px; box-sizing: border-box; background: var(--fill); border: 1px solid var(--hair); padding: 0 12px; }
+.l59 .g .t-h { height: 30px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(53, 208, 165, .18); }
+.l59 .g .t-h > b { color: var(--teal); letter-spacing: .18em; font-weight: 600; }
+.l59 .g .t-h .st { margin-left: 0; color: var(--ink); }
+.l59 .g .t-h .gauge { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.l59 .g .t-h .gauge small { display: inline; }
+.l59 .g .t-h .gauge em { font-style: normal; color: var(--dim); font-size: 10px; }
+.l59 .g .team ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 2px; }
+.l59 .g .team li { height: 20px; line-height: 20px; display: grid; grid-template-columns: 70px 64px 80px 56px 56px 1fr; align-items: center; }
+.l59 .g .team li b { font-weight: 400; } .l59 .g .team li small { display: inline; }
+.l59 .g .team li em { font-style: normal; color: var(--teal); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; justify-self: end; }
+.l59 .g .hb { width: 64px; height: 12px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 12'%3E%3Cpath d='M0 7h22l3-5 4 9 3-6 2 2h30' fill='none' stroke='%2335d0a5' stroke-width='1.2'/%3E%3C/svg%3E") no-repeat; }
+
+.l59 .g .comms { position: absolute; left: 552px; top: 836px; width: 496px; height: 48px; box-sizing: border-box; background: var(--fill); border: 1px solid var(--hair); display: flex; align-items: center; gap: 12px; padding: 0 0 0 12px; }
+.l59 .g .comms small { display: inline; }
+.l59 .g .comms .line { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.l59 .g .comms .line b { color: var(--teal); font-weight: 400; margin-right: 6px; }
+.l59 .g .comms button { height: 100%; padding: 0 14px; background: none; border: 0; border-left: 1px solid rgba(53, 208, 165, .18); letter-spacing: .12em; text-transform: uppercase; font-size: 11px; }
+.l59 .g .comms button em { font-style: normal; color: var(--amber); margin: 0 4px; }
+.l59 .g .mapctl { position: absolute; left: 892px; top: 788px; display: flex; gap: 6px; }
+.l59 .g .mapctl button { height: 32px; min-width: 32px; padding: 0 10px; background: var(--fill); border: 1px solid var(--hair); font-size: 11px; letter-spacing: .1em; }
+
+.l59 .g .sqmenu { position: absolute; width: 232px; background: var(--fill); border: 1px solid var(--teal); box-sizing: border-box; }
+.l59 .g .sq-h { height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border-bottom: 1px solid rgba(53, 208, 165, .18); }
+.l59 .g .sq-h b { color: var(--teal); }
+.l59 .g .sq-h span { color: var(--dim); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.l59 .g .sq-h .x { margin-left: auto; font-style: normal; color: var(--dim); }
+.l59 .g .sqmenu .act { display: grid; gap: 2px; width: calc(100% - 20px); margin: 10px; padding: 8px 10px; text-align: left; background: rgba(242, 193, 78, .08); border: 1px solid var(--amber); }
+.l59 .g .sqmenu .act b { color: var(--amber); letter-spacing: .12em; text-transform: uppercase; font-weight: 600; }
+.l59 .g .sqmenu .act span { color: var(--dim); font-size: 10px; }
+.l59 .g .sq-row { display: flex; justify-content: space-between; padding: 0 10px 10px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.l59 .g .callout { position: absolute; display: flex; align-items: center; }
+.l59 .g .callout .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); transform: translate(-50%, 0); box-shadow: 0 0 0 4px rgba(229, 72, 77, .2); }
+.l59 .g .callout .lead { width: 26px; height: 1px; background: var(--red); }
+.l59 .g .callout .tag { background: var(--red); color: #0b0f0d; padding: 5px 8px; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; display: flex; gap: 10px; }
+.l59 .g .callout .tag em { font-style: normal; border-left: 1px solid rgba(11, 15, 13, .4); padding-left: 10px; }
+
+/* overlays */
+.l59 .lov { position: absolute; inset: 0; width: 1440px; height: 900px; display: none; pointer-events: none; }
+.l59 .stage[data-view="eye"] .lov.eye, .l59 .stage[data-view="hand"] .lov.hand, .l59 .stage[data-view="grid"] .lov.grid { display: block; }
+.l59 .lov .dim { fill: rgba(11, 15, 13, .5); stroke: none; }
+.l59 .lov .p { fill: none; stroke: #ff8a2a; stroke-width: 3; marker-end: url(#l59a); }
+.l59 .lov .p.dash { stroke-dasharray: 8 8; opacity: .8; }
+.l59 .lov .n circle { fill: #ff8a2a; stroke: #0b0f0d; stroke-width: 3; }
+.l59 .lov .n.q circle { fill: #0b0f0d; stroke: #ff8a2a; }
+.l59 .lov .n text { font: 700 16px 'IBM Plex Mono', monospace; text-anchor: middle; fill: #0b0f0d; }
+.l59 .lov .n.q text { fill: #ff8a2a; }
+.l59 .lov .z1 { fill: rgba(255, 138, 42, .14); stroke: #ff8a2a; stroke-width: 2; }
+.l59 .lov .z2 { fill: rgba(242, 193, 78, .2); stroke: #f2c14e; stroke-width: 2; }
+.l59 .lov .z3 { fill: rgba(111, 138, 125, .18); stroke: #6f8a7d; stroke-width: 1.5; stroke-dasharray: 6 5; }
+.l59 .lov .zl { font: 600 15px 'IBM Plex Mono', monospace; fill: #fff; paint-order: stroke; stroke: #0b0f0d; stroke-width: 4px; }
+.l59 .lov .travel { stroke: #fff; stroke-width: 2; stroke-dasharray: 4 6; fill: none; }
+.l59 .lov .gl { stroke: #ff8a2a; stroke-width: 1; opacity: .8; fill: none; }
+.l59 .lov .gt { font: 600 12px 'IBM Plex Mono', monospace; fill: #ff8a2a; paint-order: stroke; stroke: #0b0f0d; stroke-width: 4px; }
+.l59 .lov .gt.big { font-size: 20px; }
 </style>
 </head>
 <body>
@@ -471,10 +598,224 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 <main>
 <header>
   <p class="mono"><a href="../review/">← Review hub: everything up for review</a></p>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03 · ILI-1358 step 2 added · ILI-1363 step 3 added 2026-11-05</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03 · ILI-1358 step 2 added · ILI-1363 step 3 added 2026-11-05 · ILI-1459 desktop design pass added 2026-11-12</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
+
+<section class="l59" id="layout-1459">
+  <div class="sect-head">
+    <p class="eyebrow">ILI-1459 · desktop design pass · 2026-11-12 · 1440 × 900 · references: Notion "Visual Reference"</p>
+    <h2>One frame around the map: the mission on top, the satellite on the right, the team along the bottom</h2>
+    <p>Your note: the layout is scattered. The amount of space is fine, but things are spread around the edges with dead gaps between them. This pass works out where the eye goes, where the hand goes, and how big everything is, then draws the screen. The moment shown is the same in both pictures: ALPHA is walking to F4, you've picked F4, ORION-3 is locked on it, and there's radio traffic near E3.</p>
+  </div>
+
+  <div class="l59-refs">
+    <h3>What the references agree on</h3>
+    <ol>
+      <li><b>The subject owns the screen.</b> The city in the red map, the drone in the green HUD and the terrain in the dark satellite shot each fill the frame edge to edge. The interface is a frame around them, not boxes sitting on top.</li>
+      <li><b>Information lives on the edges, at one inset.</b> Every reference pins its readouts to the four edges with the same margin all round. Nothing floats in the middle unless it's attached to something on the picture.</li>
+      <li><b>A label goes on the thing.</b> The red map tags each car with a callout at its dot. Status that has a place goes on that place, not in a panel.</li>
+      <li><b>Small label, big value.</b> Tiny dim uppercase labels over large readings (THREAT LEVEL / HIGH, SPEED / 120). You can read the value at a glance and only read the label when you need to.</li>
+      <li><b>One accent, used rarely.</b> Orange or red appears only on what needs you now: the target, LAUNCH, the countdown. Everything else stays in one quiet colour.</li>
+      <li><b>The action sits next to its readout.</b> LAUNCH sits beside "4/5 interceptors" and the timer that gates it. The thing you press is next to the numbers that decide whether to press it.</li>
+    </ol>
+    <p class="dim">Not taken: the rotating rings and radial gauges (gauges stay short bars), and the glossy rounded cards in the tank and drone dashboards (the game's look is hard lines and mono type).</p>
+  </div>
+
+  <h3>Today: what makes it scattered</h3>
+  <figure class="l59-shot">
+    <div class="stage" data-k><div class="canvas">
+      <img src="img-1459/before.png" alt="The game today at 1440 × 900" width="1440" height="900">
+      <i class="pin" style="left:200px;top:58px">1</i>
+      <i class="pin" style="left:610px;top:166px">2</i>
+      <i class="pin" style="left:1120px;top:140px">3</i>
+      <i class="pin" style="left:1240px;top:836px">4</i>
+      <i class="pin" style="left:1130px;top:700px">5</i>
+      <i class="pin" style="left:420px;top:726px">6</i>
+      <i class="pin" style="left:760px;top:600px">7</i>
+    </div></div>
+    <figcaption>Today, as built (main, 2026-11-12)</figcaption>
+  </figure>
+  <ol class="l59-probs">
+    <li><b>Three loose chips stack in the top-left corner</b> (deadline, budget, comms log), each in its own box at its own size. They cover the objective marker at D3.</li>
+    <li><b>Scan is in two places.</b> SCAN F4 is in the square's menu and again at the bottom of ORION-3, 870 px away.</li>
+    <li><b>ORION-3 opens on a 140 px picture of the satellite</b> and a status block, so the picture you actually work with starts a third of the way down.</li>
+    <li><b>ORION-3's buttons are at the very bottom</b>, 220 px below the picture they act on.</li>
+    <li><b>The ground details float in the middle of the panel</b> with dead space under them, and the debug box overlaps them.</li>
+    <li><b>TEAM is a separate box with its own inset</b> (16 px, where the chips use 26 px). Its rows don't line up with anything else.</li>
+    <li><b>The bottom centre is empty.</b> Nothing ties TEAM to ORION-3, so the bottom edge reads as two unrelated things.</li>
+  </ol>
+
+  <h3>Proposed</h3>
+  <div class="l59-views" role="tablist">
+    <button aria-pressed="true" data-view="design">The design</button>
+    <button aria-pressed="false" data-view="eye">Where the eye goes</button>
+    <button aria-pressed="false" data-view="hand">Where the hand goes</button>
+    <button aria-pressed="false" data-view="grid">Grid and sizes</button>
+  </div>
+  <figure class="l59-shot">
+    <div class="stage" data-k id="l59-stage" data-view="design"><div class="canvas g">
+      <div class="map"></div>
+      <div class="gutfix"></div>
+
+      <!-- on-map: callouts and the square menu -->
+      <div class="callout hostile" style="left:262px;top:92px"><i class="dot"></i><span class="lead"></span><span class="tag">SIGINT · radio traffic · E3 <em>Listen</em></span></div>
+      <div class="sqmenu" style="left:486px;top:172px">
+        <div class="sq-h"><b>F4</b><span>ORION-3 locked on</span><i class="x">×</i></div>
+        <button class="act cue"><b>Scan F4</b><span>settles the square</span></button>
+        <div class="sq-row dim"><span>Strike</span><span>no contacts</span></div>
+      </div>
+
+      <!-- top bar -->
+      <header class="mbar">
+        <div class="cell id"><svg viewBox="0 0 20 22" class="rook"><path d="M3 21h14v-2H3zM5 18h10l-1-8h2V3h-3v2h-2V3H9v2H7V3H4v7h2z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><div><small>Operation</small><b>Black Box</b></div></div>
+        <div class="cell big"><small>Client deadline</small><b class="clock">9:53</b></div>
+        <div class="cell"><small>Phase</small><b>Infil <span class="phase"><i class="on"></i><i></i><i></i></span></b></div>
+        <div class="cell"><small>Next</small><b>Reach D3 · black box</b></div>
+        <div class="cell"><small>Budget</small><b>$9.6M</b></div>
+        <div class="cell end"><button class="pause" aria-label="Pause">❚❚</button></div>
+      </header>
+
+      <!-- ORION-3 -->
+      <aside class="orion">
+        <div class="o-h"><svg viewBox="0 0 24 14" class="sat"><path d="M1 4h7v6H1zM16 4h7v6h-7zM8 7h8M10 3h4v8h-4z" fill="none" stroke="currentColor" stroke-width="1.2"/></svg><b>ORION-3</b><span class="st"><i></i>On station · F4</span></div>
+        <div class="pic">
+          <div class="crop"></div>
+          <i class="cx" style="left:25%;top:25%"></i><i class="cx" style="left:75%;top:25%"></i><i class="cx" style="left:25%;top:75%"></i><i class="cx" style="left:75%;top:75%"></i>
+          <span class="tl">F4 · 0614Z<br>EO · NIGHT</span><span class="tr">ALT 512 KM<br>OFF-NADIR 11°</span>
+          <span class="bl">CLOUD 60% · VIS 6 KM</span><span class="br">NOT YET SCANNED</span>
+          <i class="brk tlb"></i><i class="brk trb"></i><i class="brk blb"></i><i class="brk brb"></i>
+        </div>
+        <div class="o-btns"><button>Photo<small>to ALPHA</small></button><button>Video<small>live feed</small></button><button class="ghost">Reposition</button></div>
+        <div class="o-sec"><div class="o-sh"><small>Intel · F4</small><span>waiting on a scan</span></div>
+          <ul class="intel"><li class="empty">Scan F4 and what it finds lands here, newest first</li><li class="empty"></li><li class="empty"></li><li class="empty"></li></ul>
+        </div>
+        <div class="o-sec"><div class="o-sh"><small>Ground · F4</small><span>from the map</span></div>
+          <dl class="ground"><dt>Elevation</dt><dd>635–715 m</dd><dt>Slope</dt><dd>rolling</dd><dt>Features</dt><dd>open ground</dd></dl>
+        </div>
+        <div class="env"><div><small>Cloud</small><b>High</b></div><div><small>Vis</small><b>6 km</b></div><div><small>Wind</small><b>NW 10</b></div><div><small>Temp</small><b>8°C</b></div><div><small>Light</small><b>Night</b></div><div><small>Rain</small><b>60%</b></div></div>
+      </aside>
+
+      <!-- bottom: team dock + comms strip + map controls -->
+      <div class="team">
+        <div class="t-h"><b>ALPHA</b><span class="st">Moving to F4</span><span class="gauge"><small>Intel</small><i class="bar" style="--v:58%"></i><em>2 sq</em></span></div>
+        <ul>
+          <li><b>Reyes</b><small>Lead</small><i class="hb"></i><i class="bar s" style="--v:100%"></i><i class="bar s" style="--v:90%"></i><em>Fine</em></li>
+          <li><b>Okafor</b><small>Gunner</small><i class="hb"></i><i class="bar s" style="--v:100%"></i><i class="bar s" style="--v:70%"></i><em>Fine</em></li>
+          <li><b>Lind</b><small>Medic</small><i class="hb"></i><i class="bar s" style="--v:100%"></i><i class="bar s" style="--v:95%"></i><em>Fine</em></li>
+          <li><b>Tanaka</b><small>Comms</small><i class="hb"></i><i class="bar s" style="--v:100%"></i><i class="bar s" style="--v:85%"></i><em>Fine</em></li>
+          <li><b>Brandt</b><small>Heavy</small><i class="hb"></i><i class="bar s" style="--v:100%"></i><i class="bar s" style="--v:60%"></i><em>Fine</em></li>
+        </ul>
+      </div>
+      <div class="comms"><small>Comms</small><span class="line"><b>ALPHA</b> Moving to F4. Eyes on the treeline.</span><button>Log <em>2 new</em> ▴</button></div>
+      <div class="mapctl"><button title="Back to ALPHA (F)">⌖ ALPHA</button><button>+</button><button>−</button></div>
+
+      <!-- overlays -->
+      <svg class="lov eye" viewBox="0 0 1440 900" aria-hidden="true">
+        <rect class="dim" width="1440" height="900"/>
+        <defs><marker id="l59a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#ff8a2a"/></marker></defs>
+        <path d="M250 42 C 380 200, 470 300, 520 345" class="p"/>
+        <path d="M520 345 C 480 300, 430 270, 420 250" class="p"/>
+        <path d="M600 214 C 800 200, 950 220, 1140 230" class="p"/>
+        <path d="M1244 412 L1244 450" class="p"/>
+        <path d="M1244 470 L1244 540" class="p"/>
+        <path d="M1100 600 C 900 560, 700 420, 545 370" class="p"/>
+        <path d="M520 400 C 420 560, 300 680, 240 760" class="p dash"/>
+        <path d="M600 420 C 680 620, 760 780, 780 850" class="p dash"/>
+        <g class="n"><circle cx="250" cy="42" r="15"/><text x="250" y="47">1</text></g>
+        <g class="n"><circle cx="545" cy="330" r="15"/><text x="545" y="335">2</text></g>
+        <g class="n"><circle cx="604" cy="230" r="15"/><text x="604" y="235">3</text></g>
+        <g class="n"><circle cx="1180" cy="230" r="15"/><text x="1180" y="235">4</text></g>
+        <g class="n"><circle cx="1280" cy="446" r="15"/><text x="1280" y="451">5</text></g>
+        <g class="n"><circle cx="1290" cy="560" r="15"/><text x="1290" y="565">6</text></g>
+        <g class="n"><circle cx="500" cy="420" r="15"/><text x="500" y="425">7</text></g>
+        <g class="n q"><circle cx="230" cy="772" r="15"/><text x="230" y="777">8</text></g>
+        <g class="n q"><circle cx="790" cy="858" r="15"/><text x="790" y="863">9</text></g>
+      </svg>
+      <svg class="lov hand" viewBox="0 0 1440 900" aria-hidden="true">
+        <rect class="dim" width="1440" height="900"/>
+        <rect x="16" y="84" width="1032" height="632" class="z1"/>
+        <text x="40" y="700" class="zl">A · the map and the square menu · most clicks</text>
+        <rect x="1064" y="424" width="360" height="56" class="z2"/>
+        <text x="1074" y="502" class="zl">B · ORION-3's buttons</text>
+        <rect x="16" y="16" width="1032" height="52" class="z3"/>
+        <rect x="16" y="732" width="520" height="152" class="z3"/>
+        <rect x="552" y="836" width="496" height="48" class="z3"/>
+        <text x="560" y="826" class="zl">C · glance, open when needed</text>
+        <path d="M600 230 L 1140 452" class="travel"/>
+        <text x="760" y="320" class="zl t">≈ 580 px, square menu to ORION-3's buttons (today ≈ 870)</text>
+      </svg>
+      <svg class="lov grid" viewBox="0 0 1440 900" aria-hidden="true">
+        <path d="M16 0V900M1048 0V900M1064 0V900M1424 0V900M0 16H1440M0 68H1440M0 84H1440M0 716H1440M0 732H1440M0 884H1440M536 700V900M552 700V900" class="gl"/>
+        <text x="20" y="96" class="gt">16 px margin, 16 px gutter, everywhere</text>
+        <text x="1068" y="12" class="gt">ORION-3 · 360 wide</text>
+        <text x="20" y="80" class="gt">bar · 52 tall</text>
+        <text x="20" y="748" class="gt">team · 520 × 152</text>
+        <text x="556" y="852" class="gt">comms · 496 × 48</text>
+        <text x="600" y="400" class="gt big">open map · 1032 × 632</text>
+        <text x="1068" y="72" class="gt">picture · 360 × 360, fixed</text>
+      </svg>
+    </div></div>
+    <figcaption>Proposed, 1440 × 900. The map behind is a real frame from the game. The panels are drawn here and not built yet.</figcaption>
+  </figure>
+
+  <div class="l59-why">
+    <div>
+      <h3>Where the eye goes</h3>
+      <ol>
+        <li><b>The clock,</b> top left, the biggest number on screen. You glance at it when the mission starts and again whenever you check how you're doing.</li>
+        <li><b>ALPHA on the map.</b> The camera keeps it near the middle, so that's where your eye rests.</li>
+        <li><b>The square you pick.</b> Its menu opens on the square's right edge, the side ORION-3 is on.</li>
+        <li><b>ORION-3's picture,</b> at the same height as the menu. After Scan your eye moves straight across, not down.</li>
+        <li><b>Photo and Video,</b> right under the picture they send.</li>
+        <li><b>The intel lines,</b> under the buttons, newest first.</li>
+        <li><b>Back to ALPHA,</b> who walks on what you sent.</li>
+        <li><b>8, 9: only when something lights up.</b> A vitals bar turns amber in the team dock, or the log count goes up in the comms strip. Both sit on the bottom edge, outside the loop.</li>
+      </ol>
+      <p>The loop (2 → 7) only ever crosses the middle band of the screen. The top and bottom edges are glance-only.</p>
+    </div>
+    <div>
+      <h3>Where the hand goes</h3>
+      <ul>
+        <li><b>A · the map and the square menu.</b> Picking squares, Scan, strikes and the callouts' own buttons (Listen on E3). Most clicks happen here.</li>
+        <li><b>B · ORION-3's button row.</b> Photo, Video and Reposition, the satellite's own controls (they stay with their owner). It sits right under the picture, mid-height, so the hand moves along the middle band from the square menu: about 580 px, against about 870 px today.</li>
+        <li><b>C · the edges.</b> Pause, the log drawer and the team drawer. They're rarely used, so they sit in corners where you can't hit them by accident.</li>
+        <li><b>Scan lives only in the square menu.</b> It's a square action. ORION-3 loses its duplicate Scan button.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Every piece, its place and its size</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Piece</th><th>Where</th><th>Size</th><th>What changes from today</th></tr></thead>
+    <tbody>
+      <tr><td class="name">Mission bar</td><td>Top, across the map column</td><td>1032 × 52</td><td>The deadline, budget and pause chips plus the objective line become one bar. Each reading is a small label over a big value, and the clock is the largest. It no longer covers the D3 marker, because the map fits below the bar.</td></tr>
+      <tr><td class="name">ORION-3</td><td>Right column, full height</td><td>360 × 868</td><td>Header (name and status in one line, a small satellite glyph instead of the 140 px model), then the picture at the top, then the button row, intel, ground and weather. Fixed sections, never scrolls.</td></tr>
+      <tr><td class="name">· picture</td><td>ORION-3, top</td><td>360 × 360</td><td>Moves up from y 250 to y 56. Telemetry goes in its four corners instead of separate rows. It stays this size all the time.</td></tr>
+      <tr><td class="name">· buttons</td><td>Under the picture</td><td>360 × 48</td><td>Photo, Video, Reposition. Moves from the panel's bottom edge to directly under the picture. Scan is removed (it's in the square menu).</td></tr>
+      <tr><td class="name">· intel</td><td>Under the buttons</td><td>360 × 4 rows</td><td>The last scan's items, INT tag first, newest at the top. A fixed four rows; older items fold into a count.</td></tr>
+      <tr><td class="name">· ground + weather</td><td>ORION-3, bottom</td><td>360 × 3 rows, then 6 cells</td><td>The ground rows lose their empty space. The six weather cells move from the panel's top to its foot, because they're context, not the loop.</td></tr>
+      <tr><td class="name">Square menu</td><td>On the picked square's right edge</td><td>232 wide</td><td>Same as today, with one primary action at a time (Scan, then strikes once there's a contact).</td></tr>
+      <tr><td class="name">Callouts</td><td>On the map, at their square</td><td>fits its text</td><td>Every prompt that has a place (traffic, ALPHA's intel ask, contacts) becomes a tag on that place, with its button inside the tag. Prompts with no place (an operator hit, a team call) go in the team dock's header.</td></tr>
+      <tr><td class="name">Team dock</td><td>Bottom left</td><td>520 × 152</td><td>ALPHA's status and its intel gauge go in the header. One 20 px row per operator: name, role, heartbeat, two short bars, state. The same inset as everything else.</td></tr>
+      <tr><td class="name">Comms strip</td><td>Bottom, beside the team dock</td><td>496 × 48</td><td>Replaces the comms log button in the top-left corner. It shows the latest radio line, and Log opens the drawer upward over the map.</td></tr>
+      <tr><td class="name">Map controls</td><td>Map's bottom-right corner</td><td>3 small buttons</td><td>Recentre on ALPHA, zoom in, zoom out, together in one place.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="lean">
+    <p><b>Calls for you:</b></p>
+    <ol>
+      <li><b>The frame:</b> map on the left, ORION-3 down the full right side, mission across the top, team and comms along the bottom. Approve it, or say what to move.</li>
+      <li><b>Scan only in the square menu</b> (ORION-3 loses its Scan button). Yes or no?</li>
+      <li><b>Every prompt with a place becomes a tag on the map,</b> with no floating prompt cards. Yes or no?</li>
+    </ol>
+    <p class="dim">Once the frame is approved, ILI-1460 builds it and ILI-1463 powers the panels on in this order: bar, ORION-3, team, comms.</p>
+  </div>
+</section>
+
+
 
 <section class="ia2" id="ia2">
   <div class="sect-head">
@@ -1609,5 +1950,18 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
   </ol>
 </section>
 </main>
+<script>
+// ILI-1459: scale the 1440 × 900 drawings to their box, and switch the proposed screen's views.
+(() => {
+  const fit = (st) => st.style.setProperty('--k', st.clientWidth / 1440);
+  const ro = new ResizeObserver((es) => es.forEach((e) => fit(e.target)));
+  document.querySelectorAll('.l59 .stage').forEach((st) => { fit(st); ro.observe(st); });
+  const stage = document.getElementById('l59-stage');
+  document.querySelectorAll('.l59-views button').forEach((b) => b.addEventListener('click', () => {
+    stage.dataset.view = b.dataset.view;
+    document.querySelectorAll('.l59-views button').forEach((o) => o.setAttribute('aria-pressed', String(o === b)));
+  }));
+})();
+</script>
 </body>
 </html>
