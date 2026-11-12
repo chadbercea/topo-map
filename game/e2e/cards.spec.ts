@@ -15,7 +15,8 @@ test('a scan settles its square: a stamp on the map, its reports in the square�
   const detail = page.getByTestId('orion-detail');
   await expect(detail.getByTestId('square-settled')).toContainText(/Settled · (clear|\d reports?)/);
   await expect(detail.getByTestId('square-intel-item').first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
-  await expect(page.getByTestId('square-anchor').getByTestId('scan-square')).toHaveCount(0); // one scan settles it
+  await expect(page.getByTestId('square-anchor').getByTestId('square-intel-state')).toHaveText(/^settled · /); // one scan settles it
+  await expect(page.getByTestId('satellite').getByTestId('capture-scan')).toBeDisabled();
 });
 
 test('an event is a card that waits, a record only: nothing on it starts anything (ILI-1348, ILI-1393)', async ({ page, isMobile }) => {
