@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { promptQueue, trafficPrompts, type Prompt } from '../sim/prompts';
+import { lockedOn, satName } from '../sim/satellite';
 import { alphaBox, overlaysNamed, pick, squareBox, type Box } from './overlays';
 import { useTier } from './tier';
 
@@ -17,6 +18,7 @@ export function PromptLayer() {
     <>
       <MainPrompt />
       <TrafficPrompts />
+      <PlaceTags />
     </>
   );
 }
@@ -234,6 +236,9 @@ function TrafficPrompt({ live, team }: { live: Prompt; team: { x: number; y: num
               {r.label}
             </button>
           ))}
+          {/* Jam is here too (ILI-1469): the traffic's own tag has both answers. It needs ORION-3
+              over the square, like everything that runs there (ILI-1397). */}
+          <JamButton id={p.id} square={p.square} onAct={() => (held.current = null)} />
         </div>
       </section>
     </>
@@ -256,4 +261,71 @@ function place(sq: Box | null, area: { x: number; y: number; width: number; heig
   // A crowded corner: further out, the leader line still reaches the square.
   for (const fy of [0.15, 0.5, 0.85]) for (const fx of [0.5, 0.2, 0.8]) spots.push({ x: clampX(area.x + area.width * fx - w / 2), y: clampY(area.y + area.height * fy - h / 2), w, h });
   return pick(spots, [...avoid, sq]);
+}
+
+function JamButton({ id, square, onAct }: { id: string; square: string; onAct: () => void }) {
+  const locked = useGame((s) => lockedOn(s, square));
+  const name = useGame(satName);
+  return (
+    <button
+      className="jam"
+      onClick={() => {
+        onAct();
+        game.jam(id);
+      }}
+      disabled={!locked}
+      title={locked ? "Slows the enemy, but you won't learn what they're planning" : `${name} has to be over ${square}`}
+      data-testid="traffic-jam"
+    >
+      Jam
+    </button>
+  );
+}
+
+// Callout tags (ILI-1469, the ILI-1459 design): a thing on the map HQ can act on gets a tag at its
+// square, like the red map's cars: a dot on the square, a short leader, and the tag with its own
+// button. A building worth a search gets Search; once ALPHA is on its way, the tag says so.
+function PlaceTags() {
+  const s = useGame((x) => x);
+  const [, redraw] = useState(0);
+  useEffect(() => {
+    const again = () => redraw((n) => n + 1);
+    bus.on(EV.camera, again);
+    bus.on(EV.mapRect, again);
+    return () => {
+      bus.off(EV.camera, again);
+      bus.off(EV.mapRect, again);
+    };
+  }, []);
+  const area = getMapRect();
+  if (!area) return null;
+  const buildings = s.events.filter((e) => e.kind === 'building' && e.status !== 'resolved');
+  return (
+    <>
+      {buildings.map((e) => {
+        const sq = squareBox(e.square);
+        if (!sq) return null;
+        const cx = sq.x + sq.w / 2;
+        const cy = sq.y + sq.h / 2;
+        if (cx < area.x || cx > area.x + area.width || cy < area.y || cy > area.y + area.height) return null;
+        const going = s.searching.includes(e.square);
+        return (
+          <div key={e.id} className="place-tag" data-testid="place-tag" data-kind={e.kind} data-square={e.square} style={{ left: cx, top: cy }}>
+            <i className="pt-dot" aria-hidden />
+            <i className="pt-lead" aria-hidden />
+            <div className="pt-tag" role="group" aria-label={`${e.title} · ${e.square}`}>
+              <span>Building · {e.square}</span>
+              {going ? (
+                <em data-testid="search-going">{s.team.callsign} on its way</em>
+              ) : (
+                <button onClick={() => game.search(e.square)} data-testid="send-search">
+                  Search
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
 }

@@ -1862,3 +1862,29 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion .o-targeting :is(.o-tt, .o-tc) { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; }
 .orion .o-tt { top: 10%; background: #e5484d; color: #0b0f0d; font-weight: 600; }
 .orion .o-tc { bottom: 10%; background: #0b0f0d; color: #f08a8d; border: 1px solid #e5484d; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* Callout tags (ILI-1469, the ILI-1459 design, after the red-map reference): a dot on the square,
+   a short leader, and a compact tag with its own buttons. The prompts and the traffic card take
+   the same look: tight, one accent, the action inside. */
+.place-tag { position: fixed; z-index: 7; display: flex; align-items: center; transform: translate(-5px, -50%); pointer-events: none; }
+.place-tag .pt-dot { width: 10px; height: 10px; border-radius: 50%; background: #f2c14e; box-shadow: 0 0 0 4px rgba(242, 193, 78, 0.2); flex: none; }
+.place-tag .pt-lead { width: 22px; height: 1px; background: #f2c14e; flex: none; }
+.place-tag .pt-tag { pointer-events: auto; display: flex; align-items: stretch; background: rgba(11, 15, 13, 0.94); border: 1px solid #f2c14e; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.place-tag .pt-tag > span, .place-tag .pt-tag > em { display: flex; align-items: center; padding: 4px 8px; color: #f2c14e; font-style: normal; }
+.place-tag .pt-tag > em { color: var(--dim); border-left: 1px solid rgba(242, 193, 78, 0.4); }
+.place-tag .pt-tag button { font: inherit; text-transform: uppercase; padding: 4px 10px; color: #0b0f0d; background: #f2c14e; border: 0; border-left: 1px solid rgba(11, 15, 13, 0.4); cursor: pointer; letter-spacing: 0.12em; }
+.place-tag .pt-tag button:hover, .place-tag .pt-tag button:focus-visible { background: #ffd56b; outline: none; }
+.prompt { gap: 6px; padding: 7px 9px; border-width: 1px; border-left-width: 3px; box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.18), 0 6px 18px rgba(0, 0, 0, 0.45); }
+.prompt-text { font-size: 12px; }
+.prompt-responses button { min-height: 30px; font-size: 11px; }
+.traffic-prompt { border: 1px solid rgba(229, 72, 77, 0.7); border-left: 3px solid #e5484d; padding: 5px 7px; }
+.traffic-prompt .prompt-text { color: var(--ink); letter-spacing: 0.02em; }
+.traffic-prompt .prompt-text b { color: #f08a8d; }
+.traffic-prompt .prompt-responses { display: flex; gap: 4px; }
+.traffic-prompt .prompt-responses button { min-height: 26px; color: #0b0f0d; background: #e5484d; border-color: #e5484d; }
+.traffic-prompt .prompt-responses button:hover:not(:disabled) { background: #f08a8d; }
+.traffic-prompt .prompt-responses button:disabled { color: #f08a8d; background: none; border-color: rgba(229, 72, 77, 0.5); }
+.traffic-prompt .prompt-responses .jam { flex: 0 0 auto; color: #f08a8d; background: none; border: 1px solid #e5484d; }
+.traffic-prompt .prompt-responses .jam:hover:not(:disabled) { color: #0b0f0d; background: #e5484d; }
+.traffic-leader line { stroke: #e5484d; }
+.traffic-leader circle { fill: #e5484d; }

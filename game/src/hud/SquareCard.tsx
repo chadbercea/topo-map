@@ -417,24 +417,11 @@ export function Actions({ s, square }: { s: GameState; square: string }) {
           </h3>
           <p className="title">{e.title}</p>
           {e.kind === 'building' ? (
-            // The hunt (ILI-1316): worth mission time? ALPHA detours through it and searches it.
-            <div className="signal-options">
-              {s.searching.includes(e.square) ? (
-                <p className="note">{s.team.callsign} is on its way to search it.</p>
-              ) : (
-                <button onClick={() => game.search(e.square)} data-testid="send-search">
-                  Send {s.team.callsign} to search it
-                </button>
-              )}
-            </div>
+            // The hunt (ILI-1316): Search is on the building's tag on the map now (ILI-1469).
+            <p className="note">{s.searching.includes(e.square) ? `${s.team.callsign} is on its way to search it.` : 'Search it from its tag on the map.'}</p>
           ) : e.kind === 'signal' ? (
-            // Listening starts from getting an asset in range, through the prompt (ILI-1394). Jam
-            // is no mini game: it's here.
-            <div className="signal-options">
-              <button className="jam" onClick={() => game.jam(e.id)} title="Slows the enemy, but you won't learn what they're planning">
-                Jam
-              </button>
-            </div>
+            // Listen and Jam are on the traffic's tag on the map (ILI-1469).
+            <p className="note">Listen or Jam from its tag on the map.</p>
           ) : (
             <Call s={s} eventId={e.id} />
           )}
