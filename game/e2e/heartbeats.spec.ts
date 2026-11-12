@@ -9,9 +9,9 @@ test('the team panel is expanded by default; minimized it is the strip; they swa
   await running(page);
   const strip = page.getByTestId('heartbeat-strip');
   if (isMobile) {
-    // On a phone it's the TEAM tab of the sheet: the strip opens it.
-    await expect(strip.locator('svg.ecg')).toHaveCount(5);
-    await strip.click();
+    // On a phone the map takes the screen (ILI-1461): the TEAM target opens the team panel.
+    await expect(strip).toBeHidden();
+    await page.getByTestId('tab-team').click();
     await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
     return;
   }
@@ -49,6 +49,7 @@ test('an operator hit is a prompt; it opens the team panel with them highlighted
 
 // Names and status on the strip; the drawer as wide as its rows (ILI-1406).
 test('the strip names each operator with their status; the open drawer hugs its rows', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'a phone has no strip: its TEAM target says how the team is (ILI-1461)');
   await start(page, '?debug');
   await running(page);
   if (!isMobile) await page.getByTestId('team-minimize').click(); // the strip (ILI-1439)

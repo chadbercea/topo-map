@@ -7,6 +7,7 @@ import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier, useFold } from './tier';
 import { MissionBar } from './MissionBar';
+import { ChipStatus } from './ChipStatus';
 import { CommsLine } from './CommsLine';
 import { StrikeFlyout } from './StrikeFlyout';
 import { SightingPanels } from './SightingPanels';
@@ -30,7 +31,6 @@ if (debug) Object.assign(window, { game });
 
 type Tab = 'satcom' | 'orion' | 'team';
 type Sheet = 'peek' | 'half' | 'full';
-const SHEETS: Sheet[] = ['peek', 'half', 'full'];
 
 // The war room (layout A, ILI-1226, reworked by the HUD tiers, ILI-1391 to ILI-1395). The map runs
 // edge to edge on the left; ORION-3 and INTEL down the right; TEAM along the bottom.
@@ -102,10 +102,23 @@ export function Hud() {
   const orionSlot = useRef<HTMLDivElement>(null);
   useFlash(satcomSlot, commsNews, tabbed ? shown('satcom') : log);
   useFlash(orionSlot, orionNews, shown('orion'));
+  // On a phone the map takes the screen (ILI-1461): the panels are small targets along its foot.
+  // A tap opens one; one is open at a time, so tapping another slides the open one down as the new
+  // one slides up; × closes it.
+  const [leaving, setLeaving] = useState<Tab | null>(null);
+  useEffect(() => {
+    if (!leaving) return;
+    const t = setTimeout(() => setLeaving(null), 240);
+    return () => clearTimeout(t);
+  }, [leaving]);
   const pick = (t: Tab) => {
-    // A tab always shows its panel: a folded sheet opens. Folding is the handle's job.
+    if (tier === 'compact' && sheet !== 'peek' && tab !== t) setLeaving(tab);
     setSheet((h) => (h === 'peek' ? 'half' : h));
     setTab(t);
+  };
+  const closeSheet = () => {
+    setLeaving(tab);
+    setSheet('peek');
   };
   // The heartbeat strip opens the team drawer (ILI-1396); an operator prompt opens it with them
   // highlighted. On a fold or phone the drawer is the TEAM tab.
@@ -126,7 +139,7 @@ export function Hud() {
   });
 
   return (
-    <div className="hud" data-boot={boot} data-playing={playing} data-tab={tab} data-tier={tier} data-layout={fold ? 'fold' : undefined} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined} data-team={teamOpen || undefined}>
+    <div className="hud" data-boot={boot} data-playing={playing} data-tab={tab} data-tier={tier} data-layout={fold ? 'fold' : undefined} data-sheet={sheet} data-leaving={leaving ?? undefined} data-picked={picked || undefined} data-log={log || undefined} data-team={teamOpen || undefined}>
       <div className="slot-widget" data-overlay="widget">
         <MissionBar />
       </div>
@@ -185,11 +198,16 @@ export function Hud() {
           <CommsPanel />
         </div>
       )}
-      {tier === 'compact' && <SheetHandle sheet={sheet} setSheet={setSheet} />}
+      {tier === 'compact' && sheet !== 'peek' && (
+        <button className="sheet-close" onClick={closeSheet} data-testid="sheet-close" aria-label="Close the panel">
+          ×
+        </button>
+      )}
       <nav className="dock-tabs" aria-label="Panels">
-        {(['satcom', 'orion', 'team'] as const).map((t) => (
+        {(tier === 'compact' ? (['orion', 'team', 'satcom'] as const) : (['satcom', 'orion', 'team'] as const)).map((t) => (
           <button key={t} aria-pressed={tab === t} onClick={() => (tier === 'compact' ? pick(t) : setTab(t))} data-testid={`tab-${t}`} data-alert={t === 'team' && calling && !shown('team')} data-update={unseen[t] || undefined}>
             {t === 'satcom' ? 'COMMS' : t === 'orion' ? satellite : t.toUpperCase()}
+            {tier === 'compact' && <ChipStatus tab={t} />}
             {unseen[t] && <span className="tab-dot" aria-hidden />}
           </button>
         ))}
@@ -202,31 +220,3 @@ export function Hud() {
   );
 }
 
-// The bottom sheet's grip (ILI-1214): drag it up or down to snap to the next size, or tap it
-// to fold the sheet down to its tabs and back.
-function SheetHandle({ sheet, setSheet }: { sheet: Sheet; setSheet: (s: Sheet) => void }) {
-  const start = useRef<number | null>(null);
-  const step = (d: number) => setSheet(SHEETS[Math.max(0, Math.min(SHEETS.length - 1, SHEETS.indexOf(sheet) + d))]);
-  return (
-    <button
-      className="sheet-handle"
-      data-testid="sheet-handle"
-      aria-label={sheet === 'peek' ? 'Show panels' : 'Fold panels down'}
-      onPointerDown={(e) => {
-        start.current = e.clientY;
-        e.currentTarget.setPointerCapture(e.pointerId);
-      }}
-      onPointerUp={(e) => {
-        const from = start.current;
-        start.current = null;
-        if (from === null) return;
-        const dy = e.clientY - from;
-        if (Math.abs(dy) < 24) setSheet(sheet === 'peek' ? 'half' : 'peek');
-        else step(dy < 0 ? 1 : -1);
-      }}
-      onPointerCancel={() => (start.current = null)}
-    >
-      <span aria-hidden />
-    </button>
-  );
-}

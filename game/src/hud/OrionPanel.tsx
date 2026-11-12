@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
@@ -73,6 +73,16 @@ export function OrionPanel() {
     sent.current = key;
   });
   useEffect(() => () => void bus.emit(EV.inset, null), []);
+  // On a phone the panel slides up into place (ILI-1461): measure the picture again once it lands.
+  const sectionRef = useRef<HTMLElement>(null);
+  const [, relayout] = useState(0);
+  useEffect(() => {
+    const slot = sectionRef.current?.closest('.slot-orion');
+    if (!slot) return;
+    const on = () => relayout((n) => n + 1);
+    slot.addEventListener('animationend', on);
+    return () => slot.removeEventListener('animationend', on);
+  }, []);
 
   const avatar = tied ? 'tied' : sat.state === 'slewing' ? 'slewing' : 'idle';
   const status = tied ? 'Tied up' : sat.state === 'idle' ? 'Standby' : sat.state === 'slewing' ? 'Repositioning' : sat.state === 'onStation' ? 'On station' : CAPTURE[sat.mode!].label;
@@ -128,7 +138,7 @@ export function OrionPanel() {
   // down to a floor; 1 the buttons, 60 px, pinned to the bottom, never hidden. The square's
   // details are in its menu on the map now (tier three, tap the square).
   return (
-    <section className="panel orion" data-testid="satellite" data-state={sat.state} aria-label={`${name} imaging satellite`}>
+    <section ref={sectionRef} className="panel orion" data-testid="satellite" data-state={sat.state} aria-label={`${name} imaging satellite`}>
       <h2>
         <span className="o-name" title={name}>
           <SatelliteIcon />
@@ -148,7 +158,7 @@ export function OrionPanel() {
 
       {/* ORION-3 itself (ILI-1235): the 3D satellite, its outline when space is short, and its
           telemetry. */}
-      {!wide && (
+      {!wide && tier !== 'compact' && ( // a glyph in the header names it on a phone too (ILI-1461)
       <div className="o-satpanel" data-testid="orion-avatar" data-state={avatar}>
         <OrionAvatar state={avatar} fallback={<SatelliteMark />} />
         <span className="o-mark" aria-hidden>
@@ -169,6 +179,7 @@ export function OrionPanel() {
 
       {/* The AO's weather, three and three (ILI-1249); on a fold or phone it's the slim line. */}
       {wide && <EnvWidget />}
+      {tier === 'compact' && <EnvWidget slim />}
 
       {/* The image area: the picture takes what's left (ILI-1400). */}
       <div className="o-frame">
