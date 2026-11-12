@@ -6,7 +6,7 @@ import { ExfilPanel } from './ExfilPanel';
 import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier } from './tier';
-import { BudgetChip, TimerChip } from './MissionBar';
+import { MissionBar } from './MissionBar';
 import { SightingPanels } from './SightingPanels';
 import { EnvWidget } from './EnvWidget';
 import { OrionPanel } from './OrionPanel';
@@ -123,9 +123,8 @@ export function Hud() {
 
   return (
     <div className="hud" data-boot={boot} data-playing={playing} data-tab={tab} data-tier={tier} data-sheet={sheet} data-picked={picked || undefined} data-log={log || undefined} data-team={teamOpen || undefined}>
-      <div className="slot-widget">
-        <TimerChip />
-        <BudgetChip />
+      <div className="slot-widget" data-overlay="widget">
+        <MissionBar />
       </div>
       <MapArea />
       <SquareCard />

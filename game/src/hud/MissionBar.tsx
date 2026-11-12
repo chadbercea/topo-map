@@ -10,34 +10,70 @@ export const clock = (ms: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
-// The mission panel is broken up (ILI-1392). What's left on the HUD is tier one: the clock, small,
-// in the map's corner, named for why it matters (the client's deadline), with pause beside it. The
-// mission's name and objective are the start card and a marker on the map; ALPHA needing intel is
-// a prompt (ILI-1391); the race is in the debrief.
-export function TimerChip() {
+// The mission bar (ILI-1464, the ILI-1459 design): one bar across the top of the map, a small
+// label over a big value in each cell. The operation, the client's deadline (the biggest number on
+// screen), the phase, what's next, the budget, and pause at the far end. On a fold or phone only the
+// deadline, budget and pause fit. It replaces the loose timer and budget chips (ILI-1392, ILI-1405).
+const PHASES = ['infil', 'objective', 'exfil'] as const;
+const PHASE_NAME = { infil: 'Infil', objective: 'Recover', exfil: 'Exfil', complete: 'Complete' } as const;
+
+export function MissionBar() {
   const timer = useGame((s) => s.timer);
   const phase = useGame((s) => s.phase);
   const tick = useGame((s) => s.tick);
   const mission = useGame((s) => s.mission);
   const remaining = timer.remainingMs;
   const warn = remaining <= 60_000 ? 'red' : remaining <= 300_000 ? 'amber' : undefined;
+  const step = mission.phase === 'complete' ? PHASES.length : PHASES.indexOf(mission.phase);
   return (
-    <section className="timer-chip" data-testid="timer" data-phase={phase} data-warn={warn} data-overlay="widget" aria-label="Client deadline">
-      <span className="t-label">Client deadline</span>
-      <span className="clock" data-testid="clock" data-warn={warn}>
-        {clock(remaining)}
-      </span>
-      <button className="pause" onClick={game.pause} disabled={phase !== 'running'} aria-label="Pause" data-testid="pause-toggle">
-        ❚❚
-      </button>
-      <span className="sr-only" data-testid="tick">
-        {tick}
-      </span>
-      {/* The objective is a marker on the map (ILI-1392); in words, for a screen reader. */}
-      <span className="sr-only" data-testid="objective">
-        {objectiveText(mission)}
-      </span>
+    <section className="panel mission-bar" data-testid="mission-bar" aria-label="Mission">
+      <div className="mb-cell mb-op">
+        <RookGlyph />
+        <div>
+          <small>Operation</small>
+          <b>{mission.name.replace(/^Operation\s+/, '')}</b>
+        </div>
+      </div>
+      <div className="mb-cell timer-cell" data-testid="timer" data-phase={phase} data-warn={warn} aria-label="Client deadline">
+        <small className="t-label">Client deadline</small>
+        <b className="clock" data-testid="clock" data-warn={warn}>
+          {clock(remaining)}
+        </b>
+        <span className="sr-only" data-testid="tick">
+          {tick}
+        </span>
+      </div>
+      <div className="mb-cell mb-phase">
+        <small>Phase</small>
+        <b>
+          {PHASE_NAME[mission.phase]}
+          <span className="mb-steps" aria-hidden>
+            {PHASES.map((p, i) => (
+              <i key={p} data-on={i <= step || undefined} />
+            ))}
+          </span>
+        </b>
+      </div>
+      <div className="mb-cell mb-next">
+        <small>Next</small>
+        <b data-testid="objective">{objectiveText(mission)}</b>
+      </div>
+      <BudgetChip />
+      <div className="mb-end">
+        <button className="pause" onClick={game.pause} disabled={phase !== 'running'} aria-label="Pause" data-testid="pause-toggle">
+          ❚❚
+        </button>
+      </div>
     </section>
+  );
+}
+
+// Castle House's rook, small, at the head of the bar.
+function RookGlyph() {
+  return (
+    <svg className="mb-rook" viewBox="0 0 40 52" aria-hidden>
+      <path d="M6 50h28v-4l-3-3h-2l-2-24 4-4V5h-5v4h-4V5h-4v4h-4V5H9v10l4 4-2 24H9l-3 3z" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -48,15 +84,15 @@ export const cash = (n: number) => {
   return `${n < 0 ? '−' : ''}$${v}`;
 };
 
-// The budget (ILI-1405), tier one beside the clock: what Castle House has left to spend this
-// mission. Red once it's in the red.
-export function BudgetChip() {
+// The budget (ILI-1405): what Castle House has left to spend this mission, a cell of the mission
+// bar. Red once it's in the red.
+function BudgetChip() {
   const budget = useGame((s) => s.resources.budget);
   return (
-    <section className="budget-chip" data-testid="budget-chip" data-red={budget < 0 || undefined} data-overlay="widget" aria-label="Budget">
-      <span className="t-label">Budget</span>
+    <div className="mb-cell budget-chip" data-testid="budget-chip" data-red={budget < 0 || undefined} aria-label="Budget">
+      <small className="t-label">Budget</small>
       <b data-testid="balance">{cash(budget)}</b>
-    </section>
+    </div>
   );
 }
 

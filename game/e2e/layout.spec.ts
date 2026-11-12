@@ -50,22 +50,22 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   await page.getByTestId('team-minimize').click(); // the strip, minimized (ILI-1439)
   const view = page.viewportSize()!;
   const box = async (id: string) => (await page.getByTestId(id).boundingBox())!;
-  const timer = await box('timer');
+  const bar = await box('mission-bar');
   const logButton = await box('log-toggle');
   const orion = await box('satellite');
   const env = await box('conditions');
   const team = await box('team-panel'); // the team panel, minimized (ILI-1439)
   const map = await box('map-area');
-  // No mission panel (ILI-1392) and COMMS a closed drawer (ILI-1393): the map runs from the left
-  // edge; the timer is small in its top-left corner, the comms log's button under it.
-  await expect(page.getByTestId('mission-strip')).toHaveCount(0);
+  // The mission bar across the map's top (ILI-1464), and COMMS a closed drawer (ILI-1393): the map
+  // runs from the left edge; the bar spans it, the comms log's button under it.
   await expect(page.getByTestId('satcom')).toBeHidden();
   expect(map.x).toBeLessThan(40);
-  expect(logButton.y).toBeGreaterThanOrEqual(timer.y + timer.height);
+  expect(logButton.y).toBeGreaterThanOrEqual(bar.y + bar.height);
   expect(logButton.x - map.x).toBeLessThan(24);
-  expect(timer.x - map.x).toBeLessThan(24);
-  expect(timer.y - map.y).toBeLessThan(24);
-  expect(timer.height).toBeLessThan(56);
+  expect(Math.abs(bar.x - map.x)).toBeLessThan(2);
+  expect(Math.abs(bar.x + bar.width - (map.x + map.width))).toBeLessThan(2);
+  expect(Math.abs(bar.y - map.y)).toBeLessThan(2);
+  expect(bar.height).toBe(52);
   await expect(page.getByTestId('timer').getByTestId('clock')).toBeVisible();
   // ORION-3 down the right, right of the map.
   expect(orion.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
