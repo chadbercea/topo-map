@@ -190,6 +190,7 @@ export class MapScene extends Phaser.Scene {
       Object.assign(window, {
         mapSightings: () => pins.seen(), // what's bracketed, in world points (ILI-1410)
         mapSeenTags: () => Object.fromEntries([...this.seenTags].map(([k, l]) => [k, l.text])), // photo ages and feeds on the map (ILI-1468)
+        mapLiveCount: () => this.liveCount, // fighters drawn live under ORION-3
         mapCamera: () => {
           const c = this.cameras.main;
           return { scrollX: c.scrollX, scrollY: c.scrollY, zoom: c.zoom, width: c.width, height: c.height, dpr: DPR };
@@ -483,19 +484,22 @@ export class MapScene extends Phaser.Scene {
     const st = game.get();
     const { imagery, contacts, elapsedMs: now } = st;
     const px = DPR / this.zoom;
-    // The square ORION-3 is locked on is watched live (ILI-1468): the fighters known there are drawn
-    // where they are now, not where the last look left them.
+    // The square ORION-3 is locked on is watched live (ILI-1468): ORION-3 is live always, so every
+    // fighter there is drawn where he is now, scanned or not. Seeing him isn't settling the square:
+    // its intel, and a strike on it, still wait for a scan.
     const watched = st.satellite.state !== 'slewing' && lockedOn(st, st.satellite.aim) ? st.satellite.aim : null;
     const live = (c: (typeof contacts)[number]) => {
-      if (!watched || c.status !== 'revealed') return null;
+      if (!watched || (c.status !== 'revealed' && c.status !== 'hidden') || !c.units.length) return null; // ORION-3 is live always: everything under it, scanned or not (Chad, 2026-11-12)
       const o = groupOrigin(c, now);
       return squareAt(o.x + CELL / 2, o.y + CELL / 2) === watched ? o : null;
     };
     const drawn = new Set<string>();
+    if (this.onMain) this.liveCount = 0;
     for (const c of contacts) {
       const o = live(c);
       if (!o) continue;
       drawn.add(c.id);
+      if (this.onMain) this.liveCount += c.units.length;
       for (const u of c.units) {
         const { x, y } = unitSpot(o, u);
         g.lineStyle(px, 0xe5484d, 1).strokeCircle(x, y, 5 * px);
@@ -864,6 +868,7 @@ export class MapScene extends Phaser.Scene {
   // are drawn (ILI-1471: marks are a fixed size on screen in both).
   private drawZoom: number | null = null;
   private insetGrid = false;
+  private liveCount = 0;
   private get zoom() {
     return this.drawZoom ?? this.cameras.main.zoom;
   }

@@ -28,3 +28,19 @@ test('a photo square shows its age; a video square shows its feed', async ({ pag
   await expect.poll(() => page.evaluate(() => window.mapSeenTags()['f:F4'])).toMatch(/^[●○] FEED · LIVE$/);
   expect(await page.evaluate(() => window.mapSeenTags()['p:F4'])).toBeUndefined(); // live: no age
 });
+
+// ORION-3 is live always (Chad, 2026-11-12): over a square it shows every fighter there, scanned or
+// not; seeing them settles nothing, so there's still no intel and no strike until a scan.
+test('ORION-3 over an unscanned square shows its fighters live; no intel and no strike until a scan', async ({ page }) => {
+  await start(page, '?debug');
+  await running(page);
+  await freeze(page);
+  await page.evaluate(() => {
+    window.game.selectSquare('E3');
+    window.game.lookAt('E3');
+  });
+  await untilOnStation(page);
+  expect(await page.evaluate(() => !!window.game.get().imagery.E3)).toBe(false); // not scanned
+  await expect.poll(() => page.evaluate(() => window.mapLiveCount())).toBeGreaterThan(0);
+  await expect(page.locator('[data-testid=contact-tag][data-square=E3]')).toHaveCount(0);
+});

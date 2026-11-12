@@ -9,6 +9,7 @@ declare global {
     mapCamera: () => { scrollX: number; scrollY: number; zoom: number; width: number; height: number; dpr: number };
     mapSightings: () => { id: string; kind: string; x: number; y: number }[];
     mapSeenTags: () => Record<string, string>;
+    mapLiveCount: () => number;
   }
 }
 
