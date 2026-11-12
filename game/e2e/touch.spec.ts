@@ -71,15 +71,23 @@ test('pinch (or the wheel) zooms in, and recentring zooms back out', async ({ pa
   await expect.poll(async () => (await camera(page)).zoom).toBeCloseTo(fit, 5);
 });
 
-test('on a phone the dock is a bottom sheet: the grip folds it to its tabs, a tab opens it', async ({ page, isMobile }) => {
-  test.skip(!isMobile, 'the bottom sheet is the compact tier');
+test('on a phone the map takes the screen: a target slides its panel up, another swaps it, × closes it (ILI-1461)', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'the compact tier');
   await start(page, '?debug');
+  const hud = page.locator('.hud');
+  await expect(hud).toHaveAttribute('data-sheet', 'peek'); // nothing open: just the map and its targets
+  const map = (await page.getByTestId('map-area').boundingBox())!;
+  const view = page.viewportSize()!;
+  expect(map.height).toBeGreaterThan(view.height * 0.8);
   await page.getByTestId('tab-team').click();
   await expect(page.getByTestId('team-panel')).toBeVisible();
-  const map = (await page.getByTestId('map-area').boundingBox())!.height;
-  await page.getByTestId('sheet-handle').click();
+  // Another target: the open one slides down as the new one slides up; one open at a time.
+  await page.getByTestId('tab-orion').click();
+  await expect(hud).toHaveAttribute('data-leaving', 'team');
+  await expect(page.getByTestId('satellite')).toBeVisible();
+  await expect(hud).not.toHaveAttribute('data-leaving', /./);
   await expect(page.getByTestId('team-panel')).toBeHidden();
-  await expect.poll(async () => (await page.getByTestId('map-area').boundingBox())!.height).toBeGreaterThan(map + 100); // the map gets the room
-  await page.getByTestId('tab-team').click();
-  await expect(page.getByTestId('team-panel')).toBeVisible();
+  await page.getByTestId('sheet-close').click();
+  await expect(page.getByTestId('satellite')).toBeHidden();
+  await expect(hud).toHaveAttribute('data-sheet', 'peek');
 });

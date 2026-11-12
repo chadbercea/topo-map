@@ -5,6 +5,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws ORION-3's picture too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
+  await page.waitForFunction(() => window.game.get().elapsedMs > 0); // the first tick: ALPHA's eyes give ORION-3 a look at G5
   await freeze(page);
   const sat = page.getByTestId('satellite');
   await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');

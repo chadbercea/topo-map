@@ -1951,3 +1951,36 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .hud[data-layout='fold'] .team[data-state='min'] .heartbeat-strip { flex: 1; min-width: 0; }
   .hud[data-layout='fold'] .strike-flyout { left: auto; right: max(10px, env(safe-area-inset-right)); top: auto; bottom: calc(min(412px, 40dvh) + 48px + 26px); width: 280px; }
 }
+
+/* A phone (ILI-1461): the map takes the whole screen. The slim mission bar floats over its top;
+   ORION-3, ALPHA and COMMS are small targets along its foot. A tap slides that panel up over the
+   map; one at a time, so tapping another slides the open one down as the new one comes up; ×
+   closes it. */
+@media (max-width: 699px) {
+  .hud[data-tier='compact'] { grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: 'widget' 'map' 'tabs'; }
+  .hud[data-tier='compact'] .map-area { grid-row: 1 / -1; }
+  .hud[data-tier='compact'] .slot-widget { grid-area: widget; justify-self: stretch; margin: 0; }
+  .hud[data-tier='compact'] .mission-bar .mb-phase { display: flex; }
+  .hud[data-tier='compact'] .mission-bar .mb-cell { padding: 0 10px; }
+  .hud[data-tier='compact'] .slot-small, .hud[data-tier='compact'] > .heartbeat-strip { display: none; }
+  .hud[data-tier='compact'] .dock-tabs { grid-area: tabs; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; pointer-events: none; z-index: 9; }
+  .hud[data-tier='compact'] .dock-tabs button { pointer-events: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 44px; padding: 2px 6px; background: rgba(11, 15, 13, 0.92); border: 1px solid var(--line); }
+  .hud[data-tier='compact'] .dock-tabs button[aria-pressed='true'] { border-color: var(--accent); color: var(--accent); }
+  .hud[data-tier='compact'][data-sheet='peek'] .dock-tabs button[aria-pressed='true'] { border-color: var(--line); color: var(--ink); }
+  .chip-status { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+  .chip-status[data-cond='caution'] { color: #f2c14e; }
+  .chip-status[data-cond='danger'], .chip-status[data-cond='down'] { color: #e5484d; }
+  .hud[data-tier='compact'] :is(.slot-team, .slot-satcom, .slot-orion) { position: fixed; left: max(8px, env(safe-area-inset-left)); right: max(8px, env(safe-area-inset-right)); bottom: calc(max(4px, env(safe-area-inset-bottom)) + 52px); height: var(--sheet, 44dvh); z-index: 8; animation: sheet-up 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .hud[data-tier='compact'] :is(.team, .satcom, .orion) { height: var(--sheet, 44dvh); max-height: var(--sheet, 44dvh); }
+  .hud[data-tier='compact'][data-sheet='full'] { --sheet: 62dvh; }
+  .hud[data-tier='compact'][data-leaving='team'] .slot-team, .hud[data-tier='compact'][data-leaving='satcom'] .slot-satcom, .hud[data-tier='compact'][data-leaving='orion'] .slot-orion { display: grid !important; z-index: 7; animation: sheet-down 240ms ease-in both; pointer-events: none; }
+  .sheet-close { position: fixed; z-index: 10; right: max(14px, env(safe-area-inset-right)); bottom: calc(max(4px, env(safe-area-inset-bottom)) + 52px + var(--sheet, 44dvh) - 34px); width: 30px; height: 30px; padding: 0; pointer-events: auto; font: inherit; font-size: 16px; color: var(--ink); background: rgba(11, 15, 13, 0.92); border: 1px solid var(--line); cursor: pointer; }
+  .hud[data-tier='compact'] .orion h2 { padding-right: 40px; } /* room for × */
+}
+@keyframes sheet-up { from { transform: translateY(105%); } to { transform: none; } }
+@keyframes sheet-down { from { transform: none; } to { transform: translateY(105%); } }
+@media (prefers-reduced-motion: reduce) { .hud[data-tier='compact'] :is(.slot-team, .slot-satcom, .slot-orion) { animation: none !important; } }
+@media (max-width: 699px) { .hud[data-tier='compact'] .orion > .env.slim { grid-area: env; padding: 4px 10px; border: 0; background: none; font-size: 10px; } }
+@media (max-width: 699px) { .hud[data-tier='compact'] :is(.slot-team, .slot-satcom) > .panel, .hud[data-tier='compact'] .orion > :not(.o-frame) { background: rgba(11, 15, 13, 0.95); backdrop-filter: none; -webkit-backdrop-filter: none; } }
+@media (max-width: 699px) { .hud[data-tier='compact'] .sighting-layer { z-index: 9; } } /* a fighter's pinned panel stays over the phone's sliding panels (ILI-1461) */
+@media (max-width: 699px) { .hud[data-tier='compact'] .orion .o-icon { display: block; } }

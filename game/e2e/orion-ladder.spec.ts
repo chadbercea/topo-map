@@ -33,14 +33,14 @@ for (const [name, width, height] of [['desktop', 1440, 900], ['tablet landscape'
   });
 }
 
-test('on a phone the ladder drops the 3D satellite and shrinks the name to an icon; the state line stays', async ({ page, isMobile }) => {
+test('on a phone ORION-3 has no 3D satellite: its glyph and name head the panel, with the state line and Reposition (ILI-1461)', async ({ page, isMobile }) => {
   test.skip(isMobile, 'sets its own viewport');
   await page.setViewportSize({ width: 390, height: 844 });
   await start(page, '?debug');
   await running(page);
   await page.getByTestId('tab-orion').click();
   await expect(page.getByTestId('orion-avatar')).toBeHidden();
-  await expect(page.getByTestId('satellite').locator('.o-name-text')).toBeHidden();
+  await expect(page.getByTestId('satellite').locator('.o-name-text')).toBeVisible();
   await expect(page.getByTestId('satellite').locator('.o-icon')).toBeVisible();
   await expect(page.getByTestId('orion-state')).toBeVisible();
   await expect(page.getByTestId('look-here')).toBeVisible();

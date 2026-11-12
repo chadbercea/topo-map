@@ -31,18 +31,32 @@ export function MapArea() {
       // On a phone the small widgets are a row of their own above the map. On a wide screen the
       // mission bar runs across the map's top (ILI-1464): the grid fits below it, so it never
       // covers a marker. On a fold the deadline floats in the map's corner and the grid runs under it.
-      const coverTop = t === 'compact' ? (small?.getBoundingClientRect().bottom ?? 0) : t === 'wide' || fold ? (widget?.getBoundingClientRect().bottom ?? 0) : 0;
+      const coverTop = t === 'wide' || fold || t === 'compact' ? (widget?.getBoundingClientRect().bottom ?? 0) : 0;
       // The side rail (medium) and ORION-3's column (wide) are columns of their own: the grid
       // stops at their edge.
       const coverRight = fold ? undefined : t === 'medium' ? tabs?.getBoundingClientRect().left : t === 'wide' ? orion?.getBoundingClientRect().left : undefined;
+      // On a phone the map takes the screen and a panel slides up over it (ILI-1461): the open map
+      // ends at the open panel's top, so ALPHA and the square's details stay above it. Its laid-out
+      // top, not its box mid-slide.
+      if (t === 'compact') {
+        const open = [...document.querySelectorAll<HTMLElement>('.slot-team, .slot-satcom, .slot-orion')].filter((e) => e.offsetHeight > 0 && getComputedStyle(e).display !== 'none');
+        const top = Math.min(foot ?? y + height, ...open.map((e) => e.offsetTop - 8));
+        bus.emit(EV.mapRect, { x, y, width, height: Math.max(80, top - y), coverLeft, coverTop, coverBottom: top, coverRight });
+        return;
+      }
       bus.emit(EV.mapRect, { x, y, width, height, coverLeft, coverTop, coverBottom: foot || undefined, coverRight });
     };
     const ro = new ResizeObserver(report);
     ro.observe(el);
     for (const other of [stream, bottom, orion, small, tabs, widget]) if (other) ro.observe(other);
     tiers.forEach((q) => q.addEventListener('change', report));
+    // A phone's panel opening or closing (ILI-1461) changes the open map.
+    const hud = el.closest('.hud');
+    const mo = new MutationObserver(report);
+    if (hud) mo.observe(hud, { attributes: true, attributeFilter: ['data-sheet', 'data-tab', 'data-tier'] });
     report();
     return () => {
+      mo.disconnect();
       ro.disconnect();
       tiers.forEach((q) => q.removeEventListener('change', report));
     };
