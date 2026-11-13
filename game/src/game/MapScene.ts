@@ -33,6 +33,16 @@ const nextGap = () => 2000 + Math.random() * 3000;
 const WEDGE: [number, number][] = [[1.4, 0], [0.4, -1], [0.4, 1], [-0.7, -0.5], [-0.8, 0.6]];
 const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff, building: 0xf2c14e } as const;
 const WATER = 0x5fa8d3;
+// The rivers and streams, smoothed so they read as water, not as a staircase of samples; worked
+// out once, for the map's bake and ORION-3's (ILI-1483).
+let water: { river: boolean; pts: [number, number][] }[] | undefined;
+const waterLines = () =>
+  (water ??= theaterWater().lines.map((l) => {
+    let p = l.pts;
+    for (let n = 0; n < 2; n++)
+      p = p.length < 3 ? p : [p[0], ...p.slice(0, -1).flatMap((a, i) => [[a[0] * 0.75 + p[i + 1][0] * 0.25, a[1] * 0.75 + p[i + 1][1] * 0.25], [a[0] * 0.25 + p[i + 1][0] * 0.75, a[1] * 0.25 + p[i + 1][1] * 0.75]] as [number, number][]).slice(1), p[p.length - 1]];
+    return { river: l.flow >= RIVER, pts: p };
+  }));
 const FLASH_MS = 2_500; // a new event's square flashes this long, in mission time
 const BLIND_MS = 4_000; // a square moved into blind shows what ALPHA found this long (ILI-1309)
 const MARKER_R = 9; // CSS px
@@ -861,6 +871,61 @@ export class MapScene extends Phaser.Scene {
       this.insetGrid = true;
       this.forInset(() => this.drawGrid());
     }
+    this.bakeInsetGround((sq.col + 0.5) * CELL, (sq.row + 0.5) * CELL, w, h);
+  }
+
+  // ORION-3's ground, crisp (ILI-1483): the map's baked layers are sized for the map's zoom, so the
+  // picture, zoomed in further, showed them stretched and soft. The picture gets its own bake of
+  // just what it shows, at its own zoom, one texture pixel to a screen pixel; it ignores the map's.
+  // Lines keep the map's screen weights: the picture magnifies ground, not line widths (ILI-1471).
+  private insetGround?: Phaser.GameObjects.Image;
+  private insetGroundKey = '';
+  private bakeInsetGround(cx: number, cy: number, w: number, h: number) {
+    const z = this.inset.zoom;
+    const { city, mapView } = game.get().settings;
+    const relief = mapView === 'relief';
+    const area = { x: cx - w / z / 2, y: cy - h / z / 2, w: w / z, h: h / z };
+    const key = [area.x, area.y, w, h, z, city, relief].join();
+    if (key === this.insetGroundKey) return;
+    this.insetGroundKey = key;
+    const g = this.make.graphics({}, false);
+    const X = (x: number) => (x - area.x) * z;
+    const Y = (y: number) => (y - area.y) * z;
+    // Only what crosses the picture: a line's bounds overlap it.
+    const near = (pts: [number, number][]) => {
+      let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+      for (const [x, y] of pts) (x0 = Math.min(x0, x)), (y0 = Math.min(y0, y)), (x1 = Math.max(x1, x)), (y1 = Math.max(y1, y));
+      return x1 >= area.x - 8 && x0 <= area.x + area.w + 8 && y1 >= area.y - 8 && y0 <= area.y + area.h + 8;
+    };
+    const stroke = (pts: [number, number][]) => {
+      g.beginPath();
+      g.moveTo(X(pts[0][0]), Y(pts[0][1]));
+      for (let i = 1; i < pts.length; i++) g.lineTo(X(pts[i][0]), Y(pts[i][1]));
+      g.strokePath();
+    };
+    if (!relief) g.fillStyle(0x0b0f0d, 1).fillRect(0, 0, w, h); // the near background; in relief the relief shows through
+    const dim = relief ? 0.35 : 1; // as applyView dims the map's contours over relief
+    for (const line of this.contours) {
+      g.lineStyle((line.index ? 1.4 : 0.8) * DPR, TEAL, (line.index ? 0.38 : 0.16) * dim);
+      for (const ring of line.rings) if (ring.length >= 2 && near(ring)) stroke(ring);
+    }
+    for (const l of waterLines()) {
+      if (!near(l.pts)) continue;
+      g.lineStyle((l.river ? 2.6 : 1.2) * DPR, WATER, l.river ? 0.8 : 0.55);
+      stroke(l.pts);
+    }
+    if (city) {
+      g.lineStyle(3 * DPR, 0xb8c4bf, 0.45);
+      this.city.roads.filter(near).forEach(stroke);
+      g.lineStyle(1 * DPR, 0xb8c4bf, 0.3);
+      this.city.streets.filter(near).forEach(stroke);
+    }
+    if (this.textures.exists('inset-ground')) this.textures.remove('inset-ground');
+    g.generateTexture('inset-ground', Math.max(1, Math.ceil(w)), Math.max(1, Math.ceil(h)));
+    g.destroy();
+    this.insetGround?.destroy();
+    this.insetGround = this.add.image(area.x, area.y, 'inset-ground').setOrigin(0).setScale(1 / z).setDepth(-0.9);
+    this.cameras.main.ignore(this.insetGround);
   }
 
   // The zoom marks are drawn for: the map's camera, or ORION-3's while its picture's own copies
@@ -1001,10 +1066,13 @@ export class MapScene extends Phaser.Scene {
     // The coarse layer: bake it once, at a fixed modest scale. Line weight scales with
     // bake-to-screen ratio so the lines look as fine as the near ones. Not dimmed any more
     // (ILI-1193): the map runs on past the play area with no visible edge.
-    const far = FAR_SCALE * DPR;
+    // Baked as near the map's zoom as one texture allows, so the map's edges aren't soft (ILI-1483).
+    const far = Math.min(Math.max(FAR_SCALE * DPR, this.baseZoom), MAX_TEXTURE / Math.max(COARSE.w, COARSE.h));
     this.farTerrain ??= this.bakeContours('terrain-far', this.farContours, COARSE, far, (0.8 * far) / this.baseZoom).setDepth(-5);
     this.drawWater(s);
     this.drawCity(s);
+    // ORION-3's picture has its own crisp bake of its ground (bakeInsetGround).
+    this.inset.ignore([this.terrain, this.farTerrain, this.waterImg!, this.cityImg!]);
     this.shown = undefined;
     this.applyView();
   }
@@ -1044,16 +1112,8 @@ export class MapScene extends Phaser.Scene {
   // so they read as water, not as a staircase of samples.
   private drawWater(s: number) {
     const g = this.make.graphics({}, false);
-    const smooth = (pts: [number, number][]) => {
-      let p = pts;
-      for (let n = 0; n < 2; n++)
-        p = p.length < 3 ? p : [p[0], ...p.slice(0, -1).flatMap((a, i) => [[a[0] * 0.75 + p[i + 1][0] * 0.25, a[1] * 0.75 + p[i + 1][1] * 0.25], [a[0] * 0.25 + p[i + 1][0] * 0.75, a[1] * 0.25 + p[i + 1][1] * 0.75]] as [number, number][]).slice(1), p[p.length - 1]];
-      return p;
-    };
-    for (const l of theaterWater().lines) {
-      const river = l.flow >= RIVER;
+    for (const { river, pts } of waterLines()) {
       g.lineStyle((river ? 2.6 : 1.2) * DPR, WATER, river ? 0.8 : 0.55);
-      const pts = smooth(l.pts);
       g.beginPath();
       g.moveTo((pts[0][0] - FINE.x) * s, (pts[0][1] - FINE.y) * s);
       for (let i = 1; i < pts.length; i++) g.lineTo((pts[i][0] - FINE.x) * s, (pts[i][1] - FINE.y) * s);

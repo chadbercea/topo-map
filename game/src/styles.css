@@ -3,7 +3,7 @@
   --ink: #cfe8dc;
   --dim: #6f8a7d;
   --accent: #35d0a5;
-  --panel: rgba(11, 15, 13, 0.66);
+  --panel: rgba(11, 15, 13, 0.9); /* no blur behind the panels (ILI-1483): a near-solid fill keeps them legible over the map */
   --line: rgba(53, 208, 165, 0.35);
   --gutter: 16px;
 }
@@ -41,8 +41,8 @@ html, body {
   gap: 8px var(--gutter);
   /* The war room, layout A (ILI-1226): the mission and COMMS down the left, the map in the
      middle with the mini game at its foot, ORION-3 down the whole right side, and along the
-     bottom the small widgets and TEAM. */
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+     bottom the small widgets and TEAM. ORION-3's column is 300 px, smaller since ILI-1483. */
+  grid-template-columns: minmax(0, 1fr) 300px;
   grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
     'map orion'
@@ -273,9 +273,9 @@ html, body {
 :is(.square-card, .action-panel, .orion, .strike-panel) .signal-options button.jam { color: #8fb8ff; border-color: #8fb8ff; }
 @media (prefers-reduced-motion: reduce) { .square-card { animation: none; } }
 /* The action panel (ILI-1211): what HQ can do about the square, docked to the square card. */
-/* Not quite opaque, blurred like the other panels: Chrome mis-composites a fully opaque fixed
-   layer over the WebGL map (a white block, flipped, on the software renderer). */
-.action-panel { position: fixed; z-index: 7; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow-y: auto; pointer-events: auto; background: rgba(11, 15, 13, 0.97); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid #e5484d; animation: ask-in 160ms ease-out; }
+/* Not quite opaque: Chrome mis-composites a fully opaque fixed layer over the WebGL map (a white
+   block, flipped, on the software renderer). No blur (ILI-1483). */
+.action-panel { position: fixed; z-index: 7; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow-y: auto; pointer-events: auto; background: rgba(11, 15, 13, 0.97); border: 1px solid #e5484d; animation: ask-in 160ms ease-out; }
 :is(.action-panel, .strike-panel) .ap-head { padding: 7px 10px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); border-bottom: 1px solid var(--line); }
 .action-panel .ap-head b { color: var(--ink); font-weight: 600; }
 .action-panel > .sc-event:first-of-type, .action-panel .ap-head + .sc-row { border-top: none; }
@@ -358,9 +358,7 @@ html, body {
 .panel {
   pointer-events: auto;
   background: var(--panel);
-  /* Panels float over the theater: the map shows through, softened. */
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  /* Panels float over the theater on a near-solid fill: no blur over the map under them (ILI-1483). */
   border: 1px solid var(--line);
   padding: 10px 12px;
   font-size: 12px;
@@ -853,7 +851,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion { display: flex; flex-direction: column; gap: 0; padding: 0; min-height: 0; overflow-y: auto; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
 /* The panel's own ground is painted row by row, so the picture frame stays a clear window onto
    Phaser's inset (a background or blur over it would dim the larger square). */
-.orion > :not(.o-frame), .orion::after { background: var(--panel); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); padding: 8px 12px; }
+.orion > :not(.o-frame), .orion::after { background: var(--panel); padding: 8px 12px; }
 .orion::after { content: ''; flex: 1; }
 .orion > .sr-only { padding: 0; }
 /* ORION-3 never scrolls on a wide screen (ILI-1354): the satellite, its weather and the buttons
@@ -967,7 +965,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion .o-buttons .o-reposition:disabled { border-color: var(--line); color: var(--dim); }
 /* The strike panel (ILI-1233): a tertiary panel the Strike button produces, floating beside
    ORION-3 (above it on a phone), so nothing in ORION-3 moves. */
-.strike-panel { position: fixed; z-index: 8; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow-y: auto; pointer-events: auto; background: rgba(11, 15, 13, 0.97); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border: 1px solid #e5484d; animation: ask-in 160ms ease-out; }
+.strike-panel { position: fixed; z-index: 8; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow-y: auto; pointer-events: auto; background: rgba(11, 15, 13, 0.97); border: 1px solid #e5484d; animation: ask-in 160ms ease-out; }
 .strike-panel .ap-head { display: flex; align-items: center; gap: 6px; }
 .strike-panel .ap-head .x { margin-left: auto; font: inherit; font-size: 16px; line-height: 1; color: var(--dim); background: none; border: 1px solid transparent; min-width: 32px; min-height: 28px; padding: 0; cursor: pointer; }
 .strike-panel .ap-head .x:hover { color: var(--ink); border-color: var(--line); background: none; }
@@ -1930,7 +1928,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    the map's top, the map, ORION-3 docked under it side to side (its picture left, every satellite
    action right), and the team strip and comms strip along the bottom. No tabs. */
 @media (min-width: 700px) and (max-width: 1199px) and (orientation: portrait) {
-  .hud[data-layout='fold'] { gap: 8px; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) min(412px, 40dvh) 48px; grid-template-areas: 'map' 'orion' 'bottom'; }
+  .hud[data-layout='fold'] { gap: 8px; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) min(340px, 34dvh) 48px; grid-template-areas: 'map' 'orion' 'bottom'; }
   .hud[data-layout='fold'] .slot-widget { justify-self: stretch; margin: 0; }
   .hud[data-layout='fold'] .mission-bar { grid-template-rows: 52px 24px; }
   .hud[data-layout='fold'] .mission-bar :is(.mb-op, .mb-phase, .mb-next) { display: flex; }
@@ -2131,3 +2129,10 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .overlay.aar .wrapup .columns { grid-template-columns: 1fr; gap: 18px; }
 }
 .wrapup .aar-sec .race { width: 100%; justify-self: stretch; }
+
+/* ORION-3 smaller (ILI-1483): a 300 px column on a wide screen, its buttons in a shorter block;
+   in the rail it stops at the height its picture needs instead of running down the whole rail; on
+   a fold upright its dock is shorter. Nothing in it moves or scrolls as a scan goes on. */
+.hud[data-tier='wide'] .orion { grid-template-rows: auto auto 92px auto auto; }
+.hud[data-tier='wide'] .orion > .o-buttons { height: 92px; }
+.hud[data-tier='medium']:not([data-layout='fold']) .slot-orion { max-height: 516px; }
