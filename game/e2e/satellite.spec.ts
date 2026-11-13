@@ -94,13 +94,14 @@ test('a square with fighters in view gets a CONTACT tag; its Strike, or a fighte
   await expect(page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike')).toBeEnabled(); // locked on E3, fighters in a fresh look (ILI-1474)
   const pins = sat.getByTestId('target-pin');
   await expect(pins).toHaveCount(5); // one per fighter it saw
-  // A click in ORION-3's picture pins his full panel there (ILI-1444); its Strike opens the square's strikes.
+  // A click in ORION-3's picture pins his full panel there (ILI-1444): read-only (ILI-1482); Strike is on the square.
   await page.evaluate(() => window.game.tick(100)); // ORION-3's live feed over E3
   await pins.first().click();
   const panel = page.locator('.sighting-panel[data-kind=hostile][data-pinned]');
   await expect(panel.getByTestId('panel-tango')).toHaveText(/^HOSTILE · TANGO-\d+$/);
   await expect(panel.getByTestId('panel-weapon')).not.toHaveText('█████'); // ORION-3 is over him: his weapon shows
-  await panel.getByTestId('panel-strike').click();
+  await expect(panel.getByTestId('panel-strike')).toHaveCount(0);
+  await page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
   await expect(page.getByTestId('strike-flyout').getByTestId('fire-drone')).toBeVisible();
   const anchor = page.getByTestId('square-anchor');
   await expect(anchor.getByTestId('strike-menu')).toHaveCount(1); // the options slide in inside the square's panel (11-12)

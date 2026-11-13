@@ -13,9 +13,9 @@ test('a scan settles its square: a stamp on the map, its reports in the square�
   await page.evaluate(() => window.game.selectSquare('F4'));
   // Its reports are on the square's flyout (ILI-1475): the satellite doesn't store intel.
   const detail = page.getByTestId('square-anchor');
-  await expect(detail.getByTestId('square-settled')).toContainText(/Settled · (clear|\d reports?)/);
+  await expect(detail.getByTestId('intel-summary')).toHaveText(/^(clear|\d reports?)$/); // one scan settles it; said once, in the summary (ILI-1482)
+  await detail.getByTestId('fold-intel').locator('summary').click();
   await expect(detail.getByTestId('square-intel-item').first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
-  await expect(page.getByTestId('square-anchor').getByTestId('square-intel-state')).toHaveText(/^settled · /); // one scan settles it
   await expect(page.getByTestId('satellite').getByTestId('capture-scan')).toBeDisabled();
 });
 

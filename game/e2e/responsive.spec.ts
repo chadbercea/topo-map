@@ -53,9 +53,8 @@ for (const [name, width, height] of SIZES) {
     const sat = await box(page.getByTestId('satellite'));
     expect(sat.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
     const card = page.getByTestId('square-anchor');
-    // Its strikes open from a fighter in ORION-3's picture (ILI-1250).
-    await page.getByTestId('target-pin').first().click(); // pins his panel in ORION-3's picture (ILI-1444)
-    await page.locator('.sighting-panel[data-kind=hostile][data-pinned]').getByTestId('panel-strike').click();
+    // Its strikes open from the square's own Strike (ILI-1482: a fighter's panel is read-only).
+    await card.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
     const menu = page.getByTestId('strike-flyout').getByTestId('strike-menu'); // the strike menu by its square (ILI-1474)
     await menu.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
     await expect(menu.getByTestId('fire-sniper')).toBeVisible();

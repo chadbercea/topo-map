@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { toScreen } from '../game/events';
 import { CELL, parseSquare } from '../map/grid';
 import { game, useGame } from '../sim/store';
-import { targets } from '../sim/imagery';
 import { activityOf, conditionOf, satOver, weaponOf } from '../sim/fighters';
 import { AIR } from '../sim/air';
 import { exfilStage, TRANSPORT } from '../sim/exfil';
@@ -126,8 +125,7 @@ function PanelBody({ t }: { t: Sighting }) {
   }
   if (t.kind === 'hostile') {
     const contactId = t.id.split(':')[0];
-    const strikeable = targets(s).some((x) => x.contactId === contactId);
-    // Redacted unless ORION-3 is over his square with a live picture (ILI-1412).
+    // Read-only (ILI-1482): Strike is on the square, behind its lock check. Redacted unless ORION-3 is over his square with a live picture (ILI-1412).
     const over = satOver(s, t.square);
     const rows: [string, string][] = [
       ['Weapon', weaponOf(t.id)],
@@ -148,11 +146,6 @@ function PanelBody({ t }: { t: Sighting }) {
           ))}
         </dl>
         <p className="sp-line">{over ? `ORION-3 over ${t.square}` : `${t.square} · no eyes on`}</p>
-        {strikeable && (
-          <button className="sp-act" onClick={() => game.openEvent(`contact-${contactId}`)} data-testid="panel-strike">
-            Strike
-          </button>
-        )}
       </>
     );
   }
