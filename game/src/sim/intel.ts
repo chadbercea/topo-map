@@ -50,7 +50,7 @@ export type IntelItem = { kind: IntKind; heat: Heat; text: string };
 
 const REPORT: Record<IntKind, Record<Heat, string>> = {
   GEOINT: { quiet: 'nothing moving in the picture', some: 'fresh tracks, a vehicle came through', hot: 'armed men in the open' },
-  SIGINT: { quiet: 'no traffic on their nets', some: 'a burst of radio traffic, then quiet', hot: 'radio traffic, they’re calling for help' },
+  SIGINT: { quiet: 'no traffic on their nets', some: 'radio traffic on their net', hot: 'radio traffic, they’re calling for help' },
   HUMINT: { quiet: 'locals say nothing unusual', some: 'a shepherd saw a truck pass', hot: 'a local says fighters came through at dawn' },
   MASINT: { quiet: 'no heat signatures', some: 'one heat signature, could be an animal', hot: 'heat signatures, several, close together' },
   OSINT: { quiet: 'nothing posted from here', some: 'a photo from here, two days old', hot: 'a post shows armed men here today' },

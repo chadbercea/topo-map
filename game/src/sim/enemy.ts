@@ -1,6 +1,7 @@
 import { nextRandom } from './firefight';
 import { moveContact, startMove, type Contact } from './contacts';
 import type { Message } from './comms';
+import type { IntelItem } from './intel';
 import type { GameState } from './state';
 import type { System } from './systems';
 
@@ -19,39 +20,19 @@ const between = (r: number, [lo, hi]: readonly [number, number]) => Math.round(l
 
 const live = (c: Contact) => c.status === 'hidden' || c.status === 'revealed';
 
-// Enemy radio traffic: every live group talks on its net now and then. Its first transmission
-// comes at a random time in FIRST_TX_MS, then every TX_CALM_MS, sooner once the enemy is
-// alerted (TX_ALERTED_MS). It's one net: while one transmission is up and nobody has listened
-// or jammed it, the others wait for their next turn. A jammed net carries nothing.
-export const FIRST_TX_MS = [50_000, 140_000] as const;
-export const TX_CALM_MS = [90_000, 180_000] as const;
-export const TX_ALERTED_MS = [30_000, 75_000] as const;
-
+// Enemy radio traffic is a reward of scanning (ILI-1359): nothing comes up on a timer and nothing
+// pops up by itself. A scan's reports are random (ILI-1362); when one of them is SIGINT that heard
+// something, their traffic comes up on the scanned square as a tag, and HQ can listen in (ORION-3
+// is already over it) or jam it. One net: while traffic is up, a scan hears nothing new. A jammed
+// net carries nothing, and with no live group left there's nobody talking.
 export const trafficOpen = (s: GameState) => s.events.some((e) => e.kind === 'signal' && e.status !== 'resolved');
 
-export const trafficSystem: System = (s) => {
-  if (!s.contacts.some((c) => live(c) && (c.nextTxMs === undefined || s.elapsedMs >= c.nextTxMs))) return s;
-  let talker = null as Contact | null;
-  const contacts = s.contacts.map((c) => {
-    if (!live(c)) return c;
-    if (c.nextTxMs === undefined) return { ...c, nextTxMs: s.elapsedMs + between(dice(s.seed, `tx-${c.id}-first`), FIRST_TX_MS) };
-    if (s.elapsedMs < c.nextTxMs) return c;
-    if (!talker && !s.flags.jammed && !trafficOpen(s)) talker = c;
-    return { ...c, nextTxMs: s.elapsedMs + between(dice(s.seed, `tx-${c.id}-${c.nextTxMs}`), s.alerted ? TX_ALERTED_MS : TX_CALM_MS) };
-  });
-  const next = { ...s, contacts };
-  return talker ? transmit(next, talker) : next;
-};
+export const heardTraffic = (items: readonly IntelItem[] = []) => items.some((i) => i.kind === 'SIGINT' && i.heat !== 'quiet');
 
-// Traffic comes up on the map at the group's square, and HQ hears it.
-function transmit(s: GameState, c: Contact): GameState {
-  const id = `traffic-${c.square.toLowerCase()}-${s.elapsedMs}`;
-  const m: Message = { id: `hq-${id}`, from: 'HQ', text: `Picking up enemy radio traffic near ${c.square}. Listen in?`, atMs: s.elapsedMs, status: 'new', holds: false, alert: true };
-  return {
-    ...s,
-    events: [...s.events, { id, kind: 'signal', square: c.square, title: 'Enemy radio traffic', atMs: s.elapsedMs, status: 'new' }],
-    comms: { ...s.comms, messages: [...s.comms.messages, m] },
-  };
+export function hearTraffic(s: GameState, square: string): GameState {
+  if (s.flags.jammed || trafficOpen(s) || !s.contacts.some(live)) return s;
+  const id = `traffic-${square.toLowerCase()}-${s.elapsedMs}`;
+  return { ...s, events: [...s.events, { id, kind: 'signal', square, title: 'Enemy radio traffic', atMs: s.elapsedMs, status: 'new' }] };
 }
 
 // A group with a plan (planTo: the patrol hunting the drone) carries it out. When it sets off is

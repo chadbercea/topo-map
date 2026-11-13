@@ -27,11 +27,10 @@ export const fastForward = (page: Page, ms: number) =>
 
 // Run mission time until a group talks on its net (ILI-1454): no fixed time, the mission's rules
 // and seeded dice. On the default seed the patrol at C2 is first, before a minute is up.
+// Enemy traffic up at C2, as a scan's SIGINT report brings it in (ILI-1359): nothing comes up on a
+// timer any more, and ORION-3 stays where it is.
 export const untilTraffic = (page: Page) =>
-  page.evaluate(() => {
-    const open = () => window.game.get().events.some((e) => e.kind === 'signal' && e.status !== 'resolved');
-    for (let i = 0; i < 3000 && !open(); i++) window.game.tick(100);
-  });
+  page.evaluate(() => window.game.addEvent({ id: 'traffic-c2', kind: 'signal', square: 'C2', title: 'Enemy radio traffic' }));
 
 // Wait (in mission time) for ORION-3 to get on station.
 export const untilOnStation = (page: Page) =>

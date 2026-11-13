@@ -6,6 +6,7 @@ import type { MiniGame } from './minigame';
 import type { GameState } from './state';
 import type { System } from './systems';
 import { lockedOn, lookAt, satelliteBusy } from './satellite';
+import { parseSquare } from '../map/grid';
 
 // Signal intercept (GDD, reworked in ILI-1169): one action with a clear goal. Their
 // transmission is a wave on a frequency; HQ lays its own wave over it with one control.
@@ -82,11 +83,22 @@ export const listenSystem: System = (s) => {
   return startIntercept({ ...s, listen: null }, l.eventId, l.via);
 };
 
+function nearest(s: GameState, square: string) {
+  const at = parseSquare(square);
+  if (!at) return undefined;
+  const far = (sq: string) => {
+    const p = parseSquare(sq);
+    return p ? Math.max(Math.abs(p.col - at.col), Math.abs(p.row - at.row)) : Infinity;
+  };
+  return s.contacts.filter((x) => x.status === 'hidden' || x.status === 'revealed').sort((a, b) => far(a.square) - far(b.square))[0];
+}
+
 export function startIntercept(s: GameState, eventId: string, via?: ListenVia): GameState {
   const e = s.events.find((x) => x.id === eventId && x.status !== 'resolved'); // jammed or gone quiet: nothing to hear
   if (!e || s.minigame?.status === 'active') return s;
   // The traffic comes from whoever is near the signal; prefer a contact nobody has found.
-  const c = s.contacts.find((x) => x.square === e.square && x.status === 'hidden') ?? s.contacts.find((x) => x.square === e.square);
+  // Heard from a scan (ILI-1359), it can be a group a square or two off: then the nearest one still in the fight.
+  const c = s.contacts.find((x) => x.square === e.square && x.status === 'hidden') ?? s.contacts.find((x) => x.square === e.square) ?? nearest(s, e.square);
   const [r, rng] = nextRandom(s.rng);
   const target = round1(BAND.min + 5 + r * (BAND.max - BAND.min - 10));
   const plain = c ? `${WORD[c.id] ?? 'UNIT'} AT ${c.square} ${c.intent ?? 'HOLD POSITION'}` : `NOTHING AT ${e.square}`;

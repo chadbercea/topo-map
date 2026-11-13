@@ -1,4 +1,5 @@
 import { GRADE_LABEL, holdScan, pushVideo, settled } from './intel';
+import { hearTraffic, heardTraffic } from './enemy';
 import { maybeBuilding } from './buildings';
 import { slewFactor } from './upgrades';
 import { parseSquare, squareId, type SquareId } from '../map/grid';
@@ -201,12 +202,15 @@ function finishLook(s: GameState): GameState {
   let pushed: string;
   if (mode === 'video') {
     next = pushVideo(next);
+    if (heardTraffic(next.intel.pushes.at(-1)?.items)) next = hearTraffic(next, square);
     pushed = `Analysts: live feed to ${s.team.callsign} for the rest of the op`;
   } else {
     if (!fighters) next = maybeBuilding(next, square); // the hunt: empty ground can turn up a building (ILI-1316)
     // A scan (ILI-1432): the analysts hold its intel until HQ sends it to ALPHA with Photo.
     const p = holdScan(next, square, fighters);
     next = p.next;
+    // Their radio traffic is one of a scan's rewards (ILI-1359): a SIGINT report that heard something.
+    if (heardTraffic(next.intel.pushes.at(-1)?.items)) next = hearTraffic(next, square);
     pushed = `Analysts: ${GRADE_LABEL[p.grade]}, ready for ${s.team.callsign} on Photo`;
   }
   next = log(next, radio(s, satName(s), `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. ${pushed}.`));
