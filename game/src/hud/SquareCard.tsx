@@ -3,7 +3,7 @@ import { uiScale } from './scale';
 import { bus, EV, getMapRect } from '../game/events';
 import { BuildingTag, tagSquares } from './PromptLayer';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, lockedOn, satName } from '../sim/satellite';
+import { lockedOn, satName } from '../sim/satellite';
 import { trafficPrompts } from '../sim/prompts';
 import { isImageryRequest } from '../sim/imageryRequest';
 import { MiniGamePanel } from './MiniGamePanel';
@@ -13,8 +13,7 @@ import { SniperPanel } from './SniperPanel';
 import { AirPanel } from './AirPanel';
 import { airGone } from '../sim/air';
 import { sniperGone } from '../sim/sniper';
-import { ground, weather } from '../sim/conditions';
-import { countdown, gameSpan, zulu } from '../sim/gameTime';
+import { countdown, zulu } from '../sim/gameTime';
 import { EVENT_LABEL } from '../sim/stream';
 import { useTier } from './tier';
 import { alphaBox, obstacles, pick, squareBox } from './overlays';
@@ -216,8 +215,8 @@ export function strikeState(s: GameState, square: string) {
   return { marked, running, strikes, seen: seenHere && strikes.length > 0, locked: lockedOn(s, square), can: lockedOn(s, square) && seenHere && strikes.length > 0 && !running };
 }
 
-// Compact (11-12): the head, the square's tags, then its report folded into closed sections (Intel,
-// Ground, Activity), each a one-line summary until HQ opens it. Strike on the CONTACT tag slides the
+// Compact (11-12, ILI-1506): the head with its status (ORION-3 locked on or on its way, ALPHA
+// asking for imagery), then its intel list. Strike on the CONTACT tag slides the
 // strike options into the panel in place of the report; once a strike is under way here (drone,
 // heli or sniper), the whole panel is that strike's countdown until it's done.
 function AnchorBody({ s, square }: { s: GameState; square: string }) {
@@ -229,16 +228,26 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
   const contact = tags.contacts.includes(square);
   const buildings = tags.buildings.filter((e) => e.square === square);
   const striking = st.can && s.events.some((e) => e.id === s.openEvent && e.kind === 'contact' && e.square === square);
+  // The flyout's status is only what matters (ILI-1506): is ORION-3 locked on here or on its way,
+  // and is ALPHA asking for imagery of it. Ground and weather are on ORION-3's picture (ILI-1504).
+  const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
   const head = (
-    <header className="sc-head">
-      <b>{square}</b>
-      <span className="sc-status" data-testid="lock-status">
-        {locked ? `${satName(s)} locked on` : coming ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `No coverage · ${satName(s)} over ${sat.aim}`}
-      </span>
-      <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
-        ×
-      </button>
-    </header>
+    <>
+      <header className="sc-head" data-state={locked ? 'locked' : coming ? 'slewing' : 'away'}>
+        <b>{square}</b>
+        <span className="sc-status" data-testid="lock-status">
+          {locked ? `${satName(s)} locked on` : coming ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `${satName(s)} over ${sat.aim}`}
+        </span>
+        <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
+          ×
+        </button>
+      </header>
+      {asked && (
+        <p className="sc-asked" data-testid="square-asked">
+          {asked.title}
+        </p>
+      )}
+    </>
   );
 
   // A strike under way here: the panel is its countdown (OVERWATCH ILI-1303, REAPER-1 and HAMMER-2 ILI-1304).
@@ -263,7 +272,6 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
     );
 
   const traffic = shownEvents(s).filter((e) => e.square === square && e.kind === 'signal' && e.status !== 'resolved');
-  const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
   const others = shownEvents(s).filter(otherItem(square));
   const known = knownIn(s, square); // where HQ last saw them (ILI-1493)
   return (
@@ -274,11 +282,10 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       <TeamWork s={s} square={square} />
 
       {/* The square's intel list (ILI-1487): only what HQ can act on here, each with its button:
-          ALPHA's ask, contacts, buildings, radio traffic. What ORION-3's imagery found is ORION-3's,
+          its package, contacts, buildings, radio traffic. What ORION-3's imagery found is ORION-3's,
           under its picture, not here too. */}
       <section className="sc-items" data-testid="intel-list" aria-label={`Intel on ${square}`}>
         <h3 className="sc-items-head">Intel</h3>
-        {asked && <p className="sc-asked">{asked.title}</p>}
         <PackageLine s={s} square={square} />
         {/* The contact is a line of the list like the rest (ILI-1490): no red CONTACT tag docked on
             the panel beside it, a second red flyout over the square's own panel. */}
@@ -310,13 +317,12 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
             <small className="note">{e.title}</small>
           </div>
         ))}
-        {!asked && !shelfState(s, square) && !contact && !known.length && !buildings.length && !traffic.length && !others.length && (
+        {!shelfState(s, square) && !contact && !known.length && !buildings.length && !traffic.length && !others.length && (
           <p className="sc-none" data-testid="intel-none">
             No contacts or traffic reported
           </p>
         )}
       </section>
-      <Details s={s} square={square} />
     </>
   );
 }
@@ -464,50 +470,6 @@ function StrikeOptions({ s, square }: { s: GameState; square: string }) {
         ))}
       </section>
     </section>
-  );
-}
-
-// A square's details (ILI-1203, ILI-1220): tier three since the satellite panel's ladder
-// (ILI-1400), in the square's own menu, folded under one line that says how fresh its imagery is.
-export function Details({ s, square, open = false }: { s: GameState; square: string; open?: boolean }) {
-  const sat = s.satellite;
-  const now = s.elapsedMs;
-  const working = sat.aim === square && sat.state !== 'idle'; // ORION-3 is on this square
-  const g = ground(s, square)!;
-  const wx = weather(s);
-  const snap = s.imagery[square];
-  const seen = snap ? freshness(snap, now) : null;
-  const status = working
-    ? sat.state === 'slewing'
-      ? `${satName(s)} ${countdown(sat.arriveMs - now)} away`
-      : sat.state === 'onStation'
-        ? `${satName(s)} on station`
-        : `${satName(s)} ${CAPTURE[sat.mode!].label.toLowerCase()} · ${gameSpan(sat.captureUntilMs - now)}`
-    : snap && seen
-      ? `imaged ${zulu(snap.atMs)} · ${AGE_LABEL[seen]}`
-      : 'no coverage';
-  return (
-    <details className="sc-details square-card-details" data-testid="square-card" data-square={square} open={open || undefined}>
-      <summary>
-        Ground · <span data-testid="square-status">{status}</span>
-      </summary>
-      <dl className="facts" data-testid="square-facts">
-        <dt>Elevation</dt>
-        <dd data-testid="square-elevation">
-          {g.lowM}–{g.highM} m
-        </dd>
-        <dt>Slope</dt>
-        <dd>{g.slope}</dd>
-        <dt>Features</dt>
-        <dd>{g.features.length ? g.features.join(', ') : 'open ground'}</dd>
-        <dt>Weather</dt>
-        <dd>
-          {wx.sky.toLowerCase()} · vis {wx.visibilityKm} km · {wx.light.toLowerCase()}
-        </dd>
-        <dt>Imagery</dt>
-        <dd>{snap && seen ? `${snap.mode === 'eyes' ? 'eyes on' : snap.mode} ${zulu(snap.atMs)} · ${AGE_LABEL[seen]}` : g.imagery}</dd>
-      </dl>
-    </details>
   );
 }
 
