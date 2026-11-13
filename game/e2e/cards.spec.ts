@@ -4,18 +4,18 @@ import { askResupply, fastForward, freeze, photo, running, start } from './helpe
 // COMMS as a card stack (option D, ILI-1347): what wants HQ is an event card that waits for it.
 // Intel lands in INTEL under ORION-3 (IA v2 draft A, ILI-1363).
 
-test('a scan settles its square: a stamp on the map, its reports in the square’s menu, and no Scan again (ILI-1399)', async ({ page }) => {
+test('a scan settles its square: a stamp on the map, its report in ORION-3, and no Scan again (ILI-1399, ILI-1487)', async ({ page }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
   await photo(page, 'F4'); // the square ALPHA is heading into
   await expect(page.getByTestId('intel-panel')).toHaveCount(0); // results live on the map now
   await page.evaluate(() => window.game.selectSquare('F4'));
-  // Its reports are on the square's flyout (ILI-1475): the satellite doesn't store intel.
-  const detail = page.getByTestId('square-anchor');
-  await expect(detail.getByTestId('intel-summary')).toHaveText(/^(clear|\d reports?)$/); // one scan settles it; said once, in the summary (ILI-1482)
-  await detail.getByTestId('fold-intel').locator('summary').click();
-  await expect(detail.getByTestId('square-intel-item').first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
+  // Satellite intel is ORION-3's (ILI-1487): its scan report sits under its picture, not on the square's flyout.
+  const report = page.getByTestId('satellite').getByTestId('square-intel');
+  await expect(report.getByTestId('intel-summary')).toHaveText(/^(clear|\d reports?)$/); // one scan settles it
+  await expect(report.getByTestId('square-intel-item').first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
+  await expect(page.getByTestId('square-anchor').getByTestId('square-intel')).toHaveCount(0); // nothing in both places
   await expect(page.getByTestId('satellite').getByTestId('capture-scan')).toBeDisabled();
 });
 

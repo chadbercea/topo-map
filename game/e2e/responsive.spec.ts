@@ -54,6 +54,8 @@ for (const [name, width, height] of SIZES) {
     expect(sat.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
     const card = page.getByTestId('square-anchor');
     // Its strikes open from the square's own Strike (ILI-1482: a fighter's panel is read-only).
+    // The scan may have heard their radio (ILI-1359): its card set aside, out of a small screen's way.
+    await page.evaluate(() => window.game.get().events.filter((e) => e.kind === 'signal').forEach((e) => window.game.dismissTraffic(e.id)));
     await card.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
     const menu = page.getByTestId('strike-flyout').getByTestId('strike-menu'); // the strike menu by its square (ILI-1474)
     await menu.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
