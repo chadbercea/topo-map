@@ -294,13 +294,13 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
           </div>
         )}
         {traffic.map((e) => (
-          <div key={e.id} className="sc-item" data-kind="signal" data-testid="intel-item" data-event={e.id}>
+          <div key={e.id} className="sc-item" data-kind="signal" data-testid="intel-item" data-event={e.id} data-focus={s.openEvent === e.id || undefined}>
             <span>Enemy radio traffic near {e.square}</span>
             <small className="note">Listen or Jam from its tag on the map.</small>
           </div>
         ))}
         {others.map((e) => (
-          <div key={e.id} className="sc-item" data-kind={e.kind} data-testid="intel-item" data-event={e.id}>
+          <div key={e.id} className="sc-item" data-kind={e.kind} data-testid="intel-item" data-event={e.id} data-focus={s.openEvent === e.id || undefined}>
             <span>
               {EVENT_LABEL[e.kind]} · {e.square}
             </span>
@@ -324,7 +324,7 @@ function ContactItem({ s, square }: { s: GameState; square: string }) {
   const st = strikeState(s, square);
   const work = strikeWork(s, square);
   return (
-    <div className="sc-item sc-contact" data-kind="contact" data-testid="contact-item" data-square={square}>
+    <div className="sc-item sc-contact" data-kind="contact" data-testid="contact-item" data-square={square} data-event={st.strikes[0]?.id} data-focus={st.strikes.some((e) => e.id === s.openEvent) || undefined}>
       <span>
         Contact · {square}
         {st.marked.length > 0 && <b data-testid="contact-count"> · {st.marked.length}</b>}

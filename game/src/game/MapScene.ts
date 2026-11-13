@@ -843,6 +843,26 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
+  // The ping under a point, for a click (ILI-1489): an event's marker; a contact's callout dot (its
+  // tag's dot sits a quarter down its square's middle, PromptLayer); or a fighter, which is his
+  // contact's. ALPHA's intel ask's marker is part of its square (ILI-1451): not a ping.
+  private pingAt(x: number, y: number) {
+    const s = game.get();
+    const open = (e: (typeof s.events)[number] | undefined) => (e && e.status !== 'resolved' && e.kind !== 'site' && !isImageryRequest(e) ? e : undefined);
+    const hit = ((MARKER_R + 8) * DPR) / this.zoom; // a little more than drawn, so a near miss isn't a square click
+    const marker = s.events.find((e) => open(e) && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit * 1.2);
+    if (marker) return marker;
+    const dot = s.events.find((e) => {
+      if (e.kind !== 'contact' || e.status === 'resolved') return false;
+      const c = squareCenter(e.square)!;
+      return Math.hypot(c.x - x, c.y - CELL * 0.25 - y) <= hit;
+    });
+    if (dot) return dot;
+    const thing = this.sightingAt(x, y);
+    if (thing?.kind === 'hostile') return open(s.events.find((e) => e.id === `contact-${thing.id.split(':')[0]}`));
+    return undefined;
+  }
+
   private eventAt(x: number, y: number) {
     const hit = ((MARKER_R + 6) * DPR) / this.zoom; // a little bigger than drawn, for thumbs
     return game
@@ -1466,9 +1486,15 @@ export class MapScene extends Phaser.Scene {
     if (!drag || drag.id !== p.id || drag.moved || game.get().phase !== 'running' || game.get().minigame?.kind === 'signal') return;
     // Nothing pins on the main map (ILI-1443): that's ORION-3's picture's job. A click here falls
     // through to the event or the square (which sends ORION-3).
-    const event = this.eventAt(p.worldX, p.worldY);
-    // ALPHA's intel ask's marker is part of its square (ILI-1451): a click on it is a click on the square.
-    if (event && !isImageryRequest(event)) return game.openEvent(event.id);
+    // A ping targets the ping (ILI-1489): its square's panel opens on that item, with its actions,
+    // and a click on it never falls through to the square (which would pick the square instead, or
+    // close its open panel).
+    const ping = this.pingAt(p.worldX, p.worldY);
+    if (ping) {
+      game.openEvent(ping.id);
+      if (!lockedOn(game.get(), ping.square)) game.lookAt(ping.square); // its actions run with ORION-3 on it (ILI-1397)
+      return;
+    }
     // A square: picked, and if ORION-3 isn't over it, ORION-3 goes (ILI-1437); its menu opens on
     // the lock.
     const id = squareAt(p.worldX, p.worldY);
