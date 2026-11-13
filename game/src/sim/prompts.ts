@@ -1,4 +1,5 @@
 import type { GameState } from './state';
+import { shownEvents } from './events';
 import { openImageryRequest } from './imageryRequest';
 import { lockedOn, satelliteBusy, satName, slewMs } from './satellite';
 import { currentCall } from './comms';
@@ -86,7 +87,7 @@ const intelNeeded: Source = (s) => {
 // and ORION-3 tied up while it listens, off scanning for ALPHA. Once it's locked on the intercept
 // starts by itself; no button starts it. The hint says all that in a line.
 const enemyTraffic: Source = (s) =>
-  s.events
+  shownEvents(s)
     .filter((e) => e.kind === 'signal' && e.status !== 'resolved' && !(s.minigame?.status === 'active' && s.minigame.eventId === e.id))
     .map((e) => {
       const l = s.listen?.eventId === e.id ? s.listen : null;

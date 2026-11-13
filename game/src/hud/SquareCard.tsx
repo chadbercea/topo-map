@@ -19,6 +19,7 @@ import { EVENT_LABEL } from '../sim/stream';
 import { useTier } from './tier';
 import { alphaBox, obstacles, pick, squareBox } from './overlays';
 import type { GameState } from '../sim/state';
+import { shownEvents } from '../sim/events';
 import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
 import { RECOVER_MS } from '../sim/mission';
 import { knownIn } from '../sim/contacts';
@@ -261,9 +262,9 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       </>
     );
 
-  const traffic = s.events.filter((e) => e.square === square && e.kind === 'signal' && e.status !== 'resolved');
+  const traffic = shownEvents(s).filter((e) => e.square === square && e.kind === 'signal' && e.status !== 'resolved');
   const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
-  const others = s.events.filter(otherItem(square));
+  const others = shownEvents(s).filter(otherItem(square));
   const known = knownIn(s, square); // where HQ last saw them (ILI-1493)
   return (
     <>

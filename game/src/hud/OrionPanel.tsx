@@ -9,6 +9,7 @@ import { pins, useSeenVersion } from './pins';
 import { nextBlind } from '../sim/progress';
 import { CELL, squareAt, squareCenter } from '../map/grid';
 import type { GameState } from '../sim/state';
+import { shownEvents } from '../sim/events';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
 import { imageryOk, weather } from '../sim/conditions';
@@ -37,7 +38,7 @@ export function OrionPanel() {
   const result = sat.state === 'idle' ? sat.result : null;
   const picked = lookSquare(s); // the square HQ is working
   useSeenVersion(); // its targets follow what the map has bracketed (ILI-1444)
-  const pings = square ? s.events.filter((e) => e.square === square && e.status !== 'resolved' && e.kind !== 'site') : [];
+  const pings = square ? shownEvents(s).filter((e) => e.square === square && e.status !== 'resolved' && e.kind !== 'site') : [];
   // The larger square while ORION-3 is on it, or what it last saw; else the placeholder (ILI-1229).
   const showPicture = !tied && (live || (sat.state === 'idle' && !!square && !!snap));
   const blind = nextBlind(s);

@@ -7,11 +7,13 @@ import { pulled, run, trafficId, untilTraffic } from './testkit';
 
 // Enemy traffic comes up near C2, where the patrol is hiding: on the default seed it talks first,
 // before a minute is up (ILI-1454). C2 is ground ORION-3 has scanned, as a scan's SIGINT report
-// brings the traffic in (ILI-1359); scanned: false is traffic heard from ground it hasn't (ILI-1493).
+// brings the traffic in (ILI-1359); scanned: false is the patrol's traffic heard from B1 next door,
+// scanned ground, while C2 itself isn't (ILI-1493): the tag only shows where ORION-3 has looked (ILI-1519).
 const atTraffic = (scanned = true) => {
   const s0 = initialState();
-  const s = scanned ? { ...s0, intel: { ...s0.intel, graded: ['C2'] } } : s0;
-  const store = createStore({ ...untilTraffic(s), comms: s0.comms });
+  const heard = scanned ? 'C2' : 'B1';
+  const s = { ...s0, intel: { ...s0.intel, graded: [heard] } };
+  const store = createStore({ ...untilTraffic(s, heard), comms: s0.comms });
   return store;
 };
 
@@ -118,7 +120,7 @@ describe('signal intercept', () => {
     const s = store.get();
     expect(s.contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
     expect(s.comms.messages.some((m) => m.text.includes('PATROL MOVING TO D3 FOR THE DRONE'))).toBe(true);
-    expect(s.intel.pushes.find((p) => p.source === 'SIGINT')?.square).toBe('C2'); // posted on the square it was heard from
+    expect(s.intel.pushes.find((p) => p.source === 'SIGINT')?.square).toBe('B1'); // posted on the square it was heard from
     expect(s.comms.messages.some((m) => /\bAT C2\b/.test(m.text))).toBe(false);
   });
 });

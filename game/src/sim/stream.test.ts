@@ -17,7 +17,7 @@ describe('intel stream (ILI-1194, ILI-1197)', () => {
     const s0 = initialState();
     const chatter = { ...s0, comms: { ...s0.comms, messages: [msg('slew-1', 'ORION-3', 'Slewing to E3.'), msg('look-1', 'ORION-3', 'E3 collection complete.')] } };
     expect(streamView(chatter).every((i) => i.quiet)).toBe(true);
-    const started = { ...chatter, events: [{ id: 'traffic-c2', kind: 'signal' as const, square: 'C2', title: 'Enemy radio traffic', atMs: 3_000, status: 'new' as const }] };
+    const started = { ...chatter, intel: { ...chatter.intel, graded: ['C2'] }, events: [{ id: 'traffic-c2', kind: 'signal' as const, square: 'C2', title: 'Enemy radio traffic', atMs: 3_000, status: 'new' as const }] };
     const view = streamView(started);
     expect(view.find((i) => i.id === 'msg-slew-1')).toMatchObject({ kind: 'imagery', quiet: true });
     expect(view.find((i) => i.id === 'msg-look-1')).toMatchObject({ kind: 'imagery', quiet: false });
@@ -28,11 +28,22 @@ describe('intel stream (ILI-1194, ILI-1197)', () => {
     const s0 = initialState();
     const s = {
       ...s0,
+      intel: { ...s0.intel, graded: ['E3'] },
       events: [{ id: 'x', kind: 'contact' as const, square: 'E3', title: 'Checkpoint', atMs: 0, status: 'resolved' as const }],
       comms: { ...s0.comms, messages: [msg('signal-1', 'SIGINT', 'Decoded.'), msg('seek-1', 'REAPER-1', '2 down.'), msg('a', 'HQ', 'They know.', { alert: true })] },
     };
     const kinds = Object.fromEntries(streamView(s).map((i) => [i.id, i.kind]));
     expect(kinds).toMatchObject({ 'msg-signal-1': 'sigint', 'msg-seek-1': 'strike', 'msg-a': 'alert', 'ev-x': 'event' });
     expect(streamView(s).find((i) => i.id === 'ev-x')?.quiet).toBe(true); // done
+  });
+
+  it('shows events only on ground ORION-3 has analyzed, or where ALPHA is in contact (ILI-1519)', () => {
+    const s0 = initialState();
+    const ev = (id: string, square: string) => ({ id, kind: 'contact' as const, square, title: 'Contact', atMs: 1_000, status: 'new' as const });
+    const s = { ...s0, intel: { ...s0.intel, graded: ['E3'] }, events: [ev('a', 'E3'), ev('b', 'C2')] };
+    const ids = (x: typeof s) => streamView(x).filter((i) => i.kind === 'event').map((i) => i.id);
+    expect(ids(s)).toEqual(['ev-a']);
+    const fight = { contactId: 'patrol', eventId: 'b', square: 'C2', enemy: 1, full: 1, units: 3, startedMs: 0 };
+    expect(ids({ ...s, team: { ...s.team, fight } }).sort()).toEqual(['ev-a', 'ev-b']);
   });
 });
