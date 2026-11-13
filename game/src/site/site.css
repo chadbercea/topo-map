@@ -1,9 +1,10 @@
-/* Castle House's recruitment site (ILI-1455): the game's war-room dark, a cold careers site for
-   a fictional PMC. Under the hero (the game's intro, ILI-1447). Satire. */
-:root { --bg: #0b0f0d; --panel: #101613; --ink: #e6efe9; --dim: #8aa197; --accent: #35d0a5; --line: rgba(53, 208, 165, 0.22); --orange: #ff8a2a; --red: #e5484d; }
+/* Castle House's recruitment site (ILI-1336): Castle House's own site, in the war room's type and
+   colours, with its design system's visuals: teal wireframes, contours and grid, corner brackets,
+   HUD readouts. Each section has its own layout. */
+:root { --bg: #0b0f0d; --panel: #0f1512; --ink: #cfe8dc; --dim: #6f8a7d; --accent: #35d0a5; --line: rgba(53, 208, 165, 0.22); --orange: #ff8a2a; --red: #e5484d; --gold: #f2c14e; --pad: clamp(16px, 5vw, 64px); }
 * { box-sizing: border-box; }
 html.ch-root { scroll-behavior: smooth; }
-html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Inter Tight', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Inter Tight', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 .ch a { color: inherit; }
 .ch h1, .ch h2, .ch h3 { margin: 0; letter-spacing: -0.01em; }
 .ch-rook { width: 20px; height: auto; color: currentColor; }
@@ -13,72 +14,126 @@ html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-fa
 .ch-hero-3d .castle-scene { position: absolute; inset: 0; }
 .ch-hero-3d canvas { width: 100%; height: 100%; display: block; }
 .ch-stamp { display: inline-block; margin: 0 0 22px; padding: 6px 12px; border: 1.5px solid var(--orange); color: var(--orange); font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; }
-.ch-shout { font-size: clamp(42px, 7.4vw, 104px); line-height: 0.96; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; }
+.ch-shout { font-size: clamp(38px, 6.4vw, 92px); line-height: 0.98; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; }
 .ch-shout em { font-style: normal; color: var(--orange); }
-.ch-enlist { display: inline-block; padding: 20px 34px; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none; color: var(--bg); background: var(--orange); box-shadow: 0 0 0 1px var(--orange), 0 0 32px rgba(255, 138, 42, 0.35); }
+.ch-lede { max-width: 640px; margin: 28px 0 0; font-size: 19px; line-height: 1.6; color: var(--dim); }
+.ch-enlist { display: inline-block; padding: 20px 34px; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none; color: var(--bg) !important; background: var(--orange); box-shadow: 0 0 0 1px var(--orange), 0 0 32px rgba(255, 138, 42, 0.35); }
 .ch-enlist:hover { filter: brightness(1.1); }
+.ch-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.16em; color: var(--orange); }
+.ch-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* Corner brackets, the satellite's frame (ILI-1408). */
+.ch-br { position: absolute; width: 14px; height: 14px; border: 0 solid var(--accent); pointer-events: none; }
+.ch-br.tl { left: 0; top: 0; border-width: 1px 0 0 1px; } .ch-br.tr { right: 0; top: 0; border-width: 1px 1px 0 0; }
+.ch-br.bl { left: 0; bottom: 0; border-width: 0 0 1px 1px; } .ch-br.br { right: 0; bottom: 0; border-width: 0 1px 1px 0; }
+
+/* A live wireframe in its bracketed frame. */
+.ch-wire { position: relative; width: 100%; aspect-ratio: 4 / 3; background: radial-gradient(circle at 50% 55%, rgba(53, 208, 165, 0.08), transparent 65%); }
+.ch-wire-3d { position: absolute; inset: 10px; }
+.ch-wire-3d canvas { width: 100% !important; height: 100% !important; display: block; }
+
+/* HUD readouts: small label over a value. */
+.ch-read { display: flex; flex-wrap: wrap; gap: 0; margin: 14px 0 0; border-top: 1px solid var(--line); }
+.ch-read > div { padding: 10px 18px 0 0; margin-right: 18px; }
+.ch-read dt { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
+.ch-read dd { margin: 2px 0 0; font-family: 'JetBrains Mono', monospace; font-size: 15px; color: var(--accent); }
+.ch-read.wide dd { font-size: 26px; }
 
 /* The page that slides over the hero. */
 .ch-page { background: var(--bg); }
-.ch-nav { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 24px; padding: 14px clamp(16px, 5vw, 64px); background: rgba(11, 15, 13, 0.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.ch-nav { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 24px; padding: 14px var(--pad); background: rgba(11, 15, 13, 0.94); border-bottom: 1px solid var(--line); }
 .ch-nav nav { display: flex; gap: 22px; margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; }
 .ch-nav nav a { text-decoration: none; color: var(--dim); }
 .ch-nav nav a:hover { color: var(--ink); }
-.ch-nav .ch-enlist { padding: 10px 16px; font-size: 11px; }
-.ch-lead, .ch-sec, .ch-close { padding: clamp(56px, 9vw, 112px) clamp(16px, 5vw, 64px); border-bottom: 1px solid var(--line); }
-.ch-lead .ch-lede, .ch-sec .ch-lede { max-width: 640px; margin: 28px 0 0; font-size: 19px; line-height: 1.6; color: var(--dim); }
-.ch-sec > h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 700; margin-bottom: 36px; }
+.ch-nav .ch-enlist { padding: 10px 16px; font-size: 11px; box-shadow: none; }
+.ch-sec, .ch-about, .ch-reach, .ch-close { position: relative; padding: clamp(56px, 9vw, 112px) var(--pad); border-bottom: 1px solid var(--line); }
+.ch-sec h2, .ch-reach h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 700; margin-bottom: 36px; max-width: 900px; }
 
-/* Open roles: job cards, cold and specific. */
-.ch-roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-.ch-role { position: relative; display: grid; gap: 12px; align-content: start; padding: 22px; background: var(--panel); border: 1px solid var(--line); }
-.ch-role::before, .ch-role::after { content: ''; position: absolute; width: 12px; height: 12px; border: 2px solid var(--accent); }
-.ch-role::before { left: -2px; top: -2px; border-right: 0; border-bottom: 0; }
-.ch-role::after { right: -2px; bottom: -2px; border-left: 0; border-top: 0; }
-.ch-role header { display: flex; justify-content: space-between; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
-.ch-code { color: var(--orange); }
-.ch-where { color: var(--dim); }
-.ch-role h3 { font-size: 22px; }
-.ch-role p { margin: 0; color: var(--dim); line-height: 1.55; }
-.ch-role ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 14px; }
-.ch-role li::before { content: '▸ '; color: var(--accent); }
-.ch-role-apply { margin-top: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; color: var(--orange) !important; }
+/* Who we are: the statement beside the numbers, over the map's ground. */
+.ch-about { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr); gap: 48px; align-items: end; overflow: hidden; }
+.ch-about > :not(.ch-bg) { position: relative; }
+.ch-stats { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.ch-stats > div { padding: 20px; background: rgba(11, 15, 13, 0.92); }
+.ch-stats dt { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+.ch-stats dd { margin: 6px 0 0; font-size: clamp(34px, 4vw, 52px); font-weight: 700; color: var(--ink); }
 
-/* The package: perks that aren't. */
-.ch-package { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; margin: 0; background: var(--line); border: 1px solid var(--line); }
-.ch-package > div { padding: 22px; background: var(--bg); }
-.ch-package dt { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
-.ch-package dd { margin: 0; color: var(--dim); line-height: 1.55; }
+/* Capabilities: spec sheets, wireframe on top. */
+.ch-caps { background: var(--panel); }
+.ch-cap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+.ch-cap { display: grid; align-content: start; background: var(--bg); border: 1px solid var(--line); }
+.ch-cap .ch-wire { border-bottom: 1px solid var(--line); }
+.ch-cap-body { padding: 18px 20px 20px; display: grid; gap: 8px; }
+.ch-cap h3 { font-size: 20px; line-height: 1.2; }
+.ch-cap p { margin: 0; color: var(--dim); line-height: 1.55; }
 
-/* The test. */
-.ch-test { background: linear-gradient(180deg, var(--bg), #0d1310); }
-.ch-steps { margin: 0 0 40px; padding: 0; list-style: none; display: grid; gap: 18px; max-width: 760px; }
-.ch-steps li { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: baseline; font-size: 19px; line-height: 1.5; }
-.ch-steps i { font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--orange); letter-spacing: 0.1em; }
+/* Divisions: a postings board. */
+.ch-postings { display: grid; border-top: 1px solid var(--line); }
+.ch-post { display: grid; grid-template-columns: 90px minmax(160px, 1.2fr) minmax(120px, 0.9fr) minmax(140px, 0.9fr) minmax(200px, 1.6fr); gap: 16px; align-items: baseline; padding: 16px 8px; border-bottom: 1px solid var(--line); text-decoration: none; }
+a.ch-post:hover { background: rgba(53, 208, 165, 0.06); box-shadow: inset 2px 0 0 var(--accent); }
+.ch-post-head span { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
+.ch-post span { font-size: 15px; color: var(--dim); }
+.ch-post .ch-post-title { font-size: 19px; font-weight: 600; color: var(--ink); }
+.ch-post .ch-code { font-size: 12px; }
 
-/* Voices from the chair. */
-.ch-quotes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-.ch-quotes figure { margin: 0; padding: 22px; border-left: 2px solid var(--accent); background: var(--panel); }
-.ch-quotes blockquote { margin: 0 0 14px; font-size: 18px; line-height: 1.5; }
-.ch-quotes figcaption { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+/* Standards: the kit beside the code. */
+.ch-standards { display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.4fr); gap: 56px; align-items: start; background: var(--panel); }
+.ch-std-kit { display: grid; gap: 16px; position: sticky; top: 90px; }
+.ch-std-list { margin: 0; padding: 0; list-style: none; display: grid; }
+.ch-std-list li { display: grid; grid-template-columns: 56px 1fr; gap: 12px; padding: 20px 0; border-top: 1px solid var(--line); }
+.ch-std-list i { font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--orange); letter-spacing: 0.1em; }
+.ch-std-list b { font-size: 21px; }
+.ch-std-list p { margin: 6px 0 0; color: var(--dim); line-height: 1.55; }
 
-/* FAQ. */
-.ch-faq { display: grid; max-width: 820px; border-top: 1px solid var(--line); }
-.ch-faq details { border-bottom: 1px solid var(--line); }
-.ch-faq summary { cursor: pointer; padding: 18px 0; font-size: 18px; font-weight: 600; list-style: none; }
-.ch-faq summary::before { content: '+ '; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
-.ch-faq details[open] summary::before { content: '– '; }
-.ch-faq p { margin: 0 0 18px; color: var(--dim); line-height: 1.6; max-width: 680px; }
+/* Selection: a timeline. */
+.ch-pipe { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--accent); }
+.ch-pipe li { position: relative; padding: 24px 18px 0 0; }
+.ch-pipe li::before { content: ''; position: absolute; left: 0; top: -7px; width: 10px; height: 10px; border: 2px solid var(--accent); background: var(--bg); transform: rotate(45deg); }
+.ch-pipe i { display: block; font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--orange); letter-spacing: 0.12em; }
+.ch-pipe b { display: block; margin-top: 6px; font-size: 20px; }
+.ch-pipe p { margin: 8px 0 0; color: var(--dim); line-height: 1.5; font-size: 15px; }
 
-/* The close and the footer. */
-.ch-close { display: grid; gap: 32px; justify-items: start; }
-.ch-foot { display: grid; gap: 14px; padding: 36px clamp(16px, 5vw, 64px) 48px; }
-.ch-fiction { margin: 0; max-width: 720px; font-size: 13px; line-height: 1.6; color: var(--dim); }
+/* Global reach: the map band. */
+.ch-reach { display: grid; grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.6fr); gap: 32px; align-items: center; overflow: hidden; background: #0a0e0c; }
+.ch-reach > :not(.ch-bg) { position: relative; }
+.ch-map .ch-bg { opacity: 1; }
+.ch-map { position: relative; aspect-ratio: 16 / 9; border: 1px solid var(--line); }
+.ch-pin { position: absolute; width: 26px; height: 26px; transform: translate(-50%, -50%); }
+.ch-pin .ch-br { width: 8px; height: 8px; border-color: var(--orange); }
+.ch-pin::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; border: 1px solid var(--orange); }
+.ch-pin:last-child em { left: auto; right: 32px; }
+.ch-pin em { position: absolute; left: 32px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); background: rgba(11, 15, 13, 0.85); padding: 2px 6px; }
 
+/* Compensation: big numbers in a row. */
+.ch-pay-grid { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.ch-pay-grid > div { padding: 26px 22px; background: var(--bg); }
+.ch-pay-grid dt { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
+.ch-pay-grid dd { margin: 10px 0 0; display: grid; gap: 8px; }
+.ch-pay-grid dd b { font-size: clamp(40px, 5vw, 64px); line-height: 1; color: var(--accent); }
+.ch-pay-grid dd span { color: var(--dim); line-height: 1.5; }
+
+/* Apply: the close, beside the aircraft. */
+.ch-close { display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.6fr); gap: 48px; align-items: center; }
+.ch-close .ch-enlist { margin-top: 32px; }
+.ch-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 32px; padding: 36px var(--pad) 48px; }
+.ch-foot nav { display: flex; gap: 20px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
+.ch-foot nav a { text-decoration: none; color: var(--dim); }
+.ch-legal { margin: 0; flex-basis: 100%; font-size: 13px; color: var(--dim); }
+
+@media (max-width: 900px) {
+  .ch-about, .ch-standards, .ch-reach, .ch-close { grid-template-columns: 1fr; }
+  .ch-std-kit { position: static; grid-template-columns: 1fr 1fr; }
+  .ch-pipe { grid-template-columns: 1fr; border-top: 0; border-left: 2px solid var(--accent); }
+  .ch-pipe li { padding: 0 0 24px 24px; }
+  .ch-pipe li::before { left: -7px; top: 2px; }
+  .ch-post { grid-template-columns: 70px 1fr; gap: 4px 12px; }
+  .ch-post-head { display: none; }
+  .ch-post span:nth-child(n + 3) { grid-column: 2; font-size: 13px; }
+}
 @media (max-width: 720px) {
   .ch-nav nav { display: none; }
   .ch-nav .ch-enlist { margin-left: auto; }
-  .ch-steps li { grid-template-columns: 40px 1fr; font-size: 17px; }
+  .ch-stats dd { font-size: 32px; }
+  .ch-pin em { display: none; }
 }
 
 /* The game's intro is the hero (ILI-1447): the live rook and globe, full screen and fixed. The

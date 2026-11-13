@@ -1,30 +1,35 @@
 import { expect, test } from '@playwright/test';
 
-// Castle House's recruitment site (ILI-1455): served at /game/castle-house/, loads clean, says
-// it's satire, and every call to action launches the game: the recruitment test.
-test('the Castle House recruitment site: the game intro as hero, open roles, the test, satire said, and every call to action launches the game', async ({ page }) => {
+// Castle House's recruitment site (ILI-1336): served at /game/castle-house/, it's Castle House's
+// own site. It recruits the visitor as a contractor and never mentions the game, a test, fiction
+// or any one mission. Wireframe scenes load as they scroll into view; Apply begins selection at the
+// secure terminal.
+test('the Castle House recruitment site: in-fiction, mission-neutral, varied, with live wireframes; Apply begins selection', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   await page.goto('/game/castle-house/');
-  // The game's intro is the hero, fixed; the page slides up over it (ILI-1447).
+  // The rook and globe hero, fixed; the page slides up over it (ILI-1447).
   const hero = page.getByTestId('intro-hero');
   await expect(hero).toContainText('CASTLE HOUSE');
   await expect(hero).toHaveCSS('position', 'fixed');
   await page.evaluate(() => scrollTo(0, innerHeight * 0.6));
   await expect.poll(() => page.locator('.ch-intro-scrim').evaluate((el) => Number(getComputedStyle(el).opacity))).toBeGreaterThan(0.3);
-  // A recruitment site (ILI-1455): the lead, three open roles, the package, the test, the FAQ.
-  await expect(page.locator('#top .ch-shout')).toContainText('The chair is');
-  await expect(page.locator('.ch-role')).toHaveCount(3);
-  await expect(page.locator('.ch-role h3').first()).toHaveText('Remote Operations Analyst');
-  await expect(page.locator('#test .ch-steps li')).toHaveCount(3);
-  await expect(page.locator('#faq')).toContainText('Is this a real job?');
-  for (const a of await page.locator('.ch-role-apply').all()) await expect(a).toHaveAttribute('href', '../');
-  await expect(page.locator('.ch-fiction')).toContainText('fictional company');
+  // A real PMC's recruiting site: who we are, capabilities, divisions, standards, selection, reach, pay, apply.
+  for (const id of ['about', 'capabilities', 'divisions', 'standards', 'selection', 'reach', 'compensation', 'apply']) await expect(page.locator(`#${id}`)).toHaveCount(1);
+  await expect(page.getByTestId('posting')).toHaveCount(8);
+  // Nothing about the game, a test, fiction or the current mission, anywhere, title and meta included.
+  const text = (await page.locator('body').innerText()) + (await page.title()) + ((await page.locator('meta[name=description]').getAttribute('content')) ?? '');
+  for (const banned of [/\bgame\b/i, /\btest\b/i, /fiction/i, /satire/i, /player/i, /black box/i, /\bALPHA\b/, /ORION/i, /escrow/i, /ten minutes/i, /the chair is/i, /the team is moving/i]) expect(text, `${banned}`).not.toMatch(banned);
+  // Live wireframes below the hero, mounted as they come into view.
+  for (const w of await page.getByTestId('wire').all()) await w.scrollIntoViewIfNeeded();
+  await expect(page.getByTestId('wire')).toHaveCount(7);
+  await expect.poll(() => page.locator('.ch-wire-3d canvas').count()).toBeGreaterThanOrEqual(3);
+  // Apply begins selection at the secure terminal.
   const apply = page.getByTestId('apply');
-  await expect(apply).toHaveCount(4); // the hero's, the nav's, the test's and the close's
   for (const a of await apply.all()) await expect(a).toHaveAttribute('href', '../');
-  await page.evaluate(() => scrollTo(0, 0)); // back to the hero: its Take the test launches the game
+  await page.evaluate(() => scrollTo(0, 0));
+  await expect(apply.first()).toHaveText('Begin selection');
   await apply.first().click();
-  await expect(page).toHaveURL(/\/game\/$/); // into the game: the test
+  await expect(page).toHaveURL(/\/game\/$/);
   expect(errors).toEqual([]);
 });
