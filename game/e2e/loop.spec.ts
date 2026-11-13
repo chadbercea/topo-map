@@ -17,9 +17,7 @@ test('mission clock runs in real time and freezes on pause', async ({ page, isMo
   expect(ran).toBeGreaterThan(0);
   expect(ran).toBeLessThanOrEqual(20);
 
-  const pause = page.getByTestId('pause-toggle');
-  if (isMobile) await pause.tap();
-  else await pause.click();
+  await page.keyboard.press('Escape'); // no pause button: Escape pauses (ILI-1503)
   await expect(page.getByTestId('pause-menu')).toHaveAttribute('data-phase', 'paused');
   const frozen = await tick(page);
   await page.waitForTimeout(1000);

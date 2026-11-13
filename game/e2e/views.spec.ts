@@ -6,7 +6,7 @@ test('map views live in the pause menu; switching changes the layers and is reme
   const layers = page.getByTestId('layers');
   const views = page.getByTestId('map-views');
   await expect(views).toHaveCount(0); // not on the map
-  await page.getByTestId('pause-toggle').click();
+  await page.keyboard.press('Escape');
   await expect(layers).toHaveText('topo+city');
 
   await views.getByRole('button', { name: 'Relief' }).click();
