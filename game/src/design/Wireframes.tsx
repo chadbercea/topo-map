@@ -18,6 +18,7 @@ const SCENES: { name: string; where: string; load: Load; states: string[] }[] = 
   { name: 'REAPER-1', where: 'The drone strike’s panel', load: () => import('../hud/droneScene'), states: ['inbound', 'strike', 'done'] },
   { name: 'HAMMER-2', where: 'The heli gun run’s panel', load: () => import('../hud/heliScene'), states: ['inbound', 'strike', 'done'] },
   { name: 'RAVEN-6', where: 'The exfil panel', load: () => import('../hud/transportScene'), states: ['enroute', 'down', 'done'] },
+  { name: 'DUSTOFF-2’s bundle', where: 'The resupply drop’s panel', load: () => import('../hud/resupplyScene'), states: ['inbound', 'down'] },
   { name: 'OVERWATCH’s rifle', where: 'The sniper’s panel', load: () => import('../hud/rifleScene'), states: ['aiming', 'firing', 'done'] },
 ];
 
