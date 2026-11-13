@@ -1910,9 +1910,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .map-ctl { grid-area: map; align-self: end; justify-self: end; position: relative; z-index: 5; display: flex; gap: 6px; margin: 0 10px 10px 0; pointer-events: none; }
 .map-ctl > button { pointer-events: auto; }
 .map-ctl .recentre { margin: 0; align-self: stretch; height: 32px; }
-.map-zoom { width: 32px; height: 32px; padding: 0; font: inherit; font-size: 16px; line-height: 1; color: var(--ink); background: rgba(11, 15, 13, 0.9); border: 1px solid var(--line); cursor: pointer; }
-.map-zoom:hover, .map-zoom:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
-.hud[data-tier='compact'] .map-zoom { display: none; } /* a phone pinches */
 .hud[data-tier='wide'] .team { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(11, 15, 13, 0.9); } /* a solid fill like the bar and the strip; the blur over the map left a black patch in software rendering */
 
 /* A fold upright, a tablet held tall (ILI-1461, the ILI-1459 frame folded): the mission bar across
@@ -2149,16 +2146,3 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card .sc-item .note { font-size: 10px; color: var(--dim); }
 .square-card .sc-none { margin: 0; font-size: 11px; color: var(--dim); }
 
-/* One square, big (ILI-1486): the picture is exactly the square ORION-3 is over, always square,
-   as big as its frame allows, and the frame runs edge to edge across the panel. Where the frame is
-   longer one way than the other, the rest is plain ground colour, not the neighbouring squares.
-   No 3D satellite above it in any layout; on a wide screen or a fold, no Last look line under it
-   (the map's photo-age tags carry that, ILI-1468). */
-.orion .o-frame { container-type: size; overflow: hidden; }
-.orion .o-frame > .o-picture { inset: auto; left: 50%; top: 50%; width: min(100cqw, 100cqh); height: auto; aspect-ratio: 1; transform: translate(-50%, -50%); box-shadow: 0 0 0 100vmax var(--bg); }
-.hud .orion > .o-frame { padding: 0; margin: 0; }
-.hud:is([data-tier='wide'], [data-layout='fold']) .orion > .o-last { display: none; }
-.hud[data-tier='wide'] .orion { grid-template-rows: auto auto 92px auto; grid-template-areas: 'head' 'frame' 'buttons' 'saw'; }
-/* In the rail the picture runs edge to edge, and the panel stops where its buttons do. */
-.hud[data-tier='medium']:not([data-layout='fold']) .orion { padding: 0; }
-.hud[data-tier='medium']:not([data-layout='fold']) .slot-orion { max-height: 424px; }

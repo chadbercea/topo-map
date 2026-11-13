@@ -60,7 +60,8 @@ const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').match
 // fits the grid to the screen; line widths and labels are redrawn per zoom so they stay crisp.
 const PAN_SPEED = 700; // CSS px a second, while a key is held
 const DRAG_PX = 8; // CSS px a finger can wander and still count as a tap
-const MAX_ZOOM = 1.5; // pinch or wheel in up to 1.5x the whole-map fit; close-ups are ORION-3's job (ILI-1436)
+// One fixed zoom, the whole-map fit (ILI-1484): no wheel, no pinch, no buttons. A drag pans it;
+// close-ups are ORION-3's job (ILI-1436).
 // Keys go to whatever has focus first: no panning while typing or on the signal dial.
 const typing = () => {
   const el = document.activeElement;
@@ -219,9 +220,8 @@ export class MapScene extends Phaser.Scene {
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT,F', false) as Record<string, Phaser.Input.Keyboard.Key>;
     this.keys.F.on('down', () => !typing() && this.recentre());
     bus.on(EV.recentre, this.recentre, this);
-    bus.on(EV.zoom, this.zoomStep, this);
-    // Touch and mouse (ILI-1214): drag pans, a tap (released where it went down) selects, two
-    // fingers pinch-zoom, and so does the wheel.
+    // Touch and mouse (ILI-1214): drag pans, a tap (released where it went down) selects. The
+    // zoom is fixed (ILI-1484): no pinch, no wheel.
     this.input.addPointer(1);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.onDown, this);
     this.input.on(Phaser.Input.Events.POINTER_MOVE, this.onMove, this);
@@ -231,7 +231,6 @@ export class MapScene extends Phaser.Scene {
       this.hovered = null; // off the map: no ping is hovered (ILI-1297)
       this.input.manager.canvas.style.cursor = '';
     });
-    this.input.on(Phaser.Input.Events.POINTER_WHEEL, (p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => this.zoomAt(Math.exp(-dy * 0.0015), p.x, p.y));
     this.unsubscribe = game.subscribe(() => {
       this.drawSelection();
       this.applyView();
@@ -245,7 +244,6 @@ export class MapScene extends Phaser.Scene {
       bus.off(EV.mapRect, this.layout, this);
       bus.off(EV.inset, this.placeInset, this);
       bus.off(EV.recentre, this.recentre, this);
-      bus.off(EV.zoom, this.zoomStep, this);
       this.unsubscribe?.();
     });
 
@@ -328,7 +326,6 @@ export class MapScene extends Phaser.Scene {
   private startBoot() {
     this.bootAt = performance.now();
     this.shownAll = false;
-    this.userZoom = 1;
     this.camCenter = null; // layout() centres on ALPHA again
     if (this.panned) bus.emit(EV.panned, (this.panned = false));
     this.layout();
@@ -351,7 +348,7 @@ export class MapScene extends Phaser.Scene {
     }
     const k = 1 - Math.pow(1 - Math.min(1, t / settle), 3);
     const cam = this.cameras.main;
-    cam.setZoom(this.fitZoom * this.userZoom * (0.82 + 0.18 * k));
+    cam.setZoom(this.fitZoom * (0.82 + 0.18 * k));
     if (this.camCenter) cam.centerOn(this.camCenter.x, this.camCenter.y);
     this.drawGrid(Math.max(0, Math.min(1, (t - settle) / grid)));
     this.labels.forEach((label) => label.setScale(1 / this.zoom));
@@ -985,10 +982,6 @@ export class MapScene extends Phaser.Scene {
   }
 
   private recentre() {
-    if (this.userZoom !== 1) {
-      this.userZoom = 1;
-      this.layout();
-    }
     const { width, height } = this.scale;
     const r = getMapRect();
     const area = this.openArea(r, width, height);
@@ -1025,10 +1018,10 @@ export class MapScene extends Phaser.Scene {
     const cover = this.cover(r, height);
     const { zoom } = fitCamera({ w: width, h: height }, area, { x: 0, y: 0, w: WORLD_W, h: WORLD_H }, MARGIN, cover);
     this.baseZoom = this.fitZoom = zoom;
-    cam.setZoom(zoom * this.userZoom);
+    cam.setZoom(zoom);
     // Keep where the camera was, or start centred on ALPHA (ILI-1227).
     const screen = { w: width, h: height };
-    const z = cam.zoom; // the fit, times any pinch
+    const z = cam.zoom; // the fit
     const start = this.camCenter ?? clampCenter({ x: WORLD_W / 2, y: WORLD_H / 2 }, screen, z, cover);
     this.camCenter = this.camCenter ? clampCenter(start, screen, z, cover, PAN) : centreOn(game.get().team.position, area, screen, z, cover, PAN);
     this.camTarget = this.camCenter;
@@ -1434,17 +1427,14 @@ export class MapScene extends Phaser.Scene {
     this.teamLabel.setVisible(gone.length < operators.length); // all aboard: ALPHA is off the map
   }
 
-  // A finger (or the mouse) down on the map: it may become a drag or a pinch, and only a release
-  // without either is a tap.
+  // A finger (or the mouse) down on the map: it may become a drag, and only a release without
+  // one is a tap. A second finger is ignored (no pinch, ILI-1484).
   private drag: { id: number; x: number; y: number; from: { x: number; y: number }; moved: boolean } | null = null;
-  private pinch: { d: number; zoom: number } | null = null;
   private onDown(p: Phaser.Input.Pointer) {
     this.track(p);
     if (game.get().phase !== 'running' || this.bootAt !== null) return;
-    const [a, b] = this.fingers();
-    if (a && b) {
-      // A second finger: pinch, and the first finger's touch is no longer a tap.
-      this.pinch = { d: Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y), zoom: this.userZoom };
+    if (this.fingers().length > 1) {
+      // A second finger: the first finger's touch is no longer a tap, and nothing zooms.
       if (this.drag) this.drag.moved = true;
       return;
     }
@@ -1460,12 +1450,6 @@ export class MapScene extends Phaser.Scene {
       this.hovered = thing ? null : (this.eventAt(p.worldX, p.worldY)?.id ?? null);
       this.input.manager.canvas.style.cursor = thing || this.hovered ? 'pointer' : '';
     }
-    const [a, b] = this.fingers();
-    if (this.pinch && a && b) {
-      const d = Phaser.Math.Distance.Between(a.x, a.y, b.x, b.y);
-      this.zoomAt((this.pinch.zoom * d) / this.pinch.d / this.userZoom, (a.x + b.x) / 2, (a.y + b.y) / 2);
-      return;
-    }
     const drag = this.drag;
     if (!drag || drag.id !== p.id || !p.isDown) return;
     const dx = p.x - drag.x;
@@ -1477,15 +1461,6 @@ export class MapScene extends Phaser.Scene {
   }
 
   private onUp(p: Phaser.Input.Pointer) {
-    if (this.pinch) {
-      // Lifting a finger ends the pinch; the lines and labels redraw for the new zoom.
-      if (this.fingers().length < 2) {
-        this.pinch = null;
-        this.drag = null;
-        this.layout();
-      }
-      return;
-    }
     const drag = this.drag;
     this.drag = null;
     if (!drag || drag.id !== p.id || drag.moved || game.get().phase !== 'running' || game.get().minigame?.kind === 'signal') return;
@@ -1502,21 +1477,11 @@ export class MapScene extends Phaser.Scene {
     if (game.get().map.selected === id && !lockedOn(game.get(), id)) game.lookAt(id);
   }
 
-  // The map controls' + and − (ILI-1470): a step in or out about the open map's middle, then the
-  // lines and labels redraw for the new zoom, as after a pinch.
-  private zoomStep(factor: number) {
-    if (this.bootAt !== null) return;
-    const { width, height } = this.scale;
-    const a = this.openArea(getMapRect(), width, height);
-    this.zoomAt(factor, a.x + a.w / 2, a.y + a.h / 2);
-    this.layout();
-  }
-
   private fingers() {
     return this.input.manager.pointers.filter((q) => q.isDown);
   }
 
-  // Put the camera's centre somewhere by hand (a drag or a zoom): within two squares of the
+  // Put the camera's centre somewhere by hand (a drag): within two squares of the
   // AO, and it stops following ALPHA until recentred.
   private moveCamera(c: { x: number; y: number }) {
     const { width, height } = this.scale;
@@ -1527,25 +1492,7 @@ export class MapScene extends Phaser.Scene {
     bus.emit(EV.camera);
   }
 
-  // Zoom by a factor about a screen point (device px), keeping the ground under it still:
-  // between the whole-map fit and MAX_ZOOM times it.
-  private userZoom = 1;
   private fitZoom = 1;
-  private relayout?: Phaser.Time.TimerEvent;
-  private zoomAt(factor: number, sx: number, sy: number) {
-    if (!this.camCenter || this.bootAt !== null) return;
-    const next = Phaser.Math.Clamp(this.userZoom * factor, 1, MAX_ZOOM);
-    if (next === this.userZoom) return;
-    const cam = this.cameras.main;
-    const at = cam.getWorldPoint(sx, sy);
-    this.userZoom = next;
-    cam.setZoom(this.fitZoom * next);
-    const { width, height } = this.scale;
-    this.moveCamera({ x: at.x - (sx - width / 2) / cam.zoom, y: at.y - (sy - height / 2) / cam.zoom });
-    // Redraw lines and labels for the new zoom once it settles (not every wheel notch).
-    this.relayout?.remove();
-    if (!this.pinch) this.relayout = this.time.delayedCall(150, () => this.layout());
-  }
 
   private track(p: Phaser.Input.Pointer) {
     this.pointer = `${p.wasTouch ? 'touch' : 'mouse'} ${Math.round(p.x / DPR)},${Math.round(p.y / DPR)}`;

@@ -5,7 +5,7 @@ import { ALERT_AT, ALERT_HARDEN, FADE_PER_S, NOISE, NOISE_PER_ROUND } from './no
 import type { GameState } from './state';
 import { lockedStore as createStore } from './testkit';
 import { step } from './systems';
-import { run, walking } from './testkit';
+import { run, told, walking } from './testkit';
 
 const withContacts = (): GameState => {
   const s = walking();
@@ -64,7 +64,7 @@ describe('noise', () => {
 describe('noise per operator (ILI-1222)', () => {
   const inFight = () => {
     const s0 = withContacts();
-    return step({ ...s0, team: { ...s0.team, position: squareCenter('E3')!, waypoint: 3 } }, 100);
+    return step(told({ ...s0, team: { ...s0.team, position: squareCenter('E3')!, waypoint: 3 } }), 100); // a fight it knew of: no ambush (ILI-1496)
   };
   const noiseOf = (s: GameState, id: string) => s.team.operators.find((o) => o.id === id)!.noise;
 

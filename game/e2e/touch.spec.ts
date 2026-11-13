@@ -52,7 +52,7 @@ test('drag pans the map without picking a square; a tap still picks one', async 
   await expect.poll(() => page.evaluate(() => window.game.get().satellite.aim === window.game.get().map.selected)).toBe(true);
 });
 
-test('pinch (or the wheel) zooms in, and recentring zooms back out', async ({ page, isMobile }) => {
+test('the map keeps one fixed zoom: pinch and the wheel do nothing, and there are no zoom buttons (ILI-1484)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await freeze(page);
@@ -65,10 +65,10 @@ test('pinch (or the wheel) zooms in, and recentring zooms back out', async ({ pa
     await page.mouse.move(m.x, m.y);
     for (let i = 0; i < 5; i++) await page.mouse.wheel(0, -200);
   }
-  await expect.poll(async () => (await camera(page)).zoom).toBeGreaterThan(fit * 1.2);
-  await expect.poll(async () => (await camera(page)).zoom).toBeLessThanOrEqual(fit * 1.5 + 1e-6);
-  await page.getByTestId('recentre').click();
-  await expect.poll(async () => (await camera(page)).zoom).toBeCloseTo(fit, 5);
+  await page.waitForTimeout(300);
+  expect((await camera(page)).zoom).toBe(fit);
+  await expect(page.getByTestId('zoom-in')).toHaveCount(0);
+  await expect(page.getByTestId('zoom-out')).toHaveCount(0);
 });
 
 test('on a phone the map takes the screen: a target slides its panel up, another swaps it, × closes it (ILI-1461)', async ({ page, isMobile }) => {

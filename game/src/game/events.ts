@@ -17,7 +17,6 @@ export const EV = {
   recentre: 'recentre', // back to ALPHA, and follow it again
   overlays: 'overlays', // the square card or its action panel opened, moved, resized or closed
   openTeam: 'open-team', // open the team drawer, an operator highlighted (ILI-1396)
-  zoom: 'zoom', // zoom the map by a factor about the open map's middle: the map controls' + and − (ILI-1470)
 } as const;
 
 // World to screen (CSS px) for the map's camera, set by the scene, so a panel can sit next
