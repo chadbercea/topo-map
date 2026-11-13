@@ -13,7 +13,6 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await page.evaluate(() => window.game.selectSquare('E3'));
   if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
   // Picking a square opens its flyout wherever ORION-3 is (ILI-1475); ORION-3 offers Reposition.
-  const card = page.getByTestId('square-card');
   await expect(page.getByTestId('square-anchor').getByTestId('lock-status')).toHaveText('ORION-3 not over it');
   // The picture stays on the square ORION-3 is over (ILI-1428): picking E3 doesn't move it.
   await expect(page.getByTestId('satellite-inset')).toHaveAttribute('aria-label', /picture of G5$/);
@@ -66,10 +65,11 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   // ORION-3 is the eye, not the gun (ILI-1474): the square's CONTACT tag has Strike; none in ORION-3.
   await expect(page.getByTestId('square-anchor').getByTestId('strike-menu')).toHaveCount(0);
   await expect(sat.getByTestId('capture-strike')).toHaveCount(0);
-  await page.locator('[data-testid=contact-item][data-square=E3]').getByTestId('contact-strike').click();
+  await page.locator('[data-testid=contact-item][data-square=E3]').click(); // the contact line is the button: it slides the strike options in (ILI-1497)
   const act = page.getByTestId('strike-flyout').getByTestId('strike-menu');
-  await expect(card.locator('[data-testid=event-card][data-kind=contact]')).toHaveCount(0);
-  await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
+  await expect(page.getByTestId('strike-flyout').getByTestId('contact-item')).toContainText('Contact · E3'); // the event's details sit with its line
+  await expect(page.getByTestId('strike-flyout').getByTestId('contact-details')).toContainText(/checkpoint/i);
+  await expect(page.getByTestId('strike-flyout').getByTestId('event-card')).toHaveCount(0); // no second card repeating it
   await act.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
   await expect(act.getByTestId('fire-sniper')).toBeVisible();
   await page.getByTestId('strike-back').click(); // the strike options slide back to the report (11-12)
@@ -91,7 +91,7 @@ test('a square with fighters in view gets a CONTACT tag; its Strike, or a fighte
   await photo(page, 'E3'); // finds the checkpoint
   await page.evaluate(() => window.game.selectSquare('E3'));
   await expect(page.getByTestId('strike-flyout')).toHaveCount(0);
-  await expect(page.locator('[data-testid=contact-item][data-square=E3]').getByTestId('contact-strike')).toBeEnabled(); // locked on E3, fighters in a fresh look (ILI-1474)
+  await expect(page.locator('[data-testid=contact-item][data-square=E3]')).toContainText('Strike options'); // locked on E3, fighters in a fresh look (ILI-1474)
   const pins = sat.getByTestId('target-pin');
   await expect(pins).toHaveCount(5); // one per fighter it saw
   // A click in ORION-3's picture pins his full panel there (ILI-1444): read-only (ILI-1482); Strike is on the square.
@@ -101,7 +101,7 @@ test('a square with fighters in view gets a CONTACT tag; its Strike, or a fighte
   await expect(panel.getByTestId('panel-tango')).toHaveText(/^HOSTILE · TANGO-\d+$/);
   await expect(panel.getByTestId('panel-weapon')).not.toHaveText('█████'); // ORION-3 is over him: his weapon shows
   await expect(panel.getByTestId('panel-strike')).toHaveCount(0);
-  await page.locator('[data-testid=contact-item][data-square=E3]').getByTestId('contact-strike').click();
+  await page.locator('[data-testid=contact-item][data-square=E3]').click();
   await expect(page.getByTestId('strike-flyout').getByTestId('fire-drone')).toBeVisible();
   const anchor = page.getByTestId('square-anchor');
   await expect(anchor.getByTestId('strike-menu')).toHaveCount(1); // the options slide in inside the square's panel (11-12)

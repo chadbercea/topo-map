@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { promptQueue } from '../sim/prompts';
-import { satName } from '../sim/satellite';
+import { lockedOn } from '../sim/satellite';
 import { strikeState } from './SquareCard';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
@@ -222,29 +222,37 @@ export function tagSquares(s: GameState) {
   return { contacts, buildings };
 }
 
-// A square's CONTACT tag (ILI-1474): its fighters and Strike, or how the strike under way is going.
+// A square's CONTACT tag (ILI-1474): a pointer to the contact on a square that isn't open. The tag
+// is the button (ILI-1497): it opens the square's panel on its contact line, which slides in the
+// strike options; while a strike is under way it says how it's going.
 export function ContactTag({ square }: { square: string }) {
   const s = useGame((x) => x);
   const st = strikeState(s, square);
   const work = strikeWork(s, square);
-  const open = s.events.some((e) => e.id === s.openEvent && e.kind === 'contact' && e.square === square);
+  const label = (
+    <>
+      Contact · {square}
+      {st.marked.length > 0 && <b data-testid="contact-count"> · {st.marked.length}</b>}
+    </>
+  );
   return (
-    <div className="pt-tag" role="group" aria-label={`Contact · ${square}`} data-open={open || undefined}>
-      <span>
-        Contact · {square}
-        {st.marked.length > 0 && <b data-testid="contact-count"> · {st.marked.length}</b>}
-      </span>
+    <div className="pt-tag" role="group" aria-label={`Contact · ${square}`}>
       {work ? (
-        <em data-testid="strike-work">{work}</em>
+        <>
+          <span>{label}</span>
+          <em data-testid="strike-work">{work}</em>
+        </>
       ) : (
         <button
-          onClick={() => st.strikes[0] && (open ? game.dropEvent() : game.openEvent(st.strikes[0].id))}
-          disabled={!st.can}
-          title={st.can ? `Strike ${square}` : `${satName(s)} has to be over ${square} to watch the strike land`}
-          data-testid="contact-strike"
-          aria-expanded={open}
+          className="pt-open"
+          onClick={() => {
+            if (!st.strikes[0]) return;
+            game.openEvent(st.strikes[0].id);
+            if (!lockedOn(game.get(), square)) game.lookAt(square);
+          }}
+          data-testid="contact-open"
         >
-          Strike
+          {label}
         </button>
       )}
     </div>
@@ -273,7 +281,7 @@ export function BuildingTag({ id }: { id: string }) {
 
 // What's hitting a square right now, for its CONTACT tag (ILI-1474): the asset's callsign and how
 // it's going.
-export function strikeWork(s: GameState, square: string): string | null {
+function strikeWork(s: GameState, square: string): string | null {
   const now = s.elapsedMs;
   if (s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now)) return `${SNIPER_CALLSIGN} · ${s.sniper.done ? 'done' : 'firing'}`;
   for (const w of ['drone', 'heli'] as const) {
