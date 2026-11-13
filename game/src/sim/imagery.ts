@@ -3,6 +3,7 @@ import { BOARD } from './minigame';
 import type { Contact } from './contacts';
 import type { GameState } from './state';
 import type { System } from './systems';
+import { inView } from './sight';
 
 // What HQ has seen, square by square (ILI-1167: fog of war both ways). Nothing in a square
 // shows until someone looks: ORION-3, or ALPHA's own eyes in the square it stands in. Each
@@ -102,7 +103,10 @@ export const eyesSystem: System = (s) => {
     if (snap.mode === 'eyes' && snap.live && snap.square !== here) next = { ...next, imagery: { ...next.imagery, [snap.square]: { ...snap, live: false } } };
   if (!here) return next;
   const prev = next.imagery[here];
-  const look = snapshot(next, here, 'eyes', true);
+  // Only who it can see (ILI-1512), and whoever it's fighting.
+  const eyes = new Set([...inView(next).map((c) => c.id), ...(next.team.fight ? [next.team.fight.contactId] : [])]);
+  const all = snapshot(next, here, 'eyes', true);
+  const look = { ...all, seen: all.seen.filter((x) => eyes.has(x.contactId)) };
   // Nothing new to see: keep the same object so the map isn't redrawn for nothing.
   if (prev?.mode === 'eyes' && prev.live && JSON.stringify(prev.seen) === JSON.stringify(look.seen)) return next;
   return record(next, look);
