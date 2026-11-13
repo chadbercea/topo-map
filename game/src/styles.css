@@ -2070,3 +2070,52 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud[data-tier='wide'] .orion { height: auto !important; max-height: none; }
 .hud[data-tier='wide'] .orion > .o-frame { height: auto; }
 .hud[data-tier='wide'] .slot-orion { container-type: normal; } /* sized to its content now: no height ladder on a wide screen (ILI-1475) */
+
+/* The debrief (ILI-1372): a full screen over the dimmed war room, in the HUD's language. It
+   scrolls inside; its two actions stay pinned at the foot. */
+.overlay.aar { background: rgba(5, 8, 7, 0.86); padding: 16px; }
+.overlay.aar .wrapup { width: min(880px, 100%); max-height: calc(100dvh - 32px); display: grid; grid-template-rows: minmax(0, 1fr) auto; padding: 0; overflow: hidden; gap: 0; border-color: var(--line); }
+.wrapup .aar-scroll { overflow-y: auto; padding: 0 0 8px; display: grid; gap: 18px; align-content: start; }
+.overlay[data-extracted] .wrapup .aar-scroll > :not(.aar-head) { animation: aar-unfold 420ms cubic-bezier(0.2, 0.8, 0.2, 1) 560ms both; }
+.wrapup .aar-head { margin: 0; }
+.wrapup .aar-band { --tone: #e5484d; display: grid; gap: 6px; padding: 18px 20px 0; border-top: 3px solid var(--tone); background: linear-gradient(180deg, color-mix(in srgb, var(--tone) 10%, transparent), transparent 70%); }
+.wrapup[data-good] .aar-band { --tone: var(--accent); }
+.wrapup .aar-band h2 { margin: 0; font-size: 10px; letter-spacing: 0.22em; color: var(--dim); }
+.wrapup .aar-band .outcome { font-size: clamp(22px, 3.4vw, 34px); line-height: 1.05; letter-spacing: 0.08em; font-weight: 600; color: var(--tone); }
+.wrapup .aar-band .reason { margin: 0; font-size: 14px; color: var(--ink); }
+.wrapup .aar-read { margin: 10px -20px 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.wrapup .aar-read > div { display: grid; gap: 4px; padding: 10px 20px; border-right: 1px solid rgba(53, 208, 165, 0.14); justify-content: start; }
+.wrapup .aar-read > div:last-child { border-right: 0; }
+.wrapup .aar-read dt { margin: 0; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+.wrapup .aar-read dd { font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.wrapup .aar-read dd[data-loss] { color: #e5484d; }
+.wrapup .objectives { list-style: none; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.wrapup .objectives li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); font-size: 12px; color: var(--ink); }
+.wrapup .objectives li i { font-style: normal; width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid currentColor; font-size: 11px; color: var(--accent); flex: none; }
+.wrapup .objectives li[data-done='false'] { color: var(--ink); border-color: rgba(229, 72, 77, 0.4); }
+.wrapup .objectives li[data-done='false'] i { color: #e5484d; }
+.wrapup .aar-sec { display: grid; gap: 10px; padding: 0 20px; }
+.wrapup .aar-sec h3 { margin: 0; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.wrapup .aar-sec .race { margin: 0; }
+.overlay.aar .wrapup .columns { padding: 0; gap: 0; grid-template-columns: 1fr 1fr; }
+.wrapup .aar-cells { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: rgba(53, 208, 165, 0.14); border: 1px solid rgba(53, 208, 165, 0.14); }
+.wrapup .aar-cells > div { display: grid; gap: 4px; padding: 8px 10px; background: var(--bg); justify-content: stretch; }
+.wrapup .aar-cells dt { margin: 0; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.wrapup .aar-cells dd { font-size: 16px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.wrapup .payout { gap: 0; border-top: 1px solid rgba(53, 208, 165, 0.14); }
+.wrapup .payout > div { padding: 6px 0; border-bottom: 1px solid rgba(53, 208, 165, 0.08); }
+.wrapup .payout dd.v[data-neg] { color: #e5484d; }
+.wrapup .payout .total { border-top: 0; margin: 0; padding-top: 8px; }
+.wrapup .aar-actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--line); background: rgba(11, 15, 13, 0.98); }
+.wrapup .aar-actions button { min-height: 44px; margin: 0; }
+.wrapup .aar-actions .aar-primary { color: #0b0f0d; background: var(--accent); border-color: var(--accent); }
+.wrapup .aar-actions .aar-primary:hover { filter: brightness(1.1); }
+@media (max-width: 640px) {
+  .overlay.aar { padding: 8px; }
+  .overlay.aar .wrapup { max-height: calc(100dvh - 16px); }
+  .wrapup .aar-read { grid-template-columns: 1fr 1fr; }
+  .wrapup .aar-read > div:nth-child(2) { border-right: 0; }
+  .wrapup .aar-read > div:nth-child(-n + 2) { border-bottom: 1px solid rgba(53, 208, 165, 0.14); }
+  .overlay.aar .wrapup .columns { grid-template-columns: 1fr; gap: 18px; }
+}
+.wrapup .aar-sec .race { width: 100%; justify-self: stretch; }
