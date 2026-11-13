@@ -1739,6 +1739,12 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card .sc-package .int { font-style: normal; font-size: 8px; letter-spacing: 0.08em; padding: 0 4px; border: 1px solid currentColor; margin-right: 4px; }
 .square-card .sc-package[data-state='posted'] { color: #f2c14e; }
 .square-card .sc-package[data-state='pulling'], .square-card .sc-package[data-state='received'] { color: var(--accent); }
+.square-card .sc-reports { display: grid; gap: 1px; margin: 0; padding: 0 0 0 8px; list-style: none; } /* ORION-3's reports on the square, a line each (ILI-1507) */
+.square-card .sc-reports li { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 10px; line-height: 1.3; color: var(--ink); }
+.square-card .sc-reports li > span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.square-card .sc-reports .int { flex: 0 0 46px; font-style: normal; font-size: 8px; letter-spacing: 0.06em; text-align: center; border: 1px solid rgba(207, 232, 220, 0.3); color: var(--dim); }
+.square-card .sc-reports li[data-heat='some'] .int { border-color: rgba(255, 138, 42, 0.6); color: #ff8a2a; }
+.square-card .sc-reports li[data-heat='hot'] .int { border-color: #e5484d; color: #e5484d; }
 .square-card .sc-package .check { color: var(--accent); font-weight: 700; } /* intel received: the green check (ILI-1509) */
 .square-card .sc-package .decay { display: block; width: 48px; height: 4px; background: rgba(53, 208, 165, 0.12); }
 .square-card .sc-package .decay > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
