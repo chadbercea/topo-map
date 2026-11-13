@@ -17,7 +17,7 @@ describe('teaching through play', () => {
 
   it('stalled, ALPHA needing intel is the prompt on the map, pinned to the square (ILI-1349, ILI-1391)', () => {
     const s = run(initialState(), 1_000);
-    expect(activePrompt(s)).toMatchObject({ square: 'F4', grid: 'F4', text: 'ALPHA holding, needs route intel to D3', step: 'click', hint: 'ALPHA needs route intel · click F4', responses: [] }); // on the grid, no button (ILI-1450)
+    expect(activePrompt(s)).toMatchObject({ square: 'F4', grid: 'F4', text: 'ALPHA requested imagery of F4', step: 'click', hint: 'ALPHA requested imagery of F4 · click it', responses: [] }); // on the grid, no button (ILI-1450)
   });
 
   it('holding short for HQ to soften a contact, the need line points at it', () => {

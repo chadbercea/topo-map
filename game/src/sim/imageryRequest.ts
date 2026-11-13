@@ -37,6 +37,6 @@ export const imageryRequestSystem: System = (s) => {
   if (!needsImagery(s)) return s;
   const square = requestSquare(s);
   if (!square) return s;
-  const ask: MapEvent = { id: `${IMAGERY_REQUEST}${square}-${s.elapsedMs}`, kind: 'request', square, title: `${s.team.callsign} requests imagery`, atMs: s.elapsedMs, status: 'new' };
+  const ask: MapEvent = { id: `${IMAGERY_REQUEST}${square}-${s.elapsedMs}`, kind: 'request', square, title: `${s.team.callsign} requested imagery of ${square}`, atMs: s.elapsedMs, status: 'new' };
   return { ...s, events: [...s.events, ask] };
 };

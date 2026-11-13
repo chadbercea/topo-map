@@ -55,12 +55,10 @@ type Source = (s: GameState) => Prompt[];
 const intelNeeded: Source = (s) => {
   const req = openImageryRequest(s);
   if (!req) return [];
-  const holding = s.team.activity.startsWith('Holding');
-  const goal = s.mission.phase === 'exfil' || s.mission.phase === 'complete' ? s.mission.c : s.mission.b;
   const grid = req.square;
   const step = intelStep(s, grid);
   const hint = {
-    click: `${s.team.callsign} needs route intel · click ${grid}`,
+    click: `${s.team.callsign} requested imagery of ${grid} · click it`,
     moving: `${satName(s)} moving to ${grid}…`,
     analyze: `Analyze ${grid} in ${satName(s)}`,
   }[step];
@@ -72,7 +70,7 @@ const intelNeeded: Source = (s) => {
       atMs: req.atMs,
       square: grid,
       grid,
-      text: `${s.team.callsign} ${holding ? 'holding' : 'low on intel'}, needs route intel to ${goal}`,
+      text: `${s.team.callsign} requested imagery of ${grid}`, // what ALPHA asked for, plainly (ILI-1511)
       responses: [],
       step,
       hint,
