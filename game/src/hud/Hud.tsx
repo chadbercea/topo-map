@@ -3,6 +3,7 @@ import { DebugPanel } from './DebugPanel';
 import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
 import { ExfilPanel } from './ExfilPanel';
+import { ResupplyPanel } from './ResupplyPanel';
 import { SquareCard } from './SquareCard';
 import { lookSquare } from '../sim/satellite';
 import { useTier, useFold } from './tier';
@@ -164,6 +165,7 @@ export function Hud() {
       <SightingPanels />
       <div className="slot-band">
         <div className="band-cards" data-overlay="band">
+          <ResupplyPanel />
           <ExfilPanel />
         </div>
       </div>

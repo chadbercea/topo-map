@@ -24,6 +24,9 @@ export type WireSpec<S extends string> = {
   roll: number; // a slight roll, so it reads as 3D even face-on
   rest: number; // the turn it's drawn at when still
   build: (kit: WireKit) => void;
+  // Its own motion, each frame, on top of the turn (ILI-1520: the resupply bundle swings under its
+  // canopy as it comes down). t: seconds running. Without it, the gentle drift.
+  move?: (root: THREE.Group, t: number, state: S) => void;
 };
 
 const FPS = 24; // a low frame rate: the map's WebGL canvas is the one that matters
@@ -111,7 +114,8 @@ export function mountWire<S extends string>(host: HTMLElement, spec: WireSpec<S>
     spin += (spec.looks[stateRef.current].spin - spin) * Math.min(1, step * 2); // ease between speeds
     t += step;
     root.rotation.y += spin * step;
-    root.position.y = Math.sin(t * 0.6) * 0.06; // a gentle drift
+    if (spec.move) spec.move(root, t, stateRef.current);
+    else root.position.y = Math.sin(t * 0.6) * 0.06; // a gentle drift
     draw();
   };
   const running = () => onScreen && !document.hidden && !still.matches && !AUTOMATED;

@@ -1167,6 +1167,12 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .air.exfil .decay { background: rgba(255, 138, 42, 0.12); border-color: rgba(255, 138, 42, 0.4); }
 .air.exfil .decay > span { background: #ff8a2a; }
 .air.exfil .d-log .d-all { color: var(--accent); }
+/* The resupply drop (ILI-1520): an air panel in the HUD's green, support rather than a strike. */
+.air.resupply { border-color: var(--accent); }
+.air.resupply h2, .air.resupply .d-log { color: var(--accent); }
+.air.resupply .decay { background: rgba(53, 208, 165, 0.12); border-color: rgba(53, 208, 165, 0.4); }
+.air.resupply .decay > span { background: var(--accent); }
+.air.resupply .d-log .d-all { color: var(--ink); }
 
 /* The sniper (ILI-1253): OVERWATCH's crosshairs in ORION-3's picture, gliding to each fighter it
    shoots, and its panel under the picture. */
