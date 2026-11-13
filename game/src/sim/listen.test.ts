@@ -15,7 +15,8 @@ describe('getting in range of enemy traffic (ILI-1394)', () => {
     const p = traffic(atTraffic().get());
     expect(p.square).toBe('C2');
     expect(p.responses.map((r) => r.id)).toEqual(['satellite']);
-    expect(p.responses[0].label).toMatch(/^ORION-3 listens · \d:\d\d there$/);
+    expect(p.responses[0].label).toMatch(/^Send ORION-3 to C2 · \d:\d\d$/);
+    expect(p.hint).toBe("Only ORION-3 can listen, and only from over C2. Send it; the intercept starts once it's locked on."); // what an asset is, how to get it there, what in range means (ILI-1492)
   });
 
   it('there is no button that starts the intercept', () => {

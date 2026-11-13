@@ -14,7 +14,8 @@ test('intercept: get ORION-3 in range through the prompt, follow their wave, and
   await expect(item.getByTestId('traffic-item')).toHaveText('Enemy radio traffic near C2');
   await expect(item.getByTestId('traffic-choice')).toHaveCount(0); // the choice opens on a click
   await item.getByTestId('traffic-item').click();
-  await expect(item.getByTestId('traffic-listen')).toHaveText([/^ORION-3 listens · \d:\d\d there$/]); // HQ's job: no antenna (ILI-1435)
+  await expect(item.getByTestId('traffic-listen')).toHaveText([/^Send ORION-3 to C2 · \d:\d\d$/]); // HQ's job: no antenna (ILI-1435)
+  await expect(item.getByTestId('traffic-hint')).toHaveText("Only ORION-3 can listen, and only from over C2. Send it; the intercept starts once it's locked on."); // ILI-1492
   await expect(item.getByTestId('traffic-jam')).toBeDisabled(); // ORION-3 isn't over C2
   await expect(page.getByRole('button', { name: 'Listen', exact: true })).toHaveCount(0); // no button starts it
   await item.locator('[data-response=satellite]').click();

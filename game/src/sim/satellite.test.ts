@@ -215,7 +215,7 @@ describe("the satellite's name", () => {
     store.lookAt('E3');
     expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ATLAS-1', text: expect.stringMatching(/^Slewing to E3/) });
     const traffic = trafficPrompts(untilTraffic(atlas)).find((p) => p.kind === 'enemy-traffic');
-    expect(traffic?.responses[0].label).toMatch(/^ATLAS-1 /);
+    expect(traffic?.responses[0].label).toMatch(/^Send ATLAS-1 to /);
     expect(JSON.stringify(store.get()).includes('ORION-3')).toBe(false);
   });
 });
