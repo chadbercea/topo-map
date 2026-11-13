@@ -1,5 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/600.css';
 import '../styles.css';
 import './design.css';
 import { DesignSystem } from './DesignSystem';

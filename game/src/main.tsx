@@ -6,7 +6,10 @@ import { loadSettings, saveSettings } from './hud/settings';
 import { game } from './sim/store';
 import { intro } from './hud/intro';
 import { clearOldSaves, opening } from './hud/ledger';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/600.css';
 import './styles.css';
+import { startPwa } from './pwa';
 
 // Phaser and React each own one layer. The game is created once, outside React,
 // so StrictMode's double mount never spins up a second canvas.
@@ -33,6 +36,7 @@ if (navigator.webdriver && !new URLSearchParams(location.search).has('gauge')) g
 clearOldSaves();
 game.setOpening(...opening());
 intro.idle();
+startPwa(); // installable and offline (ILI-1335)
 
 const phaser = createGame(document.getElementById('game')!);
 
