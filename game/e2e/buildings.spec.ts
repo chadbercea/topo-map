@@ -14,7 +14,7 @@ test('a building’s tag sends ALPHA to search it; ALPHA reports the find and it
     window.game.selectSquare('G4');
   });
   const anchor = page.getByTestId('square-anchor');
-  await expect(anchor).toContainText('BUILDING · G4');
+  await expect(anchor.getByTestId('event-card')).toHaveCount(0); // the building shows once, as its docked tag (ILI-1482)
   const before = await page.evaluate(() => window.game.get().resources.budget);
   const tag = page.locator('[data-testid=place-tag][data-square=G4]');
   await expect(tag).toContainText('Building · G4');
@@ -22,7 +22,6 @@ test('a building’s tag sends ALPHA to search it; ALPHA reports the find and it
   await expect(anchor.getByTestId('docked-tags')).toContainText('Building · G4');
   await tag.getByTestId('send-search').click();
   await expect(tag.getByTestId('search-going')).toHaveText('ALPHA on its way');
-  await expect(anchor).toContainText('ALPHA is on its way to search it');
   await page.evaluate(() => {
     for (let i = 0; i < 1500 && !window.game.get().comms.messages.some((m) => m.id === 'found-building-G4'); i++) window.game.tick(100);
   });

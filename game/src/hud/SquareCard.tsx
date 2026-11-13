@@ -167,7 +167,8 @@ const strikeable = (e: GameState['events'][number]) => e.kind === 'contact' && e
 // is only ever a reply to ALPHA's ask, ILI-1232. A kill site has nothing to do until ALPHA
 // reaches it and asks, so it gets no card: the X marks are the aftermath, ILI-1252.)
 // ALPHA's imagery request is answered by Scan, at the top (ILI-1367).
-const actionable = (square: string) => (e: GameState['events'][number]) => e.square === square && e.status !== 'resolved' && !strikeable(e) && e.kind !== 'site' && !isImageryRequest(e);
+// A building is its tag, docked on the panel (ILI-1469): not a second card here too (ILI-1482).
+const actionable = (square: string) => (e: GameState['events'][number]) => e.square === square && e.status !== 'resolved' && !strikeable(e) && e.kind !== 'site' && e.kind !== 'building' && !isImageryRequest(e);
 export function hasActions(s: GameState, square: string) {
   return s.events.some(actionable(square));
 }
@@ -358,9 +359,6 @@ export function Readouts({ s, square }: { s: GameState; square: string }) {
   const clear = squareFindings(s, square) === 'clear';
   return (
     <section className="sc-intel" data-testid="square-intel" data-clear={clear || undefined} aria-label={`Intel on ${square}`}>
-      <p className="sc-settled" data-testid="square-settled">
-        {clear ? '✓ Settled · clear' : `◆ Settled · ${items.length} ${items.length === 1 ? 'report' : 'reports'}`}
-      </p>
       <ul>
         {items.map((r, i) => (
           <li key={i} data-kind={r.kind} data-heat={r.heat} data-testid="square-intel-item">
@@ -373,26 +371,14 @@ export function Readouts({ s, square }: { s: GameState; square: string }) {
   );
 }
 
-// The square's details (ILI-1466): read-only. Every satellite action is ORION-3's (ILI-1459), so
-// there's no Scan here: its intel once something has looked (a scan, a feed, the team), else none
-// yet; its ground; and where ORION-3 is, pointing to its Scan.
+// ALPHA's ask on this square, if any (ILI-1466). The square's intel state is the fold's summary
+// and its lock is the header's: each said once (ILI-1482).
 function SquareFacts({ s, square }: { s: GameState; square: string }) {
   const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
-  const done = settled(s, square);
-  const items = done ? squareReports(s, square) : [];
-  const clear = done && squareFindings(s, square) === 'clear';
-  const busy = s.satellite.state === 'capturing' && s.satellite.aim === square;
+  if (!asked) return null;
   return (
     <section className="sc-facts" data-testid="square-details" aria-label={`${square} details`}>
-      {asked && <p className="sc-asked">{asked.title}</p>}
-      <dl className="facts">
-        <dt>Intel</dt>
-        <dd data-testid="square-intel-state" data-none={!done || undefined}>
-          {!done ? 'none yet · nothing has looked' : clear ? 'settled · clear' : `settled · ${items.length} ${items.length === 1 ? 'report' : 'reports'} below`}
-        </dd>
-        <dt>{satName(s)}</dt>
-        <dd data-testid="scan-in-orion">{busy ? 'looking now' : !lockedOn(s, square) ? (done ? 'not over it · last look stays here' : 'not over it · on its way when you click') : done ? 'locked on' : <b>locked on · Scan it there ▸</b>}</dd>
-      </dl>
+      <p className="sc-asked">{asked.title}</p>
     </section>
   );
 }
@@ -463,10 +449,7 @@ export function Actions({ s, square }: { s: GameState; square: string }) {
             {EVENT_LABEL[e.kind]} · {e.square}
           </h3>
           <p className="title">{e.title}</p>
-          {e.kind === 'building' ? (
-            // The hunt (ILI-1316): Search is on the building's tag on the map now (ILI-1469).
-            <p className="note">{s.searching.includes(e.square) ? `${s.team.callsign} is on its way to search it.` : 'Search it from its tag on the map.'}</p>
-          ) : e.kind === 'signal' ? (
+          {e.kind === 'signal' ? (
             // Listen and Jam are on the traffic's tag on the map (ILI-1469).
             <p className="note">Listen or Jam from its tag on the map.</p>
           ) : (
