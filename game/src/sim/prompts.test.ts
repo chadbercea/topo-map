@@ -71,9 +71,9 @@ describe('operator prompts', () => {
   });
 });
 
-// Enemy traffic has its own lane (ILI-1452): nothing knocks it off mid-read; it stays until HQ
-// acts on it or dismisses it, and dismissing it leaves the traffic on the map.
-describe('the enemy-traffic card', () => {
+// Enemy traffic has its own lane (ILI-1452): nothing knocks it off mid-read. It's a line of its
+// square's intel list since ILI-1491, with no card to dismiss: it stays until HQ acts on it.
+describe('enemy traffic', () => {
   const atTraffic = () => untilTraffic(initialState());
 
   it('is not in the one-prompt slot, so a more urgent prompt does not replace it', () => {
@@ -92,11 +92,4 @@ describe('the enemy-traffic card', () => {
     expect(trafficPrompts(store.get())).toEqual([]);
   });
 
-  it('dismissed, the card goes but the traffic stays on the map, unresolved', () => {
-    const store = createStore(atTraffic());
-    const id = trafficId(store.get());
-    store.dismissTraffic(id);
-    expect(trafficPrompts(store.get())).toEqual([]);
-    expect(store.get().events.find((e) => e.id === id)).toMatchObject({ kind: 'signal', square: 'C2', status: expect.not.stringMatching('resolved') });
-  });
 });

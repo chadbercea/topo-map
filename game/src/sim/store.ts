@@ -137,8 +137,6 @@ export function createStore(initial: GameState = initialState()) {
       // ALPHA's call (ILI-1393): a reply, or a plain Copy.
       if (p.kind === 'team-call') set(send(state, p.id, response === 'copy' ? null : response));
     },
-    // Dismiss the enemy-traffic card (ILI-1452): the card goes, the traffic stays on the map.
-    dismissTraffic: (id: string) => !state.acked.includes(id) && set({ ...state, acked: [...state.acked, id] }),
     // ORION-3 already over the square HQ is working: the shot is one press, no Reposition first
     // (ILI-1250).
     capture: (mode: CaptureMode) => {

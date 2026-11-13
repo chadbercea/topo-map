@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
-import { promptQueue, trafficPrompts, type Prompt } from '../sim/prompts';
-import { lockedOn, satName } from '../sim/satellite';
+import { promptQueue } from '../sim/prompts';
+import { satName } from '../sim/satellite';
 import { strikeState } from './SquareCard';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
@@ -17,12 +17,11 @@ const GAP = 12; // between the prompt and its square
 // Tier two on screen (ILI-1391): the one prompt at the head of the queue, pinned to its square on
 // the map and following it as the map pans and zooms. The loudest thing on screen: one line
 // saying what's happening and its responses. The rest wait their turn; a count says how many.
-// Enemy traffic has its own lane beside it (ILI-1452): a small card nothing replaces.
+// Enemy traffic is a line of its square's intel list now (ILI-1491): no card or tag of its own.
 export function PromptLayer() {
   return (
     <>
       <MainPrompt />
-      <TrafficPrompts />
       <PlaceTags />
     </>
   );
@@ -142,118 +141,6 @@ function MainPrompt() {
   );
 }
 
-const TW = 210; // the traffic card's width: smaller than the prompt, out of its way (ILI-1452)
-
-// Enemy traffic (ILI-1452): a compact card pinned to the traffic's square, apart from the one
-// prompt so nothing knocks it off mid-read. It stays until HQ acts on it or dismisses it.
-function TrafficPrompts() {
-  const s = useGame((x) => x);
-  return (
-    <>
-      {trafficPrompts(s).map((p) => (
-        <TrafficPrompt key={p.id} live={p} team={s.team.position} />
-      ))}
-    </>
-  );
-}
-
-function TrafficPrompt({ live, team }: { live: Prompt; team: { x: number; y: number } }) {
-  const ref = useRef<HTMLElement>(null);
-  const [h, setH] = useState(0);
-  const [, redraw] = useState(0);
-  // While the pointer is on it, it holds still: same words, same spot, until HQ clicks.
-  const [hover, setHover] = useState(false);
-  const held = useRef<{ p: Prompt; at: Box } | null>(null);
-  useEffect(() => {
-    const again = () => redraw((n) => n + 1);
-    bus.on(EV.camera, again);
-    bus.on(EV.mapRect, again);
-    bus.on(EV.overlays, again);
-    return () => {
-      bus.off(EV.camera, again);
-      bus.off(EV.mapRect, again);
-      bus.off(EV.overlays, again);
-    };
-  }, []);
-  // The one prompt moved or came up: get out of its way (it's placed first, so this settles).
-  const seen = useRef('');
-  useLayoutEffect(() => {
-    const now = ref.current?.offsetHeight ?? 0;
-    if (now && Math.abs(now - h) > 1) setH(now);
-    const main = JSON.stringify(overlaysNamed(['prompt']));
-    if (main !== seen.current) {
-      seen.current = main;
-      redraw((n) => n + 1);
-    }
-  });
-
-  const area = getMapRect();
-  if (!area) return null;
-  const width = Math.min(TW, area.width - 16);
-  let p = live;
-  let at: Box;
-  if (hover && held.current) ({ p, at } = held.current);
-  else {
-    // Clear of the one prompt, the square's menu, the toolbox, the timer, the log and ALPHA.
-    const strip = overlaysNamed(['prompt', 'actions', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']);
-    at = place(squareBox(p.square), area, width, h || 72, [alphaBox(team), ...strip]);
-    held.current = { p, at };
-  }
-  const sq = squareBox(p.square);
-  const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
-  const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 72))) };
-
-  return (
-    <>
-      {target && near && (
-        <svg className="prompt-leader traffic-leader" aria-hidden>
-          <line x1={near.x} y1={near.y} x2={target.x} y2={target.y} />
-          <circle cx={target.x} cy={target.y} r="3" />
-        </svg>
-      )}
-      <section
-        ref={ref}
-        className="traffic-prompt"
-        data-testid="traffic-prompt"
-        data-overlay="traffic"
-        data-kind={p.kind}
-        data-square={p.square}
-        style={{ left: at.x, top: at.y, width }}
-        role="dialog"
-        aria-label={p.text}
-        onPointerEnter={() => setHover(true)}
-        onPointerLeave={() => setHover(false)}
-      >
-        <p className="prompt-text" data-testid="prompt-text">
-          <b>{p.square}</b> {p.text}
-        </p>
-        <button className="traffic-dismiss" onClick={() => game.dismissTraffic(p.id)} data-testid="traffic-dismiss" aria-label="Dismiss">
-          ✕
-        </button>
-        <div className="prompt-responses">
-          {p.responses.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => {
-                held.current = null; // what HQ just did shows straight away
-                game.answerPrompt(p.id, r.id);
-              }}
-              disabled={r.disabled}
-              data-response={r.id}
-              data-testid="prompt-response"
-            >
-              {r.label}
-            </button>
-          ))}
-          {/* Jam is here too (ILI-1469): the traffic's own tag has both answers. It needs ORION-3
-              over the square, like everything that runs there (ILI-1397). */}
-          <JamButton id={p.id} square={p.square} onAct={() => (held.current = null)} />
-        </div>
-      </section>
-    </>
-  );
-}
-
 // Above its square, else below, else either side; kept inside the open map and off ALPHA.
 function place(sq: Box | null, area: { x: number; y: number; width: number; height: number }, w: number, h: number, avoid: (Box | null)[]): Box {
   const clampX = (x: number) => Math.max(area.x + 8, Math.min(x, area.x + area.width - 8 - w));
@@ -270,25 +157,6 @@ function place(sq: Box | null, area: { x: number; y: number; width: number; heig
   // A crowded corner: further out, the leader line still reaches the square.
   for (const fy of [0.15, 0.5, 0.85]) for (const fx of [0.5, 0.2, 0.8]) spots.push({ x: clampX(area.x + area.width * fx - w / 2), y: clampY(area.y + area.height * fy - h / 2), w, h });
   return pick(spots, [...avoid, sq]);
-}
-
-function JamButton({ id, square, onAct }: { id: string; square: string; onAct: () => void }) {
-  const locked = useGame((s) => lockedOn(s, square));
-  const name = useGame(satName);
-  return (
-    <button
-      className="jam"
-      onClick={() => {
-        onAct();
-        game.jam(id);
-      }}
-      disabled={!locked}
-      title={locked ? "Slows the enemy, but you won't learn what they're planning" : `${name} has to be over ${square}`}
-      data-testid="traffic-jam"
-    >
-      Jam
-    </button>
-  );
 }
 
 // Callout tags (ILI-1469, the ILI-1459 design, after the red-map reference): a thing on the map HQ can
