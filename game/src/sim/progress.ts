@@ -94,7 +94,7 @@ export function blockers(s: GameState): Blocker[] {
   const contact = ahead.find((sq) => knownIn(s, sq).length > 0);
   if (contact) out.push({ tone: 'threat', text: `Contact on the route at ${contact}`, go: { square: contact } });
   const blind = nextBlind(s);
-  if (blind) out.push({ tone: 'threat', text: `No imagery ahead at ${blind}`, go: { square: blind } });
+  if (blind) out.push({ tone: 'threat', text: `No coverage ahead at ${blind}`, go: { square: blind } });
   const down = s.team.operators.filter((o) => condition(o) === 'down').length;
   const hurt = s.team.operators.filter((o) => condition(o) === 'caution' || condition(o) === 'danger').length;
   if (down) out.push({ tone: 'team', text: `${down} down` });

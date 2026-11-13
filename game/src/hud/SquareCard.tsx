@@ -6,7 +6,7 @@ import { CAPTURE, lockedOn, satName } from '../sim/satellite';
 import { trafficPrompts } from '../sim/prompts';
 import { isImageryRequest } from '../sim/imageryRequest';
 import { MiniGamePanel } from './MiniGamePanel';
-import { freshness, targets } from '../sim/imagery';
+import { AGE_LABEL, freshness, targets } from '../sim/imagery';
 import { squareAt } from '../map/grid';
 import { SniperPanel } from './SniperPanel';
 import { AirPanel } from './AirPanel';
@@ -229,7 +229,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
     <header className="sc-head">
       <b>{square}</b>
       <span className="sc-status" data-testid="lock-status">
-        {locked ? `${satName(s)} locked on` : coming ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `${satName(s)} not over it`}
+        {locked ? `${satName(s)} locked on` : coming ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `No coverage · ${satName(s)} over ${sat.aim}`}
       </span>
       <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
         ×
@@ -307,7 +307,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
         ))}
         {!asked && !contact && !known.length && !buildings.length && !traffic.length && !others.length && (
           <p className="sc-none" data-testid="intel-none">
-            Nothing to act on
+            No contacts or traffic reported
           </p>
         )}
       </section>
@@ -367,7 +367,7 @@ function ContactItem({ s, square, open = false }: { s: GameState; square: string
   const fresh = look ? freshness(look, s.elapsedMs) : null;
   const what = [...new Set(st.strikes.map((e) => e.title))].join(', ');
   const n = st.marked.length;
-  const hint = st.can ? 'Strike options ▸' : !st.locked ? `${satName(s)} has to be over ${square}` : !st.seen ? 'Needs a fresh look to strike' : 'Strike under way';
+  const hint = st.can ? 'Strike options ▸' : !st.locked ? `${satName(s)} has to be over ${square}` : !st.seen ? 'Needs current imagery to strike' : 'Strike under way';
   const go = () => {
     if (open) return void game.dropEvent();
     if (!st.strikes[0]) return;
@@ -393,7 +393,7 @@ function ContactItem({ s, square, open = false }: { s: GameState; square: string
       <span className="note" data-testid="contact-details">
         {what}
         {n > 0 && ` · ${n} ${n === 1 ? 'fighter' : 'fighters'} marked`}
-        {look && ` · ${look.mode === 'eyes' ? 'eyes on' : look.mode} ${zulu(look.atMs)} · ${fresh}`}
+        {look && fresh && ` · ${look.mode === 'eyes' ? 'eyes on' : look.mode} ${zulu(look.atMs)} · ${AGE_LABEL[fresh]}`}
       </span>
       {!open && <small className="sc-contact-act">{hint}</small>}
     </button>
@@ -448,9 +448,9 @@ export function Details({ s, square, open = false }: { s: GameState; square: str
       : sat.state === 'onStation'
         ? `${satName(s)} on station`
         : `${satName(s)} ${CAPTURE[sat.mode!].label.toLowerCase()} · ${gameSpan(sat.captureUntilMs - now)}`
-    : snap
-      ? `imaged ${zulu(snap.atMs)} · ${seen}`
-      : 'no imagery';
+    : snap && seen
+      ? `imaged ${zulu(snap.atMs)} · ${AGE_LABEL[seen]}`
+      : 'no coverage';
   return (
     <details className="sc-details square-card-details" data-testid="square-card" data-square={square} open={open || undefined}>
       <summary>
@@ -470,7 +470,7 @@ export function Details({ s, square, open = false }: { s: GameState; square: str
           {wx.sky.toLowerCase()} · vis {wx.visibilityKm} km · {wx.light.toLowerCase()}
         </dd>
         <dt>Imagery</dt>
-        <dd>{snap ? `${snap.mode === 'eyes' ? 'eyes on' : snap.mode} ${zulu(snap.atMs)} · ${seen}` : g.imagery}</dd>
+        <dd>{snap && seen ? `${snap.mode === 'eyes' ? 'eyes on' : snap.mode} ${zulu(snap.atMs)} · ${AGE_LABEL[seen]}` : g.imagery}</dd>
       </dl>
     </details>
   );

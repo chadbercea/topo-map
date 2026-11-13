@@ -7,11 +7,12 @@ const age = gameSpan;
 
 // What HQ can see of it, in words: strikes aim at this.
 export function eyesLine(e: Eyes | null, now: number) {
-  if (!e) return 'No eyes on it: the sniper and heli can\'t aim. Look at it first, or a drone can guess.';
-  if (e.level === 'live') return 'Live: every fighter is where you see them.';
-  if (e.level === 'fresh') return `Fresh look, ${age(now - e.atMs)} old: they should still be there.`;
-  if (e.level === 'ghost') return `Look is ${age(now - e.atMs)} old: they may have moved. Shots can miss.`;
-  return `Look is ${age(now - e.atMs)} old: too stale to aim on. Look again.`;
+  // ISR terms (ILI-1488): coverage, current, aging, stale.
+  if (!e) return 'No coverage: the sniper and heli can\'t aim. Image it first, or a drone can guess.';
+  if (e.level === 'live') return 'Live feed: every fighter is where you see them.';
+  if (e.level === 'fresh') return `Current imagery, ${age(now - e.atMs)} old: they should still be there.`;
+  if (e.level === 'ghost') return `Aging imagery, ${age(now - e.atMs)} old: they may have moved. Shots can miss.`;
+  return `Stale imagery, ${age(now - e.atMs)} old: too old to aim on. Image it again.`;
 }
 
 // Contextual target menu (GDD): tap a found enemy's ping and get every ordnance option for

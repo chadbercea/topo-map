@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
-import { freshness, targets } from '../sim/imagery';
+import { AGE_LABEL, freshness, targets } from '../sim/imagery';
 import { heldIntel, settled, squareFindings, squareReports } from '../sim/intel';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
@@ -49,9 +49,9 @@ export function OrionPanel() {
     : sat.state === 'slewing'
       ? `On its way to ${sat.aim}`
       : picked
-        ? `No imagery of ${picked} · Reposition`
+        ? `No coverage of ${picked} · Reposition`
         : blind
-          ? `Standing by over ${sat.aim} · no imagery of ${blind} ahead`
+          ? `Standing by over ${sat.aim} · no coverage of ${blind} ahead`
           : `Standing by over ${sat.aim} · tap a square to task it`;
   const last = Object.values(s.imagery)
     .filter((x) => x.mode !== 'eyes')
@@ -241,7 +241,7 @@ export function OrionPanel() {
         </div>
       )}
       {/* The one Last look (rank 8). */}
-      <p className="o-last">Last look {last ? `${last.square} · ${last.mode} ${zulu(last.atMs)} · ${freshness(last, now)}` : 'none yet'}</p>
+      <p className="o-last">{last ? `Last look ${last.square} · ${last.mode} ${zulu(last.atMs)} · ${AGE_LABEL[freshness(last, now)]}` : 'No imagery on file'}</p>
 
       {/* ORION-3's buttons (rank 1), pinned under the picture, never hidden: Scan across the width,
           then Photo and Video. Each is lit when it can be used, and the next thing to do pulses
@@ -249,9 +249,9 @@ export function OrionPanel() {
           moving; Video keeps the square live on the map for good. */}
       <div className="o-buttons" data-testid="orion-buttons">
         <div className="modes" data-testid="capture-modes" data-step={done ? 'send' : 'scan'}>
-          <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title="Settle the square: its intel lands on it" data-cue={(ready && !busy && !done) || undefined}>
+          <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title="Image the square: the analysts report what's there" data-cue={(ready && !busy && !done) || undefined}>
             Scan {sat.aim}
-            <small>{tied ? 'tied up by the intercept' : done ? 'settled' : ready ? 'settles the square' : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
+            <small>{tied ? 'tied up by the intercept' : done ? 'scanned' : ready ? 'image and report' : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
           </button>
           <button disabled={!ready || busy || !done || !held} onClick={() => game.photo(sat.aim)} data-testid="capture-photo" title={`Send ${sat.aim}'s intel to ${s.team.callsign}`} data-cue={(ready && done && held && !busy) || undefined}>
             Photo
@@ -277,7 +277,7 @@ function ScanReport({ s, square }: { s: GameState; square: string }) {
   return (
     <section className="o-report" data-testid="square-intel" data-clear={clear || undefined} aria-label={`Scan report on ${square}`}>
       <p className="o-report-head">
-        Scan · {square} · <span data-testid="intel-summary">{clear ? 'clear' : `${items.length} ${items.length === 1 ? 'report' : 'reports'}`}</span>
+        Scan · {square} · <span data-testid="intel-summary">{clear ? 'cleared' : `${items.length} ${items.length === 1 ? 'report' : 'reports'}`}</span>
         {marked > 0 && <span data-testid="fighters-marked"> · {marked} {marked === 1 ? 'fighter' : 'fighters'} marked</span>}
       </p>
       <ul>

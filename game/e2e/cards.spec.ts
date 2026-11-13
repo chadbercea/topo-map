@@ -13,7 +13,7 @@ test('a scan settles its square: a stamp on the map, its report in ORION-3, and 
   await page.evaluate(() => window.game.selectSquare('F4'));
   // Satellite intel is ORION-3's (ILI-1487): its scan report sits under its picture, not on the square's flyout.
   const report = page.getByTestId('satellite').getByTestId('square-intel');
-  await expect(report.getByTestId('intel-summary')).toHaveText(/^(clear|\d reports?)$/); // one scan settles it
+  await expect(report.getByTestId('intel-summary')).toHaveText(/^(cleared|\d reports?)$/); // one scan settles it
   await expect(report.getByTestId('square-intel-item').first()).toHaveAttribute('data-kind', /^(GEOINT|SIGINT|HUMINT|MASINT|OSINT)$/);
   await expect(page.getByTestId('square-anchor').getByTestId('square-intel')).toHaveCount(0); // nothing in both places
   await expect(page.getByTestId('satellite').getByTestId('capture-scan')).toBeDisabled();
