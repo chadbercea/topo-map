@@ -13,9 +13,8 @@ export const clock = (ms: number) => {
 
 // The mission bar (ILI-1464, the ILI-1459 design): one bar across the top of the map, a small
 // label over a big value in each cell. The operation, the client's deadline (the biggest number on
-// screen), the phase, what's next, the budget, and pause at the far end. On a fold or phone only the
+// screen), the phase (by name only, no step dots: ILI-1481), what's next, the budget, and pause at the far end. On a fold or phone only the
 // deadline, budget and pause fit. It replaces the loose timer and budget chips (ILI-1392, ILI-1405).
-const PHASES = ['infil', 'objective', 'exfil'] as const;
 const PHASE_NAME = { infil: 'Infil', objective: 'Recover', exfil: 'Exfil', complete: 'Complete' } as const;
 
 export function MissionBar() {
@@ -25,7 +24,6 @@ export function MissionBar() {
   const mission = useGame((s) => s.mission);
   const remaining = timer.remainingMs;
   const warn = remaining <= 60_000 ? 'red' : remaining <= 300_000 ? 'amber' : undefined;
-  const step = mission.phase === 'complete' ? PHASES.length : PHASES.indexOf(mission.phase);
   return (
     <section className="panel mission-bar" data-testid="mission-bar" aria-label="Mission">
       <div className="mb-row">
@@ -49,11 +47,6 @@ export function MissionBar() {
         <small>Phase</small>
         <b>
           {PHASE_NAME[mission.phase]}
-          <span className="mb-steps" aria-hidden>
-            {PHASES.map((p, i) => (
-              <i key={p} data-on={i <= step || undefined} />
-            ))}
-          </span>
         </b>
       </div>
       <div className="mb-cell mb-next">
