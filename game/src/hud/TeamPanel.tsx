@@ -25,18 +25,22 @@ export function TeamPanel({ highlight, minimized = false, onToggle }: { highligh
   const open = !minimized || !onToggle;
   const hovered = usePins().hovered;
 
+  // Where the heartbeat strip shows (the bar is the handle), each heartbeat is on it, inline with
+  // the operator's name: the table drops its own heartbeat column (ILI-1502). As a tab, with no
+  // strip, the table keeps it.
+  const strip = !!onToggle;
   const table = (
-    <div className="team-drawer" data-testid="team-drawer">
+    <div className="team-drawer" data-testid="team-drawer" data-strip={strip || undefined}>
       <div className="team-cols" aria-hidden>
         <span className="c-who">Operator</span>
-        <span className="c-vitals">Heartbeat</span>
+        {!strip && <span className="c-vitals">Heartbeat</span>}
         <span>Ammo</span>
         <span>Meds</span>
         <span>Noise</span>
       </div>
       <ul className="readout" data-testid="readout">
         {operators.map((o) => (
-          <OperatorRow key={o.id} o={o} highlight={o.id === highlight || hovered === `op:${o.id}`} />
+          <OperatorRow key={o.id} o={o} highlight={o.id === highlight || hovered === `op:${o.id}`} vitals={!strip} />
         ))}
       </ul>
     </div>
