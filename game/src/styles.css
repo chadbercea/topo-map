@@ -1840,7 +1840,16 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud[data-tier='wide'] .orion .o-buttons .modes { grid-template-columns: 1fr 1fr; }
 .hud:not([data-tier='wide']) .orion .o-buttons .modes { grid-template-columns: 1.3fr 1fr 1fr; }
 /* Out of ORION-3's left edge (its column is 380 px on a wide screen), by its buttons. */
-.sc-strike { display: grid; align-content: start; background: var(--bg); animation: strike-slide 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.sc-strike { display: grid; align-content: start; background: var(--bg); }
+/* The square panel's stages (ILI-1514): report, strike options, the asset under way. Each new
+   stage slides in (from the right going forward, the left going back) and the panel eases to
+   its height. */
+.square-card .sc-stages { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow: hidden; transition: height 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.square-card .sc-stage { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; }
+.square-card .sc-stage[data-dir='fwd'] { animation: strike-slide 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.square-card .sc-stage[data-dir='back'] { animation: stage-back 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes stage-back { from { transform: translateX(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .square-card .sc-stages { transition: none; } .square-card .sc-stage[data-dir] { animation: none; } }
 @keyframes strike-slide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 .square-card .sc-strike .sf-back { min-height: 28px; min-width: 32px; padding: 0 8px; font-size: 16px; line-height: 1; color: var(--ink); border: 1px solid var(--line); }
 /* A strike under way: the whole panel is its countdown (11-12). */
@@ -2231,3 +2240,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* A short picture (a phone's sheet) keeps the ground and drops the weather, which the
    atmospherics strip already carries. */
 @container (max-height: 180px) { .orion .o-ov-wx { display: none; } }
+/* The stages' box takes its height in screen px (Stages.tsx), so the zoom goes on the stage in it. */
+.square-card.anchor > .sc-stages { zoom: 1; }
+.square-card.anchor > .sc-stages > .sc-stage { zoom: var(--k, 1); }

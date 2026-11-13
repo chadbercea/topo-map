@@ -26,6 +26,7 @@ import { knownIn } from '../sim/contacts';
 import { ESCROW_BOX } from '../sim/prices';
 import { downloadProgress, kindLabel, shelfState } from '../sim/intel';
 import { TargetMenu } from './TargetMenu';
+import { Stages } from './Stages';
 import { cash } from './MissionBar';
 
 const ANCHOR_W = 240; // the flyout's width off its square's edge: compact, so it doesn't bury the map (ILI-1505)
@@ -219,15 +220,12 @@ export function strikeState(s: GameState, square: string) {
 // Compact (11-12): the head, the square's tags, then its report folded into closed sections (Intel,
 // Ground, Activity), each a one-line summary until HQ opens it. Strike on the CONTACT tag slides the
 // strike options into the panel in place of the report; once a strike is under way here (drone,
-// heli or sniper), the whole panel is that strike's countdown until it's done.
+// heli or sniper), the whole panel is that strike's asset and countdown until it's done.
 function AnchorBody({ s, square }: { s: GameState; square: string }) {
   const st = strikeState(s, square);
   const locked = lockedOn(s, square);
   const sat = s.satellite;
   const coming = sat.state === 'slewing' && sat.aim === square;
-  const tags = tagSquares(s);
-  const contact = tags.contacts.includes(square);
-  const buildings = tags.buildings.filter((e) => e.square === square);
   const striking = st.can && s.events.some((e) => e.id === s.openEvent && e.kind === 'contact' && e.square === square);
   const head = (
     <header className="sc-head">
@@ -241,35 +239,51 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
     </header>
   );
 
-  // A strike under way here: the panel is its countdown (OVERWATCH ILI-1303, REAPER-1 and HAMMER-2 ILI-1304).
-  if (st.running)
-    return (
-      <>
-        {head}
-        <div className="sc-running" data-testid="strike-running">
-          <SniperPanel square={square} />
-          <AirPanel weapon="drone" square={square} />
-          <AirPanel weapon="heli" square={square} />
-        </div>
-      </>
-    );
+  // The three stages slide from one to the next and the panel grows to fit each (ILI-1514): the
+  // report, the strike options, then the strike under way, the selected asset and its time to
+  // target (OVERWATCH ILI-1303, REAPER-1 and HAMMER-2 ILI-1304).
+  const stage = st.running ? 'asset' : striking ? 'options' : 'report';
+  return (
+    <>
+      {head}
+      <Stages stage={stage} order={STAGES}>
+        {stage === 'asset' ? <StrikeAsset s={s} square={square} /> : stage === 'options' ? <StrikeOptions s={s} square={square} /> : <Report s={s} square={square} />}
+      </Stages>
+    </>
+  );
+}
 
-  if (striking)
-    return (
-      <>
-        {head}
-        <StrikeOptions s={s} square={square} />
-      </>
-    );
+const STAGES = ['report', 'options', 'asset'] as const;
 
+// The third stage (ILI-1514): the asset HQ picked, its callsign and its wireframe, with its time
+// to target counting down, then what it hit (its own panel, below the stage's head).
+function StrikeAsset({ s, square }: { s: GameState; square: string }) {
+  return (
+    <section className="sc-strike sc-asset" data-testid="strike-asset" aria-label={`Strike ${square}`}>
+      <header className="sf-head">
+        <b>Strike · {square}</b>
+        <span>{satName(s)} watching</span>
+      </header>
+      <div className="sc-running" data-testid="strike-running">
+        <SniperPanel square={square} />
+        <AirPanel weapon="drone" square={square} />
+        <AirPanel weapon="heli" square={square} />
+      </div>
+    </section>
+  );
+}
+
+// The first stage: the square's report.
+function Report({ s, square }: { s: GameState; square: string }) {
+  const tags = tagSquares(s);
+  const contact = tags.contacts.includes(square);
+  const buildings = tags.buildings.filter((e) => e.square === square);
   const traffic = shownEvents(s).filter((e) => e.square === square && e.kind === 'signal' && e.status !== 'resolved');
   const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
   const others = shownEvents(s).filter(otherItem(square));
   const known = knownIn(s, square); // where HQ last saw them (ILI-1493)
   return (
     <>
-      {head}
-
       {/* ALPHA at work here: a live bar, so it stays out of the folds. */}
       <TeamWork s={s} square={square} />
 
