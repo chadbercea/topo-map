@@ -13,7 +13,7 @@ import type { Settings } from '../sim/state';
 import { shownEvents } from '../sim/events';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
-import { lockedOn, orionSquare, satellitePoint } from '../sim/satellite';
+import { lockedOn, observed, orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
 import { searchingIn } from '../sim/buildings';
 import { shelfState, squareFindings } from '../sim/intel';
@@ -381,17 +381,25 @@ export class MapScene extends Phaser.Scene {
   // callsign under it as in its panel, and each fighter
   // it passes becomes a red X, which stays as the aftermath. The sniper's kills (ILI-1253) are
   // X marks too, and its misses rings.
+  // Only what HQ can watch (ILI-1515): the fight shows while ORION-3 is locked on its square or a
+  // live feed covers it; the X marks after, too, while a look taken since the kill holds. No
+  // static marker stands in for it.
   private drawStrikes() {
     const g = this.droneGfx.clear();
     const s = game.get();
     const now = s.elapsedMs;
     const px = DPR / this.zoom;
     const r = 5 * px;
-    const cross = (x: number, y: number) => {
+    const watching = (sq: string) => observed(s, sq);
+    const cross = (x: number, y: number, atMs: number) => {
+      const sq = squareAt(x, y);
+      const look = sq ? s.imagery[sq] : undefined;
+      if (!sq || !(watching(sq) || (look && look.atMs >= atMs && freshness(look, now) !== 'stale'))) return;
       g.lineStyle(px, 0xe5484d, 1).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
     };
     // OVERWATCH's crosshairs on the map, on the fighter it shoots next (ILI-1303).
-    const aim = s.sniper && !s.sniper.done ? s.sniper.shots.find((x) => x.atMs > now) : null;
+    const sniperSeen = !!s.sniper && watching(s.sniper.square);
+    const aim = s.sniper && !s.sniper.done && sniperSeen ? s.sniper.shots.find((x) => x.atMs > now) : null;
     if (aim) {
       const cr = 12 * px;
       for (const [w, c, a] of [[px, 0xe5484d, 1]] as const) {
@@ -402,8 +410,8 @@ export class MapScene extends Phaser.Scene {
     }
     for (const shot of s.sniper?.shots ?? []) {
       if (shot.atMs > now) continue;
-      if (shot.hit) cross(shot.x, shot.y);
-      else g.lineStyle(px, 0xcfe8dc, 0.6).strokeCircle(shot.x, shot.y, r);
+      if (shot.hit) cross(shot.x, shot.y, shot.atMs);
+      else if (sniperSeen) g.lineStyle(px, 0xcfe8dc, 0.6).strokeCircle(shot.x, shot.y, r);
     }
     // Every vehicle is the same outlined triangle pointing the way it's going, in the map's
     // wireframe over a dark halo so it reads on the contours, with its callsign under it
@@ -415,8 +423,8 @@ export class MapScene extends Phaser.Scene {
     for (const w of ['drone', 'heli'] as const) {
       const run = w === 'drone' ? s.drone : s.heli;
       const label = this.airLabels[w];
-      for (const k of run?.kills ?? []) if (k.atMs <= now) cross(k.x, k.y);
-      const at = run && aircraftAt(run, now);
+      for (const k of run?.kills ?? []) if (k.atMs <= now) cross(k.x, k.y, k.atMs);
+      const at = run && watching(run.square) && aircraftAt(run, now);
       if (!at) {
         if (this.onMain) label.setVisible(false);
         continue;

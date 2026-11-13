@@ -1895,7 +1895,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .sc-strike .target-menu .options button[data-cue] { animation: opt-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both, cue-red 1.4s ease-in-out 400ms infinite; }
 @media (prefers-reduced-motion: reduce) { .sc-strike, .sc-strike .target-menu .options button, .sc-strike .target-menu .options button[data-cue] { animation: none; } }
 .orion .o-targeting { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
-.orion .o-reticle { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 1.5px solid #e5484d; border-radius: 50%; background: linear-gradient(#e5484d, #e5484d) center / 1px 100% no-repeat, linear-gradient(#e5484d, #e5484d) center / 100% 1px no-repeat; opacity: 0.85; }
 .orion .o-targeting :is(.o-tt, .o-tc) { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; }
 .orion .o-tt { top: 10%; background: #e5484d; color: #0b0f0d; font-weight: 600; }
 .orion .o-tc { bottom: 10%; background: #0b0f0d; color: #f08a8d; border: 1px solid #e5484d; font-size: 13px; font-variant-numeric: tabular-nums; }

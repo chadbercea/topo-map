@@ -2,6 +2,7 @@ import { CELL, squareAt, squareCenter } from '../map/grid';
 import type { GameState } from './state';
 import { follows, freshness, shownAt, unitSpot, type Freshness } from './imagery';
 import { aircraftAt } from './air';
+import { observed } from './satellite';
 import { transportAt } from './exfil';
 
 // Everything on the map HQ can interact with (ILI-1408), and only that: brackets mean it can be
@@ -69,11 +70,12 @@ export function sightings(s: GameState, operators: ReadonlyMap<string, { x: numb
     if (e.status === 'resolved' || e.kind === 'site') continue; // a kill site's X marks stand for it (ILI-1252)
     out.push({ id: e.id, kind: 'event', ...markerSpot(e.square), age: 'tracked', square: e.square });
   }
-  // Our own aircraft, always (ILI-1420): REAPER-1, HAMMER-2, and RAVEN-6 for the exfil.
+  // Our own aircraft (ILI-1420): RAVEN-6 for the exfil always; REAPER-1 and HAMMER-2 over their
+  // target only while HQ can watch that square (ILI-1515): their passes are the fight.
   for (const w of ['drone', 'heli'] as const) {
     const run = w === 'drone' ? s.drone : s.heli;
     const at = run && aircraftAt(run, now);
-    if (run && at) out.push({ id: `air:${w}`, kind: 'aircraft', x: at.x, y: at.y, age: 'tracked', square: run.square });
+    if (run && at && observed(s, run.square)) out.push({ id: `air:${w}`, kind: 'aircraft', x: at.x, y: at.y, age: 'tracked', square: run.square });
   }
   const bird = s.exfil && transportAt(s.exfil, now);
   if (s.exfil && bird) out.push({ id: 'air:exfil', kind: 'aircraft', x: bird.x, y: bird.y, age: 'tracked', square: s.exfil.square });

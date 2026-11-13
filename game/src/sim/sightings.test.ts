@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { initialState, type GameState } from './state';
 import { GHOST_MS } from './imagery';
 import { sightings } from './sightings';
+import { initialSatellite } from './satellite';
 
 // Brackets mean interaction, and only what HQ can see gets them (ILI-1410).
 const spots = (s: GameState) => new Map(s.team.operators.map((o, i) => [o.id, { x: 100 + i, y: 100 }]));
@@ -45,7 +46,7 @@ describe('a group walking out of a live picture', () => {
   });
 });
 
-// Our aircraft are always bracketed (ILI-1420).
+// Our aircraft are bracketed (ILI-1420): the exfil always, a strike's only where HQ can watch it.
 describe('aircraft', () => {
   it('brackets RAVEN-6 once it is over the exfil square, not before', () => {
     const s0 = initialState();
@@ -53,6 +54,17 @@ describe('aircraft', () => {
     const at = (ms: number) => ({ ...s0, exfil, elapsedMs: ms }) as GameState;
     expect(sightings(at(5_000), spots(s0)).some((t) => t.id === 'air:exfil')).toBe(false);
     expect(sightings(at(11_000), spots(s0)).some((t) => t.id === 'air:exfil' && t.kind === 'aircraft')).toBe(true);
+  });
+
+  // The fight shows only where HQ can watch it (ILI-1515): ORION-3 locked on, or a live feed.
+  it('brackets REAPER-1 on its pass only while ORION-3 is locked on the square or a live feed covers it', () => {
+    const s0 = initialState();
+    const drone = { weapon: 'drone' as const, square: 'E3', launchedMs: 0, arriveMs: 1_000, passes: [{ row: null, east: true, startMs: 1_000 }], kills: [], doneMs: null };
+    const away = { ...s0, drone, elapsedMs: 2_000, satellite: initialSatellite('A1') } as GameState;
+    const has = (s: GameState) => sightings(s, spots(s)).some((t) => t.id === 'air:drone');
+    expect(has(away)).toBe(false);
+    expect(has({ ...away, satellite: initialSatellite('E3') })).toBe(true);
+    expect(has({ ...away, intel: { ...away.intel, live: ['E3'] } })).toBe(true);
   });
 });
 
