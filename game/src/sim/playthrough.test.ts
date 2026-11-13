@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { initialState, MISSION_MS } from './state';
 import { createStore } from './store';
 import { fed } from './testkit';
+import { heldIntel } from './intel';
 
 // Whole missions under simple HQ strategies, to catch the team getting stuck anywhere. ALPHA
 // decides for itself (ILI-1315): HQ only scans, and answers its one question (resupply).
@@ -14,6 +15,9 @@ function play(strategy: 'sharp' | 'silent') {
     if (call?.responses) store.respond(call.id, call.responses[0].id);
     if (strategy === 'silent') continue;
     if (s.minigame?.status === 'active') continue;
+    // Whatever the analysts hold goes to ALPHA before ORION-3 moves on: ALPHA only acts on what
+    // it's sent (ILI-1495).
+    if (s.satellite.state === 'idle' && heldIntel(s, s.satellite.aim)) store.photo(s.satellite.aim);
     // Scan the route ahead of ALPHA, one square at a time.
     const ahead = s.team.route.slice(s.team.waypoint).find((sq) => !s.map.scanned.includes(sq));
     if (s.satellite.state === 'idle' && ahead) store.lookAt(ahead);

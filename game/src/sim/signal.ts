@@ -1,6 +1,7 @@
 import { feed, SIGNAL_INTEL } from './intel';
 import { nextRandom } from './firefight';
-import { orionScanned, reveal } from './contacts';
+import { knownSquare, orionScanned, reveal } from './contacts';
+import { learn } from './picture';
 import type { Message } from './comms';
 import type { MiniGame } from './minigame';
 import type { GameState } from './state';
@@ -191,6 +192,9 @@ export function sendDecoded(s: GameState, id: string): GameState {
   let next: GameState = { ...s, decoded: s.decoded.filter((x) => x !== d) };
   next = feed(next, SIGNAL_INTEL, { source: 'SIGINT', square: d.square, items: [{ kind: 'SIGINT', heat: 'hot', text: 'decoded: what they plan' }] });
   if (d.contactId) next = { ...next, contacts: next.contacts.map((x) => (x.id === d.contactId ? { ...x, planKnown: true } : x)) };
+  // With a fix on them, ALPHA knows where they are too (ILI-1495).
+  const c = next.contacts.find((x) => x.id === d.contactId);
+  if (c && knownSquare(next, c) === d.square) next = learn(next, c, d.square);
   const m: Message = { id: `sent-${d.id}`, from: 'HQ', text: `Sent to ${s.team.callsign}: "${d.text}".`, atMs: s.elapsedMs, status: 'read', holds: false, square: d.square };
   return { ...next, comms: { ...next.comms, messages: [...next.comms.messages, m] } };
 }
