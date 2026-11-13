@@ -83,6 +83,9 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   const buttons = await box('orion-buttons');
   expect(pic.y - orion.y).toBeLessThan(48);
   expect(buttons.y).toBeGreaterThanOrEqual(pic.y + pic.height - 1);
+  // One square, big (ILI-1486): the picture is square and runs the panel's width, edge to edge.
+  expect(Math.abs(pic.width - pic.height)).toBeLessThan(1);
+  expect(pic.width).toBeGreaterThan(orion.width - 4);
   // The weather runs along the mission bar's foot (ILI-1473), all six readings; none in ORION-3.
   expect(env.y).toBeGreaterThanOrEqual(bar.y + 40);
   expect(env.y + env.height).toBeLessThanOrEqual(bar.y + bar.height + 1);
