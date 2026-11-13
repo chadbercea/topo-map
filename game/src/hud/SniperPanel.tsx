@@ -47,7 +47,7 @@ export function SniperPanel({ square }: { square: string }) {
 }
 
 // OVERWATCH's rifle in outline, side on: shown until the Three.js rifle loads, or without WebGL.
-function RifleMark() {
+export function RifleMark() {
   return (
     <svg className="s-mark" viewBox="0 0 120 40" aria-hidden>
       <path d="M4 18 L30 16 L30 24 L18 30 L4 30 Z M30 17 L60 17 L60 22 L30 22 M60 19 L114 19 M38 10 L58 10 L58 14 L38 14 Z M44 22 L46 30 M100 20 L96 34 M100 20 L104 34" />

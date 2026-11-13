@@ -1873,7 +1873,16 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .sc-strike .target-menu .options button small { color: var(--dim); font-size: 10px; }
 .sc-strike .target-menu .options button:hover:not(:disabled) { background: rgba(229, 72, 77, 0.25); color: #fff; }
 .sc-strike .target-menu .options button:disabled { opacity: 0.45; cursor: default; }
-@media (prefers-reduced-motion: reduce) { .sc-strike { animation: none; } }
+/* Each weapon's wireframe on its button (ILI-1513), and the buttons sliding in one after another. */
+.target-menu .w-icon { position: relative; display: grid; place-items: center; width: 100%; height: calc(36px * var(--k, 1)); }
+.target-menu .w-icon > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.target-menu .w-icon :is(.d-mark, .s-mark) { width: 80%; max-height: 100%; fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.target-menu .options button:disabled .w-icon :is(.d-mark, .s-mark) { stroke: var(--dim); }
+.sc-strike .target-menu .options button { animation: opt-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.sc-strike .target-menu .options button:nth-child(2) { animation-delay: 60ms; }
+.sc-strike .target-menu .options button:nth-child(3) { animation-delay: 120ms; }
+.sc-strike .target-menu .options button[data-cue] { animation: opt-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both, cue-red 1.4s ease-in-out 400ms infinite; }
+@media (prefers-reduced-motion: reduce) { .sc-strike, .sc-strike .target-menu .options button, .sc-strike .target-menu .options button[data-cue] { animation: none; } }
 .orion .o-targeting { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .orion .o-reticle { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 1.5px solid #e5484d; border-radius: 50%; background: linear-gradient(#e5484d, #e5484d) center / 1px 100% no-repeat, linear-gradient(#e5484d, #e5484d) center / 100% 1px no-repeat; opacity: 0.85; }
 .orion .o-targeting :is(.o-tt, .o-tc) { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; }

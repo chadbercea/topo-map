@@ -55,14 +55,14 @@ export function AirPanel({ weapon, square }: { weapon: AirWeapon; square: string
 }
 
 // The aircraft in outline, top down: shown until the Three.js model loads, or without WebGL.
-function DroneMark() {
+export function DroneMark() {
   return (
     <svg className="d-mark" viewBox="0 0 120 60" aria-hidden>
       <path d="M60 8 L60 50 M8 26 L112 26 L112 30 L8 30 Z M44 50 L76 50 M60 8 Q56 12 56 18 L64 18 Q64 12 60 8" />
     </svg>
   );
 }
-function HeliMark() {
+export function HeliMark() {
   return (
     <svg className="d-mark" viewBox="0 0 120 60" aria-hidden>
       <path d="M40 30 Q40 20 52 20 L70 20 Q78 20 78 30 Q78 40 70 40 L52 40 Q40 40 40 30 Z M78 30 L112 30 M108 24 L112 36 M20 14 L100 14 M60 14 L60 20" />
