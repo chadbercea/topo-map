@@ -53,6 +53,11 @@ export type IntKind = (typeof INT_KINDS)[number];
 export type Heat = 'quiet' | 'some' | 'hot';
 export type IntelItem = { kind: IntKind; heat: Heat; text: string };
 
+// What the player reads for each kind (ILI-1510): what the intel is, not its discipline's code.
+// The codes stay in the sim; anything on screen says imagery, audio, and so on.
+export const KIND_LABEL: Record<IntKind | PushSource, string> = { GEOINT: 'Imagery', IMINT: 'Imagery', SIGINT: 'Audio', HUMINT: 'Local', MASINT: 'Thermal', OSINT: 'Online', ALPHA: 'ALPHA' };
+export const kindLabel = (code: string) => (KIND_LABEL as Record<string, string>)[code] ?? code;
+
 const REPORT: Record<IntKind, Record<Heat, string>> = {
   GEOINT: { quiet: 'nothing moving in the picture', some: 'fresh tracks, a vehicle came through', hot: 'armed men in the open' },
   SIGINT: { quiet: 'no traffic on their nets', some: 'radio traffic on their net', hot: 'radio traffic, they’re calling for help' },

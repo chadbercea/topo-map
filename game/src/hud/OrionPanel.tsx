@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { AGE_LABEL, freshness, targets } from '../sim/imagery';
-import { settled, shelfState, squareFindings, squareReports } from '../sim/intel';
+import { kindLabel, settled, shelfState, squareFindings, squareReports } from '../sim/intel';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { pins, useSeenVersion } from './pins';
@@ -255,7 +255,7 @@ function ScanReport({ s, square }: { s: GameState; square: string }) {
       <ul>
         {items.map((r, i) => (
           <li key={i} data-kind={r.kind} data-heat={r.heat} data-testid="square-intel-item">
-            <i className="int">{r.kind}</i>
+            <i className="int">{kindLabel(r.kind)}</i>
             <span>{r.text}</span>
           </li>
         ))}

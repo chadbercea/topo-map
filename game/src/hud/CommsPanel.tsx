@@ -5,6 +5,7 @@ import { cards, type Card, type EventCardKind } from '../sim/cards';
 import type { GameState } from '../sim/state';
 import { classify, EVENT_LABEL } from '../sim/stream';
 import { gameClock } from '../sim/gameTime';
+import { kindLabel } from '../sim/intel';
 import { FeedIcon, type Tier } from './feedIcons';
 
 export const RELAY = 'RELAY-7'; // the comms satellite HQ talks to the team through
@@ -128,7 +129,7 @@ function NoteLine({ n }: { n: GameState['stream']['items'][number] }) {
       <span className="t">PRE</span>
       <FeedIcon tier={tier} />
       <span className="body">
-        <b>{n.source}</b> {n.text}
+        <b>{kindLabel(n.source)}</b> {n.text}
       </span>
     </li>
   );
@@ -161,7 +162,7 @@ function MessageLine({ m, callsign, comms }: { m: Message; callsign: string; com
       <span className="t">{gameClock(m.atMs, Math.floor)}</span>
       <FeedIcon tier={tier} />
       <span className="body">
-        <b>{m.from}</b> {text}
+        <b>{kindLabel(m.from)}</b> {text}
         {m.answer && <span className="answer"> HQ › {label(m.answer)}</span>}
         {out && (
           <span className="answer sending" data-testid="sending">
