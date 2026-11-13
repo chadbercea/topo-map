@@ -2151,3 +2151,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card .sc-contact > span { letter-spacing: 0.04em; }
 .square-card .sc-contact > em { font-style: normal; font-size: 10px; color: var(--dim); }
 .square-card .sc-contact button { min-height: 26px; padding: 0 10px; font: inherit; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* The item a ping click opened the panel on (ILI-1489). */
+.square-card .sc-item[data-focus] { background: rgba(242, 193, 78, 0.08); outline: 1px solid rgba(242, 193, 78, 0.5); outline-offset: -1px; }

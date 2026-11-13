@@ -117,7 +117,7 @@ test('a square with fighters in view gets a CONTACT tag; its Strike, or a fighte
   await expect(page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('strike-work')).toHaveText(/^REAPER-1 · 0:\d\d$/); // on the map, the tag says how it's going
 });
 
-test('a fighter on the map opens its strikes too, from his pinned panel (ILI-1250, ILI-1411)', async ({ page, isMobile }) => {
+test('a click on a fighter on the map targets him: his strike options open (ILI-1250, ILI-1489)', async ({ page, isMobile }) => {
   test.skip(isMobile, 'a phone taps them in ORION-3\u2019s picture');
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -139,8 +139,7 @@ test('a fighter on the map opens its strikes too, from his pinned panel (ILI-125
   }
   await page.mouse.move(p.x, p.y); // on the main map: a one-line tag (ILI-1443)
   await expect(page.locator('.sighting-panel[data-kind=hostile]').getByTestId('panel-tag')).toHaveText(/^HOSTILE · TANGO-\d+$/);
-  await page.mouse.click(p.x, p.y); // a click picks his square: ORION-3 is over it, so its Strike is lit
-  await page.locator('[data-testid=contact-item][data-square=E3]').getByTestId('contact-strike').click();
+  await page.mouse.click(p.x, p.y); // a click on him targets him (ILI-1489): ORION-3 is over his square, so his strike options open
   await expect(page.getByTestId('strike-flyout').getByTestId('fire-sniper')).toBeVisible();
 });
 

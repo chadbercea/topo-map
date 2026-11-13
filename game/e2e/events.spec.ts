@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { lockOn, squarePoint, start, tapAt } from './helpers';
+import { freeze, lockOn, squarePoint, start, tapAt } from './helpers';
 
 test('a new event marks its square on the map; tapping the marker picks it: its details in ORION-3, its actions beside it (ILI-1228)', async ({ page, isMobile }) => {
   await start(page, '?debug');
@@ -51,4 +51,25 @@ test('a report line that names a square in COMMS opens that square (ILI-1225)', 
   await page.getByTestId('comms-feed').getByRole('button', { name: 'Imagery wanted at F2.' }).click();
   await expect(page.getByTestId('selected-square')).toHaveText('F2');
   await expect(page.getByTestId('intel-list').getByTestId('intel-item')).toContainText('REQUEST · F2');
+});
+
+test('a click on a ping targets the ping: its square’s panel opens on that item and stays open (ILI-1489)', async ({ page, isMobile }) => {
+  await start(page, '?debug');
+  await page.waitForFunction(() => window.game);
+  await freeze(page);
+  await lockOn(page, 'F4');
+  await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'F4', title: 'Test contact' }));
+  const card = page.getByTestId('square-anchor');
+  // From the open map: the ping opens F4's panel on its item, not just the square.
+  const ping = await squarePoint(page, 5, 3, 0.25, -0.25);
+  await tapAt(page, isMobile, ping);
+  await expect(card).toHaveAttribute('data-square', 'F4');
+  await expect(card.locator('[data-event=t]')).toHaveAttribute('data-focus', 'true');
+  // With F4's panel already open, a click on its ping (a near miss too) keeps it open, on the item.
+  await page.evaluate(() => window.game.dropEvent());
+  await expect(card.locator('[data-event=t]')).not.toHaveAttribute('data-focus', 'true');
+  await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25 + 0.03, -0.25));
+  await expect(card).toHaveAttribute('data-square', 'F4');
+  expect(await page.evaluate(() => window.game.get().openEvent)).toBe('t');
+  await expect(card.locator('[data-event=t]')).toHaveAttribute('data-focus', 'true');
 });
