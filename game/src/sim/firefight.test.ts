@@ -6,17 +6,28 @@ import { step } from './systems';
 import { LOADOUT } from './team';
 import { playUntil, run, walking } from './testkit';
 import { wrapUp } from './wrapup';
+import { AMBUSH_COVER_MS, AMBUSH_EDGE, COVER_FIRE, INITIATIVE } from './firefight';
+import { FRESH_MS, GHOST_MS } from './imagery';
 
-// The team standing in E3 with a contact there: found and attacked, or never found.
-const inContact = (status: Contact['status'] = 'revealed', attack = true): GameState => {
+// The team standing in E3 with a contact there: found, sent to ALPHA (ILI-1495) and attacked, or
+// never found. toldAtMs: when ALPHA got its intel (fresh by default).
+const inContact = (status: Contact['status'] = 'revealed', attack = true, toldAtMs = 20_000): GameState => {
   const s = walking();
-  return {
+  const next: GameState = {
     ...s,
     elapsedMs: 20_000,
     contacts: [{ id: 'c', square: 'E3', label: 'test', strength: 1, status, observed: false, units: [0, 5], total: 2 }],
     team: { ...s.team, position: squareCenter('E3')!, waypoint: 3, decisions: attack ? { E3: 'attack' } : {} },
   };
+  return status === 'revealed' ? { ...next, team: { ...next.team, known: { c: { square: 'E3', units: 2, atMs: toldAtMs } } } } : next;
 };
+// The checkpoint (the mission's hardest group), walked into with ALPHA knowing nothing.
+const blindInto = (s0: GameState = walking()): GameState => ({
+  ...s0,
+  elapsedMs: 20_000,
+  contacts: [{ id: 'checkpoint', square: 'E3', label: 'a fortified checkpoint', strength: 1.6, status: 'hidden', observed: false, units: [1, 5, 6, 9, 10], total: 5 }],
+  team: { ...s0.team, position: squareCenter('E3')!, waypoint: 3 },
+});
 const totalAmmo = (s: GameState) => s.team.operators.reduce((n, o) => n + o.ammo, 0);
 const totalHealth = (s: GameState) => s.team.operators.reduce((n, o) => n + o.health, 0);
 
@@ -33,24 +44,51 @@ describe('firefight', () => {
     expect(step(inContact('revealed', false), 100).team.fight!.full).toBe(100);
   });
 
-  it('a contact nobody found is an ambush, and an ambush kills: the team goes down one by one in about 6 s and the mission is lost (ILI-1453)', () => {
-    const s = step(inContact('hidden', false), 100);
-    expect(s.team.fight).toMatchObject({ square: 'E3', ambush: true });
+  it('an attack on intel ALPHA got has the initiative, and the fresher the intel the bigger the edge (ILI-1496)', () => {
+    expect(step(inContact('revealed', true), 100).team.fight!.full).toBe(INITIATIVE.fresh * 100);
+    expect(step(inContact('revealed', true, 20_000 - FRESH_MS - 1), 100).team.fight!.full).toBeCloseTo(INITIATIVE.ghost * 100);
+    expect(step(inContact('revealed', true, 20_000 - GHOST_MS - 1), 100).team.fight!.full).toBeCloseTo(INITIATIVE.stale * 100);
+    // And it pays out on the team: the same fight on stale intel costs more health.
+    const end = (s: GameState) => run(s, 60_000);
+    const health = (s: GameState) => end(s).stats.lost.length * 1000 + (500 - totalHealth(run(s, 15_000)));
+    expect(health(step(inContact('revealed', true, 20_000 - GHOST_MS - 1), 100))).toBeGreaterThan(health(step(inContact('revealed', true), 100)));
+  });
+
+  it('HQ found it but never sent it: ALPHA walks in blind, and it\u2019s an ambush all the same (ILI-1496)', () => {
+    const s0 = inContact('revealed', false);
+    const s = step({ ...s0, team: { ...s0.team, known: {} } }, 100);
+    expect(s.team.fight).toMatchObject({ ambush: true });
     expect(s.comms.messages.at(-1)?.text).toBe('Ambush in E3! Returning fire.');
-    // A second in, one operator is badly hit and nobody is down yet.
-    const early = run(s, 1_000);
-    expect(early.team.operators.filter((o) => o.health > 0)).toHaveLength(5);
+  });
+
+  it('a group ALPHA knew nothing of is an ambush: their first volley is aimed, it fights back from cover, and they fight harder', () => {
+    const s = step(inContact('hidden', false), 100);
+    expect(s.team.fight).toMatchObject({ square: 'E3', ambush: true, coverUntilMs: 20_100 + AMBUSH_COVER_MS, full: AMBUSH_EDGE * 100 });
+    expect(s.comms.messages.at(-1)?.text).toBe('Ambush in E3! Returning fire.');
+    // The opening seconds: one man takes all of it, and ALPHA is barely shooting back.
+    const early = run(s, AMBUSH_COVER_MS - 200);
     expect(early.team.operators.filter((o) => o.health < 100)).toHaveLength(1);
-    // Half way, some are down; each one on the radio.
-    const mid = run(s, 3_000);
-    expect(mid.team.operators.filter((o) => o.health <= 0).length).toBeGreaterThanOrEqual(2);
-    expect(mid.comms.messages.some((m) => /is down! \d left\.$/.test(m.text) && m.alert)).toBe(true);
-    // Too fast for anything HQ has: in about 6 s, nobody is left, and the mission is over.
-    const end = run(s, 6_500);
-    expect(end.team.operators.every((o) => o.health <= 0)).toBe(true);
-    expect(end.phase).toBe('ended');
-    expect(end.comms.messages.at(-1)).toMatchObject({ from: 'HQ', text: 'ALPHA is not responding.' });
-    expect(wrapUp(end)).toMatchObject({ outcome: 'failed', reason: 'ALPHA walked into E3 without a look. No survivors.' });
+    expect(totalAmmo(s) - totalAmmo(early)).toBeLessThan(23 * (AMBUSH_COVER_MS / 1000) * COVER_FIRE + 1);
+  });
+
+  it('walking blind into the checkpoint costs men, but isn\u2019t the end: ALPHA comes out of it (ILI-1496, not ILI-1453\u2019s wipe)', () => {
+    const s = run(blindInto(), 60_000);
+    expect(s.team.fight).toBeNull();
+    expect(s.contacts[0].status).toBe('cleared');
+    expect(s.stats.lost.length).toBeGreaterThanOrEqual(1);
+    expect(s.team.operators.some((o) => o.health > 0)).toBe(true);
+    // The same checkpoint, sent to ALPHA and taken on its terms: nobody lost.
+    const b = blindInto();
+    const known = run({ ...b, contacts: [{ ...b.contacts[0], status: 'revealed' }], team: { ...b.team, decisions: { E3: 'attack' }, known: { checkpoint: { square: 'E3', units: 5, atMs: 20_000 } } } }, 60_000);
+    expect(known.contacts[0].status).toBe('cleared');
+    expect(known.stats.lost).toEqual([]);
+  });
+
+  it('a wipe in an ambush still reads as one on the wrap-up', () => {
+    const s0 = blindInto();
+    const s = run({ ...s0, team: { ...s0.team, operators: s0.team.operators.map((o, i) => (i ? { ...o, health: 0 } : o)) } }, 30_000);
+    expect(s.phase).toBe('ended');
+    expect(wrapUp(s)).toMatchObject({ outcome: 'failed', reason: 'ALPHA walked into E3 without a look. No survivors.' });
   });
 
   it('burns ammo by role, wounds the team, and holds it in place', () => {
