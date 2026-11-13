@@ -74,8 +74,8 @@ html, body {
 .slot-satcom { min-width: 0; min-height: 0; display: grid; } /* COMMS: a drawer on a wide screen (ILI-1393), a tab on a narrower one */
 .dock-tabs { display: none; }
 
-.slot-widget { grid-area: map; align-self: start; min-width: 0; position: relative; z-index: 5; } /* the mission bar across the map's top (ILI-1464); the map fits below it */
-.hud:not([data-tier='wide']) .slot-widget { justify-self: start; margin: 10px 0 0 10px; } /* a fold or phone: just the deadline, budget and pause, in the map's corner */
+.slot-widget { grid-area: map; align-self: start; justify-self: start; max-width: 100%; min-width: 0; position: relative; z-index: 5; } /* the mission bar over the map's top-left corner, only as wide as its content (ILI-1503) */
+.hud:not([data-tier='wide']) .slot-widget { margin: 10px 0 0 10px; } /* a fold or phone: just the deadline and budget, in the map's corner */
 .map-area { grid-area: map; min-height: 0; }
 /* Recentre (ILI-1227): over the right end of TEAM's title line, so the panel never reflows. */
 .team { position: relative; }
@@ -92,6 +92,7 @@ html, body {
 /* The mission bar (ILI-1464): a small label over a big value in each cell; the deadline biggest. */
 .hud .mission-bar { display: grid; grid-template-rows: 52px 24px; padding: 0; background: rgba(11, 15, 13, 0.9); }
 .mission-bar .mb-row { display: flex; align-items: stretch; min-width: 0; }
+.mission-bar .mb-cell:last-child { border-right: 0; }
 .mission-bar .mb-cell { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 18px; border-right: 1px solid rgba(53, 208, 165, 0.18); min-width: 0; }
 .mission-bar small { display: block; font-size: 9px; line-height: 1; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); white-space: nowrap; }
 .mission-bar b { font-weight: 400; font-size: 14px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -106,8 +107,6 @@ html, body {
 .mission-bar .mb-next { flex: 0 1 auto; }
 .mission-bar .budget-chip b { color: var(--accent); font-variant-numeric: tabular-nums; }
 .mission-bar .budget-chip[data-red] b { color: #e5484d; }
-.mb-end { margin-left: auto; display: flex; align-items: center; padding: 0 9px; }
-.mission-bar .pause { min-height: 34px; min-width: 34px; }
 .hud:not([data-tier='wide']) .mission-bar { grid-template-rows: 44px 22px; }
 .hud:not([data-tier='wide']) .mission-bar :is(.mb-op, .mb-phase, .mb-next) { display: none; }
 .hud:not([data-tier='wide']) .mission-bar .mb-cell { padding: 0 12px; }
@@ -1940,7 +1939,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    action right), and the team strip and comms strip along the bottom. No tabs. */
 @media (min-width: 700px) and (max-width: 1199px) and (orientation: portrait) {
   .hud[data-layout='fold'] { gap: 8px; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) min(340px, 34dvh) 48px; grid-template-areas: 'map' 'orion' 'bottom'; }
-  .hud[data-layout='fold'] .slot-widget { justify-self: stretch; margin: 0; }
+  .hud[data-layout='fold'] .slot-widget { margin: 0; }
   .hud[data-layout='fold'] .mission-bar { grid-template-rows: 52px 24px; }
   .hud[data-layout='fold'] .mission-bar :is(.mb-op, .mb-phase, .mb-next) { display: flex; }
   .hud[data-layout='fold'] .mission-bar .mb-cell { padding: 0 14px; }
@@ -1970,7 +1969,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @media (max-width: 699px) {
   .hud[data-tier='compact'] { grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: 'widget' 'map' 'tabs'; }
   .hud[data-tier='compact'] .map-area { grid-row: 1 / -1; }
-  .hud[data-tier='compact'] .slot-widget { grid-area: widget; justify-self: stretch; margin: 0; }
+  .hud[data-tier='compact'] .slot-widget { grid-area: widget; margin: 0; }
   .hud[data-tier='compact'] .mission-bar .mb-phase { display: flex; }
   .hud[data-tier='compact'] .mission-bar .mb-cell { padding: 0 10px; }
   .hud[data-tier='compact'] .slot-small, .hud[data-tier='compact'] > .heartbeat-strip { display: none; }

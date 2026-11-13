@@ -1,4 +1,4 @@
-import { game, useGame } from '../sim/store';
+import { useGame } from '../sim/store';
 import { race } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import { EnvWidget } from './EnvWidget';
@@ -13,8 +13,9 @@ export const clock = (ms: number) => {
 
 // The mission bar (ILI-1464, the ILI-1459 design): one bar across the top of the map, a small
 // label over a big value in each cell. The operation, the client's deadline (the biggest number on
-// screen), the phase (by name only, no step dots: ILI-1481), what's next, the budget, and pause at the far end. On a fold or phone only the
-// deadline, budget and pause fit. It replaces the loose timer and budget chips (ILI-1392, ILI-1405).
+// screen), the phase (by name only, no step dots: ILI-1481), what's next and the budget. On a fold or phone only the deadline and
+// budget fit. It replaces the loose timer and budget chips (ILI-1392, ILI-1405). No pause button: Escape pauses (ILI-1503), and
+// the bar is only as wide as what's in it.
 const PHASE_NAME = { infil: 'Infil', objective: 'Recover', exfil: 'Exfil', complete: 'Complete' } as const;
 
 export function MissionBar() {
@@ -54,11 +55,6 @@ export function MissionBar() {
         <b data-testid="objective">{objectiveText(mission)}</b>
       </div>
       <BudgetChip />
-      <div className="mb-end">
-        <button className="pause" onClick={game.pause} disabled={phase !== 'running'} aria-label="Pause" data-testid="pause-toggle">
-          ❚❚
-        </button>
-      </div>
       </div>
       {/* The weather and atmospherics, along the bar's foot (ILI-1473): out of ORION-3's panel. */}
       <EnvWidget strip />
