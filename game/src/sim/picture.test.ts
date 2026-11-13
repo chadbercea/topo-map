@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeContact, moveContact } from './contacts';
-import { sendDecoded } from './signal';
+import { postDecoded } from './intel';
 import { knownTo } from './picture';
 import { initialState, type GameState } from './state';
 import { lockedStore, pulled, run, walking } from './testkit';
@@ -80,11 +80,13 @@ describe('ALPHA routes on its own picture (ILI-1495)', () => {
     expect(run(one, 100).team.known).toEqual({}); // mid-square, on the move: not pulled yet
   });
 
-  it('a decoded intercept with a fix, once sent, tells ALPHA where they are', () => {
+  it('a decoded intercept with a fix, once ALPHA pulls it off the shelf, tells ALPHA where they are (ILI-1499)', () => {
     const s0 = initialState();
     const found = scanned({ ...s0, contacts: [checkpoint()] }, false);
-    const s1: GameState = { ...found, decoded: [{ id: 'decoded-1', square: 'E3', text: 'CHECKPOINT AT E3 HOLD POSITION', contactId: 'checkpoint', atMs: 0 }] };
-    expect(s1.team.known.checkpoint).toBeUndefined();
-    expect(sendDecoded(s1, 'decoded-1').team.known.checkpoint).toMatchObject({ square: 'E3' });
+    const s1: GameState = postDecoded(found, 'E3', 'checkpoint', 35);
+    expect(s1.team.known.checkpoint).toBeUndefined(); // posted, not pulled
+    const s2 = pulled(s1);
+    expect(s2.team.known.checkpoint).toMatchObject({ square: 'E3' });
+    expect(s2.contacts.find((c) => c.id === 'checkpoint')!.planKnown).toBe(true);
   });
 });

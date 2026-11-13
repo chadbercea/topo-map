@@ -12,7 +12,7 @@ import { perCall } from './upgrades';
 import { sendToSearch } from './buildings';
 import { spend } from './sites';
 import { sendResupply } from './support';
-import { jam, listenWith, sendDecoded, tune } from './signal';
+import { jam, listenWith, tune } from './signal';
 import { step } from './systems';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
@@ -128,7 +128,6 @@ export function createStore(initial: GameState = initialState()) {
       if (!p || p.responses.find((r) => r.id === response)?.disabled) return;
       // Get an asset in range of enemy traffic; the intercept starts once it is (ILI-1394).
       if (p.kind === 'enemy-traffic' && response === 'satellite') set(listenWith(state, p.id, 'satellite')); // HQ listens; no antenna (ILI-1435)
-      if (p.kind === 'intel-ready' && response === 'send') set(sendDecoded(state, p.id));
       // An operator in trouble (ILI-1396): seen to. The HUD opens the team drawer on it.
       if (p.kind === 'operator') set({ ...state, acked: [...state.acked, p.id] });
       // ALPHA's call (ILI-1393): a reply, or a plain Copy.

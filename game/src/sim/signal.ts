@@ -1,7 +1,6 @@
-import { feed, SIGNAL_INTEL } from './intel';
+import { postDecoded, SIGNAL_INTEL } from './intel';
 import { nextRandom } from './firefight';
-import { knownSquare, orionScanned, reveal } from './contacts';
-import { learn } from './picture';
+import { orionScanned, reveal } from './contacts';
 import type { Message } from './comms';
 import type { MiniGame } from './minigame';
 import type { GameState } from './state';
@@ -32,7 +31,6 @@ export type Signal = {
 export type ListenVia = 'satellite' | 'antenna';
 export type Listen = { eventId: string; square: string; via: ListenVia; readyMs: number };
 // What came through, waiting on the map for HQ to send it to ALPHA (ILI-1394).
-export type Decoded = { id: string; square: string; text: string; contactId?: string; atMs: number };
 export const ANTENNA_MS = 30_000;
 
 export const BAND = { min: 30, max: 88 }; // MHz
@@ -163,14 +161,13 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
   const fix = !!c && orionScanned(s, c.square); // a fix on them only on scanned ground (ILI-1493)
   if (where && fix && c.status === 'hidden') next = reveal(next, [c.square], 'SIGINT');
   if (plan) {
-    // What gets decoded is a marker on the map, waiting for HQ to send it to ALPHA (ILI-1394).
-    const d: Decoded = { id: `decoded-${m.startedMs}`, square: fix ? c.square : m.square, text: g.plain, contactId: c?.id, atMs: s.elapsedMs };
-    next = { ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 }, decoded: [...next.decoded, d] };
+    // What gets decoded goes on the shelf for ALPHA to pull (ILI-1499); HQ never pushes it.
+    next = postDecoded({ ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } }, fix ? c.square : m.square, c?.id, SIGNAL_INTEL);
   }
   const report: Message = {
     id: `signal-${m.startedMs}`,
     from: 'SIGINT',
-    text: plan ? `Decoded: "${g.plain}".` : where ? (fix ? `Got part of it: they're at ${c!.square}, but not what they plan.` : 'Got part of it: no fix on where they are, and not what they plan.') : 'Lost the signal.',
+    text: plan ? `Decoded: "${g.plain}". Posted for ${s.team.callsign}.` : where ? (fix ? `Got part of it: they're at ${c!.square}, but not what they plan.` : 'Got part of it: no fix on where they are, and not what they plan.') : 'Lost the signal.',
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,
@@ -182,21 +179,6 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
     events: next.events.map((e) => (e.id === m.eventId ? { ...e, status: 'resolved' as const } : e)),
     comms: { ...next.comms, messages: [...next.comms.messages, report] },
   };
-}
-
-// HQ sends decoded traffic to ALPHA (ILI-1394): it feeds the gauge (ILI-1314) and the contact's
-// plan is known, its route drawn.
-export function sendDecoded(s: GameState, id: string): GameState {
-  const d = s.decoded.find((x) => x.id === id);
-  if (!d) return s;
-  let next: GameState = { ...s, decoded: s.decoded.filter((x) => x !== d) };
-  next = feed(next, SIGNAL_INTEL, { source: 'SIGINT', square: d.square, items: [{ kind: 'SIGINT', heat: 'hot', text: 'decoded: what they plan' }] });
-  if (d.contactId) next = { ...next, contacts: next.contacts.map((x) => (x.id === d.contactId ? { ...x, planKnown: true } : x)) };
-  // With a fix on them, ALPHA knows where they are too (ILI-1495).
-  const c = next.contacts.find((x) => x.id === d.contactId);
-  if (c && knownSquare(next, c) === d.square) next = learn(next, c, d.square);
-  const m: Message = { id: `sent-${d.id}`, from: 'HQ', text: `Sent to ${s.team.callsign}: "${d.text}".`, atMs: s.elapsedMs, status: 'read', holds: false, square: d.square };
-  return { ...next, comms: { ...next.comms, messages: [...next.comms.messages, m] } };
 }
 
 // Jamming (GDD PMC mechanics): block the enemy's radios instead of listening to them. The
