@@ -86,7 +86,8 @@ function Gauge({ label, icon, value, level, source, name, testId }: { label: str
 // One operator in the team panel (ILI-1248): rank, name and role in even columns; heartbeat and
 // status; then ammo and meds as short bars under their pictures, and how loud they've been moving (ILI-1222) as an
 // orange one, red while it's their weapon (ILI-1266). The row gets a coloured edge when something's wrong: hurt, low or loud.
-export function OperatorRow({ o, highlight }: { o: Operator; highlight?: boolean }) {
+// vitals={false} drops the heartbeat and status where the heartbeat strip already shows them (ILI-1502).
+export function OperatorRow({ o, highlight, vitals = true }: { o: Operator; highlight?: boolean; vitals?: boolean }) {
   const c = condition(o);
   const levels = [supply(ammoLeft(o)), supply(medsLeft(o)), loudness(o.noise)];
   const flag = c === 'down' ? 'down' : c === 'danger' || levels.includes('out') ? 'danger' : c === 'caution' || levels.includes('low') ? 'caution' : undefined;
@@ -105,10 +106,12 @@ export function OperatorRow({ o, highlight }: { o: Operator; highlight?: boolean
         <span className="name">{o.name}</span>
         <span className="role">{o.role}</span>
       </div>
-      <div className="vitals">
-        <Heartbeat o={o} />
-        <span className="status">{STATUS[c]}</span>
-      </div>
+      {vitals && (
+        <div className="vitals">
+          <Heartbeat o={o} />
+          <span className="status">{STATUS[c]}</span>
+        </div>
+      )}
       <div className="supplies">
         <Gauge label="AMMO" icon={<Rounds />} value={ammoLeft(o) * 100} level={levels[0]} name={o.name} testId={`ammo-${o.id}`} />
         <Gauge label="MEDS" icon={<Cross />} value={medsLeft(o) * 100} level={levels[1]} name={o.name} testId={`meds-${o.id}`} />

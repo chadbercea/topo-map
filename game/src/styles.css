@@ -2029,6 +2029,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .team-drawer .team-cols { display: grid; grid-template-columns: var(--cols); align-items: end; padding: 2px 0 6px; border-bottom: 1px solid rgba(53, 208, 165, 0.18); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
 .team-drawer .team-cols .c-who { grid-column: 1 / 4; }
 .team-drawer .team-cols .c-vitals { grid-column: 4 / 6; }
+.team-drawer[data-strip] :is(.op, .team-cols) { --cols: 12px 7ch minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.8fr); } /* no heartbeat column: the strip has them (ILI-1502) */
 .team-drawer .readout { margin: 4px 0 0; gap: 2px; }
 .team-drawer .op { min-height: 26px; padding: 0 4px; margin: 0 -4px; }
 .team-drawer .op[data-highlight] { background: rgba(53, 208, 165, 0.1); box-shadow: inset 2px 0 0 var(--accent); }
