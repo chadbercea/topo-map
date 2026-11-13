@@ -29,7 +29,7 @@ import { setCellSize } from '../hud/scale';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the mission's points and route, in amber
-const OPS = TEAL; // the team's dots, in the map's green (ILI-1409)
+const OPS = TEAL; // the team's marks, in the map's green (ILI-1409)
 // Each operator's ping comes on its own random gap, re-rolled every time (ILI-1409).
 const nextGap = () => 2000 + Math.random() * 3000;
 // The team's formation, in gaps: along the heading (forward +), across it. Point man first.
@@ -89,7 +89,7 @@ export class MapScene extends Phaser.Scene {
   private wipeGfx!: Phaser.GameObjects.Graphics; // a new scan's wipe over its square (ILI-1423)
   private scansSeen = new Set<string>();
   private wipes = new Map<string, number>(); // square -> when its wipe started
-  private dotGfx!: Phaser.GameObjects.Graphics; // the team's dots: the map only
+  private dotGfx!: Phaser.GameObjects.Graphics; // the team's triangles at the map's zoom: the map only (ILI-1521)
   private arrowGfx!: Phaser.GameObjects.Graphics; // the team as tiny heading arrows: ORION-3's picture only (ILI-1419)
   private bracketGfx!: Phaser.GameObjects.Graphics; // four corners round everything HQ can interact with (ILI-1410)
   private insetBracketGfx!: Phaser.GameObjects.Graphics; // the same, at ORION-3's picture's scale (ILI-1415)
@@ -1372,7 +1372,7 @@ export class MapScene extends Phaser.Scene {
   private lastTeam = { x: NaN, y: NaN };
   private heading = -Math.PI / 2; // the way the team faces, radians; eased toward its next step
 
-  // ALPHA is five people, not a dot (ILI-1210): one per operator, in a loose wedge facing where the team
+  // ALPHA is five people, not a dot (ILI-1210): one triangle per operator (ILI-1521), in a loose wedge facing where the team
   // is headed. Each drifts a little on its own and pings on its own beat, so the team reads as
   // alive. The downed stay in the group, dim and hollow. Reduced motion: still and quiet.
   private pings = new Map<string, { at: number; next: number }>(); // each operator's last ping and next (ILI-1409)
@@ -1437,16 +1437,17 @@ export class MapScene extends Phaser.Scene {
     this.opSpots.clear();
     const dots = this.dotGfx.clear();
     const arrows = this.arrowGfx.clear();
-    // ORION-3 is a special view of the team (ILI-1419): each operator a tiny arrow the way they're
-    // heading, sized for the picture's zoom, much smaller than RAVEN-6's.
+    // Each operator is a tiny arrow the way they're heading (ILI-1419), HAMMER-2's shape (ILI-1424):
+    // a plain outlined triangle, no notch, no fill. The same on the main map as in ORION-3's picture
+    // (ILI-1521), each drawn at its own camera's zoom so it's the same few screen pixels in both,
+    // 1 px lines (ILI-1471).
     const iu = DPR / this.inset.zoom;
-    const arrow = (x: number, y: number, down: boolean) => {
-      const z = 3.5 * iu;
-      // HAMMER-2's shape (ILI-1424): a plain outlined triangle, no notch, no fill.
+    const arrow = (gfx: Phaser.GameObjects.Graphics, px: number, x: number, y: number, down: boolean) => {
+      const z = 3.5 * px;
       const tip = { x: x + fx * z, y: y + fy * z };
       const l = { x: x - fx * z + fy * z * 0.8, y: y - fy * z - fx * z * 0.8 };
       const r = { x: x - fx * z - fy * z * 0.8, y: y - fy * z + fx * z * 0.8 };
-      arrows.lineStyle(iu, OPS, down ? 0.45 : 1).strokeTriangle(tip.x, tip.y, l.x, l.y, r.x, r.y);
+      gfx.lineStyle(px, OPS, down ? 0.45 : 1).strokeTriangle(tip.x, tip.y, l.x, l.y, r.x, r.y);
     };
     operators.forEach((o, i) => {
       if (gone.includes(o.id)) return;
@@ -1467,9 +1468,8 @@ export class MapScene extends Phaser.Scene {
         const t = (time - p.at) / 900; // 0..1 over the ring's life
         if (t < 1) dots.lineStyle(u, OPS, 0.7 * (1 - t)).strokeCircle(x, y, (3 + 11 * t) * u);
       }
-      if (down) dots.lineStyle(u, OPS, 0.45).strokeCircle(x, y, 2.6 * u);
-      else dots.lineStyle(u, OPS, 1).strokeCircle(x, y, 3.2 * u);
-      arrow(x, y, down);
+      arrow(dots, u, x, y, down); // the main map
+      arrow(arrows, iu, x, y, down); // ORION-3's picture
     });
     // No intel bar floating on the marker any more (cut 11-12, buggy). ALPHA running low still shows
     // as the amber intel-needed tag on the square it needs.
