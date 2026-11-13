@@ -58,7 +58,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   // What it saw stays in the panel; the find is on the card, the strikes beside it.
   await expect(sat.getByTestId('satellite-result')).toContainText(/Video: 5 fighters/);
   await expect(sat.getByTestId('satellite-inset')).toHaveCount(1); // the picture stays up
-  await expect(page.getByTestId('comms-feed')).toContainText(/E3 collection complete \(video\): 5 fighters.*Analysts: live feed to ALPHA/);
+  await expect(page.getByTestId('comms-feed')).toContainText(/E3 video complete: 5 fighters.*Live feed posted for ALPHA/);
   await expect(page.getByTestId('square-anchor').getByTestId('intel-list').getByTestId('contact-item')).toBeVisible(); // the contact is an item of the square's intel list (ILI-1487)
   await expect(page.locator('[data-testid=contact-tag]')).toHaveCount(0); // and no red CONTACT tag beside the open panel (ILI-1490)
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);

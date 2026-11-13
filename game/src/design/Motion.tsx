@@ -43,7 +43,7 @@ function Boot({ mode }: { mode: 'again' | 'first' }) {
               <li>{SAT} Slewing to E3.</li>
               <li>ALPHA Boots on the ground at G5.</li>
               <li>{SAT} On station over E3.</li>
-              <li>{SAT} E3 collection complete.</li>
+              <li>{SAT} E3 analysis complete.</li>
             </ul>
           </section>
         </div>

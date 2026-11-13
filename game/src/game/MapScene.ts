@@ -588,7 +588,7 @@ export class MapScene extends Phaser.Scene {
       g.fillStyle(0xf2c14e, 0.18).fillRect(x + inset, by, w, h);
       if (left > 0) g.fillStyle(0xf2c14e, 0.95).fillRect(x + inset, by, w * left, h);
       const secs = Math.floor((now - snap.atMs) / 1000);
-      want.set(`p:${snap.square}`, { text: stale ? 'PHOTO · STALE' : `PHOTO · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, color: stale ? '#6f8a7d' : '#f2c14e', bg: '#0b0f0dd9', x: x + CELL - 8 * px, y: y + 8 * px }); // top right: the INTEL / CLEAR stamp has the foot's left
+      want.set(`p:${snap.square}`, { text: stale ? 'IMAGED · STALE' : `IMAGED · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, color: stale ? '#6f8a7d' : '#f2c14e', bg: '#0b0f0dd9', x: x + CELL - 8 * px, y: y + 8 * px }); // top right: the INTEL / CLEAR stamp has the foot's left
     }
     for (const sq of feeds) {
       const p = parseSquare(sq);

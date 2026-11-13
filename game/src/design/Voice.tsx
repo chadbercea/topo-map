@@ -8,7 +8,7 @@ const SAT = MISSION.satellite;
 // way over the game's history.
 const WHO: [string, string, string][] = [
   ['ALPHA', 'The team on the ground (Reyes, Okafor, Lind, Tanaka, Brandt)', 'Its decisions, and its one question: resupply.'],
-  [`${SAT}`, 'Castle House’s imaging satellite', 'Slewing, on station, collection complete, and what the analysts pushed.'],
+  [`${SAT}`, 'Castle House’s imaging satellite', 'Slewing, on station, analysis complete, and the intel it posted.'],
   ['HQ', 'Castle House', 'News the map can’t show, the contract and its escrow.'],
   ['SIGINT', 'The intercept desk', 'What a decoded signal said.'],
   ['OVERWATCH', 'The sniper contract', 'On target, Tango down, racking; all down.'],
@@ -19,9 +19,9 @@ const WHO: [string, string, string][] = [
 ];
 const WORDS: [string, string][] = [
   ['Reposition', `Task ${SAT} to a square. Only in ${SAT}’s panel.`],
-  ['Photo / Video', 'The ways to look. Photo is instant and fades; video is live, once.'],
+  ['Analyze / Video', 'The ways to look. Analyze images and reports the square; video keeps it live.'],
   ['On station', `${SAT} is over the square, ready for collection.`],
-  ['Collection complete', 'A look is done; IMINT goes to the analysts, then ALPHA.'],
+  ['Analysis complete', 'A look is done; its intel is posted for ALPHA to pull.'],
   ['Soften them up', 'ALPHA wants HQ to thin a contact out before it goes in.'],
   ['All clear / CLEAR', 'Nothing there: the smallest unit of intel.'],
   ['Your decision', 'What HQ chooses. Never “call”: a call is the radio.'],
@@ -30,7 +30,7 @@ const WORDS: [string, string][] = [
 const KINDS: [string, string, string][] = [
   ['Call', 'ALPHA needs HQ: an orange flag at its marker and in its box, until answered.', 'ALPHA · Two down, the rest hurt. We need a resupply bird.'],
   ['Alert', 'News that matters now: red, up for a few seconds, then a line in the log.', 'HQ · Enemy radio net just lit up: they know a PMC is in the area.'],
-  ['Log', 'Everything else: the record, quiet.', `${SAT} · E3 collection complete (photo): 5 fighters, unaware.`],
+  ['Log', 'Everything else: the record, quiet.', `${SAT} · E3 analysis complete: 5 fighters, unaware. Intel posted for ALPHA.`],
 ];
 const DOS: [string, string][] = [
   ['ALPHA: “Contact in E3, a fortified checkpoint. Not taking that. Going around via E4.”', 'ALPHA: “Contact in E3. Attack, hold or go around?” (the team decides; HQ changes the odds)'],

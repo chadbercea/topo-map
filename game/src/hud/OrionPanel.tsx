@@ -231,7 +231,7 @@ export function OrionPanel() {
         <div className="modes" data-testid="capture-modes" data-step={done ? 'send' : 'scan'}>
           <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title={`Image the square: the analysts report what's there and post the package for ${s.team.callsign}`} data-cue={(ready && !busy && !done) || undefined}>
             Analyze {sat.aim}
-            <small>{tied ? 'tied up by the intercept' : done ? (shelved === 'received' ? '✓ intel received' : `posted for ${s.team.callsign}`) : ready ? (again ? `re-image, post for ${s.team.callsign}` : `image, report, post for ${s.team.callsign}`) : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
+            <small>{tied ? 'tied up by the intercept' : done ? (shelved === 'received' ? '✓ intel received' : shelved === 'pulling' ? `${s.team.callsign} downloading` : `intel posted for ${s.team.callsign}`) : ready ? (again ? `re-image, post for ${s.team.callsign}` : `image, report, post for ${s.team.callsign}`) : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
           </button>
           <button disabled={!ready || busy || !analyzed || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title="Keep the square live on the map for good">
             Video
