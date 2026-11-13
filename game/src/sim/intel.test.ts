@@ -52,7 +52,7 @@ describe('the intel gauge', () => {
   it('running low on the move, ALPHA requests imagery before it stops (ILI-1341, ILI-1349)', () => {
     const s = run(feed(blindAhead(), LOW_AT - 1), 1_000);
     expect(s.team.activity).toMatch(/^Moving/);
-    expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', grid: expect.stringMatching(/^[A-H]\d$/), text: 'ALPHA low on intel, needs route intel to D3' });
+    expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', grid: expect.stringMatching(/^[A-H]\d$/), text: expect.stringMatching(/^ALPHA requested imagery of [A-H]\d$/) });
   });
 
   it('the stretch after the opening scans: scanning where the prompt points keeps ALPHA going (ILI-1341, ILI-1391)', () => {

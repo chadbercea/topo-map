@@ -44,7 +44,7 @@ export function Patterns() {
             <code className="ds-line">ALPHA · Holding. No intel on what's ahead. Get us eyes on F4.</code>
             <div className="mission ds-mission">
               <button className="need" data-tone="decision">
-                ALPHA requests imagery of F4
+                ALPHA requested imagery of F4
               </button>
             </div>
           </div>

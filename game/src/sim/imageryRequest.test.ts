@@ -20,7 +20,7 @@ describe('the never-stuck rule', () => {
   it('out of intel, ALPHA requests imagery of the next square it needs: one card, and it waits', () => {
     const s = run(blindAhead(), 3_000);
     expect(s.team.activity).toBe('Holding · needs intel');
-    expect(openImageryRequest(s)).toMatchObject({ square: 'F4', title: 'ALPHA requests imagery' });
+    expect(openImageryRequest(s)).toMatchObject({ square: 'F4', title: 'ALPHA requested imagery of F4' });
     expect(requests(run(s, 60_000))).toHaveLength(1); // one at a time, and it never expires
     expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', grid: 'F4' }); // a prompt on the map (ILI-1391)
     expect(openCards(s).some((c) => c.kind === 'request')).toBe(false); // not a card in COMMS any more
