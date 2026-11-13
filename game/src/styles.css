@@ -1732,6 +1732,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card .sc-package .int { font-style: normal; font-size: 9px; letter-spacing: 0.1em; padding: 1px 5px; border: 1px solid currentColor; margin-right: 4px; }
 .square-card .sc-package[data-state='posted'] { color: #f2c14e; }
 .square-card .sc-package[data-state='pulling'], .square-card .sc-package[data-state='received'] { color: var(--accent); }
+.square-card .sc-package .check { color: var(--accent); font-weight: 700; } /* intel received: the green check (ILI-1509) */
 .square-card .sc-package .decay { display: block; width: 48px; height: 4px; background: rgba(53, 208, 165, 0.12); }
 .square-card .sc-package .decay > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
 .square-card .sc-found { animation: found-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }

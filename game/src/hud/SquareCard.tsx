@@ -321,17 +321,26 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
 }
 
 // The square's intel package (ILI-1499): HQ posts it on the shelf; ALPHA pulls it down. One line
-// says which: posted and waiting, coming down (a short bar), or ALPHA has it.
+// says which, as a plain status (ILI-1509): posted and waiting, downloading (a short bar), or a
+// green check and "Intel received" once ALPHA has it.
 function PackageLine({ s, square }: { s: GameState; square: string }) {
   const st = shelfState(s, square);
   if (!st) return null;
   const who = s.team.callsign;
-  const text = st === 'posted' ? `Posted · waiting for ${who}` : st === 'pulling' ? `${who} downloading` : `${who} has it`;
   return (
     <div className="sc-item sc-package" data-kind="package" data-state={st} data-testid="square-package">
-      <span>
-        <i className="int">PKG</i> {text}
-      </span>
+      {st === 'received' ? (
+        <span data-testid="intel-received">
+          <b className="check" aria-hidden>
+            ✓
+          </b>{' '}
+          Intel received
+        </span>
+      ) : (
+        <span>
+          <i className="int">PKG</i> {st === 'posted' ? `Intel posted · waiting for ${who}` : `${who} downloading intel`}
+        </span>
+      )}
       {st === 'pulling' && (
         <span className="decay fill" role="progressbar" aria-valuenow={Math.round(downloadProgress(s) * 100)}>
           <span style={{ width: `${downloadProgress(s) * 100}%` }} />
