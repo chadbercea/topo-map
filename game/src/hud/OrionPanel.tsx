@@ -156,7 +156,6 @@ export function OrionPanel() {
           <div ref={picRef} className="o-picture" data-testid="satellite-inset" data-state={live ? sat.state : 'imaged'} data-targeting={hit ? 'true' : undefined} aria-label={`${name}'s picture of ${square}`}>
             {hit && (
               <div className="o-targeting" data-testid="targeting" aria-live="polite">
-                <i className="o-reticle" aria-hidden />
                 <span className="o-tt">
                   Targeting · {hit.what} · {hit.who}
                 </span>

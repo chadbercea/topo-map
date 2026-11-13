@@ -85,6 +85,11 @@ export const satelliteBusy = (s: GameState) => s.satellite.state === 'capturing'
 // offers the move first.
 export const lockedOn = (s: GameState, square: SquareId): boolean => s.satellite.state !== 'slewing' && s.satellite.aim === square && slewMs(s, square) === 0;
 
+// Can HQ watch what happens on a square right now (ILI-1515)? Only with ORION-3 locked on it, or a
+// live video feed of it. A strike's fight (the aircraft on its passes, the sniper's crosshairs, the
+// fighters going down) shows on the map only then; otherwise HQ has the asset's panel and the radio.
+export const observed = (s: GameState, square: SquareId): boolean => lockedOn(s, square) || (s.intel.live ?? []).includes(square);
+
 // The square the card is on (ILI-1201, ILI-1203): the one HQ picked (or whose event it
 // opened), else the one ORION-3 is working, else its last look until HQ closes it. Nothing
 // while a mini game is up.
