@@ -2154,3 +2154,14 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card .sc-choice .note { margin: 0; }
 .square-card .sc-choice .options { display: flex; flex-wrap: wrap; gap: 6px; }
 .square-card .sc-choice .options button { min-height: 28px; padding: 0 10px; font: inherit; font-size: 10px; letter-spacing: 0.08em; }
+
+/* The contact line is the button (ILI-1497): who, what's known, and the way in to its strikes. */
+.square-card button.sc-contact { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; width: 100%; margin: 0; font: inherit; font-size: 11px; text-align: left; color: var(--ink); background: none; border: 0; border-left: 3px solid #e5484d; cursor: pointer; }
+.square-card button.sc-contact:hover, .square-card button.sc-contact:focus-visible { background: rgba(229, 72, 77, 0.08); outline: none; }
+.square-card button.sc-contact[data-open] { cursor: default; background: rgba(229, 72, 77, 0.06); }
+.square-card .sc-contact .sc-contact-act { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #f08a8d; }
+.square-card .sc-strike > .sc-contact { margin: 6px 10px 0; width: auto; }
+.square-card .sc-target { padding: 6px 10px 8px; }
+.square-card .sc-target .title { margin: 0 0 4px; font-size: 12px; }
+.contact-tag .pt-tag button.pt-open { color: #f08a8d; background: none; border: 0; letter-spacing: 0.1em; }
+.contact-tag .pt-tag button.pt-open:hover, .contact-tag .pt-tag button.pt-open:focus-visible { color: #0b0f0d; background: #f08a8d; }

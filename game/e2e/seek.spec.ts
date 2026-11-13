@@ -8,7 +8,7 @@ async function targetE3(page: Page) {
   await freeze(page);
   await photo(page, 'E3');
   await openEvent(page, 'contact', 'E3');
-  await expect(page.getByTestId('strike-flyout').getByTestId('event-card')).toContainText('A fortified checkpoint'); // the scan may have heard their radio too (ILI-1359)
+  await expect(page.getByTestId('strike-flyout').getByTestId('contact-details')).toContainText('A fortified checkpoint'); // the scan may have heard their radio too (ILI-1359)
   await expect(page.getByTestId('target-menu')).toBeVisible();
 }
 
@@ -107,5 +107,5 @@ test('a strike under way shows on its square\u2019s CONTACT tag, picked or not (
   await page.evaluate(() => window.game.closeSquare());
   const tag = page.locator('[data-testid=contact-tag][data-square=E3]');
   await expect(tag.getByTestId('strike-work')).toHaveText(/^REAPER-1 · 0:\d\d$/);
-  await expect(tag.getByTestId('contact-strike')).toHaveCount(0); // nothing more to call in while it runs
+  await expect(tag.getByTestId('contact-open')).toHaveCount(0); // nothing more to call in while it runs
 });

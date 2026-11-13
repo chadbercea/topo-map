@@ -54,7 +54,7 @@ for (const [name, width, height] of SIZES) {
     expect(sat.x).toBeGreaterThanOrEqual(rail.x - 1); // in the rail
     const card = page.getByTestId('square-anchor');
     // Its strikes open from the square's own Strike (ILI-1482: a fighter's panel is read-only).
-    await card.locator('[data-testid=contact-item][data-square=E3]').getByTestId('contact-strike').click();
+    await card.locator('[data-testid=contact-item][data-square=E3]').click(); // the contact line is the button (ILI-1497)
     const menu = page.getByTestId('strike-flyout').getByTestId('strike-menu'); // the strike menu by its square (ILI-1474)
     await menu.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
     await expect(menu.getByTestId('fire-sniper')).toBeVisible();

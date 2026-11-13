@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
-import { BuildingTag, strikeWork, tagSquares } from './PromptLayer';
+import { BuildingTag, tagSquares } from './PromptLayer';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, lockedOn, satName } from '../sim/satellite';
 import { trafficPrompts } from '../sim/prompts';
@@ -355,36 +355,53 @@ function TrafficItem({ s, id, square }: { s: GameState; id: string; square: stri
   );
 }
 
-// The square's contact, as a line of its intel list (ILI-1490): its fighters, and Strike, or how the
-// strike under way is going. Strike slides the strike options in, inside this panel.
-function ContactItem({ s, square }: { s: GameState; square: string }) {
+// The square's contact, as a line of its intel list (ILI-1490, ILI-1497): the whole line is the
+// button. What's there sits with it (who, how many fighters marked, how fresh the look); a click
+// slides the strike options in under it, inside this panel, and a click again slides them out.
+// ORION-3 goes there first if it isn't over the square: a strike needs it watching (ILI-1397).
+function ContactItem({ s, square, open = false }: { s: GameState; square: string; open?: boolean }) {
   const st = strikeState(s, square);
-  const work = strikeWork(s, square);
+  const look = s.imagery[square];
+  const fresh = look ? freshness(look, s.elapsedMs) : null;
+  const what = [...new Set(st.strikes.map((e) => e.title))].join(', ');
+  const n = st.marked.length;
+  const hint = st.can ? 'Strike options ▸' : !st.locked ? `${satName(s)} has to be over ${square}` : !st.seen ? 'Needs a fresh look to strike' : 'Strike under way';
+  const go = () => {
+    if (open) return void game.dropEvent();
+    if (!st.strikes[0]) return;
+    game.openEvent(st.strikes[0].id);
+    if (!lockedOn(game.get(), square)) game.lookAt(square);
+  };
   return (
-    <div className="sc-item sc-contact" data-kind="contact" data-testid="contact-item" data-square={square} data-event={st.strikes[0]?.id} data-focus={st.strikes.some((e) => e.id === s.openEvent) || undefined}>
-      <span>
+    <button
+      className="sc-item sc-contact"
+      data-kind="contact"
+      data-testid="contact-item"
+      data-square={square}
+      data-event={st.strikes[0]?.id}
+      data-focus={st.strikes.some((e) => e.id === s.openEvent) || undefined}
+      data-open={open || undefined}
+      aria-expanded={open}
+      onClick={go}
+    >
+      <span className="sc-contact-name">
         Contact · {square}
-        {st.marked.length > 0 && <b data-testid="contact-count"> · {st.marked.length}</b>}
+        {n > 0 && <b data-testid="contact-count"> · {n}</b>}
       </span>
-      {work ? (
-        <em data-testid="strike-work">{work}</em>
-      ) : (
-        <button
-          onClick={() => st.strikes[0] && game.openEvent(st.strikes[0].id)}
-          disabled={!st.can}
-          title={st.can ? `Strike ${square}` : `${satName(s)} has to be over ${square} to watch the strike land`}
-          data-testid="contact-strike"
-        >
-          Strike
-        </button>
-      )}
-    </div>
+      <span className="note" data-testid="contact-details">
+        {what}
+        {n > 0 && ` · ${n} ${n === 1 ? 'fighter' : 'fighters'} marked`}
+        {look && ` · ${look.mode === 'eyes' ? 'eyes on' : look.mode} ${zulu(look.atMs)} · ${fresh}`}
+      </span>
+      {!open && <small className="sc-contact-act">{hint}</small>}
+    </button>
   );
 }
 
-// The strike options, slid into the square's panel (11-12, after ILI-1474's flyout): the budget, the
-// fighters marked, and each contact with every way to hit it, cost and readiness. Back slides the
-// report in again; firing turns the panel into the strike's countdown.
+// The strike options, slid into the square's panel (11-12, ILI-1477) under its contact line
+// (ILI-1497): the line itself says who's there, so no second card repeats it. Then the budget and
+// every way to hit it, cost and readiness. Back, or the line again, slides them out; firing turns
+// the panel into the strike's countdown.
 function StrikeOptions({ s, square }: { s: GameState; square: string }) {
   const st = strikeState(s, square);
   return (
@@ -396,20 +413,15 @@ function StrikeOptions({ s, square }: { s: GameState; square: string }) {
         <b>Strike · {square}</b>
         <span>{satName(s)} watching</span>
       </header>
+      <ContactItem s={s} square={square} open />
       <p className="sf-budget">
         <small>Budget</small>
         <b>{cash(s.resources.budget)}</b>
       </p>
       <section className="sc-strikes" data-testid="strike-menu">
-        {st.marked.length > 0 && (
-          <p className="sc-marked">
-            {st.marked.length} {st.marked.length === 1 ? 'fighter' : 'fighters'} marked
-          </p>
-        )}
         {st.strikes.map((e) => (
-          <div key={e.id} className="sc-event event-card" data-kind="contact" data-testid="event-card">
-            <h3>CONTACT · {e.square}</h3>
-            <p className="title">{e.title}</p>
+          <div key={e.id} className="sc-target" data-testid="strike-target">
+            {st.strikes.length > 1 && <p className="title">{e.title}</p>}
             <TargetMenu contactId={e.id.slice('contact-'.length)} />
           </div>
         ))}
