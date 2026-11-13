@@ -114,10 +114,6 @@ const enemyTraffic: Source = (s) =>
       return { id: e.id, kind: 'enemy-traffic' as const, priority: PRIORITY.enemyTraffic, atMs: e.atMs, square: e.square, text: `Enemy radio traffic near ${e.square}`, hint, responses };
     });
 
-// Decoded traffic (ILI-1394): a marker on the map, for HQ to send to ALPHA.
-const intelReady: Source = (s) =>
-  s.decoded.map((d) => ({ id: d.id, kind: 'intel-ready' as const, priority: PRIORITY.intelReady, atMs: d.atMs, square: d.square, text: `Decoded: “${d.text}”`, responses: [{ id: 'send', label: `Send to ${s.team.callsign}` }] }));
-
 // ALPHA on the radio (ILI-1393): its call is a prompt pinned to where it is, answered right there.
 // Not in the comms log any more, which is history only.
 const teamCall: Source = (s) => {
@@ -150,7 +146,7 @@ const operatorHurt: Source = (s) => {
 };
 
 // Enemy traffic isn't in the queue (ILI-1452): it has its own lane, so nothing knocks it off mid-read.
-const SOURCES: Source[] = [operatorHurt, intelNeeded, teamCall, intelReady];
+const SOURCES: Source[] = [operatorHurt, intelNeeded, teamCall];
 
 // Most urgent first: by priority, then the one that's waited longest.
 export const byUrgency = (a: Prompt, b: Prompt) => a.priority - b.priority || a.atMs - b.atMs;

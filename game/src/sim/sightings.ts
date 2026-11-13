@@ -77,6 +77,5 @@ export function sightings(s: GameState, operators: ReadonlyMap<string, { x: numb
   }
   const bird = s.exfil && transportAt(s.exfil, now);
   if (s.exfil && bird) out.push({ id: 'air:exfil', kind: 'aircraft', x: bird.x, y: bird.y, age: 'tracked', square: s.exfil.square });
-  for (const d of s.decoded) out.push({ id: d.id, kind: 'signal', ...markerSpot(d.square), age: 'tracked', square: d.square });
   return out;
 }

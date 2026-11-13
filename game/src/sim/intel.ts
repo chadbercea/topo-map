@@ -1,8 +1,8 @@
 import type { GameState } from './state';
 import { photoFactor } from './upgrades';
 import { CELL, squareAt } from '../map/grid';
-import { knownIn } from './contacts';
-import { tell } from './picture';
+import { knownIn, knownSquare } from './contacts';
+import { learn, tell } from './picture';
 import { teamStatus } from './team';
 
 // ALPHA's intel gauge (ILI-1314): what keeps the team moving. The team is autonomous and has
@@ -41,8 +41,8 @@ export type Download = { startMs: number; untilMs: number; ids: string[] };
 export type PushSource = 'IMINT' | 'SIGINT' | 'ALPHA';
 // posted: on the shelf for its square, waiting for ALPHA to pull it; pulling: coming down to the
 // team's SATCOM devices (ILI-1499). pulledMs: when ALPHA had it.
-export type Push = { id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; amount: number; state: 'fed' | 'banked' | 'posted' | 'pulling'; fedMs?: number; pulledMs?: number; items?: IntelItem[] };
-export type PushFrom = { source: PushSource; square?: string; grade?: Grade | 'video'; items?: IntelItem[] };
+export type Push = { id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; amount: number; state: 'fed' | 'banked' | 'posted' | 'pulling'; fedMs?: number; pulledMs?: number; items?: IntelItem[]; contactId?: string };
+export type PushFrom = { source: PushSource; square?: string; grade?: Grade | 'video'; items?: IntelItem[]; contactId?: string };
 
 // The five types of intel (ILI-1362): the five real intelligence disciplines. Every ORION-3
 // scan brings in at least one report, and which types turn up is random (seeded, so a mission
@@ -190,8 +190,20 @@ function deliver(s: GameState, p: Push): GameState {
   const banked = p.grade !== 'video' && !!p.square && ahead(s, p.square);
   const pushes = s.intel.pushes.map((x) => (x.id === p.id ? { ...x, state: banked ? ('banked' as const) : ('fed' as const), pulledMs: s.elapsedMs, ...(banked ? {} : { fedMs: s.elapsedMs }) } : x));
   const intel = banked ? { ...s.intel, pushes, banked: [...s.intel.banked, { square: p.square!, amount: p.amount }] } : { ...s.intel, pushes, fuel: Math.min(GAUGE_MAX, s.intel.fuel + p.amount) };
-  return p.square ? tell({ ...s, intel }, p.square) : { ...s, intel };
+  let next: GameState = { ...s, intel };
+  // A decoded intercept (ILI-1499): ALPHA learns their plan, and with a fix, where they are (ILI-1495).
+  if (p.source === 'SIGINT' && p.contactId) {
+    next = { ...next, contacts: next.contacts.map((x) => (x.id === p.contactId ? { ...x, planKnown: true } : x)) };
+    const c = next.contacts.find((x) => x.id === p.contactId);
+    if (c && p.square && knownSquare(next, c) === p.square) next = learn(next, c, p.square);
+    return next;
+  }
+  return p.square ? tell(next, p.square) : next;
 }
+
+// Decoded traffic goes on the shelf like any package (ILI-1499): HQ can't push it to ALPHA.
+export const postDecoded = (s: GameState, square: string, contactId: string | undefined, amount: number): GameState =>
+  record(s, { source: 'SIGINT', square, contactId, items: [{ kind: 'SIGINT', heat: 'hot', text: 'decoded: what they plan' }] }, amount, 'posted');
 
 export const pullSystem = (s: GameState): GameState => {
   let next = s;

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { HOP_MS, match, RECEIVE_MS, TRANSMISSION_MS, transcript } from './signal';
 import { initialState, type GameState } from './state';
 import { lockedStore as createStore } from './testkit';
-import { run, trafficId, untilTraffic } from './testkit';
+import { pulled, run, trafficId, untilTraffic } from './testkit';
 
 // Enemy traffic comes up near C2, where the patrol is hiding: on the default seed it talks first,
 // before a minute is up (ILI-1454). C2 is ground ORION-3 has scanned, as a scan's SIGINT report
@@ -65,20 +65,20 @@ describe('signal intercept', () => {
     return store;
   };
 
-  it('following them all the way decodes their plan: a marker HQ sends to ALPHA, then the patrol is marked, route known (ILI-1394)', () => {
+  it('following them all the way decodes their plan: it goes on the shelf, and once ALPHA pulls it the route is known (ILI-1394, ILI-1499)', () => {
     const store = follow(TRANSMISSION_MS);
     const before = store.get();
     expect(before.minigame).toBeNull();
-    expect(before.contacts.find((c) => c.id === 'patrol')!.planKnown).toBeFalsy(); // not until HQ sends it
-    const p = promptQueue(before).find((x) => x.kind === 'intel-ready')!;
-    expect(p).toMatchObject({ square: 'C2', text: 'Decoded: “PATROL AT C2 MOVING TO D3 FOR THE DRONE”', responses: [{ id: 'send', label: 'Send to ALPHA' }] });
-    store.answerPrompt(p.id, 'send');
-    const s: GameState = store.get();
-    expect(s.decoded).toEqual([]);
+    expect(promptQueue(before).some((x) => (x.kind as string) === 'intel-ready')).toBe(false); // no send step: HQ can't push it
+    const pkg = before.intel.pushes.find((p) => p.source === 'SIGINT')!;
+    expect(pkg).toMatchObject({ square: 'C2', contactId: 'patrol' });
+    expect(['posted', 'pulling']).toContain(pkg.state);
+    expect(before.contacts.find((c) => c.id === 'patrol')!.planKnown).toBeFalsy(); // not until ALPHA pulls it
+    const s: GameState = pulled(before);
     const patrol = s.contacts.find((c) => c.id === 'patrol')!;
     expect(patrol).toMatchObject({ status: 'revealed', planKnown: true, planTo: 'D3' });
     expect(s.events.find((e) => e.kind === 'signal')?.status).toBe('resolved');
-    expect(s.comms.messages.some((m) => m.from === 'SIGINT' && m.text === 'Decoded: "PATROL AT C2 MOVING TO D3 FOR THE DRONE".')).toBe(true);
+    expect(s.comms.messages.some((m) => m.from === 'SIGINT' && m.text === 'Decoded: "PATROL AT C2 MOVING TO D3 FOR THE DRONE". Posted for ALPHA.')).toBe(true);
   });
 
   it('part of it gives where they are but not their plan; nothing gives nothing', () => {
@@ -117,7 +117,8 @@ describe('signal intercept', () => {
     }
     const s = store.get();
     expect(s.contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
-    expect(s.decoded[0].text).toBe('PATROL MOVING TO D3 FOR THE DRONE');
+    expect(s.comms.messages.some((m) => m.text.includes('PATROL MOVING TO D3 FOR THE DRONE'))).toBe(true);
+    expect(s.intel.pushes.find((p) => p.source === 'SIGINT')?.square).toBe('C2'); // posted on the square it was heard from
     expect(s.comms.messages.some((m) => /\bAT C2\b/.test(m.text))).toBe(false);
   });
 });

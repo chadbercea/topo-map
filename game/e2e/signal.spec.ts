@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, lockOn, start, untilTraffic, openEvent, hasEvent } from './helpers';
 
-test('intercept: get ORION-3 in range through the prompt, follow their wave, and send what is decoded to ALPHA (ILI-1394)', async ({ page, isMobile }) => {
+test('intercept: get ORION-3 in range through the prompt, follow their wave, and what is decoded goes on the shelf for ALPHA (ILI-1394, ILI-1499)', async ({ page, isMobile }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -44,19 +44,13 @@ test('intercept: get ORION-3 in range through the prompt, follow their wave, and
       g.tick(100);
     }
   });
-  // Over: no after-action panel. What came through is a marker on the map, for HQ to send to
-  // ALPHA (ILI-1394); sent, the patrol's plan is known.
+  // Over: no after-action panel, and no send step: what came through goes on the shelf for ALPHA
+  // to pull (ILI-1499); pulled, the patrol's plan is known.
   await expect(panel).toHaveCount(0);
   await expect(item).toHaveCount(0); // the intercept ran: the traffic's resolved
-  const prompt = page.getByTestId('prompt');
-  await expect(prompt).toHaveAttribute('data-kind', 'intel-ready');
-  // C2 is ground ORION-3 hasn't scanned: their words come through, never where they are (ILI-1493).
-  await expect(prompt.getByTestId('prompt-text')).toContainText('PATROL MOVING TO D3');
-  await expect(prompt.getByTestId('prompt-text')).not.toContainText('AT C2');
-  await prompt.getByTestId('prompt-response').click();
+  expect(await page.evaluate(() => window.game.get().intel.pushes.some((p) => p.source === 'SIGINT'))).toBe(true);
+  await page.evaluate(() => { for (let i = 0; i < 600 && !window.game.get().contacts.find((c) => c.id === 'patrol')?.planKnown; i++) window.game.tick(100); });
   await expect.poll(() => page.evaluate(() => window.game.get().contacts.find((c) => c.id === 'patrol')?.planKnown)).toBe(true);
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  await expect(page.getByTestId('comms-feed')).toContainText('Sent to ALPHA');
   expect(await hasEvent(page, 'contact', 'C2')).toBe(false); // no contact marker on unscanned ground
 });
 

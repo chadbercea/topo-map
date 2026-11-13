@@ -11,7 +11,7 @@ import { deployCost, medsFactor } from './upgrades';
 import type { Capability } from './responses';
 import type { Fight, Treatment } from './firefight';
 import type { MiniGame } from './minigame';
-import type { Decoded, Listen } from './signal';
+import type { Listen } from './signal';
 import type { AirRun } from './air';
 import type { SniperRun } from './sniper';
 import type { ExfilRun } from './exfil';
@@ -81,7 +81,6 @@ export type GameState = {
   bankrupt: boolean; // the PMC's credit ran out (ILI-1316)
   searching: string[]; // buildings HQ sent ALPHA to search (ILI-1316)
   listen: Listen | null; // an asset on its way into range of enemy traffic (ILI-1394)
-  decoded: Decoded[]; // decoded traffic waiting for HQ to send it to ALPHA (ILI-1394)
   acked: string[]; // prompts HQ has seen to that the state alone can't clear (an operator hurt, ILI-1396)
   upgrades: string[]; // what the PMC has bought in the store (ILI-1317)
   satellite: Satellite; // ORION-3: where it's looking and what it's doing
@@ -157,7 +156,6 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     bankrupt: false,
     searching: [],
     listen: null,
-    decoded: [],
     acked: [],
     upgrades: [...upgrades],
     satellite: initialSatellite(ROUTE[0]), // over the team at the infil, locked on (ILI-1485)
