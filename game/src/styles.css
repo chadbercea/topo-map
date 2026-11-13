@@ -1841,25 +1841,36 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud[data-tier='wide'] .orion .o-buttons .modes { grid-template-columns: 1fr 1fr; }
 .hud:not([data-tier='wide']) .orion .o-buttons .modes { grid-template-columns: 1.3fr 1fr 1fr; }
 /* Out of ORION-3's left edge (its column is 380 px on a wide screen), by its buttons. */
-.strike-flyout { position: fixed; z-index: 9; pointer-events: auto; max-height: calc(100dvh - 32px); overflow-y: auto; padding: 0; background: rgba(11, 15, 13, 0.97); border-color: #e5484d; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); animation: flyout-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.sc-strike { display: grid; align-content: start; background: var(--bg); animation: strike-slide 200ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes strike-slide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.square-card .sc-strike .sf-back { min-height: 28px; min-width: 32px; padding: 0 8px; font-size: 16px; line-height: 1; color: var(--ink); border: 1px solid var(--line); }
+/* A strike under way: the whole panel is its countdown (11-12). */
+.square-card .sc-running { display: grid; background: none; }
+.square-card .sc-running > :last-child { border-bottom: none; }
+/* The report folds (11-12): closed by default, a one-line summary each. */
+.square-card .sc-fold summary span { color: var(--ink); text-transform: none; letter-spacing: 0.04em; }
+.square-card .sc-fold[open] summary { color: var(--accent); }
+.square-card .sc-fold .sc-intel { border-bottom: none; }
+.square-card .sc-fold .sc-actions { border-top: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { .sc-strike { animation: none; } }
 @keyframes flyout-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
-.strike-flyout .sf-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-.strike-flyout .sf-head b { color: #f08a8d; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px; }
-.strike-flyout .sf-head span { color: var(--dim); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
-.strike-flyout .sf-head .x { margin-left: auto; font: inherit; color: var(--dim); background: none; border: 0; cursor: pointer; min-height: 0; padding: 0 4px; }
-.strike-flyout .sf-budget { display: flex; justify-content: space-between; align-items: baseline; margin: 0; padding: 8px 10px 0; color: var(--ink); }
-.strike-flyout .sf-budget small { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
-.strike-flyout .sc-marked { margin: 6px 10px 0; font-size: 11px; color: #f08a8d; }
-.strike-flyout :is(button) { font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: none; border: 1px solid var(--accent); cursor: pointer; }
-.strike-flyout .sc-event { padding: 6px 10px 10px; border-top: 1px solid var(--line); border-left: 3px solid #e5484d; margin-top: 6px; }
-.strike-flyout .sc-event h3 { margin: 0; font-size: 10px; letter-spacing: 0.12em; color: #e5484d; }
-.strike-flyout .sc-event .title, .strike-flyout .sc-event .note { margin: 0; font-size: 11px; }
-.strike-flyout .target-menu .options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
-.strike-flyout .target-menu .options button { min-height: 40px; padding: 4px 6px; display: grid; justify-items: center; gap: 1px; text-transform: none; border-color: rgba(229, 72, 77, 0.6); }
-.strike-flyout .target-menu .options button small { color: var(--dim); font-size: 10px; }
-.strike-flyout .target-menu .options button:hover:not(:disabled) { background: rgba(229, 72, 77, 0.25); color: #fff; }
-.strike-flyout .target-menu .options button:disabled { opacity: 0.45; cursor: default; }
-@media (prefers-reduced-motion: reduce) { .strike-flyout { animation: none; } }
+.sc-strike .sf-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.sc-strike .sf-head b { color: #f08a8d; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px; }
+.sc-strike .sf-head span { color: var(--dim); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+.sc-strike .sf-head .x { margin-left: auto; font: inherit; color: var(--dim); background: none; border: 0; cursor: pointer; min-height: 0; padding: 0 4px; }
+.sc-strike .sf-budget { display: flex; justify-content: space-between; align-items: baseline; margin: 0; padding: 8px 10px 0; color: var(--ink); }
+.sc-strike .sf-budget small { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+.sc-strike .sc-marked { margin: 6px 10px 0; font-size: 11px; color: #f08a8d; }
+.sc-strike :is(button) { font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: none; border: 1px solid var(--accent); cursor: pointer; }
+.sc-strike .sc-event { padding: 6px 10px 10px; border-top: 1px solid var(--line); border-left: 3px solid #e5484d; margin-top: 6px; }
+.sc-strike .sc-event h3 { margin: 0; font-size: 10px; letter-spacing: 0.12em; color: #e5484d; }
+.sc-strike .sc-event .title, .sc-strike .sc-event .note { margin: 0; font-size: 11px; }
+.sc-strike .target-menu .options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+.sc-strike .target-menu .options button { min-height: 40px; padding: 4px 6px; display: grid; justify-items: center; gap: 1px; text-transform: none; border-color: rgba(229, 72, 77, 0.6); }
+.sc-strike .target-menu .options button small { color: var(--dim); font-size: 10px; }
+.sc-strike .target-menu .options button:hover:not(:disabled) { background: rgba(229, 72, 77, 0.25); color: #fff; }
+.sc-strike .target-menu .options button:disabled { opacity: 0.45; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .sc-strike { animation: none; } }
 .orion .o-targeting { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .orion .o-reticle { position: absolute; left: 50%; top: 50%; width: 34%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 1.5px solid #e5484d; border-radius: 50%; background: linear-gradient(#e5484d, #e5484d) center / 1px 100% no-repeat, linear-gradient(#e5484d, #e5484d) center / 100% 1px no-repeat; opacity: 0.85; }
 .orion .o-targeting :is(.o-tt, .o-tc) { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; padding: 3px 8px; }

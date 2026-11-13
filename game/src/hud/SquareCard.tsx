@@ -21,6 +21,8 @@ import type { GameState } from '../sim/state';
 import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
 import { RECOVER_MS } from '../sim/mission';
 import { ESCROW_BOX } from '../sim/prices';
+import { TargetMenu } from './TargetMenu';
+import { cash } from './MissionBar';
 
 const ANCHOR_W = 300; // the flyout's width off its square's edge: room for its full report (ILI-1475)
 
@@ -212,28 +214,61 @@ export function strikeState(s: GameState, square: string) {
   return { marked, running, strikes, seen: seenHere && strikes.length > 0, locked: lockedOn(s, square), can: lockedOn(s, square) && seenHere && strikes.length > 0 && !running };
 }
 
+// Compact (11-12): the head, the square's tags, then its report folded into closed sections (Intel,
+// Ground, Activity), each a one-line summary until HQ opens it. Strike on the CONTACT tag slides the
+// strike options into the panel in place of the report; once a strike is under way here (drone,
+// heli or sniper), the whole panel is that strike's countdown until it's done.
 function AnchorBody({ s, square }: { s: GameState; square: string }) {
-  const { marked } = strikeState(s, square);
+  const st = strikeState(s, square);
   const locked = lockedOn(s, square);
   const sat = s.satellite;
   const coming = sat.state === 'slewing' && sat.aim === square;
   const tags = tagSquares(s);
   const contact = tags.contacts.includes(square);
   const buildings = tags.buildings.filter((e) => e.square === square);
+  const striking = st.can && s.events.some((e) => e.id === s.openEvent && e.kind === 'contact' && e.square === square);
+  const head = (
+    <header className="sc-head">
+      <b>{square}</b>
+      <span className="sc-status" data-testid="lock-status">
+        {locked ? `${satName(s)} locked on` : coming ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `${satName(s)} not over it`}
+      </span>
+      <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
+        ×
+      </button>
+    </header>
+  );
+
+  // A strike under way here: the panel is its countdown (OVERWATCH ILI-1303, REAPER-1 and HAMMER-2 ILI-1304).
+  if (st.running)
+    return (
+      <>
+        {head}
+        <div className="sc-running" data-testid="strike-running">
+          <SniperPanel square={square} />
+          <AirPanel weapon="drone" square={square} />
+          <AirPanel weapon="heli" square={square} />
+        </div>
+      </>
+    );
+
+  if (striking)
+    return (
+      <>
+        {head}
+        <StrikeOptions s={s} square={square} />
+      </>
+    );
+
+  const done = settled(s, square);
+  const reports = done ? squareReports(s, square) : [];
+  const intelLine = !done ? 'none yet' : squareFindings(s, square) === 'clear' ? 'clear' : `${reports.length} ${reports.length === 1 ? 'report' : 'reports'}`;
+  const events = s.events.filter(actionable(square));
   return (
     <>
-      <header className="sc-head">
-        <b>{square}</b>
-        <span className="sc-status" data-testid="lock-status">
-          {locked ? `${satName(s)} locked on` : coming ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `${satName(s)} not over it`}
-        </span>
-        <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
-          ×
-        </button>
-      </header>
+      {head}
 
-      {/* The square's own tags dock here, on the flyout's top edge, with their buttons (ILI-1475): a
-          tag never floats over the square's report. */}
+      {/* The square's own tags dock here, with their buttons (ILI-1475). */}
       {(contact || buildings.length > 0) && (
         <div className="sc-tags" data-testid="docked-tags">
           {contact && (
@@ -249,28 +284,69 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
         </div>
       )}
 
-      {/* What's hitting this square: OVERWATCH (ILI-1303), REAPER-1 and HAMMER-2 (ILI-1304). */}
-      <SniperPanel square={square} />
-      <AirPanel weapon="drone" square={square} />
-      <AirPanel weapon="heli" square={square} />
-
-      {/* The square's report (ILI-1475): what's known of it, stored on the square. Its intel, item by
-          item; ALPHA's work there; its fighters; its ground. */}
-      <SquareFacts s={s} square={square} />
-      <Readouts s={s} square={square} />
+      {/* ALPHA at work here: a live bar, so it stays out of the folds. */}
       <TeamWork s={s} square={square} />
-      {marked.length > 0 && (
-        <p className="sc-marked" data-testid="fighters-marked">
-          {marked.length} {marked.length === 1 ? 'fighter' : 'fighters'} marked
-        </p>
-      )}
-      <Details s={s} square={square} open />
-      {hasActions(s, square) && (
-        <section className="sc-actions" data-testid="action-panel" aria-label={`Act on ${square}`}>
-          <Actions s={s} square={square} />
-        </section>
+
+      <details className="sc-details sc-fold" data-testid="fold-intel">
+        <summary>
+          Intel · <span data-testid="intel-summary">{intelLine}</span>
+        </summary>
+        <SquareFacts s={s} square={square} />
+        <Readouts s={s} square={square} />
+        {st.marked.length > 0 && (
+          <p className="sc-marked" data-testid="fighters-marked">
+            {st.marked.length} {st.marked.length === 1 ? 'fighter' : 'fighters'} marked
+          </p>
+        )}
+      </details>
+      <Details s={s} square={square} />
+      {events.length > 0 && (
+        <details className="sc-details sc-fold" data-testid="fold-activity">
+          <summary>
+            Activity · <span>{events.map((e) => EVENT_LABEL[e.kind]).join(', ')}</span>
+          </summary>
+          <section className="sc-actions" data-testid="action-panel" aria-label={`Act on ${square}`}>
+            <Actions s={s} square={square} />
+          </section>
+        </details>
       )}
     </>
+  );
+}
+
+// The strike options, slid into the square's panel (11-12, after ILI-1474's flyout): the budget, the
+// fighters marked, and each contact with every way to hit it, cost and readiness. Back slides the
+// report in again; firing turns the panel into the strike's countdown.
+function StrikeOptions({ s, square }: { s: GameState; square: string }) {
+  const st = strikeState(s, square);
+  return (
+    <section className="sc-strike" data-testid="strike-flyout" data-square={square} aria-label={`Strike ${square}`}>
+      <header className="sf-head">
+        <button className="sf-back" onClick={() => game.dropEvent()} data-testid="strike-back" aria-label="Back to the square">
+          ‹
+        </button>
+        <b>Strike · {square}</b>
+        <span>{satName(s)} watching</span>
+      </header>
+      <p className="sf-budget">
+        <small>Budget</small>
+        <b>{cash(s.resources.budget)}</b>
+      </p>
+      <section className="sc-strikes" data-testid="strike-menu">
+        {st.marked.length > 0 && (
+          <p className="sc-marked">
+            {st.marked.length} {st.marked.length === 1 ? 'fighter' : 'fighters'} marked
+          </p>
+        )}
+        {st.strikes.map((e) => (
+          <div key={e.id} className="sc-event event-card" data-kind="contact" data-testid="event-card">
+            <h3>CONTACT · {e.square}</h3>
+            <p className="title">{e.title}</p>
+            <TargetMenu contactId={e.id.slice('contact-'.length)} />
+          </div>
+        ))}
+      </section>
+    </section>
   );
 }
 

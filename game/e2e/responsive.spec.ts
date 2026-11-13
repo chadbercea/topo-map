@@ -61,7 +61,7 @@ for (const [name, width, height] of SIZES) {
     await expect(menu.getByTestId('fire-sniper')).toBeVisible();
     expect(inside(await box(menu.getByTestId('fire-sniper')), width, height)).toBe(true);
 
-    await page.getByTestId('strike-flyout').getByRole('button', { name: 'Close' }).click();
+    await page.getByTestId('strike-back').click(); // back to the square's report (11-12)
     await expect(page.getByTestId('strike-flyout')).toHaveCount(0);
     await card.getByRole('button', { name: 'Close' }).click();
     await expect(card).toHaveCount(0);
