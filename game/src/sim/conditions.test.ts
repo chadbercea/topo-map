@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { initialState } from './state';
-import { ground, imageryOk, weather } from './conditions';
+import { ground, imageryOk, terrainReading, weather } from './conditions';
 import { blockers } from './progress';
 
 describe('header readouts (ILI-1187)', () => {
@@ -20,6 +20,22 @@ describe('header readouts (ILI-1187)', () => {
     expect(g.features).toContain('town');
     expect(g.imagery).toBe('no coverage');
     expect(ground(initialState(), 'G5')!.imagery).toBe('imaged earlier'); // the insertion point
+  });
+
+  it("ORION-3's terrain reading: height, range, grade and the way the ground faces (ILI-1504)", () => {
+    const t = terrainReading('E2')!;
+    const g = ground(initialState(), 'E2')!;
+    expect(t.centreM).toBeGreaterThanOrEqual(t.lowM);
+    expect(t.centreM).toBeLessThanOrEqual(t.highM);
+    expect(Math.abs(t.lowM - g.lowM)).toBeLessThanOrEqual(5); // the same elevation data as the map
+    expect(t.gradePct).toBeGreaterThanOrEqual(0);
+    expect(t.degrees).toBeLessThanOrEqual(t.gradePct); // a grade in % is always the bigger number
+    expect(terrainReading('Z9')).toBeNull();
+    // Every square reads, and a sloped one faces a compass point.
+    for (const sq of ['A1', 'C3', 'G5', 'H1']) {
+      const r = terrainReading(sq)!;
+      if (r.gradePct >= 2) expect(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']).toContain(r.aspect);
+    }
   });
 
   it('blockers: what stands in the way', () => {

@@ -11,7 +11,7 @@ import { CELL, squareAt, squareCenter } from '../map/grid';
 import type { GameState } from '../sim/state';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
-import { imageryOk, weather } from '../sim/conditions';
+import { imageryOk, terrainReading, weather, type Weather } from '../sim/conditions';
 
 const CLOUD_WARN = 70; // cloud cover where ORION-3 could soon be blind (as EnvWidget's tile)
 
@@ -161,6 +161,7 @@ export function OrionPanel() {
                 </span>
               </div>
             )}
+            {!hit && square && <PictureOverlay square={square} wx={wx} cloud={cloud} />}
             {/* The fighters it shows, each a tap away from its strikes (ILI-1250). Phaser draws the
                 dots; these sit on them, in the square's width at the picture's middle. */}
             <div className="o-targets">
@@ -236,6 +237,60 @@ export function OrionPanel() {
         </div>
       </div>
     </section>
+  );
+}
+
+// ORION-3's overlay on its picture (ILI-1504): what the map can't tell at a glance, in the
+// corners of the picture, Fira Mono. Top left the ground: the height at the square's centre, its
+// range, and its mean grade and the way it faces, from the elevation data the map contours. Bottom
+// left the weather over it as imaging conditions: the sky and light, cloud cover as a short bar
+// (it warns as it nears blinding ORION-3), visibility and wind. Read-only; it never catches input.
+function PictureOverlay({ square, wx, cloud }: { square: string; wx: Weather; cloud?: string }) {
+  const t = terrainReading(square);
+  if (!t) return null;
+  return (
+    <div className="o-overlay" data-testid="orion-overlay" aria-hidden>
+      <dl className="o-ov o-ov-ground" data-testid="orion-ground">
+        <div>
+          <dt>{square}</dt>
+          <dd data-testid="orion-elevation">EL {t.centreM} m</dd>
+        </div>
+        <div>
+          <dt>Rng</dt>
+          <dd>
+            {t.lowM}–{t.highM} m
+          </dd>
+        </div>
+        <div>
+          <dt>Slp</dt>
+          <dd data-testid="orion-slope">
+            {t.gradePct}% · {t.degrees}°{t.aspect ? ` · ${t.aspect}` : ' · flat'}
+          </dd>
+        </div>
+      </dl>
+      <dl className="o-ov o-ov-wx" data-testid="orion-weather">
+        <div>
+          <dt>Wx</dt>
+          <dd>
+            {wx.sky} · {wx.light}
+          </dd>
+        </div>
+        <div>
+          <dt>Cld</dt>
+          <dd>
+            <i className="o-ov-bar" data-warn={cloud} title={`Cloud cover ${wx.cloudPct}%`}>
+              <i style={{ width: `${wx.cloudPct}%` }} />
+            </i>
+          </dd>
+        </div>
+        <div>
+          <dt>Vis</dt>
+          <dd>
+            {wx.visibilityKm} km · {wx.wind.from} {wx.wind.kmh} km/h
+          </dd>
+        </div>
+      </dl>
+    </div>
   );
 }
 
