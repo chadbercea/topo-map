@@ -1340,10 +1340,17 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* The map boot (ILI-1462): only the map while it comes up (MapScene), the panels and the rest of
    the HUD dark. Then the panels' turn; what isn't a panel comes on with the last of them. */
 .hud[data-boot='map'] > :not(.map-area, .intro) { visibility: hidden; }
-.hud[data-boot='first'] > :is(.log-toggle, .heartbeat-strip, .dock-tabs, .recentre, .sheet-handle, .map-ctl) { animation: power-content 300ms ease-out both; animation-delay: 5600ms; } /* and the map controls last */
+.hud[data-boot='first'] > :is(.log-toggle, .recentre, .sheet-handle, .map-ctl) { animation: power-content 300ms ease-out both; animation-delay: 5600ms; } /* and the map controls last */
+/* Where the panels are tabs or chips (a phone, a rail on its side), each one powers on at its own
+   panel's turn, not all together with the map controls (11-13): ORION-3, then the team, then comms. */
+.hud[data-boot='first'] .dock-tabs > button { animation: power-frame 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.hud[data-boot='first'] .dock-tabs > [data-testid='tab-orion'] { animation-delay: 1300ms; }
+.hud[data-boot='first'] .dock-tabs > [data-testid='tab-team'] { animation-delay: 3200ms; }
+.hud[data-boot='first'] .dock-tabs > [data-testid='tab-satcom'] { animation-delay: 4600ms; }
+.hud[data-boot='first'] > .heartbeat-strip { animation: power-frame 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: 3200ms; }
 .hud[data-boot='first'] .comms-strip { animation: power-frame 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: 4600ms; } /* the comms strip is a frame like a panel's */
 .hud[data-boot='first'] .comms-strip > * { animation: power-content 340ms ease-out both; animation-delay: 5200ms; }
-@media (prefers-reduced-motion: reduce) { .hud[data-boot] .panel, .hud[data-boot] .panel > *, .hud[data-boot] .panel li, .hud[data-boot] > *, .hud[data-boot] .comms-strip, .hud[data-boot] .comms-strip > * { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .hud[data-boot] .panel, .hud[data-boot] .panel > *, .hud[data-boot] .panel li, .hud[data-boot] > *, .hud[data-boot] .comms-strip, .hud[data-boot] .comms-strip > *, .hud[data-boot] .dock-tabs > button { animation: none; } }
 
 /* Menus and the After Action Report power on the same way (ILI-1285). */
 :root:not([data-automated]) .overlay > .panel { --on: 0ms; animation: power-frame 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
