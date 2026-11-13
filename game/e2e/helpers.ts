@@ -38,14 +38,13 @@ export const untilOnStation = (page: Page) =>
     for (let i = 0; i < 300 && window.game.get().satellite.state === 'slewing'; i++) window.game.tick(100);
   });
 
-// Task ORION-3 to a square and take a photo there, straight through the store.
+// Task ORION-3 to a square and Analyze it, straight through the store.
 export const photo = (page: Page, square: string) =>
   page.evaluate((sq) => {
     const g = window.game;
     g.lookAt(sq);
     for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
-    g.capture('photo'); // the scan (ILI-1432)
-    g.photo(sq); // and its intel to ALPHA
+    g.capture('photo'); // Analyze: its package goes on the shelf, and ALPHA pulls it (ILI-1499)
     g.closeLook();
   }, square);
 

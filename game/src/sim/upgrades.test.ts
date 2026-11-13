@@ -5,7 +5,7 @@ import { initialState } from './state';
 import { createStore } from './store';
 import { bankruptAt, escrow, perCall, UPGRADES } from './upgrades';
 import { gauge, pushPhoto, pushVideo } from './intel';
-import { run, walking } from './testkit';
+import { pulled, run, walking } from './testkit';
 
 // The store's upgrades (ILI-1317): each changes the game where it says, from the next mission.
 const withUp = (...ids: string[]) => initialState(undefined, undefined, 0, [], ids);
@@ -33,7 +33,7 @@ describe('upgrades', () => {
     const once = pushVideo(withUp('video2'));
     const twice = pushVideo(once);
     expect(twice.intel.videoUsed).toBe(false);
-    expect(gauge(twice)).toBeGreaterThan(gauge(once));
+    expect(gauge(pulled(twice))).toBeGreaterThan(gauge(pulled(once))); // once ALPHA pulls them (ILI-1499)
   });
 
   it('field hospital: more meds; training: faster on foot', () => {

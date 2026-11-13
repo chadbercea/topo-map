@@ -36,15 +36,14 @@ describe('the never-stuck rule', () => {
     expect(requests(run(fed(blindAhead()), 30_000))).toHaveLength(0);
   });
 
-  it('a scan of the square, sent with Photo, answers it; still short, ALPHA asks for the next one (ILI-1451)', () => {
+  it('an Analyze of the square answers it: its package is posted, ALPHA pulls it; still short, ALPHA asks for the next one (ILI-1451, ILI-1499)', () => {
     const store = createStore(run(blindAhead(), 1_000));
     expect(openImageryRequest(store.get())?.square).toBe('F4');
     store.lookAt('F4');
     store.set(run(store.get(), 30_000));
     store.capture('photo');
-    store.set(run(store.get(), 1_000));
-    expect(openImageryRequest(store.get())?.square).toBe('F4'); // scanned, the intel held: not answered till it's sent
-    store.photo('F4');
+    store.set(run(store.get(), 100));
+    expect(openImageryRequest(store.get())).toBeUndefined(); // posted: HQ's part is done, nothing to send
     store.set(run(store.get(), 15_000));
     const [first, ...rest] = requests(store.get());
     expect(first.status).toBe('resolved');

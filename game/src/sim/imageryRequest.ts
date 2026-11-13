@@ -1,7 +1,7 @@
 import type { GameState } from './state';
 import type { MapEvent } from './events';
 import type { System } from './systems';
-import { gauge, heldIntel, LOW_AT } from './intel';
+import { gauge, LOW_AT } from './intel';
 
 // The never-stuck rule (option D, ILI-1349): when ALPHA is running low on intel on the move, or
 // holding because it's out, it asks HQ for imagery of the next square on its route nobody has
@@ -23,12 +23,10 @@ export function requestSquare(s: GameState): string | undefined {
 }
 
 // HQ's look at the square since ALPHA asked: ORION-3's, not ALPHA's own eyes on it as it walks up.
-// And its intel sent on to ALPHA (ILI-1451): a scan the analysts still hold, waiting on Photo,
-// hasn't answered it yet (video, live for good, has).
+// An Analyze posts its package on the shelf (ILI-1499): that answers it. ALPHA pulls it itself.
 const answered = (s: GameState, e: MapEvent) => {
   const snap = s.imagery[e.square];
-  const sent = !heldIntel(s, e.square) || (s.intel.live ?? []).includes(e.square);
-  return !!snap && snap.mode !== 'eyes' && snap.atMs >= e.atMs && sent;
+  return !!snap && snap.mode !== 'eyes' && snap.atMs >= e.atMs;
 };
 
 export const openImageryRequest = (s: GameState) => s.events.find((e) => isImageryRequest(e) && e.status !== 'resolved');

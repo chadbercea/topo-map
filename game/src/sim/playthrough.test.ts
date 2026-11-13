@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, initialState, MISSION_MS, MISSION_SEED } from './state';
 import { createStore } from './store';
-import { fed } from './testkit';
-import { heldIntel } from './intel';
+import { answerIntel, fed } from './testkit';
+import { activePrompt } from './prompts';
 
 // Whole missions under simple HQ strategies, to catch the team getting stuck anywhere. ALPHA
-// decides for itself (ILI-1315): HQ only scans, and answers its one question (resupply).
+// decides for itself (ILI-1315): HQ only analyzes, and answers its one question (resupply).
 function play(strategy: 'sharp' | 'silent', seed = MISSION_SEED) {
   const store = createStore(fed(initialState(DEFAULT_SETTINGS, MISSION_MS, 0, [], [], seed))); // fed: these test the route, not the gauge (ILI-1314)
   for (let t = 0; t < MISSION_MS && store.get().phase === 'running'; t += 100) {
@@ -15,9 +15,8 @@ function play(strategy: 'sharp' | 'silent', seed = MISSION_SEED) {
     if (call?.responses) store.respond(call.id, call.responses[0].id);
     if (strategy === 'silent') continue;
     if (s.minigame?.status === 'active') continue;
-    // Whatever the analysts hold goes to ALPHA before ORION-3 moves on: ALPHA only acts on what
-    // it's sent (ILI-1495).
-    if (s.satellite.state === 'idle' && heldIntel(s, s.satellite.aim)) store.photo(s.satellite.aim);
+    // No send step (ILI-1499): each Analyze posts its package on the shelf, and ALPHA pulls them
+    // itself as it reaches each square or holds. It only acts on what it has pulled (ILI-1495).
     // Scan the route ahead of ALPHA, one square at a time.
     const ahead = s.team.route.slice(s.team.waypoint).find((sq) => !s.map.scanned.includes(sq));
     if (s.satellite.state === 'idle' && ahead) store.lookAt(ahead);
@@ -60,5 +59,27 @@ describe('playthrough', () => {
     expect(silent.wins).toBeGreaterThan(seeds.length / 2); // possible
     expect(silent.wins).toBeLessThan(seeds.length); // but not safe
     expect(silent.lost).toBeGreaterThanOrEqual(seeds.length * 1.5); // and it costs men every time
+  });
+
+  // The real gauge, no pinning (ILI-1485, ILI-1499): HQ only works ALPHA's intel asks by hand
+  // (click, Analyze) and ALPHA pulls each package off the shelf itself. The opening works (held at
+  // the infil, released by its first pull within seconds) and the mission is won across seeds.
+  it('unfed, HQ only answers the intel asks: ALPHA pulls each package, moves off the infil, and gets out', () => {
+    for (const seed of Array.from({ length: 6 }, (_, i) => i + 1)) {
+      const store = createStore(initialState(DEFAULT_SETTINGS, MISSION_MS, 0, [], [], seed));
+      let moved = -1;
+      for (let t = 0; t < MISSION_MS && store.get().phase === 'running'; t += 100) {
+        store.tick(100);
+        const s = store.get();
+        if (moved < 0 && s.team.activity.startsWith('Moving')) moved = s.elapsedMs;
+        const call = s.comms.messages.find((m) => m.id === s.team.holdFor && m.status === 'new');
+        if (call?.responses) store.respond(call.id, call.responses[0].id);
+        answerIntel(store, activePrompt(s));
+        if (s.satellite.result) store.closeLook();
+      }
+      expect(moved).toBeGreaterThan(0);
+      expect(moved).toBeLessThan(15_000);
+      expect(store.get().mission.phase).toBe('complete');
+    }
   });
 });

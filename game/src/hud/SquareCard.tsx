@@ -23,6 +23,7 @@ import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
 import { RECOVER_MS } from '../sim/mission';
 import { knownIn } from '../sim/contacts';
 import { ESCROW_BOX } from '../sim/prices';
+import { downloadProgress, shelfState } from '../sim/intel';
 import { TargetMenu } from './TargetMenu';
 import { cash } from './MissionBar';
 
@@ -277,6 +278,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       <section className="sc-items" data-testid="intel-list" aria-label={`Intel on ${square}`}>
         <h3 className="sc-items-head">Intel</h3>
         {asked && <p className="sc-asked">{asked.title}</p>}
+        <PackageLine s={s} square={square} />
         {/* The contact is a line of the list like the rest (ILI-1490): no red CONTACT tag docked on
             the panel beside it, a second red flyout over the square's own panel. */}
         {contact && <ContactItem s={s} square={square} />}
@@ -307,7 +309,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
             <small className="note">{e.title}</small>
           </div>
         ))}
-        {!asked && !contact && !known.length && !buildings.length && !traffic.length && !others.length && (
+        {!asked && !shelfState(s, square) && !contact && !known.length && !buildings.length && !traffic.length && !others.length && (
           <p className="sc-none" data-testid="intel-none">
             No contacts or traffic reported
           </p>
@@ -315,6 +317,27 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       </section>
       <Details s={s} square={square} />
     </>
+  );
+}
+
+// The square's intel package (ILI-1499): HQ posts it on the shelf; ALPHA pulls it down. One line
+// says which: posted and waiting, coming down (a short bar), or ALPHA has it.
+function PackageLine({ s, square }: { s: GameState; square: string }) {
+  const st = shelfState(s, square);
+  if (!st) return null;
+  const who = s.team.callsign;
+  const text = st === 'posted' ? `Posted · waiting for ${who}` : st === 'pulling' ? `${who} downloading` : `${who} has it`;
+  return (
+    <div className="sc-item sc-package" data-kind="package" data-state={st} data-testid="square-package">
+      <span>
+        <i className="int">PKG</i> {text}
+      </span>
+      {st === 'pulling' && (
+        <span className="decay fill" role="progressbar" aria-valuenow={Math.round(downloadProgress(s) * 100)}>
+          <span style={{ width: `${downloadProgress(s) * 100}%` }} />
+        </span>
+      )}
+    </div>
   );
 }
 

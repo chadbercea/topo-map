@@ -35,23 +35,16 @@ test('ALPHA needing intel points at the grid square, not a big button; the playe
 
   // Step 2: on its way. Locked on, it waits for the player: no scan by itself.
   await fastForward(page, 30_000);
-  await expect(tag).toHaveAttribute('data-step', 'scan');
-  await expect(tag.getByTestId('prompt-text')).toHaveText('Scan F4 in ORION-3');
+  await expect(tag).toHaveAttribute('data-step', 'analyze');
+  await expect(tag.getByTestId('prompt-text')).toHaveText('Analyze F4 in ORION-3');
   expect(await page.evaluate(() => !!window.game.get().imagery.F4)).toBe(false);
 
-  // Step 3: Scan in ORION-3, pulsing.
+  // Step 3: Analyze in ORION-3, pulsing. Its package goes on the shelf and ALPHA pulls it (ILI-1499):
+  // no send step. F4's ask is answered and the tag goes.
   if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
   const sat = page.getByTestId('satellite');
   await expect(sat.getByTestId('capture-scan')).toHaveAttribute('data-cue', /.*/);
   await sat.getByTestId('capture-scan').click();
-  await expect(tag).toHaveAttribute('data-step', 'photo');
-  await expect(tag.getByTestId('prompt-text')).toHaveText('Photo: send F4 to ALPHA');
-  await fastForward(page, 5_000);
-  await expect(tag).toHaveAttribute('data-step', 'photo'); // the intel waits with the analysts till it's sent
-
-  // Step 4: Photo, pulsing, sends it to ALPHA. F4's ask is answered and the tag goes.
-  await expect(sat.getByTestId('capture-photo')).toHaveAttribute('data-cue', /.*/);
-  await sat.getByTestId('capture-photo').click();
   await fastForward(page, 200);
   await expect.poll(() => page.evaluate(() => window.game.get().events.some((e) => e.id.startsWith('imagery-F4') && e.status !== 'resolved'))).toBe(false);
   await expect(page.locator('[data-testid=prompt][data-square=F4]')).toHaveCount(0);

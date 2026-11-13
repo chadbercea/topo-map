@@ -25,7 +25,7 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   // On a fold or phone its tab comes forward.
   const moving = sat.getByTestId('orion-state');
   await expect(moving).toHaveText(/^Repositioning · → E3 · \d+:\d\d$/);
-  await expect(sat.getByTestId('orion-placeholder')).toContainText('On its way to E3, then take the photo');
+  await expect(sat.getByTestId('orion-placeholder')).toContainText('On its way to E3, then analyze it');
   // The button row keeps its place under the picture, unlit while it moves; Reposition reads Moving.
   await expect(sat.getByTestId('capture-scan')).toBeDisabled();
   await expect(sat.getByTestId('capture-scan')).toContainText('on its way');
@@ -42,8 +42,8 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(sat.getByTestId('orion-placeholder')).toHaveCount(0);
   const picture = sat.getByTestId('satellite-inset');
   await expect(picture).toBeVisible();
-  // Scan is the primary action (ILI-1432), lit and cued; Photo and Video wait for it (ILI-1465).
-  await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveText([/^Scan E3/, /^Photo/, /^Video/]); // the eye only: no Strike (ILI-1474)
+  // Analyze is the primary action (ILI-1432, ILI-1499), lit and cued; Video waits for it (ILI-1465).
+  await expect(sat.getByTestId('capture-modes').getByRole('button')).toHaveText([/^Analyze E3/, /^Video/]); // the eye only: no Strike (ILI-1474)
   await expect(sat.getByTestId('capture-scan')).toHaveAttribute('data-cue', 'true');
   await expect(sat.getByTestId('capture-video')).toBeDisabled();
   await expect(sat.getByTestId('look-here')).toBeDisabled(); // it's there already
@@ -152,12 +152,10 @@ test('over a square it has already shot, no Reposition and no Rescan: the shots 
   await page.evaluate(() => window.game.selectSquare('E3'));
   if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
   await expect(sat.getByTestId('look-here')).toBeDisabled();
-  // Already scanned and its intel sent (ILI-1432): Photo reads "sent", Video is there to press.
-  await expect(sat.getByTestId('capture-photo')).toBeDisabled();
-  await expect(sat.getByTestId('capture-photo')).toContainText('sent to ALPHA');
+  // Already analyzed, its package posted for ALPHA (ILI-1499): Video is there to press.
   await expect(sat.getByTestId('capture-video')).toBeEnabled();
   await expect(sat.getByTestId('capture-scan')).toBeDisabled(); // no Rescan: it's settled
-  await expect(sat.getByTestId('capture-scan')).toContainText('scanned');
+  await expect(sat.getByTestId('capture-scan')).toContainText(/posted for ALPHA|ALPHA has it/);
   // A different square: Reposition lights up.
   await page.evaluate(() => window.game.selectSquare('F4'));
   await expect(sat.getByTestId('look-here')).toHaveText(/^⇄ Reposition\s*to F4/);
@@ -186,7 +184,7 @@ test("a slew counts down once, on ORION-3's state line, then the photo (ILI-1269
   const first = await state.textContent();
   await page.evaluate(() => window.game.tick(2000));
   await expect(state).not.toHaveText(first!);
-  await expect(page.getByTestId('orion-placeholder')).toContainText('then take the photo');
+  await expect(page.getByTestId('orion-placeholder')).toContainText('then analyze it');
   // One countdown in the panel: not in the frame, not on the button.
   await expect(page.getByTestId('orion-placeholder')).not.toContainText(/\d:\d\d/);
   await expect(page.getByTestId('look-here')).not.toContainText(/\d:\d\d/);

@@ -3,7 +3,7 @@ import { heightAt, theater } from '../map/terrain';
 import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
 import type { Message } from './comms';
-import { burn, moving, settled } from './intel';
+import { burn, moving, settled, waiting } from './intel';
 import { speedFactor } from './upgrades';
 import { footfall } from './noise';
 
@@ -33,8 +33,8 @@ export const movementSystem: System = (s, dt) => {
     return team.activity === activity ? s : { ...s, team: { ...team, activity } };
   }
   // Out of intel (ILI-1314): it holds where it is until HQ feeds the gauge again. Into settled
-  // ground it needs none (ILI-1399).
-  const known = settled(s, target);
+  // ground it needs none (ILI-1399), once it has pulled the square's package (ILI-1499).
+  const known = settled(s, target) && !waiting(s, target);
   if (!moving(s) && !known) {
     if (team.activity === STARVED) return s;
     const held = { ...s, team: { ...team, activity: STARVED } };

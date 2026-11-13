@@ -1,4 +1,4 @@
-import { GRADE_LABEL, holdScan, holdSighting, pushVideo, settled } from './intel';
+import { GRADE_LABEL, postScan, postSighting, pushVideo, settled } from './intel';
 import { hearTraffic, heardTraffic } from './enemy';
 import { maybeBuilding } from './buildings';
 import { slewFactor } from './upgrades';
@@ -19,8 +19,8 @@ import type { System } from './systems';
 // the map as a snapshot that ages, and down to ALPHA as known ground.
 
 export const CAPTURE: Record<CaptureMode, { ms: number; label: string; what: string }> = {
-  photo: { ms: 0, label: 'Photo', what: 'Who is there and where, right now' },
-  video: { ms: 15_000, label: 'Video', what: 'Live: who is moving and where to. Once: a permanent intel feed to ALPHA' },
+  photo: { ms: 0, label: 'Analysis', what: 'Who is there and where, right now' }, // Analyze's still (ILI-1499: no Photo button)
+  video: { ms: 15_000, label: 'Video', what: 'Live: who is moving and where to, for good. Its feed goes on the shelf for ALPHA' },
 };
 
 export const SLEW_MS_PER_SQUARE = 2_000;
@@ -154,7 +154,7 @@ export function scan(s: GameState): GameState {
 
 // On station: take the picture.
 export function capture(s: GameState, mode: CaptureMode): GameState {
-  // On station, or idle and still locked on (ILI-1432: Photo and Video come after the Scan).
+  // On station, or idle and still locked on (ILI-1432: Video comes after the Analyze).
   const sat0 = s.satellite;
   const ready = sat0.state === 'onStation' || (sat0.state === 'idle' && lockedOn(s, sat0.aim));
   if (!ready || (mode === 'video' && (!settled(s, sat0.aim) || (s.intel.live ?? []).includes(sat0.aim)))) return s;
@@ -203,15 +203,15 @@ function finishLook(s: GameState): GameState {
   if (mode === 'video') {
     next = pushVideo(next);
     if (heardTraffic(next.intel.pushes.at(-1)?.items)) next = hearTraffic(next, square);
-    pushed = `Analysts: live feed to ${s.team.callsign} for the rest of the op`;
+    pushed = `Analysts: live feed posted for ${s.team.callsign}`;
   } else {
     if (!fighters) next = maybeBuilding(next, square); // the hunt: empty ground can turn up a building (ILI-1316)
-    // A scan (ILI-1432): the analysts hold its intel until HQ sends it to ALPHA with Photo.
-    const p = holdScan(next, square, fighters);
+    // Analyze (ILI-1432, ILI-1499): the analysts post its package on the shelf for ALPHA to pull.
+    const p = postScan(next, square, fighters);
     next = p.next;
     // Their radio traffic is one of a scan's rewards (ILI-1359): a SIGINT report that heard something.
     if (heardTraffic(next.intel.pushes.at(-1)?.items)) next = hearTraffic(next, square);
-    pushed = `Analysts: ${GRADE_LABEL[p.grade]}, ready for ${s.team.callsign} on Photo`;
+    pushed = `Analysts: ${GRADE_LABEL[p.grade]}, posted for ${s.team.callsign}`;
   }
   next = log(next, radio(s, satName(s), `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. ${pushed}.`));
   return sat.callId ? log(next, radio(s, s.team.callsign, `look-${s.elapsedMs}-team`, 'Imagery received.')) : next;
@@ -253,12 +253,12 @@ export const satelliteSystem: System = (s) => {
 };
 
 // A group walking into ground ORION-3 is watching live is found, like a scan would find it, and
-// the analysts hold a report for HQ to send ALPHA with Photo (ILI-1495).
+// the analysts post a package on it for ALPHA to pull (ILI-1495, ILI-1499).
 function findWatched(s: GameState, squares: string[]): GameState {
   const walkedIn = s.contacts.filter((c) => c.status === 'hidden' && c.units.length && squares.includes(c.square));
   if (!walkedIn.length) return s;
   let next = reveal(s, squares, satName(s));
-  for (const sq of new Set(walkedIn.map((c) => c.square))) if (!(next.intel.live ?? []).includes(sq)) next = holdSighting(next, sq, walkedIn.filter((c) => c.square === sq).reduce((n, c) => n + c.units.length, 0));
+  for (const sq of new Set(walkedIn.map((c) => c.square))) if (!(next.intel.live ?? []).includes(sq)) next = postSighting(next, sq, walkedIn.filter((c) => c.square === sq).reduce((n, c) => n + c.units.length, 0));
   return next;
 }
 
