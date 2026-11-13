@@ -4,9 +4,9 @@ import type { GameState } from './state';
 import type { System } from './systems';
 
 // ALPHA's picture of the enemy (ILI-1495): what ALPHA itself knows, never the sim's ground truth.
-// It only learns from intel HQ sends it, and from its own eyes:
-// - a Photo HQ sends: what the analysts saw in that square (and who is no longer there);
-// - a square on video: a live feed to the team, for good (ILI-1432);
+// It only learns from intel it pulls off the shelf (ILI-1499), and from its own eyes:
+// - an Analyze's package, once downloaded: what the analysts saw in that square (and who is no longer there);
+// - a square on video, once ALPHA has pulled its feed: live to the team, for good (ILI-1432);
 // - a decoded intercept HQ sends, when the intercept had a fix on them (ILI-1493);
 // - a square it's in contact on.
 // Its route choices, holds and go-arounds read this, and only this.
@@ -32,10 +32,12 @@ export const learn = (s: GameState, c: Contact, square: SquareId, units = c.unit
   team: { ...s.team, known: { ...s.team.known, [c.id]: { square, units, atMs: s.elapsedMs } } },
 });
 
-// The video feeds keep ALPHA's picture of their squares live.
+// The video feeds ALPHA has pulled keep its picture of their squares live.
+const onFeed = (s: GameState, sq: string) => s.intel.pushes.some((p) => p.square === sq && p.grade === 'video' && (p.state === 'fed' || p.state === 'banked'));
 export const pictureSystem: System = (s) => {
   let next = s;
   for (const sq of s.intel.live ?? []) {
+    if (!onFeed(next, sq)) continue;
     const snap = next.imagery[sq];
     if (!snap) continue;
     const had = Object.entries(next.team.known).filter(([, k]) => k.square === sq);

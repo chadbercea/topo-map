@@ -542,6 +542,16 @@ html, body {
 .op .role { color: var(--dim); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .op .status { font-size: 9px; letter-spacing: 0.1em; white-space: nowrap; }
 .team h2 .alerted { color: #e5484d; letter-spacing: 0.1em; }
+/* ALPHA's SATCOM (ILI-1499): the shelf, as one small instrument on the team bar. */
+.team .tsat-row { display: inline-flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; }
+.team .tsat-v { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.team .tsat { display: inline-flex; align-items: center; gap: 5px; flex: none; font-size: 10px; font-weight: 400; letter-spacing: 0.04em; color: var(--dim); white-space: nowrap; }
+.team .tsat-k { font-size: 9px; letter-spacing: 0.1em; padding: 0 4px; border: 1px solid currentColor; }
+.team .tsat[data-state='posted'] { color: #f2c14e; }
+.team .tsat[data-state='pulling'], .team .tsat[data-state='received'] { color: var(--accent); }
+.team .tsat-bar { display: block; width: 28px; height: 4px; background: rgba(53, 208, 165, 0.15); align-self: center; }
+.team .tsat-bar > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
+@media (prefers-reduced-motion: reduce) { .team .tsat-bar > span { transition: none; } }
 /* Ammo and meds as short bars (ILI-1248), amber when low and red when out; noise, how loud
    they've been moving (ILI-1222), as an orange one that rises and falls with it. */
 .op .gauge { display: flex; align-items: center; gap: 3px; white-space: nowrap; font-size: 9px; color: var(--dim); }
@@ -1718,10 +1728,22 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card .sc-bar[data-leaving] { opacity: 0; }
 .square-card .sc-bar .decay { display: block; height: 4px; background: rgba(53, 208, 165, 0.12); }
 .square-card .sc-bar .decay > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
+.square-card .sc-package { display: grid; gap: 4px; }
+.square-card .sc-package .int { font-style: normal; font-size: 9px; letter-spacing: 0.1em; padding: 1px 5px; border: 1px solid currentColor; margin-right: 4px; }
+.square-card .sc-package[data-state='posted'] { color: #f2c14e; }
+.square-card .sc-package[data-state='pulling'], .square-card .sc-package[data-state='received'] { color: var(--accent); }
+.square-card .sc-package .decay { display: block; width: 48px; height: 4px; background: rgba(53, 208, 165, 0.12); }
+.square-card .sc-package .decay > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
 .square-card .sc-found { animation: found-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 .square-card .sc-found .int { border-color: var(--accent); color: var(--accent); }
 @keyframes found-in { from { opacity: 0; transform: translateY(6px); } }
-@media (prefers-reduced-motion: reduce) { .square-card .sc-bar, .square-card .sc-found { animation: none; transition: none; } }
+@media (prefers-reduced-motion: reduce) { .square-card .sc-bar, .square-card .sc-package { display: grid; gap: 4px; }
+.square-card .sc-package .int { font-style: normal; font-size: 9px; letter-spacing: 0.1em; padding: 1px 5px; border: 1px solid currentColor; margin-right: 4px; }
+.square-card .sc-package[data-state='posted'] { color: #f2c14e; }
+.square-card .sc-package[data-state='pulling'], .square-card .sc-package[data-state='received'] { color: var(--accent); }
+.square-card .sc-package .decay { display: block; width: 48px; height: 4px; background: rgba(53, 208, 165, 0.12); }
+.square-card .sc-package .decay > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
+.square-card .sc-found { animation: none; transition: none; } }
 
 /* ORION-3's buttons (ILI-1432): Scan is the primary action; once the square is settled, its
    sub-actions (Photo to ALPHA, Video) slide into its place. */
@@ -1797,7 +1819,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion h2 .o-repo:disabled { opacity: 0.45; cursor: default; }
 .orion h2 .o-state { margin-left: auto; }
 .orion .o-buttons .modes { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; flex: 1; min-width: 0; }
-.orion .o-buttons .modes .o-scan { grid-column: 1 / -1; }
+.orion .o-buttons .modes > button { grid-column: 1 / -1; } /* Analyze, then Video, each a full row (ILI-1499: no Photo) */
 .orion .o-buttons .modes button { min-height: 0; }
 .orion .o-buttons .modes .o-scan:not(:disabled) { border-color: #f2c14e; color: #f2c14e; background: rgba(242, 193, 78, 0.08); }
 .orion .o-buttons .modes .o-scan:hover:not(:disabled) { color: #0b0f0d; background: #f2c14e; }
@@ -1813,9 +1835,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud[data-tier='wide'] .orion > .env-stack { grid-area: env; }
 .hud[data-tier='wide'] .orion > :is(.o-saw, .o-last) { display: none; }
 .hud[data-tier='wide'] .orion .o-icon { display: block; }
-/* Narrower than wide, the three share one row: the 60 px rank-1 row stays as it was (ILI-1400). */
-.hud:not([data-tier='wide']) .orion .o-buttons .modes { grid-template-columns: 1.3fr 1fr 1fr; grid-template-rows: minmax(0, 1fr); }
-.hud:not([data-tier='wide']) .orion .o-buttons .modes .o-scan { grid-column: auto; }
+/* Narrower than wide, the two share one row: the 60 px rank-1 row stays as it was (ILI-1400). */
+.hud:not([data-tier='wide']) .orion .o-buttons .modes { grid-template-columns: 1.3fr 1fr; grid-template-rows: minmax(0, 1fr); }
+.hud:not([data-tier='wide']) .orion .o-buttons .modes > button { grid-column: auto; }
 
 /* Strike (ILI-1467): ORION-3's fourth button, red; its flyout slides out of ORION-3's left edge, by
    the buttons, over the map; while a strike runs on its square, the picture goes to targeting. */
@@ -1919,7 +1941,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .hud[data-layout='fold'] .orion > .o-frame { aspect-ratio: 1; height: 100%; width: auto; min-height: 0; }
   .hud[data-layout='fold'] .orion > .o-buttons { height: 100px; padding: 8px 12px 8px 0; }
   .hud[data-layout='fold'] .orion > .o-buttons .modes { grid-template-columns: 1fr 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
-  .hud[data-layout='fold'] .orion > .o-buttons .modes .o-scan { grid-column: 1 / -1; }
+  .hud[data-layout='fold'] .orion > .o-buttons .modes > button { grid-column: 1 / -1; }
   .hud[data-layout='fold'] .orion > .o-detail { grid-area: detail; min-height: 0; overflow: hidden; align-content: start; padding-right: 12px; }
   .hud[data-layout='fold'] .orion > .env-stack { grid-area: env; padding-left: 0; }
   .hud[data-layout='fold'] .orion > :is(.o-saw, .o-last) { display: none; }
@@ -1977,6 +1999,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .team-bar > h2 .callsign { font-size: 11px; letter-spacing: 0.16em; }
 .team-bar > h2 .activity { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .team-bar > h2 .alerted { font-size: 9px; }
+.team-bar > .tsat { flex: none; display: grid; align-content: center; justify-items: start; gap: 3px; width: 112px; padding: 0 10px; border-right: 1px solid rgba(53, 208, 165, 0.18); }
 .team-bar .heartbeat-strip { flex: 1; min-width: 0; height: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; padding: 0; margin: 0; background: none; border: 0; cursor: pointer; }
 .team-bar .hb { display: grid; align-content: center; justify-items: center; gap: 1px; min-width: 0; border-right: 1px solid rgba(53, 208, 165, 0.1); cursor: pointer; }
 .team-bar .hb:hover, .team-bar .hb[data-hover] { background: rgba(53, 208, 165, 0.08); }

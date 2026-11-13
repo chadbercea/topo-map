@@ -43,14 +43,14 @@ describe('ORION-3 tasking', () => {
     expect(s.satellite.arriveMs - s.elapsedMs).toBe(Math.round((SETTLE_MS + Math.SQRT2 * SLEW_MS_PER_SQUARE) / 100) * 100);
   });
 
-  it('a scan images the square (ILI-1432: its intel waits for Photo)', () => {
+  it('Analyze images the square and posts its package for ALPHA (ILI-1432, ILI-1499)', () => {
     const store = atStart();
     look(store, 'F4');
     const s = store.get();
     expect(s.map.scanned).toContain('F4');
     expect(s.satellite).toMatchObject({ state: 'idle', aim: 'F4', result: { square: 'F4', mode: 'photo', fighters: 0 } });
     expect(s.imagery.F4).toMatchObject({ mode: 'photo', live: false, seen: [] });
-    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 collection complete \(photo\): nothing there\. Analysts: [a-z -]+, ready for ALPHA on Photo\./.test(m.text))).toBe(true); // a scan holds it (ILI-1432)
+    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 collection complete \(analysis\): nothing there\. Analysts: [a-z -]+, posted for ALPHA\./.test(m.text))).toBe(true); // on the shelf (ILI-1499)
   });
 
   it('a look at E3 finds the checkpoint: every fighter, and that they have not noticed ALPHA', () => {

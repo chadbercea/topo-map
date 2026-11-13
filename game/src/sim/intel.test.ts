@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { activePrompt } from './prompts';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { feed, gauge, grade, GRADE_INTEL, INT_KINDS, LOW_AT, pushPhoto, reports, SQUARE_INTEL, VIDEO_INTEL } from './intel';
-import { answerIntel, run } from './testkit';
+import { DOWNLOAD_MS, feed, gauge, grade, GRADE_INTEL, INT_KINDS, LOW_AT, pushPhoto, pushVideo, reports, shelfState, SQUARE_INTEL, VIDEO_INTEL } from './intel';
+import { squareAt, squareCenter } from '../map/grid';
+import { answerIntel, fed as fedGauge, lockOn, pulled, run } from './testkit';
 
 // ALPHA's intel gauge (ILI-1314): it moves only while HQ keeps it fed.
 const blindAhead = (): GameState => {
@@ -61,7 +62,7 @@ describe('the intel gauge', () => {
     for (let t = 0; t < 300_000; t += 100) {
       store.tick(100);
       const p = activePrompt(store.get());
-      answerIntel(store, p); // click the square, wait for the lock, Scan, Photo (ILI-1451)
+      answerIntel(store, p); // click the square, wait for the lock, Analyze; ALPHA pulls it (ILI-1451, ILI-1499)
     }
     expect(store.get().team.waypoint).toBeGreaterThan(start + 3);
   });
@@ -75,7 +76,9 @@ describe('the intel gauge', () => {
     store.capture('video');
     store.set(run(store.get(), 16_000));
     expect(store.get().intel.live).toContain('G5');
-    expect(store.get().intel.fuel).toBeGreaterThan(VIDEO_INTEL - SQUARE_INTEL); // less what it has walked since
+    expect(store.get().intel.pushes.find((p) => p.grade === 'video')).toMatchObject({ amount: VIDEO_INTEL }); // its feed, on the shelf till ALPHA pulls it (ILI-1499)
+    store.set(pulled(store.get()));
+    expect(store.get().intel.pushes.find((p) => p.grade === 'video')?.state).toBe('fed');
     store.lookAt('F4');
     store.set(run(store.get(), 20_000));
     store.scan('F4');
@@ -119,14 +122,51 @@ describe('the intel gauge', () => {
     expect(gauge(s)).toBeGreaterThan(0);
   });
 
-  it('a scan holds the intel; Photo sends it to ALPHA (ILI-1432)', () => {
+  it('Analyze posts the package on the shelf; ALPHA, holding at the infil, pulls it down, and only then has it (ILI-1499)', () => {
     const store = createStore(initialState());
     store.lookAt('G5');
     store.scan('G5');
-    expect(gauge(store.get())).toBe(0); // with the analysts
-    expect(store.get().comms.messages.at(-1)?.text).toMatch(/Analysts: (all clear|[a-z]+-grade intel), ready for ALPHA on Photo\./);
-    store.photo('G5');
+    expect(gauge(store.get())).toBe(0); // on the shelf: HQ can't push it to the team
+    expect(shelfState(store.get(), 'G5')).toBe('posted');
+    expect(store.get().comms.messages.at(-1)?.text).toMatch(/Analysts: (all clear|[a-z]+-grade intel), posted for ALPHA\./);
+    store.tick(100);
+    expect(shelfState(store.get(), 'G5')).toBe('pulling'); // holding: it syncs at once
+    expect(store.get().intel.download).toBeTruthy();
+    for (let t = 100; t < DOWNLOAD_MS - 100; t += 100) store.tick(100);
+    expect(gauge(store.get())).toBe(0); // still coming down
+    expect(store.get().team.position).toEqual(squareCenter('G5'));
+    store.tick(200);
+    expect(shelfState(store.get(), 'G5')).toBe('received');
     expect(gauge(store.get())).toBeGreaterThan(0);
+    for (let i = 0; i < 20; i++) store.tick(100);
+    expect(store.get().team.activity).toMatch(/^Moving/); // the opening (ILI-1485): released by its first pull
+  });
+
+  it('on the move, ALPHA pulls at the next square it reaches, not before (ILI-1499)', () => {
+    const s0 = fedGauge(initialState());
+    const mid = run(s0, 3_000); // on its way out of the infil
+    expect(mid.team.activity).toMatch(/^Moving/);
+    const far = mid.team.route[mid.team.waypoint + 2];
+    const posted = lockOn(mid, far);
+    const store = createStore(posted);
+    store.scan(far);
+    let s = store.get();
+    expect(shelfState(s, far)).toBe('posted');
+    const from = squareAt(s.team.position.x, s.team.position.y);
+    for (let t = 0; t < 120_000 && squareAt(s.team.position.x, s.team.position.y) === from; t += 100) {
+      expect(shelfState(s, far)).toBe('posted'); // waits on the shelf while ALPHA is mid-square
+      s = run(s, 100);
+    }
+    expect(shelfState(s, far)).toBe('pulling'); // the square it reached: it syncs
+    s = run(s, DOWNLOAD_MS);
+    expect(shelfState(s, far)).toBe('received');
+  });
+
+  it('a video feed goes on the shelf too, and fills the gauge once pulled (ILI-1499)', () => {
+    const s = pushVideo(lockOn(initialState(), 'G5'));
+    expect(gauge(s)).toBe(0);
+    expect(shelfState(s, 'G5')).toBe('posted');
+    expect(gauge(run(s, DOWNLOAD_MS + 100))).toBe(VIDEO_INTEL);
   });
 });
 

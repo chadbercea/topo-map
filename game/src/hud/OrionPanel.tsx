@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { AGE_LABEL, freshness, targets } from '../sim/imagery';
-import { heldIntel, settled, squareFindings, squareReports } from '../sim/intel';
+import { settled, shelfState, squareFindings, squareReports } from '../sim/intel';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { pins, useSeenVersion } from './pins';
@@ -92,15 +92,15 @@ export function OrionPanel() {
   // step. Until ORION-3 is over the square HQ is working, its one button is a big Reposition;
   // once it's there, Photo and Video take its place.
   const away = picked ? slewMs(s, picked) : 0;
-  // The three buttons' state, for the square ORION-3 is over (ILI-1432).
+  // The buttons' state, for the square ORION-3 is over (ILI-1432, ILI-1499).
   const busy = sat.state === 'capturing';
   const done = settled(s, sat.aim);
-  const held = !!heldIntel(s, sat.aim);
+  const shelved = shelfState(s, sat.aim);
   const onVideo = (s.intel.live ?? []).includes(sat.aim);
   // Nothing picked: the square it's over is the one it works, so locked on there it's in position
-  // (ILI-1485: at the open it's over ALPHA at the infil, and Scan is lit).
+  // (ILI-1485: at the open it's over ALPHA at the infil, and Analyze is lit).
   const inPosition = live || sat.state === 'capturing' || (sat.state === 'idle' && (picked ? away === 0 : lockedOn(s, sat.aim)));
-  // Every satellite action lives here, and only here (ILI-1459, ILI-1465): Scan, Photo and Video
+  // Every satellite action lives here, and only here (ILI-1459, ILI-1465): Analyze and Video
   // under the picture, always in their places, lit when they can be used; Reposition in the header.
   const ready = inPosition && !tied;
   // A strike under way on the square ORION-3 is over: its picture goes to targeting (ILI-1467).
@@ -198,7 +198,7 @@ export function OrionPanel() {
           </div>
         ) : (
           <div className="o-placeholder" data-testid="orion-placeholder" data-state={tied ? 'tied' : sat.state}>
-            <span className="o-caption">{!tied && sat.state === 'slewing' ? `On its way to ${sat.aim}, then take the photo` : caption}</span>
+            <span className="o-caption">{!tied && sat.state === 'slewing' ? `On its way to ${sat.aim}, then analyze it` : caption}</span>
           </div>
         )}
       </div>
@@ -219,23 +219,19 @@ export function OrionPanel() {
       {/* The one Last look (rank 8). */}
       <p className="o-last">{last ? `Last look ${last.square} · ${last.mode} ${zulu(last.atMs)} · ${AGE_LABEL[freshness(last, now)]}` : 'No imagery on file'}</p>
 
-      {/* ORION-3's buttons (rank 1), pinned under the picture, never hidden: Scan across the width,
-          then Photo and Video. Each is lit when it can be used, and the next thing to do pulses
-          (ILI-1257, ILI-1432). Scan settles the square; Photo sends its intel to ALPHA to keep it
-          moving; Video keeps the square live on the map for good. */}
+      {/* ORION-3's buttons (rank 1), pinned under the picture, never hidden: Analyze, then Video.
+          Each is lit when it can be used, and the next thing to do pulses (ILI-1257, ILI-1432).
+          Analyze images the square, settles it and posts its package on the shelf for ALPHA to
+          pull (ILI-1499: no Photo, no send); Video keeps the square live on the map for good. */}
       <div className="o-buttons" data-testid="orion-buttons">
         <div className="modes" data-testid="capture-modes" data-step={done ? 'send' : 'scan'}>
-          <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title="Image the square: the analysts report what's there" data-cue={(ready && !busy && !done) || undefined}>
-            Scan {sat.aim}
-            <small>{tied ? 'tied up by the intercept' : done ? 'scanned' : ready ? 'image and report' : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
-          </button>
-          <button disabled={!ready || busy || !done || !held} onClick={() => game.photo(sat.aim)} data-testid="capture-photo" title={`Send ${sat.aim}'s intel to ${s.team.callsign}`} data-cue={(ready && done && held && !busy) || undefined}>
-            Photo
-            <small>{!done ? 'after a scan' : held ? `send to ${s.team.callsign}` : `sent to ${s.team.callsign}`}</small>
+          <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title={`Image the square: the analysts report what's there and post the package for ${s.team.callsign}`} data-cue={(ready && !busy && !done) || undefined}>
+            Analyze {sat.aim}
+            <small>{tied ? 'tied up by the intercept' : done ? (shelved === 'received' ? `${s.team.callsign} has it` : `posted for ${s.team.callsign}`) : ready ? `image, report, post for ${s.team.callsign}` : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
           </button>
           <button disabled={!ready || busy || !done || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title="Keep the square live on the map for good">
             Video
-            <small>{onVideo ? 'live' : busy ? 'filming' : !done ? 'after a scan' : 'live for good'}</small>
+            <small>{onVideo ? 'live' : busy ? 'filming' : !done ? 'after Analyze' : 'live for good'}</small>
           </button>
         </div>
       </div>
@@ -251,9 +247,9 @@ function ScanReport({ s, square }: { s: GameState; square: string }) {
   const clear = squareFindings(s, square) === 'clear';
   const marked = targets(s).filter((t) => squareAt(t.x, t.y) === square).length;
   return (
-    <section className="o-report" data-testid="square-intel" data-clear={clear || undefined} aria-label={`Scan report on ${square}`}>
+    <section className="o-report" data-testid="square-intel" data-clear={clear || undefined} aria-label={`Analysis of ${square}`}>
       <p className="o-report-head">
-        Scan · {square} · <span data-testid="intel-summary">{clear ? 'cleared' : `${items.length} ${items.length === 1 ? 'report' : 'reports'}`}</span>
+        Analysis · {square} · <span data-testid="intel-summary">{clear ? 'cleared' : `${items.length} ${items.length === 1 ? 'report' : 'reports'}`}</span>
         {marked > 0 && <span data-testid="fighters-marked"> · {marked} {marked === 1 ? 'fighter' : 'fighters'} marked</span>}
       </p>
       <ul>

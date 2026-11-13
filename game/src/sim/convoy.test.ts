@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { LOOT } from './missions/blackBox';
-import { heldIntel, sendPhoto } from './intel';
+import { postedIntel } from './intel';
 import type { GameState } from './state';
 import { LOADOUT } from './team';
-import { lockOn, run, walking } from './testkit';
+import { lockOn, pulled, run, walking } from './testkit';
 
 // The salvage convoy that cuts the exfil (ILI-1192): clear ground, the convoy left in. ALPHA
 // weighs it on its own (ILI-1315): takes it for the haul, or swings wide to the alternate exfil.
@@ -16,8 +16,8 @@ const withConvoy = (s0: GameState = walking()): GameState => ({ ...s0, script: {
 // HQ keeps ORION-3 over the exfil it has scanned (ILI-1493): that's how anyone knows the convoy is there.
 const watchingExfil = (s: GameState): GameState => lockOn({ ...s, intel: { ...s.intel, graded: [...s.intel.graded, 'B1'] } }, 'B1');
 const toTheConvoy = (s0?: GameState, watch = true) => until(withConvoy(watch ? watchingExfil(s0 ?? walking()) : s0), (x) => x.contacts.some((c) => c.id === 'convoy'));
-// Seen, HQ sends it to ALPHA with Photo (ILI-1495): until then ALPHA doesn't know.
-const sent = (s: GameState) => sendPhoto(run(s, 100), 'B1');
+// Seen, its package goes on the shelf, and ALPHA knows once it pulls it (ILI-1495, ILI-1499).
+const sent = (s: GameState) => pulled(run(s, 100));
 // Down to 40% ammo: under the convoy's weight, and not yet low enough to ask for a resupply.
 const lowAmmo = (s: GameState): GameState => ({ ...s, team: { ...s.team, operators: s.team.operators.map((o) => ({ ...o, ammo: Math.round(LOADOUT[o.role].ammo * 0.4) })) } });
 
@@ -37,14 +37,14 @@ describe('the salvage convoy on the exfil (ILI-1192, ILI-1315)', () => {
     expect(s.events.some((e) => e.id === 'contact-convoy' && e.square === 'B1')).toBe(true);
     expect(s.comms.messages.some((m) => m.id === 'exfil-cut')).toBe(false);
     expect(s.team.holdFor).toBeNull();
-    // The analysts hold a report on it for Photo; ALPHA doesn't know yet (ILI-1495).
-    expect(heldIntel(s, 'B1')).toBeTruthy();
+    // The analysts post a package on it; ALPHA doesn't know till it pulls it (ILI-1495, ILI-1499).
+    expect(postedIntel(s, 'B1') ?? s.intel.pushes.find((p) => p.square === 'B1' && p.state === 'pulling')).toBeTruthy();
     expect(s.team.known.convoy).toBeUndefined();
     expect(sent(s).team.known.convoy).toMatchObject({ square: 'B1', units: 3 });
   });
 
-  it('seen but never sent: ALPHA doesn\u2019t weigh it, and walks into the fight (ILI-1495)', () => {
-    const s = until(toTheConvoy(), (x) => !!x.team.fight || x.phase !== 'running');
+  it('nobody watching: ALPHA doesn\u2019t weigh it, and walks into the fight (ILI-1495)', () => {
+    const s = until(toTheConvoy(undefined, false), (x) => !!x.team.fight || x.phase !== 'running');
     expect(s.comms.messages.some((m) => m.from === 'ALPHA' && /Contact in B1, a salvage convoy/.test(m.text))).toBe(false);
     expect(s.team.fight?.square).toBe('B1');
   });

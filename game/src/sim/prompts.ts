@@ -7,7 +7,6 @@ import { squareAt } from '../map/grid';
 import { ammoLeft, condition } from './team';
 import { LOW } from './support';
 import { countdown } from './gameTime';
-import { heldIntel } from './intel';
 
 // The HUD's tiers (ILI-1391). Tier one is always on and tiny (the mission timer, the team's
 // heartbeat). Tier three is drawers HQ opens (the team, the comms log, square details). Tier two
@@ -34,11 +33,11 @@ export type Prompt = {
 };
 
 // ALPHA's intel ask, step by step (ILI-1451): the player does each one by hand. Click the grid
-// square (ORION-3 goes), wait for the lock, Scan in ORION-3, then Photo sends the intel to ALPHA.
-export type IntelStep = 'click' | 'moving' | 'scan' | 'photo';
+// square (ORION-3 goes), wait for the lock, then Analyze in ORION-3: its package goes on the shelf,
+// and ALPHA pulls it (ILI-1499). Nothing for HQ to send.
+export type IntelStep = 'click' | 'moving' | 'analyze';
 export function intelStep(s: GameState, grid: string): IntelStep {
-  if (heldIntel(s, grid)) return 'photo';
-  if (lockedOn(s, grid)) return 'scan';
+  if (lockedOn(s, grid)) return 'analyze';
   if (s.satellite.state === 'slewing' && s.satellite.aim === grid) return 'moving';
   return 'click';
 }
@@ -50,7 +49,7 @@ export const PRIORITY = { operatorHurt: 0, teamRequest: 1, enemyTraffic: 2, inte
 type Source = (s: GameState) => Prompt[];
 
 // ALPHA needs intel (ILI-1341, ILI-1349): out of it and holding, or running low on the move. It
-// asks for a look at the next square on its route, and a scan there, sent with Photo, answers it.
+// asks for a look at the next square on its route, and an Analyze there, posted for it, answers it.
 // On the grid (ILI-1450, ILI-1451): no big button and nothing done for the player. The prompt is
 // pinned to the grid square ALPHA needs, outlined on the map, and its tag says the next step.
 const intelNeeded: Source = (s) => {
@@ -63,8 +62,7 @@ const intelNeeded: Source = (s) => {
   const hint = {
     click: `${s.team.callsign} needs route intel · click ${grid}`,
     moving: `${satName(s)} moving to ${grid}…`,
-    scan: `Scan ${grid} in ${satName(s)}`,
-    photo: `Photo: send ${grid} to ${s.team.callsign}`,
+    analyze: `Analyze ${grid} in ${satName(s)}`,
   }[step];
   return [
     {

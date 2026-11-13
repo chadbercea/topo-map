@@ -10,7 +10,6 @@ import { callSniper } from './sniper';
 import { unlock, unlockedWeapons, weaponBlocked, type Weapon } from './ordnance';
 import { perCall } from './upgrades';
 import { sendToSearch } from './buildings';
-import { sendPhoto } from './intel';
 import { spend } from './sites';
 import { sendResupply } from './support';
 import { jam, listenWith, sendDecoded, tune } from './signal';
@@ -121,10 +120,8 @@ export function createStore(initial: GameState = initialState()) {
     lookAt: (square: string) => set(task(state, square)),
     // The move step (ILI-1397): ORION-3 slews to the square, in real time, before anything runs there.
     moveSatellite: (square: string) => set(task(state, square)),
-    // Scan from the square's menu (ILI-1367): the photo, once ORION-3 is locked on (ILI-1397).
+    // Analyze (ILI-1367, ILI-1499): image the square, report, and post its package for ALPHA, once ORION-3 is locked on (ILI-1397).
     scan: (square: string) => set(scanSquare(state, square)),
-    // Photo (ILI-1432): a scanned square's intel to ALPHA, with ORION-3 locked on it.
-    photo: (square: string) => lockedOn(state, square) && set(sendPhoto(state, square)),
     // Answer the prompt on screen (ILI-1391): the response does what it says.
     answerPrompt: (id: string, response: string) => {
       const p = allPrompts(state).find((x) => x.id === id);

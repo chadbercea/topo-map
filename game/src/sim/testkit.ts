@@ -73,6 +73,14 @@ export function asking(s: GameState = walking()): GameState {
   return run({ ...s, team: { ...s.team, operators: ops } }, 200);
 }
 
+// ALPHA pulls what's on the shelf (ILI-1499): run until no package is waiting for it (posted or
+// coming down), so what HQ posted is in ALPHA's picture and gauge.
+export function pulled(s: GameState, maxMs = 60_000) {
+  const pending = (x: GameState) => x.intel.pushes.some((p) => p.state === 'posted' || p.state === 'pulling');
+  for (let t = 0; t < maxMs && pending(s); t += 100) s = step(s, 100);
+  return s;
+}
+
 // ORION-3 locked on a square (ILI-1397): nothing runs on a square it isn't over.
 export const lockOn = (s: GameState, square: string): GameState => ({ ...s, satellite: initialSatellite(square) });
 
@@ -97,7 +105,8 @@ export function lockedStore(start?: GameState) {
 }
 
 // Play ALPHA's intel prompt the way the player does (ILI-1451): each step by hand. Click the grid
-// square (ORION-3 goes), wait out the move, Scan in ORION-3, then Photo sends the intel to ALPHA.
+// square (ORION-3 goes), wait out the move, then Analyze in ORION-3. Its package goes on the shelf
+// and ALPHA pulls it by itself (ILI-1499): no send step.
 // Call it every tick: it does the one step the prompt is on.
 export function answerIntel(store: ReturnType<typeof createStore>, p: { kind: string; grid?: string; step?: string } | null | undefined) {
   if (p?.kind !== 'intel-needed' || !p.grid) return;
@@ -106,6 +115,5 @@ export function answerIntel(store: ReturnType<typeof createStore>, p: { kind: st
     store.selectSquare(grid);
     store.lookAt(grid);
   }
-  if (p.step === 'scan') store.scan(grid);
-  if (p.step === 'photo') store.photo(grid);
+  if (p.step === 'analyze') store.scan(grid);
 }

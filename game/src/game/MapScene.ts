@@ -15,7 +15,7 @@ import { BOARD } from '../sim/minigame';
 import { lockedOn, orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
 import { searchingIn } from '../sim/buildings';
-import { squareFindings } from '../sim/intel';
+import { shelfState, squareFindings } from '../sim/intel';
 import { knownIn, knownSquare, orionScanned } from '../sim/contacts';
 import { follows, freshness, GHOST_MS, groupOrigin, shownAt, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
@@ -99,6 +99,7 @@ export class MapScene extends Phaser.Scene {
   private missionLabels: Phaser.GameObjects.Text[] = [];
   private stampGfx!: Phaser.GameObjects.Graphics; // what each scan settled, on its square (ILI-1399)
   private stamps = new Map<string, Phaser.GameObjects.Text>();
+  private pkgTags = new Map<string, Phaser.GameObjects.Text>(); // each square's intel package: posted, coming down, ALPHA has it (ILI-1499)
   private stampKey = '';
   private markerGfx!: Phaser.GameObjects.Graphics;
   private blindGfx!: Phaser.GameObjects.Graphics;
@@ -286,7 +287,7 @@ export class MapScene extends Phaser.Scene {
     }
     // Exfil can move (ILI-1192): the A/B/C markers follow it. Every frame: the objective pulses (ILI-1392).
     this.drawMission(_time);
-    const stampKey = `${st.intel.graded.join()}|${st.intel.pushes.length}|${st.contacts.filter((c) => c.status === 'revealed').length}|${this.zoom}`;
+    const stampKey = `${st.intel.graded.join()}|${st.intel.pushes.map((p) => p.state[1]).join('')}|${st.contacts.filter((c) => c.status === 'revealed').length}|${this.zoom}`;
     if (stampKey !== this.stampKey) {
       this.stampKey = stampKey;
       this.drawStamps();
@@ -371,7 +372,7 @@ export class MapScene extends Phaser.Scene {
     this.labels.forEach((l) => show(l, on(settle + grid * 0.6)));
     for (const o of [this.teamGfx, this.dotGfx, this.teamLabel]) show(o, on(marks + MAP_BOOT.team));
     for (const o of [this.missionGfx, ...this.missionLabels, this.exfilLabel]) show(o, on(marks + MAP_BOOT.mission));
-    const known = [this.routeGfx, this.stampGfx, ...this.stamps.values(), this.seenGfx, ...this.seenTags.values(), this.markerGfx, this.intelGfx, this.blindGfx, ...this.blindLabels, this.fightGfx, this.modeGfx, ...this.modeLabels, this.droneGfx, this.airLabels.drone, this.airLabels.heli, this.bracketGfx, this.satGfx, this.selectGfx, this.wipeGfx];
+    const known = [this.routeGfx, this.stampGfx, ...this.stamps.values(), ...this.pkgTags.values(), this.seenGfx, ...this.seenTags.values(), this.markerGfx, this.intelGfx, this.blindGfx, ...this.blindLabels, this.fightGfx, this.modeGfx, ...this.modeLabels, this.droneGfx, this.airLabels.drone, this.airLabels.heli, this.bracketGfx, this.satGfx, this.selectGfx, this.wipeGfx];
     for (const o of known) show(o, on(marks + MAP_BOOT.known));
   }
 
@@ -1246,6 +1247,7 @@ export class MapScene extends Phaser.Scene {
     const g = this.stampGfx.clear();
     const px = DPR / this.zoom;
     for (const [sq, label] of this.stamps) if (!s.intel.graded.includes(sq)) (label.destroy(), this.stamps.delete(sq));
+    for (const [sq, tag] of this.pkgTags) if (!shelfState(s, sq)) (tag.destroy(), this.pkgTags.delete(sq));
     for (const sq of s.intel.graded) {
       const p = parseSquare(sq);
       if (!p) continue;
@@ -1264,7 +1266,34 @@ export class MapScene extends Phaser.Scene {
       const h = label.height / this.zoom + 4 * px;
       g.fillStyle(0x0b0f0d, 0.85).fillRect(x, y - h, w, h);
       g.lineStyle(px, found ? TEAM : TEAL, found ? 0.9 : 0.6).strokeRect(x, y - h, w, h);
+      this.drawPackage(sq, x + w + 3 * px, y);
     }
+    // A package can be on the shelf for a square that isn't settled (a video's, a sighting's).
+    for (const sq of new Set(s.intel.pushes.map((p) => p.square ?? ''))) {
+      const q = !s.intel.graded.includes(sq) && parseSquare(sq);
+      if (q) this.drawPackage(sq, q.col * CELL + 8 * px, (q.row + 1) * CELL - 8 * px);
+    }
+  }
+
+  // The square's intel package (ILI-1499), a 1 px tag beside its stamp: POSTED while it waits on the
+  // shelf for ALPHA, ⇣ ALPHA while the team downloads it, ✓ ALPHA once ALPHA has it. Still: no motion.
+  private drawPackage(sq: string, x: number, y: number) {
+    const state = shelfState(game.get(), sq);
+    if (!state) return;
+    const px = DPR / this.zoom;
+    const g = this.stampGfx;
+    const color = state === 'posted' ? '#f2c14e' : '#35d0a5';
+    const text = state === 'posted' ? 'POSTED' : state === 'pulling' ? '⇣ ALPHA' : '✓ ALPHA';
+    const tag = this.pkgTags.get(sq) ?? this.add.text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color }).setOrigin(0, 1);
+    if (!this.pkgTags.has(sq)) {
+      this.pkgTags.set(sq, tag);
+      this.inset.ignore(tag);
+    }
+    tag.setText(text).setColor(color).setScale(1 / this.zoom).setPosition(x + 4 * px, y - 2 * px);
+    const w = tag.width / this.zoom + 8 * px;
+    const h = tag.height / this.zoom + 4 * px;
+    g.fillStyle(0x0b0f0d, 0.85).fillRect(x, y - h, w, h);
+    g.lineStyle(px, state === 'posted' ? TEAM : TEAL, 0.9).strokeRect(x, y - h, w, h);
   }
 
   // The mission's three points: A infil, B crash site, C exfil. The objective is a marker on the

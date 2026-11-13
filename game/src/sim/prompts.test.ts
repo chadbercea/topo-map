@@ -34,17 +34,13 @@ describe('the prompt queue', () => {
     store.lookAt('F4');
     expect(p()).toMatchObject({ step: 'moving', hint: 'ORION-3 moving to F4…' });
     for (let i = 0; i < 400 && store.get().satellite.state === 'slewing'; i++) store.tick(100);
-    expect(p()).toMatchObject({ step: 'scan', hint: 'Scan F4 in ORION-3' });
+    expect(p()).toMatchObject({ step: 'analyze', hint: 'Analyze F4 in ORION-3' });
     for (let i = 0; i < 100; i++) store.tick(100);
-    expect(store.get().imagery.F4).toBeUndefined(); // locked on, nothing scanned for the player
+    expect(store.get().imagery.F4).toBeUndefined(); // locked on, nothing analyzed for the player
+    const id = p().id;
     store.scan('F4');
     store.tick(100);
-    expect(p()).toMatchObject({ step: 'photo', hint: 'Photo: send F4 to ALPHA' });
-    for (let i = 0; i < 100; i++) store.tick(100);
-    expect(p()?.step).toBe('photo'); // the intel waits with the analysts till the player sends it
-    const id = p().id;
-    store.photo('F4');
-    store.tick(100);
+    // Posted on the shelf (ILI-1499): HQ's part is done, there's no send step; ALPHA pulls it.
     expect(promptQueue(store.get()).some((x) => x.id === id)).toBe(false);
   });
 
