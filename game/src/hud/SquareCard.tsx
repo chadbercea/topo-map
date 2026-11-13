@@ -28,7 +28,7 @@ import { downloadProgress, kindLabel, shelfState } from '../sim/intel';
 import { TargetMenu } from './TargetMenu';
 import { cash } from './MissionBar';
 
-const ANCHOR_W = 300; // the flyout's width off its square's edge: room for its full report (ILI-1475)
+const ANCHOR_W = 240; // the flyout's width off its square's edge: compact, so it doesn't bury the map (ILI-1505)
 
 // The square's anchor (ILI-1278, ILI-1302, ILI-1308): the contextual menu for the square HQ
 // picked, pinned beside it on the map, so what's done there stays tied to its ground however
