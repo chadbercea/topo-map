@@ -9,7 +9,7 @@ import { launch } from './air';
 import { callSniper } from './sniper';
 import { unlock, unlockedWeapons, weaponBlocked, type Weapon } from './ordnance';
 import { perCall } from './upgrades';
-import { sendToSearch } from './buildings';
+import { postBuilding } from './buildings';
 import { spend } from './sites';
 import { sendResupply } from './support';
 import { jam, listenWith, tune } from './signal';
@@ -39,7 +39,7 @@ function scanSquare(s: GameState, square: string): GameState {
   return next.satellite.aim === square ? scan(next) : next;
 }
 
-// An action HQ took on a square (a strike, a search, a jam) opens it to Analyze again (ILI-1516).
+// An action HQ took on a square (a strike, building intel, a jam) opens it to Analyze again (ILI-1516).
 const acted = (before: GameState, next: GameState, square: string | undefined) => (next === before || !square ? next : reopen(next, square));
 
 // Where an event happens: its square, for the lock check (ILI-1397).
@@ -70,9 +70,9 @@ export function createStore(initial: GameState = initialState()) {
     restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state), upgrades: readonly string[] = state.upgrades) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
     // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
     setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
-    // Send ALPHA to search a building a scan turned up (ILI-1316).
+    // Post intel on a building a scan turned up for ALPHA to pull (ILI-1316, ILI-1517).
     // Like every action on a square, only with ORION-3 locked on it (ILI-1397).
-    search: (square: string) => lockedOn(state, square) && set(acted(state, sendToSearch(state, square), square)),
+    postBuilding: (square: string) => lockedOn(state, square) && set(acted(state, postBuilding(state, square), square)),
     // Buy a capability (ILI-1316).
     unlock: (w: Weapon) => set(unlock(state, w)),
     // Replay a mission exactly, or play another (?seed=, ILI-1454): start over on that seed.

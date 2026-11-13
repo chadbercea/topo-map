@@ -3,6 +3,7 @@ import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { promptQueue } from '../sim/prompts';
 import { lockedOn } from '../sim/satellite';
+import { searchingIn } from '../sim/buildings';
 import { strikeState } from './SquareCard';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
@@ -260,21 +261,38 @@ export function ContactTag({ square }: { square: string }) {
   );
 }
 
-// A building's tag (ILI-1316, ILI-1469): Search sends ALPHA; then it says ALPHA's on its way.
+// A building's tag (ILI-1316, ILI-1469, ILI-1517): HQ posts its intel on the building for ALPHA
+// to pull; then the tag is ALPHA's status on it: waiting on the shelf, downloading, on its way,
+// or unable (ILI-1518), when HQ can post again.
+const UNABLE_TAG = { contact: 'enemy in it', 'cut-off': 'no way round' } as const;
 export function BuildingTag({ id }: { id: string }) {
   const s = useGame((x) => x);
   const e = s.events.find((x) => x.id === id);
   if (!e) return null;
-  const going = s.searching.includes(e.square);
+  const who = s.team.callsign;
+  const pkg = e.tasked ? s.intel.pushes.find((p) => p.id === e.tasked) : undefined;
+  const status = searchingIn(s) === e.square
+    ? `${who} searching`
+    : s.searching.includes(e.square)
+      ? `${who} on its way`
+    : pkg?.state === 'posted'
+      ? `Intel posted · waiting for ${who}`
+      : pkg?.state === 'pulling'
+        ? `${who} downloading intel`
+        : null;
+  const unable = !status && e.reach && e.reach !== 'going' ? `${who} unable · ${UNABLE_TAG[e.reach]}` : null;
   return (
     <div className="pt-tag" role="group" aria-label={`${e.title} · ${e.square}`}>
       <span>Building · {e.square}</span>
-      {going ? (
-        <em data-testid="search-going">{s.team.callsign} on its way</em>
+      {status ? (
+        <em data-testid="building-status">{status}</em>
       ) : (
-        <button onClick={() => game.search(e.square)} data-testid="send-search">
-          Search
-        </button>
+        <>
+          {unable && <em data-testid="building-status">{unable}</em>}
+          <button onClick={() => game.postBuilding(e.square)} title={`Post what HQ knows of the building for ${who} to pull`} data-testid="post-building">
+            Post intel
+          </button>
+        </>
       )}
     </div>
   );

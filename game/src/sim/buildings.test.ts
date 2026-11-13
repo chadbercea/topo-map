@@ -29,15 +29,21 @@ describe('buildings', () => {
     expect(store.get().events.find((e) => e.id === buildingId(sq))).toMatchObject({ kind: 'building', square: sq, status: 'new' });
   });
 
-  it('sent to search it, ALPHA detours there, searches, and what it finds pays on the spot', () => {
+  it('HQ posts its intel on the building; ALPHA pulls it, detours there, searches, and what it finds pays on the spot (ILI-1517)', () => {
     const s0 = walking();
     // A building just off ALPHA's way: G4, next to G5 where it starts.
     const s1 = { ...s0, events: [...s0.events, { id: buildingId('G4'), kind: 'building' as const, square: 'G4', title: 'A building worth a search', atMs: 0, status: 'new' as const }] };
     const store = createStore(s1);
-    store.search('G4');
-    expect(store.get().team.route[store.get().team.waypoint]).toBe('G4');
+    store.postBuilding('G4');
+    // On the shelf: HQ can't send ALPHA in, and ALPHA isn't going yet.
+    expect(store.get().intel.pushes.at(-1)).toMatchObject({ square: 'G4', building: true, state: 'posted' });
+    expect(store.get().searching).toEqual([]);
     const before = store.get().resources.budget;
     let s = store.get();
+    for (let t = 0; t < 30_000 && !s.searching.length; t += 100) s = run(s, 100);
+    expect(s.searching).toEqual(['G4']); // pulled it: it can get there, so it goes
+    expect(s.team.route.slice(s.team.waypoint)).toContain('G4');
+    expect(s.events.find((e) => e.id === buildingId('G4'))?.reach).toBe('going');
     for (let t = 0; t < 120_000 && !s.comms.messages.some((m) => m.id === 'found-building-G4'); t += 100) s = run(s, 100);
     expect(s.comms.messages.some((m) => m.id === 'search-building-G4')).toBe(true);
     const found = s.comms.messages.find((m) => m.id === 'found-building-G4')!;
@@ -85,7 +91,7 @@ describe('supplies from a search', () => {
 
 // Reaching a building (ILI-1518): ALPHA plans the way on what it knows of the enemy, around any
 // contact it wouldn't take, and drops the search if it later goes around the building.
-import { reach, sendToSearch } from './buildings';
+import { postBuilding, reach, sendToSearch } from './buildings';
 import { makeContact } from './contacts';
 import { parseSquare } from '../map/grid';
 import { told } from './testkit';
@@ -147,5 +153,46 @@ describe('reaching a building', () => {
     const s = run(rerouted, 100);
     expect(s.searching).toEqual([]);
     expect(s.events.find((e) => e.id === buildingId('G4'))?.status).toBe('new');
+  });
+});
+
+// Posting a building to ALPHA (ILI-1517): ALPHA answers once it has pulled the intel.
+describe('building intel on the shelf', () => {
+  const pullAll = (s: GameState) => {
+    for (let t = 0; t < 30_000 && s.intel.pushes.some((p) => p.building && p.state !== 'fed'); t += 100) s = run(s, 100);
+    return run(s, 100);
+  };
+
+  it('fills nothing on the gauge: it is a tasking, not route intel', () => {
+    const s0 = building(walking(), 'G4');
+    const s = postBuilding(s0, 'G4');
+    expect(s.intel.pushes.at(-1)?.amount).toBe(0);
+    expect(postBuilding(s, 'G4')).toBe(s); // once on the shelf, not twice
+  });
+
+  it('ALPHA says it can’t reach a building with the enemy in it, on the radio, and the tag says so', () => {
+    const s0 = building(withContacts(walking(), [strong('inside', 'E5')]), 'E5');
+    const s = pullAll(postBuilding(s0, 'E5'));
+    expect(s.searching).toEqual([]);
+    const e = s.events.find((x) => x.id === buildingId('E5'))!;
+    expect(e).toMatchObject({ reach: 'contact', status: 'new' });
+    expect(s.comms.messages.filter((m) => m.id.startsWith('unable-building-E5')).map((m) => m.text)).toEqual(['Unable to reach the building in E5: enemy in it.']);
+  });
+
+  it('HQ can post again once the ground has changed, and ALPHA goes', () => {
+    const s0 = building(withContacts(walking(), [strong('inside', 'E5')]), 'E5');
+    const refused = pullAll(postBuilding(s0, 'E5'));
+    const struck = { ...refused, contacts: [], team: { ...refused.team, known: {} } }; // gone
+    const s = pullAll(postBuilding(struck, 'E5'));
+    expect(s.searching).toEqual(['E5']);
+    expect(s.events.find((x) => x.id === buildingId('E5'))?.reach).toBe('going');
+  });
+
+  it('gone around later, ALPHA says it can’t make the building after all', () => {
+    const s0 = sendToSearch(building(walking(), 'G4'), 'G4');
+    const rerouted = { ...s0, team: { ...s0.team, route: s0.team.route.map((sq) => (sq === 'G4' ? 'H4' : sq)) } };
+    const s = run(rerouted, 100);
+    expect(s.events.find((e) => e.id === buildingId('G4'))).toMatchObject({ status: 'new', reach: 'cut-off' });
+    expect(s.comms.messages.some((m) => m.id.startsWith('unable-building-G4'))).toBe(true);
   });
 });

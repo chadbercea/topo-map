@@ -34,8 +34,9 @@ export function cards(s: CardSource): Card[] {
   const events: Card[] = s.events.flatMap((e) => {
     // ALPHA needing intel is a tier two prompt on the map (ILI-1391), not a card.
     if (!asksHq(e.kind) || isImageryRequest(e)) return [];
-    // A building is answered once HQ sends ALPHA in, before the search is done.
-    const answered = e.status === 'resolved' || (e.kind === 'building' && s.searching.includes(e.square));
+    // A building is answered once HQ posts its intel, before the search is done (ILI-1517), unless
+    // ALPHA said it can't reach it.
+    const answered = e.status === 'resolved' || (e.kind === 'building' && (s.searching.includes(e.square) || (!!e.tasked && (!e.reach || e.reach === 'going'))));
     return [{ type: 'event' as const, id: `card-${e.id}`, atMs: e.atMs, kind: e.kind, square: e.square, title: e.title, open: !answered, eventId: e.id }];
   });
 

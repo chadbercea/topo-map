@@ -14,6 +14,10 @@ export type MapEvent = {
   title: string;
   atMs: number; // mission time it appeared
   status: EventStatus;
+  // A building (ILI-1517): the shelf package HQ posted on it for ALPHA, and ALPHA's answer once
+  // it pulled it: on its way, or it can't reach it (ILI-1518).
+  tasked?: string;
+  reach?: 'going' | 'contact' | 'cut-off';
 };
 
 // Something the mission script schedules: a map event, a radio line, or both. The radio
