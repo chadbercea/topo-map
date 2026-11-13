@@ -4,6 +4,8 @@ import { legSpeed, BASE_SPEED } from './movement';
 import { initialState, MISSION_MS, ROUTE, type GameState } from './state';
 import { step } from './systems';
 import { walking } from './testkit';
+import { feed, SQUARE_INTEL } from './intel';
+import { lockedOn } from './satellite';
 
 const run = (s: GameState, seconds: number) => {
   for (let i = 0; i < seconds * 10; i++) s = step(s, 100);
@@ -19,10 +21,16 @@ describe('legSpeed', () => {
 });
 
 describe('team movement', () => {
-  it('starts at the first square heading for the second', () => {
+  it('opens holding at the infil, ORION-3 locked on over it, until HQ\'s first intel (ILI-1485)', () => {
     const s = initialState();
     expect(s.team.position).toEqual(squareCenter(ROUTE[0]));
-    expect(s.team.activity).toBe(`Moving to ${ROUTE[1]}`);
+    expect(s.team.activity).toBe(`Holding at ${ROUTE[0]}`);
+    expect(lockedOn(s, ROUTE[0])).toBe(true);
+    const held = run(s, 10); // the gauge starts empty: ALPHA stays put
+    expect(held.team.position).toEqual(squareCenter(ROUTE[0]));
+    const fedIn = run(feed(held, SQUARE_INTEL * 2), 10); // the first intel lands: it sets off for the second square
+    expect(fedIn.team.position).not.toEqual(squareCenter(ROUTE[0]));
+    expect(fedIn.team.activity).toBe(`Moving to ${ROUTE[1]}`);
   });
 
   it('moves on its own toward the next waypoint', () => {

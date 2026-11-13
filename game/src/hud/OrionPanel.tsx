@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, describe, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
+import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { freshness } from '../sim/imagery';
 import { heldIntel, settled } from '../sim/intel';
 import { AIR, airGone, arrived } from '../sim/air';
@@ -100,7 +100,9 @@ export function OrionPanel() {
   const done = settled(s, sat.aim);
   const held = !!heldIntel(s, sat.aim);
   const onVideo = (s.intel.live ?? []).includes(sat.aim);
-  const inPosition = live || sat.state === 'capturing' || (sat.state === 'idle' && !!picked && away === 0);
+  // Nothing picked: the square it's over is the one it works, so locked on there it's in position
+  // (ILI-1485: at the open it's over ALPHA at the infil, and Scan is lit).
+  const inPosition = live || sat.state === 'capturing' || (sat.state === 'idle' && (picked ? away === 0 : lockedOn(s, sat.aim)));
   // Every satellite action lives here, and only here (ILI-1459, ILI-1465): Scan, Photo and Video
   // under the picture, always in their places, lit when they can be used; Reposition in the header.
   const ready = inPosition && !tied;
