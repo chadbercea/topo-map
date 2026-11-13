@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { AGE_LABEL, freshness, targets } from '../sim/imagery';
-import { kindLabel, settled, shelfState, squareFindings, squareReports } from '../sim/intel';
+import { analyzable, kindLabel, reopened, settled, shelfState, squareFindings, squareReports } from '../sim/intel';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { pins, useSeenVersion } from './pins';
@@ -94,7 +94,10 @@ export function OrionPanel() {
   const away = picked ? slewMs(s, picked) : 0;
   // The buttons' state, for the square ORION-3 is over (ILI-1432, ILI-1499).
   const busy = sat.state === 'capturing';
-  const done = settled(s, sat.aim);
+  const analyzed = settled(s, sat.aim);
+  // Analyze is spent on a square until HQ acts on it; then it's lit again (ILI-1516).
+  const again = reopened(s, sat.aim);
+  const done = !analyzable(s, sat.aim);
   const shelved = shelfState(s, sat.aim);
   const onVideo = (s.intel.live ?? []).includes(sat.aim);
   // Nothing picked: the square it's over is the one it works, so locked on there it's in position
@@ -207,14 +210,14 @@ export function OrionPanel() {
       {/* What its imagery found for the square it's on (rank 6, ILI-1487): the readout of its last
           shot, and the scan report, item by item. Satellite intel is ORION-3's; the square's
           flyout keeps only what HQ can act on there. */}
-      {!tied && (result || done) && (
+      {!tied && (result || analyzed) && (
         <div className="o-saw" data-testid="orion-found">
           {result && (
             <p data-testid="satellite-result">
               Saw {result.square} · {CAPTURE[result.mode].label}: {describe(result)}
             </p>
           )}
-          {done && <ScanReport s={s} square={sat.aim} />}
+          {analyzed && <ScanReport s={s} square={sat.aim} />}
         </div>
       )}
       {/* The one Last look (rank 8). */}
@@ -228,11 +231,11 @@ export function OrionPanel() {
         <div className="modes" data-testid="capture-modes" data-step={done ? 'send' : 'scan'}>
           <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title={`Image the square: the analysts report what's there and post the package for ${s.team.callsign}`} data-cue={(ready && !busy && !done) || undefined}>
             Analyze {sat.aim}
-            <small>{tied ? 'tied up by the intercept' : done ? (shelved === 'received' ? '✓ intel received' : `posted for ${s.team.callsign}`) : ready ? `image, report, post for ${s.team.callsign}` : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
+            <small>{tied ? 'tied up by the intercept' : done ? (shelved === 'received' ? '✓ intel received' : `posted for ${s.team.callsign}`) : ready ? (again ? `re-image, post for ${s.team.callsign}` : `image, report, post for ${s.team.callsign}`) : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
           </button>
-          <button disabled={!ready || busy || !done || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title="Keep the square live on the map for good">
+          <button disabled={!ready || busy || !analyzed || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title="Keep the square live on the map for good">
             Video
-            <small>{onVideo ? 'live' : busy ? 'filming' : !done ? 'after Analyze' : 'live for good'}</small>
+            <small>{onVideo ? 'live' : busy ? 'filming' : !analyzed ? 'after Analyze' : 'live for good'}</small>
           </button>
         </div>
       </div>

@@ -14,6 +14,7 @@ import { spend } from './sites';
 import { sendResupply } from './support';
 import { jam, listenWith, tune } from './signal';
 import { step } from './systems';
+import { reopen } from './intel';
 
 // The central store every system and panel reads and writes. Phaser drives tick();
 // React panels subscribe through useGame().
@@ -37,6 +38,9 @@ function scanSquare(s: GameState, square: string): GameState {
   const next = task(s, square);
   return next.satellite.aim === square ? scan(next) : next;
 }
+
+// An action HQ took on a square (a strike, a search, a jam) opens it to Analyze again (ILI-1516).
+const acted = (before: GameState, next: GameState, square: string | undefined) => (next === before || !square ? next : reopen(next, square));
 
 // Where an event happens: its square, for the lock check (ILI-1397).
 const eventSquare = (s: GameState, eventId: string) => s.events.find((e) => e.id === eventId)?.square;
@@ -68,7 +72,7 @@ export function createStore(initial: GameState = initialState()) {
     setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
     // Send ALPHA to search a building a scan turned up (ILI-1316).
     // Like every action on a square, only with ORION-3 locked on it (ILI-1397).
-    search: (square: string) => lockedOn(state, square) && set(sendToSearch(state, square)),
+    search: (square: string) => lockedOn(state, square) && set(acted(state, sendToSearch(state, square), square)),
     // Buy a capability (ILI-1316).
     unlock: (w: Weapon) => set(unlock(state, w)),
     // Replay a mission exactly, or play another (?seed=, ILI-1454): start over on that seed.
@@ -115,7 +119,7 @@ export function createStore(initial: GameState = initialState()) {
       // No mini games: the support does it itself (ILI-1252, ILI-1253, ILI-1254).
       // Every call that goes out costs (ILI-1316), into the red if need be.
       const called = weapon === 'sniper' ? callSniper(state, contactId) : launch(state, weapon, contactId);
-      set(called === state ? state : spend(called, perCall(state, weapon)));
+      set(called === state ? state : acted(state, spend(called, perCall(state, weapon)), at));
     },
     lookAt: (square: string) => set(task(state, square)),
     // The move step (ILI-1397): ORION-3 slews to the square, in real time, before anything runs there.
@@ -143,7 +147,7 @@ export function createStore(initial: GameState = initialState()) {
     cancelLook: () => set(cancelLook(state)),
     closeLook: () => set(closeLook(state)),
     sendResupply: () => set(sendResupply(state)),
-    jam: (eventId: string) => lockedOn(state, eventSquare(state, eventId) ?? '') && set(jam(state, eventId)),
+    jam: (eventId: string) => lockedOn(state, eventSquare(state, eventId) ?? '') && set(acted(state, jam(state, eventId), eventSquare(state, eventId))),
     tune: (mhz: number) => set(tune(state, mhz)),
     abortMiniGame: () => set(abortMiniGame(state)),
     dismissCall: (id: string) => set(dismiss(state, id)),

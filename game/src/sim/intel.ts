@@ -32,7 +32,7 @@ export const GRADE_LABEL: Record<Grade, string> = { clear: 'all clear', low: 'lo
 // base: a fixed offset that survives a restart and never burns (tests and tuning run with the
 // gauge full); fuel: what HQ has pushed and ALPHA hasn't walked off yet; graded: squares the
 // analysts have already been through.
-export type Intel = { base: number; fuel: number; videoUsed: boolean; videosShot: number; graded: string[]; banked: { square: string; amount: number }[]; pushes: Push[]; live: string[]; download?: Download | null; syncedAt?: string | null }; // live: squares on video, live for good (ILI-1432); download: ALPHA pulling packages off the shelf; syncedAt: the square it last synced in (ILI-1499)
+export type Intel = { base: number; fuel: number; videoUsed: boolean; videosShot: number; graded: string[]; banked: { square: string; amount: number }[]; pushes: Push[]; live: string[]; download?: Download | null; syncedAt?: string | null; reopened?: string[] }; // live: squares on video, live for good (ILI-1432); reopened: settled squares HQ has acted on since, open to Analyze again (ILI-1516); download: ALPHA pulling packages off the shelf; syncedAt: the square it last synced in (ILI-1499)
 export type Download = { startMs: number; untilMs: number; ids: string[] };
 
 // Every push of intel to ALPHA, in order (ILI-1346). A banked push turns fed when it pays out.
@@ -85,7 +85,7 @@ export function reports(s: GameState, square: string, grade: Grade | 'video', fi
   return out;
 }
 
-export const initialIntel = (): Intel => ({ base: 0, fuel: 0, videoUsed: false, videosShot: 0, graded: [], banked: [], pushes: [], live: [], download: null, syncedAt: null });
+export const initialIntel = (): Intel => ({ base: 0, fuel: 0, videoUsed: false, videosShot: 0, graded: [], banked: [], pushes: [], live: [], download: null, syncedAt: null, reopened: [] });
 
 const record = (s: GameState, from: PushFrom, amount: number, state: Push['state']): GameState => ({
   ...s,
@@ -111,8 +111,8 @@ export const burn = (s: GameState, units: number): GameState => ({ ...s, intel: 
 // more. Seeded by the mission's seed so a mission replays exactly. Fighters in the picture are
 // always high grade; a square the analysts have been through already is only all clear.
 export function grade(s: GameState, square: string, fighters: number): Grade {
-  if (s.intel.graded.includes(square)) return 'clear';
   if (fighters) return 'high';
+  if (s.intel.graded.includes(square)) return 'clear';
   let h = s.seed >>> 0;
   for (const ch of square) h = Math.imul(h ^ ch.charCodeAt(0), 2654435761) >>> 0;
   const r = (h % 1000) / 1000;
@@ -122,6 +122,15 @@ export function grade(s: GameState, square: string, fighters: number): Grade {
 // One scan settles a square (ILI-1399): once HQ's analysts have been through it, it's known
 // ground. ALPHA crosses it without burning intel, and there's never a reason to scan it again.
 export const settled = (s: GameState, square: string) => s.intel.graded.includes(square);
+
+// ...until HQ acts on it (ILI-1516): a strike, a jam or a search changes the ground, so a settled
+// square HQ has acted on since its last Analyze is open to another (a re-image after the action:
+// what's left, or that it's clear). The square stays settled; only the Analyze comes back.
+export const reopened = (s: GameState, square: string) => (s.intel.reopened ?? []).includes(square);
+export const reopen = (s: GameState, square: string): GameState =>
+  settled(s, square) && !reopened(s, square) ? { ...s, intel: { ...s.intel, reopened: [...(s.intel.reopened ?? []), square] } } : s;
+// Analyze is open on a square: never analyzed, or acted on since.
+export const analyzable = (s: GameState, square: string) => !settled(s, square) || reopened(s, square);
 
 // What HQ's scans of a square turned up (ILI-1399): every report that landed for it, and whether
 // it all came to nothing (clear) or found something.
@@ -149,7 +158,8 @@ export function postScan(s: GameState, square: string, fighters: number): { next
   const g = grade(s, square, fighters);
   const amount = GRADE_INTEL[g] * photoFactor(s);
   const next = record(s, { source: 'IMINT', square, grade: g, items: reports(s, square, g, fighters) }, amount, 'posted');
-  return { next: { ...next, intel: { ...next.intel, graded: [...new Set([...next.intel.graded, square])] } }, grade: g };
+  const reopenedLeft = (next.intel.reopened ?? []).filter((x) => x !== square); // analyzed again: settled again
+  return { next: { ...next, intel: { ...next.intel, graded: [...new Set([...next.intel.graded, square])], reopened: reopenedLeft } }, grade: g };
 }
 
 // ORION-3 watching an analyzed square sees a group walk in (ILI-1493): the analysts post a fresh
