@@ -1,25 +1,26 @@
-/* Castle House's recruitment site (ILI-1336): Castle House's own site, in the war room's type and
-   colours, with its design system's visuals: teal wireframes, contours and grid, corner brackets,
-   HUD readouts. Each section has its own layout. */
-:root { --bg: #0b0f0d; --panel: #0f1512; --ink: #cfe8dc; --dim: #6f8a7d; --accent: #35d0a5; --line: rgba(53, 208, 165, 0.22); --orange: #ff8a2a; --red: #e5484d; --gold: #f2c14e; --pad: clamp(16px, 5vw, 64px); }
+/* Castle House's recruitment site (ILI-1480): the war room's type and palette, its design
+   system's visuals (teal edge-line wireframes, contours and grid, corner brackets, HUD readouts).
+   The hero is the war room's title screen. Each section below it has its own layout. */
+:root { --bg: #0b0f0d; --panel: #0f1512; --ink: #cfe8dc; --dim: #6f8a7d; --accent: #35d0a5; --line: rgba(53, 208, 165, 0.22); --orange: #ff8a2a; --red: #e5484d; --gold: #f2c14e; --pad: clamp(16px, 5vw, 64px); --mono: 'JetBrains Mono', ui-monospace, monospace; }
 * { box-sizing: border-box; }
 html.ch-root { scroll-behavior: smooth; }
 html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Inter Tight', system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 .ch a { color: inherit; }
 .ch h1, .ch h2, .ch h3 { margin: 0; letter-spacing: -0.01em; }
-.ch-rook { width: 20px; height: auto; color: currentColor; }
-.ch-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-weight: 600; letter-spacing: 0.22em; font-size: 13px; color: var(--ink); }
+.ch-rook { width: 20px; height: auto; color: currentColor; flex: none; }
+.ch-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--mono); font-weight: 600; letter-spacing: 0.22em; font-size: 13px; color: var(--ink); }
 .ch-brand .ch-rook { color: var(--accent); }
-.ch-hero-3d { position: absolute; inset: 0; }
-.ch-hero-3d .castle-scene { position: absolute; inset: 0; }
-.ch-hero-3d canvas { width: 100%; height: 100%; display: block; }
-.ch-stamp { display: inline-block; margin: 0 0 22px; padding: 6px 12px; border: 1.5px solid var(--orange); color: var(--orange); font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; }
-.ch-shout { font-size: clamp(38px, 6.4vw, 92px); line-height: 0.98; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; }
+.ch-stamp { display: inline-block; margin: 0 0 22px; padding: 6px 12px; border: 1.5px solid var(--orange); color: var(--orange); font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.24em; text-transform: uppercase; }
+.ch-shout { font-size: clamp(36px, 6vw, 88px); line-height: 0.98; font-weight: 700; text-transform: uppercase; letter-spacing: -0.01em; }
 .ch-shout em { font-style: normal; color: var(--orange); }
 .ch-lede { max-width: 640px; margin: 28px 0 0; font-size: 19px; line-height: 1.6; color: var(--dim); }
-.ch-enlist { display: inline-block; padding: 20px 34px; font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none; color: var(--bg) !important; background: var(--orange); box-shadow: 0 0 0 1px var(--orange), 0 0 32px rgba(255, 138, 42, 0.35); }
+.ch-lede + .ch-lede { margin-top: 16px; }
+.ch-lede-ink { color: var(--ink); }
+.ch-enlist { display: inline-block; padding: 20px 34px; font-family: var(--mono); font-size: 15px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none; color: var(--bg) !important; background: var(--orange); box-shadow: 0 0 0 1px var(--orange), 0 0 32px rgba(255, 138, 42, 0.35); }
 .ch-enlist:hover { filter: brightness(1.1); }
-.ch-code { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.16em; color: var(--orange); }
+.ch-enlist.ch-small { padding: 10px 16px; font-size: 11px; box-shadow: none; }
+.ch-code { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; color: var(--orange); }
+.ch-sub { margin: 0 0 16px !important; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); }
 .ch-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
 /* Corner brackets, the satellite's frame (ILI-1408). */
@@ -33,131 +34,170 @@ html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-fa
 .ch-wire-3d canvas { width: 100% !important; height: 100% !important; display: block; }
 
 /* HUD readouts: small label over a value. */
-.ch-read { display: flex; flex-wrap: wrap; gap: 0; margin: 14px 0 0; border-top: 1px solid var(--line); }
+.ch-read { display: flex; flex-wrap: wrap; margin: 18px 0 0; border-top: 1px solid var(--line); }
 .ch-read > div { padding: 10px 18px 0 0; margin-right: 18px; }
-.ch-read dt { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
-.ch-read dd { margin: 2px 0 0; font-family: 'JetBrains Mono', monospace; font-size: 15px; color: var(--accent); }
-.ch-read.wide dd { font-size: 26px; }
+.ch-read dt, .ch-file-list dt { font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
+.ch-read dd { margin: 2px 0 0; font-family: var(--mono); font-size: 15px; color: var(--accent); }
 
-/* The page that slides over the hero. */
-.ch-page { background: var(--bg); }
+/* ---------- The hero: the war room's title screen ---------- */
+.ch-intro { position: fixed; inset: 0; z-index: 0; overflow: hidden; color: var(--ink); background: radial-gradient(ellipse at 50% 70%, rgba(53, 208, 165, 0.07), transparent 60%), var(--bg); }
+.ch-hero-3d { position: absolute; inset: 0; }
+.ch-hero-3d .castle-scene { position: absolute; inset: 0; }
+.ch-hero-3d canvas { width: 100%; height: 100%; display: block; }
+.ch-hero-back { filter: blur(7px); opacity: 0.45; } /* the globe and satellites, blurred and dimmed, as on the title screen */
+.ch-hero-flat { position: absolute; left: 50%; top: 34%; width: 96px; transform: translate(-50%, -50%); color: var(--accent); }
+.ch-intro-mark { position: absolute; left: 0; right: 0; bottom: max(9vh, 56px); z-index: 1; display: grid; justify-items: center; gap: 6px; padding: 0 16px; text-align: center; font-family: var(--mono); text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg); transform: translateY(calc(var(--cover, 0) * -40px)); opacity: calc(1 - var(--cover, 0) * 1.4); }
+.ch-intro-mark h1 { font-size: clamp(22px, 4.2vw, 40px); font-weight: 600; letter-spacing: 0.42em; margin-right: -0.42em; color: var(--ink); }
+.ch-intro-mark > p { margin: 0; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); }
+.ch-menu { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 14px 0 4px; }
+.ch-menu a { display: inline-flex; align-items: center; justify-content: center; min-width: 104px; min-height: 40px; padding: 0 14px; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none; text-shadow: none; color: var(--ink); background: rgba(11, 15, 13, 0.7); border: 1px solid var(--line); }
+.ch-menu a.ch-menu-go { color: var(--accent); border-color: var(--accent); }
+.ch-menu a:hover, .ch-menu a:focus-visible { color: var(--bg); background: var(--accent); border-color: var(--accent); outline: none; }
+.ch-intro-mark .ch-status { color: var(--accent); letter-spacing: 0.16em; }
+.ch-caret { animation: ch-blink 1s steps(2) infinite; }
+@keyframes ch-blink { 50% { opacity: 0; } }
+.ch-intro-scrim { position: absolute; inset: 0; background: #000; opacity: calc(var(--cover, 0) * 0.85); pointer-events: none; }
+
+/* ---------- The page, sliding over the hero ---------- */
+.ch-page { position: relative; z-index: 1; margin-top: 100svh; background: var(--bg); box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.6); }
 .ch-nav { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 24px; padding: 14px var(--pad); background: rgba(11, 15, 13, 0.94); border-bottom: 1px solid var(--line); }
-.ch-nav nav { display: flex; gap: 22px; margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; }
+.ch-nav nav { display: flex; gap: 22px; margin-left: auto; font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; }
 .ch-nav nav a { text-decoration: none; color: var(--dim); }
 .ch-nav nav a:hover { color: var(--ink); }
-.ch-nav .ch-enlist { padding: 10px 16px; font-size: 11px; box-shadow: none; }
-.ch-sec, .ch-about, .ch-reach, .ch-close { position: relative; padding: clamp(56px, 9vw, 112px) var(--pad); border-bottom: 1px solid var(--line); }
-.ch-sec h2, .ch-reach h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 700; margin-bottom: 36px; max-width: 900px; }
+.ch-sec { position: relative; padding: clamp(56px, 9vw, 112px) var(--pad); border-bottom: 1px solid var(--line); scroll-margin-top: 56px; }
+.ch-sec h2 { font-size: clamp(28px, 4vw, 48px); font-weight: 700; line-height: 1.08; margin-bottom: 40px; max-width: 900px; }
 
-/* Who we are: the statement beside the numbers, over the map's ground. */
-.ch-about { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr); gap: 48px; align-items: end; overflow: hidden; }
+/* Who we are: the statement beside the company file, over the map's ground. */
+.ch-about { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 56px; align-items: end; overflow: hidden; }
 .ch-about > :not(.ch-bg) { position: relative; }
-.ch-stats { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); }
-.ch-stats > div { padding: 20px; background: rgba(11, 15, 13, 0.92); }
-.ch-stats dt { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
-.ch-stats dd { margin: 6px 0 0; font-size: clamp(34px, 4vw, 52px); font-weight: 700; color: var(--ink); }
+.ch-file { padding: 22px 24px 26px; background: rgba(11, 15, 13, 0.92); border: 1px solid var(--line); }
+.ch-file header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); }
+.ch-file header .ch-rook { color: var(--accent); width: 14px; }
+.ch-file-list { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.ch-file-list > div { padding: 16px 0 0; }
+.ch-file-list dd { margin: 4px 0 0; font-size: clamp(28px, 3vw, 40px); font-weight: 700; color: var(--ink); }
+.ch-file-list > div:last-child dd { color: var(--accent); }
 
-/* Capabilities: spec sheets, wireframe on top. */
+/* What we do: a console, tabs beside the spec sheet. */
 .ch-caps { background: var(--panel); }
-.ch-cap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
-.ch-cap { display: grid; align-content: start; background: var(--bg); border: 1px solid var(--line); }
-.ch-cap .ch-wire { border-bottom: 1px solid var(--line); }
-.ch-cap-body { padding: 18px 20px 20px; display: grid; gap: 8px; }
-.ch-cap h3 { font-size: 20px; line-height: 1.2; }
-.ch-cap p { margin: 0; color: var(--dim); line-height: 1.55; }
+.ch-console { display: grid; grid-template-columns: minmax(220px, 0.7fr) minmax(0, 2fr); border: 1px solid var(--line); background: var(--bg); }
+.ch-tabs { display: grid; align-content: start; border-right: 1px solid var(--line); }
+.ch-tabs button { display: grid; gap: 6px; padding: 20px 22px; text-align: left; font: inherit; color: var(--dim); background: none; border: 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+.ch-tabs button b { font-size: 17px; font-weight: 600; line-height: 1.25; }
+.ch-tabs button:hover { color: var(--ink); }
+.ch-tabs button[aria-selected='true'] { color: var(--ink); background: rgba(53, 208, 165, 0.06); box-shadow: inset 3px 0 0 var(--accent); }
+.ch-tabs button:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+.ch-spec { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; align-items: center; padding: 28px; }
+.ch-spec-body { display: grid; gap: 10px; align-content: start; }
+.ch-spec h3 { font-size: clamp(22px, 2.4vw, 30px); line-height: 1.15; }
+.ch-spec p { margin: 0; color: var(--dim); font-size: 17px; line-height: 1.6; }
+.ch-spec ul { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.ch-spec li { position: relative; padding-left: 20px; }
+.ch-spec li::before { content: ''; position: absolute; left: 0; top: 0.5em; width: 7px; height: 7px; border: 1px solid var(--accent); transform: rotate(45deg); }
 
-/* Divisions: a postings board. */
-.ch-postings { display: grid; border-top: 1px solid var(--line); }
-.ch-post { display: grid; grid-template-columns: 90px minmax(160px, 1.2fr) minmax(120px, 0.9fr) minmax(140px, 0.9fr) minmax(200px, 1.6fr); gap: 16px; align-items: baseline; padding: 16px 8px; border-bottom: 1px solid var(--line); text-decoration: none; }
-a.ch-post:hover { background: rgba(53, 208, 165, 0.06); box-shadow: inset 2px 0 0 var(--accent); }
-.ch-post-head span { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
-.ch-post span { font-size: 15px; color: var(--dim); }
-.ch-post .ch-post-title { font-size: 19px; font-weight: 600; color: var(--ink); }
-.ch-post .ch-code { font-size: 12px; }
+/* Divisions: four boards side by side. */
+.ch-div-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); }
+.ch-div { display: grid; grid-template-rows: auto 1fr; border-right: 1px solid var(--line); }
+.ch-div:last-child { border-right: 0; }
+.ch-div header { display: grid; gap: 6px; padding: 22px 20px; border-bottom: 2px solid var(--accent); background: var(--panel); }
+.ch-div h3 { font-size: 22px; }
+.ch-div header p { margin: 0; color: var(--dim); font-size: 15px; line-height: 1.5; }
+.ch-div ul { margin: 0; padding: 0; list-style: none; }
+.ch-div li a { display: grid; gap: 4px; padding: 16px 20px; border-bottom: 1px solid var(--line); text-decoration: none; }
+.ch-div li:last-child a { border-bottom: 0; }
+.ch-div li a:hover { background: rgba(53, 208, 165, 0.06); box-shadow: inset 2px 0 0 var(--accent); }
+.ch-div li b { font-size: 18px; font-weight: 600; }
+.ch-post-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.ch-post-need { font-size: 14px; line-height: 1.45; color: var(--dim); }
 
-/* Standards: the kit beside the code. */
-.ch-standards { display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.4fr); gap: 56px; align-items: start; background: var(--panel); }
-.ch-std-kit { display: grid; gap: 16px; position: sticky; top: 90px; }
-.ch-std-list { margin: 0; padding: 0; list-style: none; display: grid; }
-.ch-std-list li { display: grid; grid-template-columns: 56px 1fr; gap: 12px; padding: 20px 0; border-top: 1px solid var(--line); }
-.ch-std-list i { font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--orange); letter-spacing: 0.1em; }
-.ch-std-list b { font-size: 21px; }
-.ch-std-list p { margin: 6px 0 0; color: var(--dim); line-height: 1.55; }
+/* Standards and selection: the code beside the funnel. */
+.ch-selection { background: var(--panel); }
+.ch-sel { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: clamp(32px, 6vw, 80px); align-items: start; }
+.ch-std h3 { margin: 6px 0 20px !important; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); }
+.ch-std ol, .ch-funnel ol { margin: 0; padding: 0; list-style: none; display: grid; }
+.ch-std li { display: grid; grid-template-columns: 44px 1fr; gap: 10px; padding: 16px 0; border-top: 1px solid var(--line); }
+.ch-std i, .ch-funnel i { font-style: normal; font-family: var(--mono); font-size: 13px; color: var(--orange); letter-spacing: 0.1em; }
+.ch-std b { font-size: 19px; }
+.ch-std p { margin: 4px 0 0; color: var(--dim); line-height: 1.5; }
+.ch-funnel li { display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(90px, 160px); gap: 10px 18px; align-items: center; padding: 18px 0; border-top: 1px solid var(--line); }
+.ch-funnel b { font-size: 20px; }
+.ch-funnel p { margin: 4px 0 0; color: var(--dim); line-height: 1.5; font-size: 15px; }
+/* A short bar: how many of every hundred are still in. */
+.ch-bar { position: relative; height: 6px; background: rgba(53, 208, 165, 0.12); }
+.ch-bar s { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); }
 
-/* Selection: a timeline. */
-.ch-pipe { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--accent); }
-.ch-pipe li { position: relative; padding: 24px 18px 0 0; }
-.ch-pipe li::before { content: ''; position: absolute; left: 0; top: -7px; width: 10px; height: 10px; border: 2px solid var(--accent); background: var(--bg); transform: rotate(45deg); }
-.ch-pipe i { display: block; font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--orange); letter-spacing: 0.12em; }
-.ch-pipe b { display: block; margin-top: 6px; font-size: 20px; }
-.ch-pipe p { margin: 8px 0 0; color: var(--dim); line-height: 1.5; font-size: 15px; }
+/* Compensation: the day rates, the terms ledger, the issued kit. */
+.ch-pay-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 80px); margin-bottom: 56px; }
+.ch-rates { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.ch-rates > div { padding: 22px 20px; background: var(--bg); }
+.ch-rates dt { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
+.ch-rates dd { margin: 8px 0 0; font-size: clamp(36px, 4.4vw, 60px); font-weight: 700; line-height: 1; color: var(--accent); }
+.ch-ledger { margin: 0; display: grid; align-content: start; font-family: var(--mono); }
+.ch-ledger > div { display: flex; align-items: baseline; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.ch-ledger dt { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); white-space: nowrap; }
+.ch-ledger i { flex: 1; min-width: 16px; border-bottom: 1px dotted rgba(111, 138, 125, 0.6); transform: translateY(-3px); }
+.ch-ledger dd { margin: 0; font-size: 14px; color: var(--ink); text-align: right; }
+.ch-kit { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.ch-kit .ch-wire { aspect-ratio: 3 / 2; }
+.ch-kit figure { margin: 0; border: 1px solid var(--line); background: var(--panel); }
+.ch-kit figcaption { padding: 12px 16px; border-top: 1px solid var(--line); font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink); }
 
-/* Global reach: the map band. */
-.ch-reach { display: grid; grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.6fr); gap: 32px; align-items: center; overflow: hidden; background: #0a0e0c; }
-.ch-reach > :not(.ch-bg) { position: relative; }
-.ch-map .ch-bg { opacity: 1; }
-.ch-map { position: relative; aspect-ratio: 16 / 9; border: 1px solid var(--line); }
-.ch-pin { position: absolute; width: 26px; height: 26px; transform: translate(-50%, -50%); }
-.ch-pin .ch-br { width: 8px; height: 8px; border-color: var(--orange); }
-.ch-pin::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px; border-radius: 50%; border: 1px solid var(--orange); }
-.ch-pin:last-child em { left: auto; right: 32px; }
-.ch-pin em { position: absolute; left: 32px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-style: normal; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); background: rgba(11, 15, 13, 0.85); padding: 2px 6px; }
+/* Apply: the selection terminal. */
+.ch-close { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 56px; align-items: center; overflow: hidden; }
+.ch-close > :not(.ch-bg) { position: relative; }
+.ch-term { display: grid; gap: 20px; justify-items: start; padding: 28px; background: rgba(11, 15, 13, 0.94); border: 1px solid var(--line); font-family: var(--mono); }
+.ch-term > .ch-rook { width: 18px; color: var(--accent); }
+.ch-term ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; width: 100%; }
+.ch-term li { display: flex; align-items: baseline; gap: 10px; font-size: 12px; letter-spacing: 0.14em; color: var(--dim); }
+.ch-term li:first-child { color: var(--ink); margin-bottom: 4px; }
+.ch-term li i { flex: 1; min-width: 12px; border-bottom: 1px dotted rgba(111, 138, 125, 0.6); transform: translateY(-3px); }
+.ch-term li b { font-weight: 600; color: var(--accent); }
+.ch-term .ch-enlist { width: 100%; text-align: center; margin-top: 6px; }
 
-/* Compensation: big numbers in a row. */
-.ch-pay-grid { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
-.ch-pay-grid > div { padding: 26px 22px; background: var(--bg); }
-.ch-pay-grid dt { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
-.ch-pay-grid dd { margin: 10px 0 0; display: grid; gap: 8px; }
-.ch-pay-grid dd b { font-size: clamp(40px, 5vw, 64px); line-height: 1; color: var(--accent); }
-.ch-pay-grid dd span { color: var(--dim); line-height: 1.5; }
-
-/* Apply: the close, beside the aircraft. */
-.ch-close { display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.6fr); gap: 48px; align-items: center; }
-.ch-close .ch-enlist { margin-top: 32px; }
 .ch-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 32px; padding: 36px var(--pad) 48px; }
-.ch-foot nav { display: flex; gap: 20px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
+.ch-foot nav { display: flex; flex-wrap: wrap; gap: 12px 20px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
 .ch-foot nav a { text-decoration: none; color: var(--dim); }
 .ch-legal { margin: 0; flex-basis: 100%; font-size: 13px; color: var(--dim); }
 
-@media (max-width: 900px) {
-  .ch-about, .ch-standards, .ch-reach, .ch-close { grid-template-columns: 1fr; }
-  .ch-std-kit { position: static; grid-template-columns: 1fr 1fr; }
-  .ch-pipe { grid-template-columns: 1fr; border-top: 0; border-left: 2px solid var(--accent); }
-  .ch-pipe li { padding: 0 0 24px 24px; }
-  .ch-pipe li::before { left: -7px; top: 2px; }
-  .ch-post { grid-template-columns: 70px 1fr; gap: 4px 12px; }
-  .ch-post-head { display: none; }
-  .ch-post span:nth-child(n + 3) { grid-column: 2; font-size: 13px; }
+@media (max-width: 1100px) {
+  .ch-div-grid { grid-template-columns: 1fr 1fr; }
+  .ch-div:nth-child(2n) { border-right: 0; }
+  .ch-div:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+  .ch-spec { grid-template-columns: 1fr; }
+  .ch-nav nav { gap: 16px; }
 }
-@media (max-width: 720px) {
+@media (max-width: 900px) {
+  .ch-about, .ch-sel, .ch-pay-split, .ch-close { grid-template-columns: 1fr; }
+  .ch-console { grid-template-columns: 1fr; }
+  .ch-funnel { order: -1; }
+  .ch-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); border-right: 0; border-bottom: 1px solid var(--line); }
+  .ch-tabs button { padding: 14px 10px; border-bottom: 0; border-right: 1px solid var(--line); }
+  .ch-tabs button:last-child { border-right: 0; }
+  .ch-tabs button b { display: none; }
+  .ch-tabs button .ch-code { font-size: 13px; text-align: center; }
+  .ch-tabs button[aria-selected='true'] { box-shadow: inset 0 -3px 0 var(--accent); }
+  .ch-spec { padding: 20px; gap: 20px; }
   .ch-nav nav { display: none; }
   .ch-nav .ch-enlist { margin-left: auto; }
-  .ch-stats dd { font-size: 32px; }
-  .ch-pin em { display: none; }
 }
-
-/* The game's intro is the hero (ILI-1447): the live rook and globe, full screen and fixed. The
-   page slides up over it; a scrim darkens it as it's covered (--cover, 0 to 1, set on scroll). */
-.ch-intro { position: fixed; inset: 0; z-index: 0; background: var(--bg); color: var(--ink); overflow: hidden; }
-.ch-intro .ch-hero-3d { opacity: 1; }
-.ch-intro-mark { position: absolute; left: 0; right: 0; bottom: max(9vh, 56px); display: grid; justify-items: center; gap: 10px; padding: 0 16px; text-align: center; text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg); transform: translateY(calc(var(--cover, 0) * -40px)); opacity: calc(1 - var(--cover, 0) * 1.4); }
-.ch-intro-mark .ch-rook { width: 34px; height: 44px; color: var(--accent); }
-.ch-intro-mark h1 { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: clamp(22px, 4.2vw, 40px); font-weight: 600; letter-spacing: 0.42em; margin-right: -0.42em; }
-.ch-intro-mark p { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dim); }
-.ch-intro-scroll { margin-top: 8px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--dim); animation: ch-nudge 1.8s ease-in-out infinite; }
-@keyframes ch-nudge { 50% { transform: translateY(4px); } }
-.ch-intro-scrim { position: absolute; inset: 0; background: #000; opacity: calc(var(--cover, 0) * 0.85); pointer-events: none; }
-.ch-page { position: relative; z-index: 1; margin-top: 100svh; box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.6); }
-@media (prefers-reduced-motion: reduce) { .ch-intro-scroll { animation: none; } }
-
-/* The hero, the original site technique (ILI-1458): the live scene at 90%, a dark gradient
-   barrier from the left (95% → 60% → clear by 80%), and the copy left-aligned on the dark side.
-   On a phone the barrier rises from the foot and the copy sits at the bottom. No blur. */
-.ch-intro .ch-hero-3d { opacity: 0.9; }
-.ch-intro .ch-hero-3d::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(11, 15, 13, 0.95) 0%, rgba(11, 15, 13, 0.6) 45%, rgba(11, 15, 13, 0) 80%); pointer-events: none; }
-.ch-intro-mark { left: clamp(16px, 5vw, 64px); right: auto; top: 50%; bottom: auto; max-width: 900px; justify-items: start; text-align: left; padding: 0; text-shadow: none; transform: translateY(calc(-50% - var(--cover, 0) * 40px)); }
-.ch-intro-mark h1 { margin-right: 0; }
-@media (max-width: 720px) {
-  .ch-intro .ch-hero-3d::after { background: linear-gradient(0deg, rgba(11, 15, 13, 0.97) 35%, rgba(11, 15, 13, 0.45) 75%, rgba(11, 15, 13, 0.2)); }
-  .ch-intro-mark { top: auto; bottom: max(9vh, 56px); right: 16px; left: 16px; transform: translateY(calc(var(--cover, 0) * -40px)); }
+@media (max-width: 640px) {
+  .ch-div-grid { grid-template-columns: 1fr; }
+  .ch-div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .ch-div:last-child { border-bottom: 0; }
+  .ch-funnel li { grid-template-columns: 36px minmax(0, 1fr); }
+  .ch-funnel .ch-bar { grid-column: 2; }
+  .ch-kit { grid-template-columns: 1fr 1fr; }
+  .ch-kit figure:last-child { grid-column: 1 / -1; }
+  .ch-kit figure:last-child .ch-wire { aspect-ratio: 8 / 3; }
+  .ch-rates dd { font-size: 34px; }
+  .ch-lede { font-size: 17px; }
+  .ch-ledger dt { white-space: normal; }
+  .ch-term { padding: 22px 18px; }
+  .ch-term li { font-size: 11px; letter-spacing: 0.1em; }
 }
+@media (max-width: 480px) {
+  .ch-menu { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .ch-menu a { min-width: 0; letter-spacing: 0.14em; padding: 0 8px; }
+  .ch-menu a.ch-menu-go { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .ch-caret { animation: none; } html.ch-root { scroll-behavior: auto; } }
