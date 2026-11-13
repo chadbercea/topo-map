@@ -29,9 +29,10 @@ test('a photo square shows its age; a video square shows its feed', async ({ pag
   expect(await page.evaluate(() => window.mapSeenTags()['p:F4'])).toBeUndefined(); // live: no age
 });
 
-// ORION-3 is live always (Chad, 2026-11-12): over a square it shows every fighter there, scanned or
-// not; seeing them settles nothing, so there's still no intel and no strike until a scan.
-test('ORION-3 over an unscanned square shows its fighters live; no intel and no strike until a scan', async ({ page }) => {
+// Nothing about an enemy shows until ORION-3 has scanned the square it's in (ILI-1493, superseding
+// 11-12's "scanned or not"): over an unscanned square it shows no fighters, no tag, no ping; the
+// scan brings them up, and from then on it watches them live.
+test('ORION-3 over an unscanned square shows no enemy until it scans it', async ({ page }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
@@ -40,7 +41,16 @@ test('ORION-3 over an unscanned square shows its fighters live; no intel and no 
     window.game.lookAt('E3');
   });
   await untilOnStation(page);
+  await fastForward(page, 1_000);
   expect(await page.evaluate(() => !!window.game.get().imagery.E3)).toBe(false); // not scanned
-  await expect.poll(() => page.evaluate(() => window.mapLiveCount())).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => window.mapLiveCount())).toBe(0);
+  expect(await page.evaluate(() => window.mapSightings().filter((x) => x.kind === 'hostile').length)).toBe(0);
   await expect(page.locator('[data-testid=contact-tag][data-square=E3]')).toHaveCount(0);
+  expect(await page.evaluate(() => window.game.get().events.some((e) => e.kind === 'contact'))).toBe(false);
+
+  await page.evaluate(() => window.game.scan('E3'));
+  await fastForward(page, 200);
+  await expect.poll(() => page.evaluate(() => window.mapLiveCount())).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => window.mapSightings().filter((x) => x.kind === 'hostile').length)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.game.get().events.some((e) => e.id === 'contact-checkpoint' && e.square === 'E3'))).toBe(true);
 });

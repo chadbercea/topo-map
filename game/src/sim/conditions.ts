@@ -3,6 +3,7 @@ import { heightAt, theater } from '../map/terrain';
 import { generateCity, TOWN } from '../map/city';
 import { TIME_SCALE } from './gameTime';
 import type { GameState } from './state';
+import { knownIn } from './contacts';
 
 // Conditions over the area of operations (ILI-1187), for the header: the weather, the light,
 // and what HQ can know about the ground in view. Informational for now. Cloud cover is kept
@@ -79,6 +80,6 @@ export function ground(s: GameState, square: SquareId): Ground | null {
     slope: grade < 0.08 ? 'flat' : grade < 0.2 ? 'rolling' : 'steep',
     features,
     imagery,
-    contacts: s.contacts.filter((c) => c.square === square && c.status === 'revealed').length,
+    contacts: knownIn(s, square).length, // where HQ last saw them (ILI-1493)
   };
 }

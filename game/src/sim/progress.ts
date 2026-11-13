@@ -7,6 +7,7 @@ import { squareCenter, type SquareId } from '../map/grid';
 import { BASE_SPEED } from './movement';
 import { RECOVER_MS } from './mission';
 import { satName } from './satellite';
+import { knownIn } from './contacts';
 
 // Mission progression at a glance (ILI-1173): how far along the route ALPHA is, what it's
 // doing now, and the one thing that presses next. Pure reads of the state, for the HUD.
@@ -90,7 +91,7 @@ export function blockers(s: GameState): Blocker[] {
   if (w && s.elapsedMs < w.untilMs) out.push({ tone: 'decision', text: `${s.team.callsign} holding short of ${w.square}: soften them up`, go: { square: w.square } });
   // ALPHA's imagery request (ILI-1349) isn't here: it's a tier two prompt on the map (ILI-1391).
   const ahead = s.team.route.slice(s.team.waypoint);
-  const contact = ahead.find((sq) => s.contacts.some((c) => c.square === sq && c.status === 'revealed'));
+  const contact = ahead.find((sq) => knownIn(s, sq).length > 0);
   if (contact) out.push({ tone: 'threat', text: `Contact on the route at ${contact}`, go: { square: contact } });
   const blind = nextBlind(s);
   if (blind) out.push({ tone: 'threat', text: `No imagery ahead at ${blind}`, go: { square: blind } });

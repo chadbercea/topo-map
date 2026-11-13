@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
-import { reveal } from './contacts';
+import { knownSquare, reveal } from './contacts';
 import { PLAN_ALERTED, PLAN_DEPART_MS, PLAN_WALK_MS, planArriveMs, planDepartMs } from './enemy';
 import { RECOVER_MS } from './mission';
 import { initialState, type GameState } from './state';
 import { step } from './systems';
-import { run } from './testkit';
+import { lockOn, run } from './testkit';
 
 const patrol = (s: GameState) => s.contacts.find((c) => c.id === 'patrol')!;
 // When it gets there, by the rule and the mission's dice (ILI-1454).
@@ -43,12 +43,22 @@ describe('the patrol hunting the drone', () => {
     expect(due(alerted)).toBeLessThan(due(s0));
   });
 
-  it('found first (by imagery or an intercept), HQ calls the move and its marker follows', () => {
-    const found = reveal(initialState(), ['C2'], 'SIGINT');
+  it('found first, with ORION-3 over the scanned crash site: HQ calls the move and its marker follows', () => {
+    const s0 = reveal(initialState(), ['C2'], 'SIGINT');
+    const found = lockOn({ ...s0, intel: { ...s0.intel, graded: ['C2', 'D3'] } }, 'D3');
     const s = at(found);
     expect(patrol(s).square).toBe('D3');
     expect(s.events.find((e) => e.id === 'contact-patrol')?.square).toBe('D3');
     expect(s.comms.messages.find((m) => m.id === 'patrol-arrived')?.text).toMatch(/moving onto the crash site in D3/);
+  });
+
+  it('found first, but nobody watching where it went: its marker stays where it was last seen, and nobody calls it (ILI-1493)', () => {
+    const found = reveal(initialState(), ['C2'], 'SIGINT');
+    const s = at(found);
+    expect(patrol(s).square).toBe('D3');
+    expect(s.events.find((e) => e.id === 'contact-patrol')?.square).toBe('C2');
+    expect(knownSquare(s, patrol(s))).toBe('C2');
+    expect(s.comms.messages.some((m) => m.id === 'patrol-arrived')).toBe(false);
   });
 
   it('a patrol already destroyed goes nowhere', () => {

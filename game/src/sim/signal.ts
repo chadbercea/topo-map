@@ -1,6 +1,6 @@
 import { feed, SIGNAL_INTEL } from './intel';
 import { nextRandom } from './firefight';
-import { reveal } from './contacts';
+import { orionScanned, reveal } from './contacts';
 import type { Message } from './comms';
 import type { MiniGame } from './minigame';
 import type { GameState } from './state';
@@ -101,7 +101,10 @@ export function startIntercept(s: GameState, eventId: string, via?: ListenVia): 
   const c = s.contacts.find((x) => x.square === e.square && x.status === 'hidden') ?? s.contacts.find((x) => x.square === e.square) ?? nearest(s, e.square);
   const [r, rng] = nextRandom(s.rng);
   const target = round1(BAND.min + 5 + r * (BAND.max - BAND.min - 10));
-  const plain = c ? `${WORD[c.id] ?? 'UNIT'} AT ${c.square} ${c.intent ?? 'HOLD POSITION'}` : `NOTHING AT ${e.square}`;
+  // Where they are comes through only for ground ORION-3 has scanned (ILI-1493): anywhere else the
+  // intercept has their words, not a fix.
+  const fix = c && orionScanned(s, c.square) ? ` AT ${c.square}` : '';
+  const plain = c ? `${WORD[c.id] ?? 'UNIT'}${fix} ${c.intent ?? 'HOLD POSITION'}` : `NOTHING AT ${e.square}`;
   const signal: Signal = { target, dial: round1((BAND.min + BAND.max) / 2), nextHopMs: s.elapsedMs + HOP_MS, progress: 0, plain, contactId: c?.id };
   const game: MiniGame = {
     kind: 'signal',
@@ -156,16 +159,17 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
   const where = g.progress >= WHERE_AT;
   let next: GameState = { ...s, minigame: { ...m, status: plan ? 'won' : 'lost' } };
   const c = g.contactId ? next.contacts.find((x) => x.id === g.contactId) : undefined;
-  if (where && c?.status === 'hidden') next = reveal(next, [c.square], 'SIGINT');
+  const fix = !!c && orionScanned(s, c.square); // a fix on them only on scanned ground (ILI-1493)
+  if (where && fix && c.status === 'hidden') next = reveal(next, [c.square], 'SIGINT');
   if (plan) {
     // What gets decoded is a marker on the map, waiting for HQ to send it to ALPHA (ILI-1394).
-    const d: Decoded = { id: `decoded-${m.startedMs}`, square: c?.square ?? m.square, text: g.plain, contactId: c?.id, atMs: s.elapsedMs };
+    const d: Decoded = { id: `decoded-${m.startedMs}`, square: fix ? c.square : m.square, text: g.plain, contactId: c?.id, atMs: s.elapsedMs };
     next = { ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 }, decoded: [...next.decoded, d] };
   }
   const report: Message = {
     id: `signal-${m.startedMs}`,
     from: 'SIGINT',
-    text: plan ? `Decoded: "${g.plain}".` : where ? `Got part of it: they're at ${m.square}, but not what they plan.` : 'Lost the signal.',
+    text: plan ? `Decoded: "${g.plain}".` : where ? (fix ? `Got part of it: they're at ${c!.square}, but not what they plan.` : 'Got part of it: no fix on where they are, and not what they plan.') : 'Lost the signal.',
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,
