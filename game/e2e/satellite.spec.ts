@@ -63,12 +63,12 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
   // ORION-3 is the eye, not the gun (ILI-1474): the square's CONTACT tag has Strike; none in ORION-3.
-  await expect(page.getByTestId('action-panel')).toHaveCount(0); // nothing else to do here
+  await expect(page.getByTestId('action-panel').locator('[data-kind=contact]')).toHaveCount(0); // no strike here (the scan may have heard their radio, ILI-1359)
   await expect(page.getByTestId('square-anchor').getByTestId('strike-menu')).toHaveCount(0);
   await expect(sat.getByTestId('capture-strike')).toHaveCount(0);
   await page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
   const act = page.getByTestId('strike-flyout').getByTestId('strike-menu');
-  await expect(card.getByTestId('event-card')).toHaveCount(0);
+  await expect(card.locator('[data-testid=event-card][data-kind=contact]')).toHaveCount(0);
   await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
   await act.getByTestId('fire-sniper').scrollIntoViewIfNeeded();
   await expect(act.getByTestId('fire-sniper')).toBeVisible();
