@@ -23,7 +23,7 @@ import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
 import { RECOVER_MS } from '../sim/mission';
 import { knownIn } from '../sim/contacts';
 import { ESCROW_BOX } from '../sim/prices';
-import { downloadProgress, shelfState } from '../sim/intel';
+import { downloadProgress, kindLabel, shelfState } from '../sim/intel';
 import { TargetMenu } from './TargetMenu';
 import { cash } from './MissionBar';
 
@@ -338,7 +338,7 @@ function PackageLine({ s, square }: { s: GameState; square: string }) {
         </span>
       ) : (
         <span>
-          <i className="int">PKG</i> {st === 'posted' ? `Intel posted · waiting for ${who}` : `${who} downloading intel`}
+          <i className="int">{kindLabel('IMINT')}</i> {st === 'posted' ? `Intel posted · waiting for ${who}` : `${who} downloading intel`}
         </span>
       )}
       {st === 'pulling' && (
@@ -519,15 +519,15 @@ function teamWork(s: GameState, square: string): { work: Work; found: Found } {
   const now = s.elapsedMs;
   const { mission, team } = s;
   let work: Work = null;
-  if (searchingIn(s) === square) work = { id: `search-${square}`, kind: 'HUMINT', text: `${team.callsign} searching the building`, progress: 1 - (team.holdUntilMs - now) / SEARCH_MS };
+  if (searchingIn(s) === square) work = { id: `search-${square}`, kind: 'Search', text: `${team.callsign} searching the building`, progress: 1 - (team.holdUntilMs - now) / SEARCH_MS };
   else if (mission.b === square && mission.phase === 'objective' && mission.recoverUntilMs !== null)
-    work = { id: 'recover', kind: 'IMINT', text: `${team.callsign} recovering the black box`, progress: 1 - (mission.recoverUntilMs - now) / RECOVER_MS };
+    work = { id: 'recover', kind: 'Recovery', text: `${team.callsign} recovering the black box`, progress: 1 - (mission.recoverUntilMs - now) / RECOVER_MS };
   const found: Found = [];
   if (s.events.some((e) => e.id === buildingId(square) && e.status === 'resolved')) {
     const f = findIn(s, square);
-    found.push({ id: `search-${square}`, kind: 'HUMINT', text: `${team.callsign} found ${f.what} + ammo & meds · +$${f.cash.toLocaleString('en-US')}` });
+    found.push({ id: `search-${square}`, kind: 'Search', text: `${team.callsign} found ${f.what} + ammo & meds · +$${f.cash.toLocaleString('en-US')}` });
   }
-  if (mission.b === square && mission.blackBox) found.push({ id: 'recover', kind: 'IMINT', text: `${team.callsign} recovered the black box · +$${ESCROW_BOX.toLocaleString('en-US')}` });
+  if (mission.b === square && mission.blackBox) found.push({ id: 'recover', kind: 'Recovery', text: `${team.callsign} recovered the black box · +$${ESCROW_BOX.toLocaleString('en-US')}` });
   return { work, found };
 }
 
