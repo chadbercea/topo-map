@@ -3,6 +3,7 @@ import { bus, EV, getMapRect } from '../game/events';
 import { BuildingTag, strikeWork, tagSquares } from './PromptLayer';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, lockedOn, satName } from '../sim/satellite';
+import { trafficPrompts } from '../sim/prompts';
 import { isImageryRequest } from '../sim/imageryRequest';
 import { MiniGamePanel } from './MiniGamePanel';
 import { freshness, targets } from '../sim/imagery';
@@ -294,10 +295,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
           </div>
         )}
         {traffic.map((e) => (
-          <div key={e.id} className="sc-item" data-kind="signal" data-testid="intel-item" data-event={e.id} data-focus={s.openEvent === e.id || undefined}>
-            <span>Enemy radio traffic near {e.square}</span>
-            <small className="note">Listen or Jam from its tag on the map.</small>
-          </div>
+          <TrafficItem key={e.id} s={s} id={e.id} square={e.square} />
         ))}
         {others.map((e) => (
           <div key={e.id} className="sc-item" data-kind={e.kind} data-testid="intel-item" data-event={e.id} data-focus={s.openEvent === e.id || undefined}>
@@ -315,6 +313,45 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       </section>
       <Details s={s} square={square} />
     </>
+  );
+}
+
+// Radio traffic heard on the square (ILI-1491): a line of its intel list, not a card or a tag of its
+// own. A click on it opens the choice, inline: Listen (an asset gets in range, then the intercept
+// plays here) or Jam. While an asset is on its way, the line says so.
+function TrafficItem({ s, id, square }: { s: GameState; id: string; square: string }) {
+  const listen = trafficPrompts(s).find((p) => p.id === id);
+  const going = s.listen?.eventId === id;
+  const open = s.openEvent === id || going;
+  const locked = lockedOn(s, square);
+  return (
+    <div className="sc-item sc-traffic" data-kind="signal" data-testid="intel-item" data-event={id} data-focus={s.openEvent === id || undefined}>
+      <button className="sc-item-head" onClick={() => (s.openEvent === id ? game.dropEvent() : game.openEvent(id))} aria-expanded={open} data-testid="traffic-item">
+        Enemy radio traffic near {square}
+      </button>
+      {open && listen && (
+        <div className="sc-choice" data-testid="traffic-choice">
+          {!going && <p className="note">{listen.text.replace(/^Enemy radio traffic near \S+\. /, '')}</p>}
+          <div className="options">
+            {listen.responses.map((r) => (
+              <button key={r.id} onClick={() => game.answerPrompt(id, r.id)} disabled={r.disabled} data-response={r.id} data-testid="traffic-listen">
+                {r.label}
+              </button>
+            ))}
+            {!going && (
+              <button
+                onClick={() => game.jam(id)}
+                disabled={!locked}
+                title={locked ? "Slows the enemy, but you won't learn what they're planning" : `${satName(s)} has to be over ${square}`}
+                data-testid="traffic-jam"
+              >
+                Jam
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

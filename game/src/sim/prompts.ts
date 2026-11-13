@@ -156,10 +156,10 @@ export function promptQueue(s: GameState): Prompt[] {
 // The one on screen.
 export const activePrompt = (s: GameState): Prompt | null => promptQueue(s)[0] ?? null;
 
-// Enemy traffic on screen (ILI-1452): its own small card beside the one prompt, never replaced by
-// it. It stays until HQ gets an asset in range (then it shows the progress, and goes once the
-// intercept starts) or dismisses it; dismissed, the traffic itself stays on the map.
-export const trafficPrompts = (s: GameState): Prompt[] => enemyTraffic(s).filter((p) => !s.acked.includes(p.id));
+// Enemy traffic's choice (ILI-1452, ILI-1491): not in the one-prompt queue, so nothing replaces it.
+// It shows inline on its line of the square's intel list, until HQ gets an asset in range (then the
+// progress, gone once the intercept starts) or jams it.
+export const trafficPrompts = (s: GameState): Prompt[] => enemyTraffic(s);
 
 // Any prompt HQ can answer: the queue's and the traffic's.
 export const allPrompts = (s: GameState): Prompt[] => [...promptQueue(s), ...trafficPrompts(s)];

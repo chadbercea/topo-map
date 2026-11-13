@@ -64,7 +64,8 @@ test('the radio mini game plays in its square’s menu, at C2', async ({ page })
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await untilTraffic(page);
-  await page.getByTestId('traffic-prompt').locator('[data-response=satellite]').click(); // ORION-3 listens (ILI-1435, ILI-1452)
+  await page.evaluate(() => window.game.openEvent('traffic-c2')); // its line in C2's list, open on the choice (ILI-1491)
+  await page.getByTestId('square-anchor').locator('[data-response=satellite]').click(); // ORION-3 listens (ILI-1435)
   await page.evaluate(() => {
     for (let i = 0; i < 400 && !window.game.get().minigame; i++) window.game.tick(100);
   });
