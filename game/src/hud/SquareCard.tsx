@@ -23,7 +23,7 @@ import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
 import { RECOVER_MS } from '../sim/mission';
 import { knownIn } from '../sim/contacts';
 import { ESCROW_BOX } from '../sim/prices';
-import { downloadProgress, kindLabel, shelfState } from '../sim/intel';
+import { downloadProgress, kindLabel, shelfState, squareReports } from '../sim/intel';
 import { TargetMenu } from './TargetMenu';
 import { Stages } from './Stages';
 import { cash } from './MissionBar';
@@ -295,12 +295,13 @@ function Report({ s, square }: { s: GameState; square: string }) {
       {/* ALPHA at work here: a live bar, so it stays out of the folds. */}
       <TeamWork s={s} square={square} />
 
-      {/* The square's intel list (ILI-1487): only what HQ can act on here, each with its button:
-          its package, contacts, buildings, radio traffic. What ORION-3's imagery found is ORION-3's,
-          under its picture, not here too. */}
+      {/* The square's intel list (ILI-1487, ILI-1507): compact, a line each. First the intel
+          ORION-3 has on the square now (its package's status, then each report by kind), then what
+          HQ can act on here: contacts, buildings, radio traffic. */}
       <section className="sc-items" data-testid="intel-list" aria-label={`Intel on ${square}`}>
         <h3 className="sc-items-head">Intel</h3>
         <PackageLine s={s} square={square} />
+        <Reports s={s} square={square} />
         {/* The contact is a line of the list like the rest (ILI-1490): no red CONTACT tag docked on
             the panel beside it, a second red flyout over the square's own panel. */}
         {contact && <ContactItem s={s} square={square} />}
@@ -331,9 +332,9 @@ function Report({ s, square }: { s: GameState; square: string }) {
             <small className="note">{e.title}</small>
           </div>
         ))}
-        {!shelfState(s, square) && !contact && !known.length && !buildings.length && !traffic.length && !others.length && (
+        {!shelfState(s, square) && !squareReports(s, square).length && !contact && !known.length && !buildings.length && !traffic.length && !others.length && (
           <p className="sc-none" data-testid="intel-none">
-            No contacts or traffic reported
+            No intel on this square yet
           </p>
         )}
       </section>
@@ -358,9 +359,7 @@ function PackageLine({ s, square }: { s: GameState; square: string }) {
           Intel received
         </span>
       ) : (
-        <span>
-          <i className="int">{kindLabel('IMINT')}</i> {st === 'posted' ? `Intel posted · waiting for ${who}` : `${who} downloading intel`}
-        </span>
+        <span>{st === 'posted' ? `Intel posted · waiting for ${who}` : `${who} downloading intel`}</span>
       )}
       {st === 'pulling' && (
         <span className="decay fill" role="progressbar" aria-valuenow={Math.round(downloadProgress(s) * 100)}>
@@ -368,6 +367,23 @@ function PackageLine({ s, square }: { s: GameState; square: string }) {
         </span>
       )}
     </div>
+  );
+}
+
+// The intel ORION-3 has on the square now (ILI-1507): each report, one line, labelled by kind
+// (ILI-1510) and coloured by how much it says. The full text is on hover where a line runs long.
+function Reports({ s, square }: { s: GameState; square: string }) {
+  const items = squareReports(s, square);
+  if (!items.length) return null;
+  return (
+    <ul className="sc-reports" data-testid="square-reports">
+      {items.map((r, i) => (
+        <li key={i} data-kind={r.kind} data-heat={r.heat} title={r.text} data-testid="square-report">
+          <i className="int">{kindLabel(r.kind)}</i>
+          <span>{r.text}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
