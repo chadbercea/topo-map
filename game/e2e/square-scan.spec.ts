@@ -24,6 +24,8 @@ test('a tap opens the square\u2019s flyout and sends ORION-3; Scan is in ORION-3
   await page.getByTestId('satellite').getByTestId('capture-scan').click();
   await expect.poll(() => page.evaluate(() => !!window.game.get().imagery.F4)).toBe(true);
   await expect(anchor.getByTestId('square-intel-state')).toHaveText(/^settled · (clear|\d reports? below)$/);
+  await expect(anchor.getByTestId('square-settled')).toBeHidden(); // compact: its sections start closed (11-12)
+  await anchor.getByTestId('fold-intel').locator('summary').click();
   await expect(anchor.getByTestId('square-settled')).toBeVisible(); // the full report, on the square (ILI-1475)
 });
 

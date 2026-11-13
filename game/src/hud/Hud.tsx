@@ -9,7 +9,6 @@ import { useTier, useFold } from './tier';
 import { MissionBar } from './MissionBar';
 import { ChipStatus } from './ChipStatus';
 import { CommsLine } from './CommsLine';
-import { StrikeFlyout } from './StrikeFlyout';
 import { SightingPanels } from './SightingPanels';
 import { OrionPanel } from './OrionPanel';
 import { CommsPanel } from './CommsPanel';
@@ -172,7 +171,6 @@ export function Hud() {
       <div className="slot-orion" data-overlay="orion" ref={orionSlot}>
         <OrionPanel />
       </div>
-      <StrikeFlyout />
       <div className="slot-bottom">
         {/* The heartbeat strip, tier one; the team panel is its drawer (ILI-1396). */}
         <div className="slot-team" data-overlay={!tabbed && teamOpen ? 'team' : undefined}>
