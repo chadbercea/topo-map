@@ -223,7 +223,7 @@ html, body {
 .anchor-leader text { fill: var(--accent); font-size: 11px; letter-spacing: 0.1em; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
 /* The square's anchor (ILI-1302, ILI-1308): its strikes, what's hitting it, what else is going on there. */
 .square-card .sc-scan { display: grid; gap: 4px; padding: 8px 10px; }
-.square-card .sc-asked { margin: 0; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #f2c14e; }
+.square-card .sc-asked { margin: 0; padding: 2px 8px; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #f2c14e; border-bottom: 1px solid var(--line); } /* ALPHA's ask, a status line under the head (ILI-1506) */
 .square-card .sc-scan button { display: grid; gap: 2px; justify-items: start; text-align: left; font: inherit; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); background: none; border: 1px solid var(--accent); min-height: 48px; padding: 6px 10px; cursor: pointer; }
 .square-card .sc-scan button small { color: var(--dim); font-size: 10px; letter-spacing: 0.04em; text-transform: none; }
 .square-card .sc-scan button:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 14%, transparent); }
@@ -240,7 +240,9 @@ html, body {
 .square-card .sc-head { display: flex; align-items: center; gap: 6px; padding: 2px 2px 2px 8px; font-size: 10px; letter-spacing: 0.08em; border-bottom: 1px solid var(--line); }
 .square-card .sc-head b { color: var(--accent); font-weight: 600; }
 .square-card .sc-status { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; text-transform: uppercase; font-size: 9px; letter-spacing: 0.08em; }
-.square-card .sc-head[data-state='slewing'] .sc-status, .square-card .sc-head[data-state='onStation'] .sc-status, .square-card .sc-head[data-state='capturing'] .sc-status { color: #f2c14e; }
+.square-card .sc-head[data-state='slewing'] .sc-status { color: #f2c14e; }
+.square-card .sc-head[data-state='locked'] .sc-status { color: var(--accent); }
+.square-card .sc-head[data-state='away'] .sc-status { color: var(--dim); }
 .square-card .rescan { margin-left: auto; min-height: 24px; padding: 0 8px; font-size: 10px; white-space: nowrap; flex: none; }
 .square-card .rescan + .x { margin-left: 0; }
 .square-card .x { margin-left: auto; font: inherit; font-size: 14px; line-height: 1; color: var(--dim); background: none; border: 1px solid transparent; min-width: 24px; min-height: 22px; padding: 0; cursor: pointer; }
@@ -1602,9 +1604,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* A square's intel (ILI-1399): in its menu, the detail readouts of what its one scan settled. */
 
 /* A square's details in its menu (ILI-1400): folded under one line. */
-.square-card .sc-details { border-bottom: 1px solid var(--line); }
-.square-card .sc-details summary { padding: 3px 8px; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.square-card .sc-details summary span { color: var(--ink); text-transform: none; letter-spacing: 0.04em; }
 
 /* The satellite panel's priority ladder (ILI-1400): it never scrolls. The slot is a size
    container, so the panel answers to its own height. Rank 1, the buttons, 60 px pinned to the
