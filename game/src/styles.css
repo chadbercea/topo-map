@@ -1354,6 +1354,15 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud[data-boot='first'] > .heartbeat-strip { animation: power-frame 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: 0ms; }
 .hud[data-boot='first'] .comms-strip { animation: power-frame 560ms cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: 4600ms; } /* the comms strip is a frame like a panel's */
 .hud[data-boot='first'] .comms-strip > * { animation: power-content 340ms ease-out both; animation-delay: 5200ms; }
+/* ORION-3 and ALPHA move into view as they power on (ILI-1501), at their turn in the stagger
+   (ILI-1481): ORION-3 in from the right edge, ALPHA up from the bottom. */
+@keyframes slide-from-right { from { transform: translateX(32px); opacity: 0; } }
+@keyframes slide-from-below { from { transform: translateY(32px); opacity: 0; } }
+.hud[data-boot]:is([data-tier='wide'], [data-layout='fold']) .slot-orion { animation: slide-from-right 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: var(--on); }
+.hud[data-boot]:is([data-tier='wide'], [data-layout='fold']) .slot-team { animation: slide-from-below 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: var(--on); }
+.hud[data-boot='first']:is([data-tier='wide'], [data-layout='fold']) :is(.slot-orion, .slot-team) { animation-duration: 560ms; }
+.hud[data-boot][data-layout='fold'] .slot-orion { animation-name: slide-from-below; } /* docked under the map on a fold */
+@media (prefers-reduced-motion: reduce) { .hud[data-boot] :is(.slot-orion, .slot-team) { animation: none; } }
 @media (prefers-reduced-motion: reduce) { .hud[data-boot] .panel, .hud[data-boot] .panel > *, .hud[data-boot] .panel li, .hud[data-boot] > *, .hud[data-boot] .comms-strip, .hud[data-boot] .comms-strip > *, .hud[data-boot] .dock-tabs > button { animation: none; } }
 
 /* Menus and the After Action Report power on the same way (ILI-1285). */
@@ -1928,7 +1937,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .comms-line .dim { color: var(--dim); }
 .hud .comms-strip .log-toggle { position: static; grid-area: auto; margin: 0; flex: none; align-self: stretch; min-height: 0; height: 100%; border: 0; border-left: 1px solid rgba(53, 208, 165, 0.18); background: none; }
 .hud .comms-strip .log-toggle:hover, .hud[data-log] .comms-strip .log-toggle { background: rgba(53, 208, 165, 0.1); }
-.hud .comms-strip .slot-satcom { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); width: auto; height: min(440px, 60vh); margin: 0; grid-area: auto; z-index: 6; }
+.hud .comms-strip .slot-satcom { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); width: auto; height: auto; max-height: min(240px, 30vh); display: flex; flex-direction: column; margin: 0; grid-area: auto; z-index: 6; }
+.hud:not([data-log]) .comms-strip .slot-satcom { display: none; }
+.hud .comms-strip .slot-satcom > .satcom { flex: 0 1 auto; min-height: 0; } /* the log only as tall as its lines, capped low (ILI-1501): it no longer covers the middle of the map, where ALPHA works */
 .map-ctl { grid-area: map; align-self: end; justify-self: end; position: relative; z-index: 5; display: flex; gap: 6px; margin: 0 10px 10px 0; pointer-events: none; }
 .map-ctl > button { pointer-events: auto; }
 .map-ctl .recentre { margin: 0; align-self: stretch; height: 32px; }
@@ -1957,7 +1968,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .hud[data-layout='fold'] .orion .o-icon { display: block; }
   .hud[data-layout='fold'] .slot-bottom { grid-area: bottom; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
   .hud[data-layout='fold'] .comms-strip { height: 48px; width: 100%; }
-  .hud[data-layout='fold'] .comms-strip .slot-satcom { display: grid; }
+  .hud[data-layout='fold'] .comms-strip .slot-satcom { display: flex; }
   .hud[data-layout='fold']:not([data-log]) .comms-strip .slot-satcom { display: none; }
   .hud[data-layout='fold'] .orion .env-stack { display: grid; } /* the dock is short, but the weather has its own row */
 }

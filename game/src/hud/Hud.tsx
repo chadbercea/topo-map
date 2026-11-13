@@ -39,9 +39,8 @@ type Sheet = 'peek' | 'half' | 'full';
 // TEAM share a rail down the right behind tabs (ILI-1213); on a phone they share a bottom sheet.
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
-  // ORION-3 first: the team panel is a drawer now (ILI-1396), closed until HQ opens it.
   const [tab, setTab] = useState<Tab>('orion');
-  const [teamOpen, setTeamOpen] = useState(false); // the bar at rest; its table is a drawer that never opens by itself (ILI-1472)
+  const [teamOpen, setTeamOpen] = useState(true); // ALPHA's table opens expanded (ILI-1501); HQ folds it to the bar
   const [highlight, setHighlight] = useState<string | null>(null);
   // On a wide screen the log is a drawer over the map's left edge, behind one small button (ILI-1393).
   const [log, setLog] = useState(false);
@@ -133,17 +132,19 @@ export function Hud() {
     setTeamOpen((o) => !o);
     setLog(false); // one drawer at a time (ILI-1472)
   };
-  // The drawers close with Esc, or a click on the map (ILI-1472).
+  // The comms log closes with Esc (which also pauses, ILI-1503) or a click on the map (ILI-1472).
+  // ALPHA's table is open by default and stays open while HQ works the map (ILI-1501): only its
+  // own handle folds it.
   useEffect(() => {
     if (tabbed) return;
-    const close = () => (setTeamOpen(false), setLog(false));
-    const key = (e: KeyboardEvent) => e.key === 'Escape' && close();
+    const closeLog = () => setLog(false);
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && closeLog();
     const canvas = document.getElementById('game');
     window.addEventListener('keydown', key);
-    canvas?.addEventListener('pointerdown', close);
+    canvas?.addEventListener('pointerdown', closeLog);
     return () => {
       window.removeEventListener('keydown', key);
-      canvas?.removeEventListener('pointerdown', close);
+      canvas?.removeEventListener('pointerdown', closeLog);
     };
   }, [tabbed]);
   useEffect(() => {

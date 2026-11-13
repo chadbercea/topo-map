@@ -135,7 +135,7 @@ export const lockOn = (page: Page, square: string) =>
   }, square);
 
 // The team panel's table (ILI-1472): on a phone the TEAM target; on a wide screen or a fold upright
-// the bar's drawer, which is closed at rest.
+// the bar's drawer, open by default (ILI-1501).
 export async function openTeam(page: Page, isMobile: boolean) {
   if (isMobile) return page.getByTestId('tab-team').click();
   const expand = page.getByTestId('team-expand');
