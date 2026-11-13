@@ -15,7 +15,6 @@ import { BOARD } from '../sim/minigame';
 import { lockedOn, orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
 import { searchingIn } from '../sim/buildings';
-import { gauge, GAUGE_MAX, LOW_AT } from '../sim/intel';
 import { squareFindings } from '../sim/intel';
 import { follows, freshness, GHOST_MS, groupOrigin, shownAt, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
@@ -1265,57 +1264,7 @@ export class MapScene extends Phaser.Scene {
   // ALPHA is five people, not a dot (ILI-1210): one per operator, in a loose wedge facing where the team
   // is headed. Each drifts a little on its own and pings on its own beat, so the team reads as
   // alive. The downed stay in the group, dim and hollow. Reduced motion: still and quiet.
-  // Intel on its way to ALPHA (ILI-1435): each send flies from where it came from to the team.
-  private sent = new Set<string>();
-  private pulses: { from: { x: number; y: number }; at: number }[] = [];
-  private barFlash = -Infinity;
   private pings = new Map<string, { at: number; next: number }>(); // each operator's last ping and next (ILI-1409)
-  // ALPHA's intel (ILI-1435): a short bar on its marker, full when HQ has fed it, draining as it
-  // walks; amber when low, red when it's out. Each send HQ makes flies to the team as a pulse,
-  // and the bar flashes as it lands.
-  private drawFeed(g: Phaser.GameObjects.Graphics, time: number, at: { x: number; y: number }, u: number) {
-    const st = game.get();
-    const pushes = st.intel.pushes.filter((p) => p.state !== 'held');
-    if (pushes.length < this.sent.size) this.sent.clear(); // a new mission
-    const quiet = this.sent.size === 0 && time < 1000;
-    for (const p of pushes) {
-      if (this.sent.has(p.id)) continue;
-      this.sent.add(p.id);
-      const from = (p.square && squareCenter(p.square)) || squareCenter(st.satellite.aim);
-      if (from && !quiet && !reducedMotion()) this.pulses.push({ from, at: time });
-      else this.barFlash = time;
-    }
-    // An orange tracer that zips to the team (ILI-1440): a short streak along the line from
-    // where the intel came from, quick, with a glow, then the bar flashes as it lands.
-    const FLY = 480;
-    const ORANGE = 0xff8a2a;
-    this.pulses = this.pulses.filter((p) => {
-      const k = (time - p.at) / FLY;
-      if (k >= 1) {
-        this.barFlash = time;
-        return false;
-      }
-      const head = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; // eases in, then snaps home
-      const tail = Math.max(0, head - 0.28);
-      const hx = p.from.x + (at.x - p.from.x) * head;
-      const hy = p.from.y + (at.y - p.from.y) * head;
-      const tx = p.from.x + (at.x - p.from.x) * tail;
-      const ty = p.from.y + (at.y - p.from.y) * tail;
-      g.lineStyle(u, ORANGE, 1).lineBetween(tx, ty, hx, hy);
-      return true;
-    });
-    const v = gauge(st) / GAUGE_MAX;
-    const color = v <= 0 ? 0xe5484d : gauge(st) <= LOW_AT ? 0xf2c14e : OPS;
-    const w = 44 * u;
-    const h = 4 * u;
-    const x0 = at.x + 16 * u;
-    const y0 = at.y - 6 * u;
-    const flash = Math.max(0, 1 - (time - this.barFlash) / 500);
-    g.fillStyle(0x0b0f0d, 0.85).fillRect(x0 - u, y0 - u, w + 2 * u, h + 2 * u);
-    g.fillStyle(color, 0.18).fillRect(x0, y0, w, h);
-    g.fillStyle(color, 1).fillRect(x0, y0, w * Math.min(1, v), h);
-    if (flash) g.lineStyle(u, OPS, flash).strokeRect(x0 - 2 * u, y0 - 2 * u, w + 4 * u, h + 4 * u);
-  }
 
   private drawTeam(time = 0) {
     const st = game.get();
@@ -1411,7 +1360,8 @@ export class MapScene extends Phaser.Scene {
       else dots.lineStyle(u, OPS, 1).strokeCircle(x, y, 3.2 * u);
       arrow(x, y, down);
     });
-    this.drawFeed(g, time, position, u);
+    // No intel bar floating on the marker any more (cut 11-12, buggy). ALPHA running low still shows
+    // as the amber intel-needed tag on the square it needs.
     // Its status tag (ILI-1395): what ALPHA is doing, on the marker itself.
     const status = teamStatus(st);
     const tag = `${st.team.callsign} · ${status.toUpperCase()}`;
