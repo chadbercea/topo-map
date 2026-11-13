@@ -18,6 +18,8 @@ test('the team panel is a bar at rest; a slot opens its table with them highligh
   // One panel: a bar at rest, the table a drawer out of it (ILI-1472). A slot opens it with that
   // operator highlighted; opening it closes the comms log, one drawer at a time.
   const panel = page.getByTestId('team-panel');
+  await expect(panel).toHaveAttribute('data-state', 'full'); // open by default (ILI-1501)
+  await page.getByTestId('team-minimize').click();
   await expect(panel).toHaveAttribute('data-state', 'min');
   await expect(panel.getByTestId('heartbeat-strip').locator('svg.ecg')).toHaveCount(5);
   await expect(page.getByTestId('readout')).toHaveCount(0);
@@ -58,7 +60,7 @@ test('the bar names each operator; the drawer\u2019s rows fill its width (ILI-14
   await expect(strip.getByTestId('hb-lead')).toContainText('Reyes');
   const s = (await strip.boundingBox())!;
   expect(s.x + s.width).toBeLessThanOrEqual(page.viewportSize()!.width); // fits on a phone
-  await page.getByTestId('team-expand').click();
+  if (await page.getByTestId('team-expand').count()) await page.getByTestId('team-expand').click(); // open by default (ILI-1501)
   const panel = (await page.getByTestId('team-drawer').boundingBox())!;
   const row = (await page.getByTestId('op-lead').boundingBox())!;
   expect(panel.width - row.width).toBeLessThan(40); // the rows fill the drawer

@@ -28,6 +28,8 @@ test('the team panel shows what the team is doing', async ({ page, isMobile }) =
   // The bar at rest, its table a drawer (ILI-1472): five heartbeats on the bar; the table opens over
   // the map and closes again, and the bar never moves.
   const panel = page.getByTestId('team-panel');
+  await expect(panel).toHaveAttribute('data-state', 'full'); // open by default (ILI-1501)
+  await page.getByTestId('team-minimize').click();
   await expect(panel).toHaveAttribute('data-state', 'min');
   await expect(panel.getByTestId('heartbeat-strip').locator('svg.ecg')).toHaveCount(5);
   const bar = await page.getByTestId('heartbeat-strip').boundingBox();
