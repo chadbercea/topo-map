@@ -2293,3 +2293,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud:not([data-tier='wide']) .orion .o-buttons .modes { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: minmax(40px, auto); }
 .hud:not([data-tier='wide']) .orion .o-buttons .modes > button { grid-column: 1 / -1; }
 .hud:not([data-tier='wide']) .orion > .o-buttons { height: auto; }
+
+/* The focused square's flyout is the topmost thing on the map (ILI-1523): ALPHA's request tag,
+   place tags, sightings, contact tags and prompts all go under it, so it's always seen whole.
+   Only the pause menu and the intro sit above it. */
+.square-card.anchor { z-index: 12; }
