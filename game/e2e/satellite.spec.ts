@@ -60,12 +60,13 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(sat.getByTestId('satellite-result')).toContainText(/Video: 5 fighters/);
   await expect(sat.getByTestId('satellite-inset')).toHaveCount(1); // the picture stays up
   await expect(page.getByTestId('comms-feed')).toContainText(/E3 collection complete \(video\): 5 fighters.*Analysts: live feed to ALPHA/);
-  await expect(page.getByTestId('square-anchor').getByTestId('intel-list').getByTestId('contact-tag')).toBeVisible(); // the contact is an item of the square's intel list (ILI-1487)
+  await expect(page.getByTestId('square-anchor').getByTestId('intel-list').getByTestId('contact-item')).toBeVisible(); // the contact is an item of the square's intel list (ILI-1487)
+  await expect(page.locator('[data-testid=contact-tag]')).toHaveCount(0); // and no red CONTACT tag beside the open panel (ILI-1490)
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
   // ORION-3 is the eye, not the gun (ILI-1474): the square's CONTACT tag has Strike; none in ORION-3.
   await expect(page.getByTestId('square-anchor').getByTestId('strike-menu')).toHaveCount(0);
   await expect(sat.getByTestId('capture-strike')).toHaveCount(0);
-  await page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
+  await page.locator('[data-testid=contact-item][data-square=E3]').getByTestId('contact-strike').click();
   const act = page.getByTestId('strike-flyout').getByTestId('strike-menu');
   await expect(card.locator('[data-testid=event-card][data-kind=contact]')).toHaveCount(0);
   await expect(act.getByTestId('event-card')).toContainText('CONTACT · E3');
@@ -90,7 +91,7 @@ test('a square with fighters in view gets a CONTACT tag; its Strike, or a fighte
   await photo(page, 'E3'); // finds the checkpoint
   await page.evaluate(() => window.game.selectSquare('E3'));
   await expect(page.getByTestId('strike-flyout')).toHaveCount(0);
-  await expect(page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike')).toBeEnabled(); // locked on E3, fighters in a fresh look (ILI-1474)
+  await expect(page.locator('[data-testid=contact-item][data-square=E3]').getByTestId('contact-strike')).toBeEnabled(); // locked on E3, fighters in a fresh look (ILI-1474)
   const pins = sat.getByTestId('target-pin');
   await expect(pins).toHaveCount(5); // one per fighter it saw
   // A click in ORION-3's picture pins his full panel there (ILI-1444): read-only (ILI-1482); Strike is on the square.
@@ -100,7 +101,7 @@ test('a square with fighters in view gets a CONTACT tag; its Strike, or a fighte
   await expect(panel.getByTestId('panel-tango')).toHaveText(/^HOSTILE · TANGO-\d+$/);
   await expect(panel.getByTestId('panel-weapon')).not.toHaveText('█████'); // ORION-3 is over him: his weapon shows
   await expect(panel.getByTestId('panel-strike')).toHaveCount(0);
-  await page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
+  await page.locator('[data-testid=contact-item][data-square=E3]').getByTestId('contact-strike').click();
   await expect(page.getByTestId('strike-flyout').getByTestId('fire-drone')).toBeVisible();
   const anchor = page.getByTestId('square-anchor');
   await expect(anchor.getByTestId('strike-menu')).toHaveCount(1); // the options slide in inside the square's panel (11-12)
@@ -139,7 +140,7 @@ test('a fighter on the map opens its strikes too, from his pinned panel (ILI-125
   await page.mouse.move(p.x, p.y); // on the main map: a one-line tag (ILI-1443)
   await expect(page.locator('.sighting-panel[data-kind=hostile]').getByTestId('panel-tag')).toHaveText(/^HOSTILE · TANGO-\d+$/);
   await page.mouse.click(p.x, p.y); // a click picks his square: ORION-3 is over it, so its Strike is lit
-  await page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
+  await page.locator('[data-testid=contact-item][data-square=E3]').getByTestId('contact-strike').click();
   await expect(page.getByTestId('strike-flyout').getByTestId('fire-sniper')).toBeVisible();
 });
 

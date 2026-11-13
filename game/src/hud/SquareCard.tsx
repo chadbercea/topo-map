@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
-import { BuildingTag, ContactTag, tagSquares } from './PromptLayer';
+import { BuildingTag, strikeWork, tagSquares } from './PromptLayer';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, lockedOn, satName } from '../sim/satellite';
 import { isImageryRequest } from '../sim/imageryRequest';
@@ -274,13 +274,11 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       <section className="sc-items" data-testid="intel-list" aria-label={`Intel on ${square}`}>
         <h3 className="sc-items-head">Intel</h3>
         {asked && <p className="sc-asked">{asked.title}</p>}
-        {(contact || buildings.length > 0) && (
+        {/* The contact is a line of the list like the rest (ILI-1490): no red CONTACT tag docked on
+            the panel beside it, a second red flyout over the square's own panel. */}
+        {contact && <ContactItem s={s} square={square} />}
+        {buildings.length > 0 && (
           <div className="sc-tags" data-testid="docked-tags">
-            {contact && (
-              <div className="place-tag contact-tag docked" data-testid="contact-tag" data-kind="contact" data-square={square}>
-                <ContactTag square={square} />
-              </div>
-            )}
             {buildings.map((e) => (
               <div key={e.id} className="place-tag docked" data-testid="place-tag" data-kind="building" data-square={square}>
                 <BuildingTag id={e.id} />
@@ -317,6 +315,33 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       </section>
       <Details s={s} square={square} />
     </>
+  );
+}
+
+// The square's contact, as a line of its intel list (ILI-1490): its fighters, and Strike, or how the
+// strike under way is going. Strike slides the strike options in, inside this panel.
+function ContactItem({ s, square }: { s: GameState; square: string }) {
+  const st = strikeState(s, square);
+  const work = strikeWork(s, square);
+  return (
+    <div className="sc-item sc-contact" data-kind="contact" data-testid="contact-item" data-square={square}>
+      <span>
+        Contact · {square}
+        {st.marked.length > 0 && <b data-testid="contact-count"> · {st.marked.length}</b>}
+      </span>
+      {work ? (
+        <em data-testid="strike-work">{work}</em>
+      ) : (
+        <button
+          onClick={() => st.strikes[0] && game.openEvent(st.strikes[0].id)}
+          disabled={!st.can}
+          title={st.can ? `Strike ${square}` : `${satName(s)} has to be over ${square} to watch the strike land`}
+          data-testid="contact-strike"
+        >
+          Strike
+        </button>
+      )}
+    </div>
   );
 }
 

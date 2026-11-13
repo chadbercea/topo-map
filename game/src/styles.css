@@ -2146,3 +2146,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card .sc-item .note { font-size: 10px; color: var(--dim); }
 .square-card .sc-none { margin: 0; font-size: 11px; color: var(--dim); }
 
+/* The square's contact, a line of its intel list (ILI-1490): no red tag docked on the panel. */
+.square-card .sc-contact { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; border-left-color: #e5484d; }
+.square-card .sc-contact > span { letter-spacing: 0.04em; }
+.square-card .sc-contact > em { font-style: normal; font-size: 10px; color: var(--dim); }
+.square-card .sc-contact button { min-height: 26px; padding: 0 10px; font: inherit; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
