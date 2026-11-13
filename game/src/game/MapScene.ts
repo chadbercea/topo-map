@@ -10,6 +10,7 @@ import { legPath, theaterWater } from '../map/paths';
 import { RIVER } from '../map/water';
 import { hillshade } from '../map/relief';
 import type { Settings } from '../sim/state';
+import { shownEvents } from '../sim/events';
 import { DPR } from './dpr';
 import { BOARD } from '../sim/minigame';
 import { lockedOn, orionSquare, satellitePoint } from '../sim/satellite';
@@ -706,7 +707,9 @@ export class MapScene extends Phaser.Scene {
   private drawMarkers(time: number) {
     const g = this.markerGfx.clear();
     const r = (MARKER_R * DPR) / this.zoom;
-    const { events, openEvent, elapsedMs } = game.get();
+    const st = game.get();
+    const { openEvent, elapsedMs } = st;
+    const events = shownEvents(st); // only where ORION-3 has looked (ILI-1519)
     const px = (DPR * 1) / this.zoom;
     for (const e of events) {
       if (e.status === 'resolved' || e.kind === 'site') continue; // a kill site's X marks are enough (ILI-1252)
@@ -844,24 +847,23 @@ export class MapScene extends Phaser.Scene {
     const s = game.get();
     const open = (e: (typeof s.events)[number] | undefined) => (e && e.status !== 'resolved' && e.kind !== 'site' && !isImageryRequest(e) ? e : undefined);
     const hit = ((MARKER_R + 8) * DPR) / this.zoom; // a little more than drawn, so a near miss isn't a square click
-    const marker = s.events.find((e) => open(e) && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit * 1.2);
+    const shown = shownEvents(s); // only where ORION-3 has looked (ILI-1519)
+    const marker = shown.find((e) => open(e) && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit * 1.2);
     if (marker) return marker;
-    const dot = s.events.find((e) => {
+    const dot = shown.find((e) => {
       if (e.kind !== 'contact' || e.status === 'resolved') return false;
       const c = squareCenter(e.square)!;
       return Math.hypot(c.x - x, c.y - CELL * 0.25 - y) <= hit;
     });
     if (dot) return dot;
     const thing = this.sightingAt(x, y);
-    if (thing?.kind === 'hostile') return open(s.events.find((e) => e.id === `contact-${thing.id.split(':')[0]}`));
+    if (thing?.kind === 'hostile') return open(shown.find((e) => e.id === `contact-${thing.id.split(':')[0]}`));
     return undefined;
   }
 
   private eventAt(x: number, y: number) {
     const hit = ((MARKER_R + 6) * DPR) / this.zoom; // a little bigger than drawn, for thumbs
-    return game
-      .get()
-      .events.find((e) => e.status !== 'resolved' && e.kind !== 'site' && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit);
+    return shownEvents(game.get()).find((e) => e.status !== 'resolved' && e.kind !== 'site' && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit);
   }
 
   // The larger square (ILI-1203): ORION-3's picture of the square it's tasked to (or last

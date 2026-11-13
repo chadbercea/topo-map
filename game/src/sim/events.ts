@@ -33,3 +33,12 @@ export const eventSystem: System = (s) => {
     comms: radio.length ? { ...s.comms, messages: [...s.comms.messages, ...radio] } : s.comms,
   };
 };
+
+// Where events show (ILI-1519): only on ground ORION-3's analysts have been through. A square it
+// has never analyzed shows nothing: no traffic tag, no contact, no building, no kill site. The one
+// exception is the square ALPHA is in contact on: it reports what's shooting at it. ALPHA's own ask
+// for imagery is the exception by nature: it marks ground nobody has looked at yet.
+type Sight = { intel: { graded: readonly string[] }; team: { fight?: { square: SquareId } | null } };
+export const eventShown = (s: Sight, e: Pick<MapEvent, 'kind' | 'square'>) =>
+  e.kind === 'request' || s.intel.graded.includes(e.square) || s.team.fight?.square === e.square;
+export const shownEvents = <E extends Pick<MapEvent, 'kind' | 'square'>>(s: Sight & { events: E[] }) => s.events.filter((e) => eventShown(s, e));

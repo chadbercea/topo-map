@@ -1,6 +1,6 @@
 import type { GameState } from './state';
 import { kindOf, type Message } from './comms';
-import type { EventKind, EventStatus } from './events';
+import { shownEvents, type EventKind, type EventStatus } from './events';
 
 // The intel stream (ILI-1186, cut to the MVP in ILI-1194, ILI-1197): this mission's intel,
 // down the left. It opens on what the analysts had on the crash before HQ sat down, then
@@ -55,7 +55,7 @@ export function missionIntel(s: GameState): Intel[] {
   const reports = s.comms.messages
     .filter((m) => (m.from !== s.team.callsign || m.alert) && kindOf(m) !== 'call')
     .map((m) => ({ id: `msg-${m.id}`, atMs: m.atMs, source: m.from, text: m.text, square: m.square, ...classify(m) }));
-  const events = s.events.map((e) => ({
+  const events = shownEvents(s).map((e) => ({
     id: `ev-${e.id}`,
     atMs: e.atMs,
     kind: 'event' as const,
@@ -70,6 +70,6 @@ export function missionIntel(s: GameState): Intel[] {
 
 // Everything on the stream, newest first. Until the first event the feed is all quiet.
 export function streamView(s: GameState): Intel[] {
-  const started = s.events.length > 0;
+  const started = shownEvents(s).length > 0;
   return [...s.stream.items, ...missionIntel(s)].map((i) => (started ? i : { ...i, quiet: true })).sort((a, b) => b.atMs - a.atMs);
 }

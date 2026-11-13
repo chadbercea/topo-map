@@ -19,8 +19,9 @@ export const run = (s: GameState, ms: number) => {
 // Run until a group talks on its net (ILI-1454): no fixed time, the mission's own rules and dice.
 // On the default seed the patrol at C2 is first, before a minute is up.
 // Enemy traffic up at C2, as a scan's SIGINT report brings it in (ILI-1359); ORION-3 stays where it is.
+// The scan graded the square, so the tag shows there (ILI-1519).
 export function untilTraffic(s: GameState, square = 'C2') {
-  return hearTraffic(s, square);
+  return hearTraffic({ ...s, intel: { ...s.intel, graded: [...new Set([...s.intel.graded, square])] } }, square);
 }
 // The enemy traffic up on the map (open, unless any will do).
 export const trafficId = (s: GameState, open = true) => s.events.find((e) => e.kind === 'signal' && (!open || e.status !== 'resolved'))!.id;

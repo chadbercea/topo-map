@@ -40,7 +40,7 @@ describe('jamming', () => {
   });
 
   it('costs the intel: no intercept after jamming, and the patrol stays unmarked', () => {
-    const store = atTraffic();
+    const store = createStore(untilTraffic(initialState(), 'B1')); // heard next door: ORION-3 over a scanned C2 would see the patrol itself
     const id = trafficId(store.get());
     store.jam(id);
     store.intercept(id);

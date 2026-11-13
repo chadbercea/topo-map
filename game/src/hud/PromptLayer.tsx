@@ -8,6 +8,7 @@ import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { countdown } from '../sim/gameTime';
 import type { GameState } from '../sim/state';
+import { shownEvents } from '../sim/events';
 import { alphaBox, overlaysNamed, pick, squareBox, type Box } from './overlays';
 import { useTier } from './tier';
 
@@ -217,8 +218,8 @@ function PlaceTags() {
 // Which squares have tags: contacts whose fresh look shows fighters, or with a strike under way
 // (ILI-1474); buildings worth a search (ILI-1469).
 export function tagSquares(s: GameState) {
-  const contacts = [...new Set(s.events.filter((e) => e.kind === 'contact' && e.status !== 'resolved').map((e) => e.square))].filter((sq) => strikeState(s, sq).seen || !!strikeWork(s, sq));
-  const buildings = s.events.filter((e) => e.kind === 'building' && e.status !== 'resolved');
+  const contacts = [...new Set(shownEvents(s).filter((e) => e.kind === 'contact' && e.status !== 'resolved').map((e) => e.square))].filter((sq) => strikeState(s, sq).seen || !!strikeWork(s, sq));
+  const buildings = shownEvents(s).filter((e) => e.kind === 'building' && e.status !== 'resolved');
   return { contacts, buildings };
 }
 

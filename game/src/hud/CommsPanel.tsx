@@ -3,6 +3,7 @@ import { game, useGame } from '../sim/store';
 import { kindOf, sending, type Comms, type Message } from '../sim/comms';
 import { cards, type Card, type EventCardKind } from '../sim/cards';
 import type { GameState } from '../sim/state';
+import { shownEvents } from '../sim/events';
 import { classify, EVENT_LABEL } from '../sim/stream';
 import { gameClock } from '../sim/gameTime';
 import { kindLabel } from '../sim/intel';
@@ -30,7 +31,10 @@ export function CommsPanel() {
   const callsign = useGame((s) => s.team.callsign);
   const comms = useGame((s) => s.comms);
   const notes = useGame((s) => s.stream.items);
-  const events = useGame((s) => s.events);
+  const graded = useGame((s) => s.intel.graded);
+  const fightSquare = useGame((s) => s.team.fight?.square);
+  const allEvents = useGame((s) => s.events);
+  const events = useMemo(() => shownEvents({ intel: { graded }, team: { fight: fightSquare ? { square: fightSquare } : null }, events: allEvents }), [graded, fightSquare, allEvents]); // only where ORION-3 has looked (ILI-1519)
   const pushes = useGame((s) => s.intel.pushes);
   const searching = useGame((s) => s.searching);
   const log = useRef<HTMLOListElement>(null);
