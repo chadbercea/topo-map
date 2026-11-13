@@ -100,7 +100,7 @@ export function lockedStore(start?: GameState) {
     // Listen (ILI-1394): ORION-3 already over the traffic, so the intercept starts on the next tick.
     intercept: (id: string) => (over(eventSquare(id)), store.answerPrompt(id, 'satellite'), store.tick(0)),
     jam: (id: string) => (over(eventSquare(id)), store.jam(id)),
-    search: (square: string) => (over(square), store.search(square)),
+    postBuilding: (square: string) => (over(square), store.postBuilding(square)),
     scan: (square: string) => (over(square), store.scan(square)),
   };
 }

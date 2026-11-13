@@ -163,14 +163,14 @@ describe('Scan from the square menu (ILI-1367)', () => {
     expect(store.get().imagery.F4).toBeDefined();
   });
 
-  it('nothing runs on a square ORION-3 is not locked on: strikes, search, Listen, Jam (ILI-1397)', () => {
+  it('nothing runs on a square ORION-3 is not locked on: strikes, building intel, Listen, Jam (ILI-1397)', () => {
     const s0 = untilTraffic(initialState()); // enemy traffic up at C2
     const store = createStore({ ...s0, satellite: { ...s0.satellite, aim: 'H8', from: { col: 7, row: 7 }, state: 'idle' } });
     const id = trafficId(s0);
     store.jam(id);
     expect(store.get().minigame).toBeNull();
     expect(store.get().events.find((e) => e.id === id)?.status).not.toBe('resolved');
-    store.search('C2');
+    store.postBuilding('C2');
     expect(store.get().searching).toEqual([]);
   });
 

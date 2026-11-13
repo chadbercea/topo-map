@@ -1,6 +1,6 @@
 import { squareAt, type SquareId } from '../map/grid';
 import type { Message } from './comms';
-import { feed } from './intel';
+import { feed, postBuildingIntel } from './intel';
 import { earn } from './sites';
 import type { GameState } from './state';
 import { LOADOUT } from './team';
@@ -109,26 +109,58 @@ export function reach(s: GameState, square: SquareId): Reach {
   return { ok: true, route: [...route.slice(0, waypoint), ...there, ...back.slice(0, -1), ...route.slice(j)] };
 }
 
-// HQ sends ALPHA: the way there goes onto its route next, if it can reach it.
+// ALPHA goes: the way there goes onto its route next, if it can reach it.
 export function sendToSearch(s: GameState, square: SquareId): GameState {
   const e = s.events.find((x) => x.id === buildingId(square) && x.status !== 'resolved');
   if (!e || s.searching.includes(square)) return s;
   const r = reach(s, square);
   if (!r.ok) return s;
-  return { ...s, searching: [...s.searching, square], team: { ...s.team, route: r.route }, events: s.events.map((x) => (x === e ? { ...x, status: 'seen' as const } : x)) };
+  return { ...s, searching: [...s.searching, square], team: { ...s.team, route: r.route }, events: s.events.map((x) => (x === e ? { ...x, status: 'seen' as const, reach: 'going' as const } : x)) };
 }
 
-// A building ALPHA has gone around since (ILI-1518): off its route, so the search is off.
+// HQ can't send ALPHA in (ILI-1517): it posts what it knows of the building on the shelf, like an
+// Analyze's package. Once ALPHA has pulled it, ALPHA says whether it can get there, and goes if it
+// can. HQ can post again after ALPHA couldn't, once the ground has changed.
+export function postBuilding(s: GameState, square: SquareId): GameState {
+  const e = s.events.find((x) => x.id === buildingId(square) && x.status !== 'resolved');
+  if (!e || s.searching.includes(square)) return s;
+  if (e.tasked && !e.reach) return s; // on the shelf, or ALPHA's still weighing it
+  const { next, id } = postBuildingIntel(s, square);
+  return { ...next, events: next.events.map((x) => (x.id === e.id ? { ...x, status: 'seen' as const, tasked: id, reach: undefined } : x)) };
+}
+
+// Why ALPHA can't, as it says it: short, plain.
+const UNABLE = { contact: 'enemy in it', 'cut-off': 'no way round the enemy' } as const;
+const unable = (s: GameState, square: SquareId, why: 'contact' | 'cut-off'): GameState => {
+  const id = `unable-building-${square}-${s.elapsedMs}`;
+  return {
+    ...s,
+    events: s.events.map((e) => (e.id === buildingId(square) ? { ...e, status: 'new' as const, reach: why } : e)),
+    comms: { ...s.comms, messages: [...s.comms.messages, radio(s, id, `Unable to reach the building in ${square}: ${UNABLE[why]}.`)] },
+  };
+};
+
+// ALPHA has pulled HQ's intel on a building: it weighs the way there (ILI-1518) and goes, or says
+// it can't.
+function weigh(s: GameState): GameState {
+  let next = s;
+  for (const e of s.events) {
+    if (e.kind !== 'building' || e.status === 'resolved' || !e.tasked || e.reach) continue;
+    if (next.intel.pushes.find((p) => p.id === e.tasked)?.state !== 'fed') continue;
+    const r = reach(next, e.square);
+    next = r.ok ? sendToSearch(next, e.square) : unable(next, e.square, r.why);
+  }
+  return next;
+}
+
+// A building ALPHA has gone around since (ILI-1518): off its route, so the search is off, and it
+// says so.
 function droppedOff(s: GameState): GameState {
   const here = squareAt(s.team.position.x, s.team.position.y);
   const ahead = s.team.route.slice(s.team.waypoint);
   const off = s.searching.filter((sq) => sq !== here && !ahead.includes(sq));
   if (!off.length) return s;
-  return {
-    ...s,
-    searching: s.searching.filter((sq) => !off.includes(sq)),
-    events: s.events.map((e) => (e.kind === 'building' && off.includes(e.square) && e.status !== 'resolved' ? { ...e, status: 'new' as const } : e)),
-  };
+  return off.reduce((n, sq) => unable(n, sq, blocking(n, sq) ? 'contact' : 'cut-off'), { ...s, searching: s.searching.filter((sq) => !off.includes(sq)) });
 }
 
 // The square of the building ALPHA is inside, searching, or null (ILI-1418): while it searches
@@ -143,7 +175,7 @@ const radio = (s: GameState, id: string, text: string): Message => ({ id, from: 
 
 // In a building HQ sent it to: it holds and searches, then reports what it found.
 export const buildingSystem: System = (s0) => {
-  const s = droppedOff(s0);
+  const s = droppedOff(weigh(s0));
   const { team } = s;
   if (team.fight || !s.searching.length) return s;
   const here = squareAt(team.position.x, team.position.y);
