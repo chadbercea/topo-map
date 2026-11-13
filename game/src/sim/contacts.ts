@@ -13,7 +13,7 @@ import { knownTo } from './picture';
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
 // for a scan; a found contact on the route makes it ask HQ to observe, attack or avoid.
-// Walking into a contact nobody found is an ambush.
+// Walking into a contact ALPHA didn't know of is an ambush (firefight.ts, ILI-1496).
 
 export type ContactStatus = 'hidden' | 'revealed' | 'cleared' | 'avoided';
 // units: the cells (0-15, a 4x4 board over the square, row by row) where its fighters

@@ -2133,17 +2133,3 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud[data-tier='wide'] .orion { grid-template-rows: auto auto 92px auto auto; }
 .hud[data-tier='wide'] .orion > .o-buttons { height: 92px; }
 .hud[data-tier='medium']:not([data-layout='fold']) .slot-orion { max-height: 516px; }
-
-/* One square, big (ILI-1486): the picture is exactly the square ORION-3 is over, always square,
-   as big as its frame allows, and the frame runs edge to edge across the panel. Where the frame is
-   longer one way than the other, the rest is plain ground colour, not the neighbouring squares.
-   No 3D satellite above it in any layout; on a wide screen or a fold, no Last look line under it
-   (the map's photo-age tags carry that, ILI-1468). */
-.orion .o-frame { container-type: size; overflow: hidden; }
-.orion .o-frame > .o-picture { inset: auto; left: 50%; top: 50%; width: min(100cqw, 100cqh); height: auto; aspect-ratio: 1; transform: translate(-50%, -50%); box-shadow: 0 0 0 100vmax var(--bg); }
-.hud .orion > .o-frame { padding: 0; margin: 0; }
-.hud:is([data-tier='wide'], [data-layout='fold']) .orion > .o-last { display: none; }
-.hud[data-tier='wide'] .orion { grid-template-rows: auto auto 92px auto; grid-template-areas: 'head' 'frame' 'buttons' 'saw'; }
-/* In the rail the picture runs edge to edge, and the panel stops where its buttons do. */
-.hud[data-tier='medium']:not([data-layout='fold']) .orion { padding: 0; }
-.hud[data-tier='medium']:not([data-layout='fold']) .slot-orion { max-height: 424px; }
