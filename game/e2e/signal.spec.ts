@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, lockOn, start, untilTraffic, openEvent, hasEvent } from './helpers';
 
-test('intercept: get ORION-3 in range through the prompt, follow their wave, and what is decoded goes on the shelf for ALPHA (ILI-1394, ILI-1499)', async ({ page, isMobile }) => {
+test('intercept: get ORION-3 in range through the prompt, follow their wave, and what is decoded goes on the shelf for ALPHA (ILI-1394, ILI-1499)', async ({ page }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
