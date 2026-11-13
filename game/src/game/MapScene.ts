@@ -1267,15 +1267,16 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
-  // The square's intel package (ILI-1499), a 1 px tag beside its stamp: POSTED while it waits on the
-  // shelf for ALPHA, ⇣ ALPHA while the team downloads it, ✓ ALPHA once ALPHA has it. Still: no motion.
+  // The square's intel package (ILI-1499), a 1 px tag beside its stamp, in plain words (ILI-1509):
+  // POSTED while it waits on the shelf for ALPHA, DOWNLOADING while the team pulls it, ✓ RECEIVED
+  // once ALPHA has it. Still: no motion.
   private drawPackage(sq: string, x: number, y: number) {
     const state = shelfState(game.get(), sq);
     if (!state) return;
     const px = DPR / this.zoom;
     const g = this.stampGfx;
     const color = state === 'posted' ? '#f2c14e' : '#35d0a5';
-    const text = state === 'posted' ? 'POSTED' : state === 'pulling' ? '⇣ ALPHA' : '✓ ALPHA';
+    const text = state === 'posted' ? 'POSTED' : state === 'pulling' ? 'DOWNLOADING' : '✓ RECEIVED';
     const tag = this.pkgTags.get(sq) ?? this.add.text(0, 0, '', { fontFamily: 'JetBrains Mono, monospace', fontSize: `${10 * DPR}px`, color }).setOrigin(0, 1);
     if (!this.pkgTags.has(sq)) {
       this.pkgTags.set(sq, tag);
