@@ -72,7 +72,7 @@ export function ground(s: GameState, square: SquareId): Ground | null {
   if (Math.hypot(x0 + CELL / 2 - TOWN.x, y0 + CELL / 2 - TOWN.y) < TOWN.radius + CELL / 3) features.push('town');
   if (roadPoints().some(([x, y]) => x >= x0 && x < x0 + CELL && y >= y0 && y < y0 + CELL)) features.push('road');
   const snap = s.imagery[square];
-  const imagery = snap ? 'imaged' : s.map.scanned.includes(square) ? 'known ground' : 'no imagery';
+  const imagery = snap ? 'imaged' : s.map.scanned.includes(square) ? 'imaged earlier' : 'no coverage'; // ISR terms (ILI-1488)
   return {
     square,
     lowM: Math.round(low),

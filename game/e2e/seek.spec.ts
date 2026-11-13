@@ -19,7 +19,7 @@ test('the target menu lists every weapon with its state; no ALPHA attacks: HQ ch
   await expect(page.getByTestId('fire-heli')).toBeEnabled(); // unlocked from the start (ILI-1254)
   await expect(page.getByTestId('fire-heli')).toContainText('Ready');
   await expect(page.getByTestId('send-team')).toHaveCount(0);
-  await expect(page.getByTestId('eyes')).toContainText('Fresh look');
+  await expect(page.getByTestId('eyes')).toContainText('Current imagery');
 });
 
 test('sniper: OVERWATCH shoots on its own at the square\u2019s anchor, one fighter after another, then goes (ILI-1253, ILI-1303)', async ({ page }) => {

@@ -32,6 +32,9 @@ export type Snapshot = {
 export const FRESH_MS = 33_000;
 export const GHOST_MS = 100_000;
 export type Freshness = 'live' | 'fresh' | 'ghost' | 'stale';
+// What the player reads for a look's age (ILI-1488): ISR terms. A live feed; imagery still current;
+// aging; stale (too old to act on).
+export const AGE_LABEL: Record<Freshness, string> = { live: 'live', fresh: 'current', ghost: 'aging', stale: 'stale' };
 
 export const freshness = (snap: Snapshot, now: number): Freshness =>
   snap.live ? 'live' : now - snap.atMs < FRESH_MS ? 'fresh' : now - snap.atMs < GHOST_MS ? 'ghost' : 'stale';

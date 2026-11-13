@@ -18,13 +18,13 @@ describe('header readouts (ILI-1187)', () => {
     const g = ground(initialState(), 'E2')!;
     expect(g.highM).toBeGreaterThan(g.lowM);
     expect(g.features).toContain('town');
-    expect(g.imagery).toBe('no imagery');
-    expect(ground(initialState(), 'G5')!.imagery).toBe('known ground'); // the insertion point
+    expect(g.imagery).toBe('no coverage');
+    expect(ground(initialState(), 'G5')!.imagery).toBe('imaged earlier'); // the insertion point
   });
 
   it('blockers: what stands in the way', () => {
     const s = initialState();
-    expect(blockers(s).map((b) => b.text)).toContain('No imagery ahead at F4');
+    expect(blockers(s).map((b) => b.text)).toContain('No coverage ahead at F4');
     const hurt = { ...s, alerted: true, team: { ...s.team, operators: s.team.operators.map((o, i) => (i === 0 ? { ...o, health: 0 } : o)) } };
     expect(blockers(hurt).map((b) => b.text)).toEqual(expect.arrayContaining(['1 down', 'Enemy alerted to the PMC']));
   });
