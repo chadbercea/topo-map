@@ -2,12 +2,14 @@ name: Game CI
 
 # Required on main: PRs auto-merge only when this and the Vercel check pass.
 # Runs on every PR (no path filter) so a required check never hangs waiting.
-# The browser suite is split across four runners at once (ILI-1457: it was ~9 min on one); a
-# last job, named game-ci (the required check), passes only if every part passed.
+# Only typecheck + unit gate a merge (Chad, 11-13: the browser suite made a one-line change take
+# twenty minutes to ship). The Playwright suite still runs on demand: Actions > Game CI > Run
+# workflow.
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -36,6 +38,7 @@ jobs:
 
   e2e:
     name: e2e ${{ matrix.shard }}/4
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Browsers and their system libraries come preinstalled; installing them per run took ~9 minutes.
     # Keep the tag in step with @playwright/test in game/package.json.
@@ -69,7 +72,8 @@ jobs:
     needs: [checks, e2e]
     if: always()
     steps:
-      - name: Every part passed
+      - name: Every part that ran passed
         run: |
           echo "checks: ${{ needs.checks.result }}  e2e: ${{ needs.e2e.result }}"
-          test "${{ needs.checks.result }}" = success && test "${{ needs.e2e.result }}" = success
+          test "${{ needs.checks.result }}" = success
+          test "${{ needs.e2e.result }}" = success || test "${{ needs.e2e.result }}" = skipped
