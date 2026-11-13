@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { LOOT } from './missions/blackBox';
+import { heldIntel, sendPhoto } from './intel';
 import type { GameState } from './state';
 import { LOADOUT } from './team';
 import { lockOn, run, walking } from './testkit';
@@ -15,6 +16,8 @@ const withConvoy = (s0: GameState = walking()): GameState => ({ ...s0, script: {
 // HQ keeps ORION-3 over the exfil it has scanned (ILI-1493): that's how anyone knows the convoy is there.
 const watchingExfil = (s: GameState): GameState => lockOn({ ...s, intel: { ...s.intel, graded: [...s.intel.graded, 'B1'] } }, 'B1');
 const toTheConvoy = (s0?: GameState, watch = true) => until(withConvoy(watch ? watchingExfil(s0 ?? walking()) : s0), (x) => x.contacts.some((c) => c.id === 'convoy'));
+// Seen, HQ sends it to ALPHA with Photo (ILI-1495): until then ALPHA doesn't know.
+const sent = (s: GameState) => sendPhoto(run(s, 100), 'B1');
 // Down to 40% ammo: under the convoy's weight, and not yet low enough to ask for a resupply.
 const lowAmmo = (s: GameState): GameState => ({ ...s, team: { ...s.team, operators: s.team.operators.map((o) => ({ ...o, ammo: Math.round(LOADOUT[o.role].ammo * 0.4) })) } });
 
@@ -34,10 +37,20 @@ describe('the salvage convoy on the exfil (ILI-1192, ILI-1315)', () => {
     expect(s.events.some((e) => e.id === 'contact-convoy' && e.square === 'B1')).toBe(true);
     expect(s.comms.messages.some((m) => m.id === 'exfil-cut')).toBe(false);
     expect(s.team.holdFor).toBeNull();
+    // The analysts hold a report on it for Photo; ALPHA doesn't know yet (ILI-1495).
+    expect(heldIntel(s, 'B1')).toBeTruthy();
+    expect(s.team.known.convoy).toBeUndefined();
+    expect(sent(s).team.known.convoy).toMatchObject({ square: 'B1', units: 3 });
+  });
+
+  it('seen but never sent: ALPHA doesn\u2019t weigh it, and walks into the fight (ILI-1495)', () => {
+    const s = until(toTheConvoy(), (x) => !!x.team.fight || x.phase !== 'running');
+    expect(s.comms.messages.some((m) => m.from === 'ALPHA' && /Contact in B1, a salvage convoy/.test(m.text))).toBe(false);
+    expect(s.team.fight?.square).toBe('B1');
   });
 
   it('a strong ALPHA takes it: fights for the haul and exfils at B1', () => {
-    const s0 = toTheConvoy();
+    const s0 = sent(toTheConvoy());
     const before = s0.resources.budget;
     const s = until(s0, (x) => x.phase === 'ended');
     expect(s.comms.messages.some((m) => /Contact in B1, a salvage convoy.*We'll take them\./.test(m.text))).toBe(true);
@@ -48,7 +61,7 @@ describe('the salvage convoy on the exfil (ILI-1192, ILI-1315)', () => {
   });
 
   it('a spent ALPHA won\u2019t: it swings wide to the alternate exfil at A2 and gets out there', () => {
-    const s0 = toTheConvoy(lowAmmo(walking()));
+    const s0 = sent(toTheConvoy(lowAmmo(walking())));
     const s1 = until(s0, (x) => x.mission.c !== 'B1');
     expect(s1.mission.c).toBe('A2');
     expect(s1.team.route.slice(-3)).toEqual(['C2', 'B2', 'A2']);

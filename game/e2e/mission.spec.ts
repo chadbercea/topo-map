@@ -84,7 +84,11 @@ test('a salvage convoy cuts the exfil; spent, ALPHA swings wide to A2 on its own
     const operators = s.team.operators.map((o) => ({ ...o, ammo: Math.round(o.ammo * 0.4) }));
     window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route, 'B2', 'A2'] }, intel: { ...s.intel, graded: [...s.intel.graded, 'B1'] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, operators } });
     window.game.lookAt('B1');
-    for (let i = 0; i < 6000 && window.game.get().mission.c === 'B1'; i++) window.game.tick(100);
+    // Seen, HQ sends it to ALPHA with Photo: ALPHA only weighs what it's sent (ILI-1495).
+    for (let i = 0; i < 6000 && window.game.get().mission.c === 'B1'; i++) {
+      window.game.tick(100);
+      if (window.game.get().intel.pushes.some((p) => p.square === 'B1' && p.state === 'held')) window.game.photo('B1');
+    }
   });
   await expect(page.getByTestId('comms-feed')).toContainText('alternate exfil at A2');
   await expect(page.getByTestId('comms')).toHaveCount(0); // it said so; it didn't ask
