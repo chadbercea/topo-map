@@ -38,6 +38,60 @@ export function weather(s: GameState): Weather {
 // Clear enough for ORION-3 to see the ground. Not wired to anything yet.
 export const imageryOk = (w: Weather) => w.cloudPct < 80;
 
+export type TerrainReading = {
+  centreM: number; // height at the square's centre
+  lowM: number;
+  highM: number;
+  gradePct: number; // the mean grade across the square, rise over run
+  degrees: number; // the same, as an angle
+  aspect: string | null; // the way the ground faces (falls toward), null on the flat
+};
+
+const POINTS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+
+// ORION-3's terrain reading of one square (ILI-1504): from the same elevation data the map
+// contours, a plane fitted to a 9×9 grid of heights gives the square's mean grade and the way it
+// faces. The map only shows contour lines; this is what the picture adds.
+export function terrainReading(square: SquareId): TerrainReading | null {
+  const sq = parseSquare(square);
+  if (!sq) return null;
+  const t = theater();
+  const N = 8;
+  const cx = sq.col * CELL + CELL / 2;
+  const cy = sq.row * CELL + CELL / 2;
+  let low = Infinity;
+  let high = -Infinity;
+  // Least squares for h = a·x + b·y + c on a centred, symmetric grid: a = Σxh/Σx², b = Σyh/Σy².
+  let sxh = 0;
+  let syh = 0;
+  let sxx = 0;
+  for (let i = 0; i <= N; i++)
+    for (let j = 0; j <= N; j++) {
+      const dx = ((i - N / 2) * CELL) / N;
+      const dy = ((j - N / 2) * CELL) / N;
+      const h = heightAt(t, cx + dx, cy + dy);
+      low = Math.min(low, h);
+      high = Math.max(high, h);
+      sxh += dx * h;
+      syh += dy * h;
+      sxx += dx * dx;
+    }
+  // Metres of rise per metre across (world y runs south).
+  const gx = sxh / sxx / METRES_PER_UNIT;
+  const gy = syh / sxx / METRES_PER_UNIT;
+  const grade = Math.hypot(gx, gy);
+  // The ground faces downhill: the bearing of minus the gradient, north up, clockwise.
+  const bearing = (Math.atan2(-gx, gy) * 180) / Math.PI;
+  return {
+    centreM: Math.round(heightAt(t, cx, cy)),
+    lowM: Math.round(low),
+    highM: Math.round(high),
+    gradePct: Math.round(grade * 100),
+    degrees: Math.round((Math.atan(grade) * 180) / Math.PI),
+    aspect: grade < 0.02 ? null : POINTS[Math.round((((bearing % 360) + 360) % 360) / 45) % 8],
+  };
+}
+
 export type Ground = {
   square: SquareId;
   lowM: number;

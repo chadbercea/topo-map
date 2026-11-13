@@ -8,6 +8,8 @@ import { intro } from './hud/intro';
 import { clearOldSaves, opening } from './hud/ledger';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
+import '@fontsource/fira-mono/400.css'; // ORION-3's picture overlay (ILI-1504)
+import '@fontsource/fira-mono/500.css';
 import './styles.css';
 import { startPwa } from './pwa';
 
