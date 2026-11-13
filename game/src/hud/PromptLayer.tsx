@@ -405,7 +405,7 @@ export function BuildingTag({ id }: { id: string }) {
 
 // What's hitting a square right now, for its CONTACT tag (ILI-1474): the asset's callsign and how
 // it's going.
-function strikeWork(s: GameState, square: string): string | null {
+export function strikeWork(s: GameState, square: string): string | null {
   const now = s.elapsedMs;
   if (s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now)) return `${SNIPER_CALLSIGN} · ${s.sniper.done ? 'done' : 'firing'}`;
   for (const w of ['drone', 'heli'] as const) {
