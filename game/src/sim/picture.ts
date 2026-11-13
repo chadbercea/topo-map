@@ -8,7 +8,8 @@ import type { System } from './systems';
 // - an Analyze's package, once downloaded: what the analysts saw in that square (and who is no longer there);
 // - a square on video, once ALPHA has pulled its feed: live to the team, for good (ILI-1432);
 // - a decoded intercept HQ sends, when the intercept had a fix on them (ILI-1493);
-// - a square it's in contact on.
+// - a square it's in contact on;
+// - a group it sees itself, in range and with no ground in the way (sight.ts, ILI-1512).
 // Its route choices, holds and go-arounds read this, and only this.
 export type Known = { square: SquareId; units: number; atMs: number };
 export type Picture = Record<string, Known>; // by contact id

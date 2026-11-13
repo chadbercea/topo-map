@@ -3,7 +3,8 @@ import type { GameState } from './state';
 import type { System } from './systems';
 import type { Operator, Role } from './team';
 import type { Message } from './comms';
-import { contactIn, effectiveStrength } from './contacts';
+import { effectiveStrength } from './contacts';
+import { inView } from './sight';
 import { confirmKills, FRESH_MS, GHOST_MS, type Freshness } from './imagery';
 import { CASH_PER_TEAM_KILL, earn, markSite } from './sites';
 import { ALERT_AMBUSH, makeNoise, NOISE, NOISE_PER_ROUND } from './noise';
@@ -75,10 +76,12 @@ export const firefightSystem: System = (s, dt) => {
   const { team } = s;
   const secs = dt / 1000;
 
-  // Contact: the team is standing in a square with a live contact.
+  // Contact: the team is standing in a square with a live contact, and has eyes on it (ILI-1512):
+  // one it can't see from where it stands, too far or behind the ground, it walks on past. A group
+  // that came to this ground hunting (its plan) sweeps it, and finds ALPHA there either way.
   if (!team.fight && !team.treating) {
     const here = squareAt(team.position.x, team.position.y);
-    const contact = here ? contactIn(s, here) : undefined;
+    const contact = here ? [...inView(s), ...s.contacts.filter((c) => c.planTo === here && !c.move)].find((c) => c.square === here && c.units.length && (c.status === 'hidden' || c.status === 'revealed')) : undefined;
     if (contact) {
       // What ALPHA knew of them going in (ILI-1496): its own picture, not HQ's map.
       const told = team.known[contact.id];

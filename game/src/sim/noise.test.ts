@@ -54,7 +54,7 @@ describe('noise', () => {
   it('an alerted enemy springs harder ambushes', () => {
     const at = (alerted: boolean) => {
       const s0 = withContacts();
-      const s = step(step({ ...s0, alerted, team: { ...s0.team, position: squareCenter('C2')!, waypoint: 5 } }, 100), 500);
+      const s = step(step({ ...s0, alerted, team: { ...s0.team, position: squareCenter('E3')!, waypoint: 3 } }, 100), 500); // in sight of the checkpoint (ILI-1512)
       return s.team.operators.reduce((n, o) => n + o.health, 0);
     };
     expect(at(true)).toBeLessThan(at(false)); // an alerted enemy kills faster (ILI-1453)
