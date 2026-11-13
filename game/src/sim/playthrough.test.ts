@@ -17,6 +17,8 @@ function play(strategy: 'sharp' | 'silent') {
     // Scan the route ahead of ALPHA, one square at a time.
     const ahead = s.team.route.slice(s.team.waypoint).find((sq) => !s.map.scanned.includes(sq));
     if (s.satellite.state === 'idle' && ahead) store.lookAt(ahead);
+    // Box out, it keeps ORION-3 over the exfil: whatever pulls onto the LZ is seen (ILI-1493).
+    else if (s.satellite.state === 'idle' && s.mission.blackBox && s.satellite.aim !== s.mission.c) store.lookAt(s.mission.c);
     if (s.satellite.state === 'onStation') store.capture('photo');
     if (s.satellite.result) store.closeLook();
     // It jams the patrol's radio to buy time.

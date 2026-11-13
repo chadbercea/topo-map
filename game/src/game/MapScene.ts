@@ -16,6 +16,7 @@ import { lockedOn, orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
 import { searchingIn } from '../sim/buildings';
 import { squareFindings } from '../sim/intel';
+import { knownIn, knownSquare, orionScanned } from '../sim/contacts';
 import { follows, freshness, GHOST_MS, groupOrigin, shownAt, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
@@ -279,7 +280,7 @@ export class MapScene extends Phaser.Scene {
     this.settle();
     this.drawTeam(_time);
     const st = game.get();
-    const key = `${st.team.waypoint}|${st.team.route.join()}|${st.map.scanned.length}|${st.contacts.filter((c) => c.status === 'revealed').map((c) => c.square)}`;
+    const key = `${st.team.waypoint}|${st.team.route.join()}|${st.map.scanned.length}|${st.contacts.map((c) => knownSquare(st, c) ?? '')}`;
     if (key !== this.routeKey) {
       this.routeKey = key;
       this.drawRoute();
@@ -493,12 +494,13 @@ export class MapScene extends Phaser.Scene {
     const st = game.get();
     const { imagery, contacts, elapsedMs: now } = st;
     const px = DPR / this.zoom;
-    // The square ORION-3 is locked on is watched live (ILI-1468): ORION-3 is live always, so every
-    // fighter there is drawn where he is now, scanned or not. Seeing him isn't settling the square:
-    // its intel, and a strike on it, still wait for a scan.
-    const watched = st.satellite.state !== 'slewing' && lockedOn(st, st.satellite.aim) ? st.satellite.aim : null;
+    // The square ORION-3 is locked on is watched live (ILI-1468): every fighter there is drawn where
+    // he is now, once ORION-3 has scanned it. Over a square it hasn't, nothing about an enemy shows
+    // (ILI-1493, superseding 11-12's "scanned or not").
+    const aim = st.satellite.aim;
+    const watched = st.satellite.state !== 'slewing' && lockedOn(st, aim) && orionScanned(st, aim) ? aim : null;
     const live = (c: (typeof contacts)[number]) => {
-      if (!watched || (c.status !== 'revealed' && c.status !== 'hidden') || !c.units.length) return null; // ORION-3 is live always: everything under it, scanned or not (Chad, 2026-11-12)
+      if (!watched || (c.status !== 'revealed' && c.status !== 'hidden') || !c.units.length) return null;
       const o = groupOrigin(c, now);
       return squareAt(o.x + CELL / 2, o.y + CELL / 2) === watched ? o : null;
     };
@@ -612,11 +614,13 @@ export class MapScene extends Phaser.Scene {
   // where it means to go.
   private drawPlans() {
     const g = this.intelGfx;
-    const { contacts, events } = game.get();
+    const st = game.get();
+    const { contacts } = st;
     const px = DPR / this.zoom;
     for (const c of contacts) {
-      if (!c.planKnown || !c.planTo || (c.status !== 'hidden' && c.status !== 'revealed')) continue;
-      const seenAt = events.find((e) => e.id === `contact-${c.id}`)?.square ?? c.square;
+      if (!c.planKnown || !c.planTo) continue;
+      const seenAt = knownSquare(st, c); // from where it was last seen, never where it really is (ILI-1493)
+      if (!seenAt) continue;
       if (seenAt === c.planTo) continue; // it's there
       const a = squareCenter(seenAt)!;
       const b = squareCenter(c.planTo)!;
@@ -1295,7 +1299,7 @@ export class MapScene extends Phaser.Scene {
     const current = s.team.pathTo === route[waypoint] ? s.team.path : null;
     route.slice(waypoint).forEach((id, n) => {
       const to = squareCenter(id)!;
-      const contact = s.contacts.some((c) => c.square === id && c.status === 'revealed');
+      const contact = knownIn(s, id).length > 0; // where HQ last saw it (ILI-1493)
       const pts = n === 0 && current ? [position, ...current] : n === 0 ? [position, to] : legPath(route[waypoint + n - 1], id);
       g.lineStyle(w, contact ? EVENT_COLOR.contact : TEAM, contact ? 0.8 : 0.55);
       trail(pts, !contact && !s.map.scanned.includes(id));

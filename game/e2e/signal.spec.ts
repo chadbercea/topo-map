@@ -45,12 +45,14 @@ test('intercept: get ORION-3 in range through the prompt, follow their wave, and
   await expect(traffic).toHaveCount(0); // the intercept ran: the card's gone
   const prompt = page.getByTestId('prompt');
   await expect(prompt).toHaveAttribute('data-kind', 'intel-ready');
-  await expect(prompt.getByTestId('prompt-text')).toContainText('PATROL AT C2 MOVING TO D3');
+  // C2 is ground ORION-3 hasn't scanned: their words come through, never where they are (ILI-1493).
+  await expect(prompt.getByTestId('prompt-text')).toContainText('PATROL MOVING TO D3');
+  await expect(prompt.getByTestId('prompt-text')).not.toContainText('AT C2');
   await prompt.getByTestId('prompt-response').click();
   await expect.poll(() => page.evaluate(() => window.game.get().contacts.find((c) => c.id === 'patrol')?.planKnown)).toBe(true);
   if (isMobile) await page.getByTestId('tab-satcom').click();
   await expect(page.getByTestId('comms-feed')).toContainText('Sent to ALPHA');
-  await expect.poll(() => hasEvent(page, 'contact', 'C2')).toBe(true);
+  expect(await hasEvent(page, 'contact', 'C2')).toBe(false); // no contact marker on unscanned ground
 });
 
 test('the traffic card stays when a more urgent prompt comes up, until HQ dismisses it (ILI-1452)', async ({ page }) => {

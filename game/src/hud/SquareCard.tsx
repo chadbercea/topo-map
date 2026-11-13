@@ -20,6 +20,7 @@ import { alphaBox, obstacles, pick, squareBox } from './overlays';
 import type { GameState } from '../sim/state';
 import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
 import { RECOVER_MS } from '../sim/mission';
+import { knownIn } from '../sim/contacts';
 import { ESCROW_BOX } from '../sim/prices';
 import { TargetMenu } from './TargetMenu';
 import { cash } from './MissionBar';
@@ -393,7 +394,7 @@ export function Details({ s, square, open = false }: { s: GameState; square: str
   const wx = weather(s);
   const snap = s.imagery[square];
   const seen = snap ? freshness(snap, now) : null;
-  const found = s.contacts.filter((c) => c.square === square && c.status === 'revealed');
+  const found = knownIn(s, square); // where HQ last saw them (ILI-1493)
   const status = working
     ? sat.state === 'slewing'
       ? `${satName(s)} ${countdown(sat.arriveMs - now)} away`

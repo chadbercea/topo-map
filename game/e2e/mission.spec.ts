@@ -78,10 +78,12 @@ test('a salvage convoy cuts the exfil; spent, ALPHA swings wide to A2 on its own
   await page.waitForFunction(() => window.game);
   await freeze(page);
   // Clear ground, and ALPHA down to 40% ammo: too spent to take the convoy that pulls onto B1.
+  // HQ keeps ORION-3 over the exfil it scanned: that's how the convoy is seen at all (ILI-1493).
   await page.evaluate(() => {
     const s = window.game.get();
     const operators = s.team.operators.map((o) => ({ ...o, ammo: Math.round(o.ammo * 0.4) }));
-    window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route, 'B2', 'A2'] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, operators } });
+    window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route, 'B2', 'A2'] }, intel: { ...s.intel, graded: [...s.intel.graded, 'B1'] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, operators } });
+    window.game.lookAt('B1');
     for (let i = 0; i < 6000 && window.game.get().mission.c === 'B1'; i++) window.game.tick(100);
   });
   await expect(page.getByTestId('comms-feed')).toContainText('alternate exfil at A2');

@@ -1,5 +1,6 @@
 import { nextRandom } from './firefight';
-import { moveContact, startMove, type Contact } from './contacts';
+import { moveContact, orionScanned, startMove, type Contact } from './contacts';
+import { lockedOn } from './satellite';
 import type { Message } from './comms';
 import type { IntelItem } from './intel';
 import type { GameState } from './state';
@@ -63,11 +64,12 @@ export const planSystem: System = (s) => {
   return next;
 };
 
-// It gets there. HQ only knows if someone found it: then the marker goes with it and HQ calls it;
-// otherwise it's a surprise for whoever walks in.
+// It gets there. HQ only knows if it's watching: ORION-3 over the square, scanned (ILI-1493). Then
+// the marker goes with it and HQ calls it. Otherwise its marker stays where it was last seen, and
+// it's a surprise for whoever walks in.
 function arrive(s: GameState, c: Contact, to: string): GameState {
   const moved = moveContact(s, c.id, to);
-  if (c.status !== 'revealed') return moved;
+  if (c.status !== 'revealed' || !lockedOn(s, to) || !orionScanned(s, to)) return moved;
   const where = to === s.mission.b ? `the crash site in ${to}` : to;
   const m: Message = {
     id: `${c.id}-arrived`,

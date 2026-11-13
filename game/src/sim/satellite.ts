@@ -235,12 +235,28 @@ export const satelliteSystem: System = (s) => {
   // there, it follows what moves for as long as it stays.
   // Video squares are live for good (ILI-1432), wherever ORION-3 is.
   let next = s;
-  for (const sq of s.intel.live ?? []) next = record(next, snapshot(next, sq, 'video', true));
-  if (sat.state !== 'capturing') return sat.watching && sat.watching === sat.aim && sat.state !== 'slewing' && !(s.intel.live ?? []).includes(sat.aim) ? record(next, snapshot(next, sat.aim, next.imagery[sat.aim]?.mode === 'video' ? 'video' : 'photo', true)) : next;
+  const live = s.intel.live ?? [];
+  for (const sq of live) next = record(next, snapshot(next, sq, 'video', true));
+  if (sat.state !== 'capturing') {
+    // Over a square it has scanned, ORION-3 watches it live (ILI-1493), however it got there: what
+    // walks in is seen, and found. Over one it hasn't, it shows nothing until the scan.
+    const over = sat.state !== 'slewing' && lockedOn(next, sat.aim) && settled(next, sat.aim);
+    if (over && next.satellite.watching !== sat.aim) next = { ...next, satellite: { ...next.satellite, watching: sat.aim } };
+    if (next.satellite.watching === sat.aim && sat.state !== 'slewing' && !live.includes(sat.aim))
+      next = record(next, snapshot(next, sat.aim, next.imagery[sat.aim]?.mode === 'video' ? 'video' : 'photo', true));
+    return findWatched(next, over ? [...live, sat.aim] : live);
+  }
+  next = findWatched(next, live);
   if (s.elapsedMs >= sat.captureUntilMs) return finishLook(next);
   // Video is live: the map follows them while it runs.
   return sat.mode === 'video' ? record(next, snapshot(next, sat.aim, 'video', true)) : next;
 };
+
+// A group walking into ground ORION-3 is watching live is found, like a scan would find it.
+function findWatched(s: GameState, squares: string[]): GameState {
+  const hidden = s.contacts.some((c) => c.status === 'hidden' && c.units.length && squares.includes(c.square));
+  return hidden ? reveal(s, squares, satName(s)) : s;
+}
 
 // One line for the mission bar.
 export function satelliteStatus(s: GameState): string {

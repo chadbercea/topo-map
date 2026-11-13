@@ -3,7 +3,7 @@ import { squareCenter } from '../map/grid';
 import { LOOT } from './missions/blackBox';
 import type { GameState } from './state';
 import { LOADOUT } from './team';
-import { run, walking } from './testkit';
+import { lockOn, run, walking } from './testkit';
 
 // The salvage convoy that cuts the exfil (ILI-1192): clear ground, the convoy left in. ALPHA
 // weighs it on its own (ILI-1315): takes it for the haul, or swings wide to the alternate exfil.
@@ -12,13 +12,23 @@ const until = (s: GameState, done: (x: GameState) => boolean) => {
   return s;
 };
 const withConvoy = (s0: GameState = walking()): GameState => ({ ...s0, script: { ...s0.script, fired: s0.script.fired.filter((f) => f !== 'convoy-on-exfil') } });
-const toTheConvoy = (s0?: GameState) => until(withConvoy(s0), (x) => x.contacts.some((c) => c.id === 'convoy'));
+// HQ keeps ORION-3 over the exfil it has scanned (ILI-1493): that's how anyone knows the convoy is there.
+const watchingExfil = (s: GameState): GameState => lockOn({ ...s, intel: { ...s.intel, graded: [...s.intel.graded, 'B1'] } }, 'B1');
+const toTheConvoy = (s0?: GameState, watch = true) => until(withConvoy(watch ? watchingExfil(s0 ?? walking()) : s0), (x) => x.contacts.some((c) => c.id === 'convoy'));
 // Down to 40% ammo: under the convoy's weight, and not yet low enough to ask for a resupply.
 const lowAmmo = (s: GameState): GameState => ({ ...s, team: { ...s.team, operators: s.team.operators.map((o) => ({ ...o, ammo: Math.round(LOADOUT[o.role].ammo * 0.4) })) } });
 
 describe('the salvage convoy on the exfil (ILI-1192, ILI-1315)', () => {
-  it('pulls onto the exfil once the black box is out; HQ knows, and ALPHA isn\u2019t asked anything', () => {
-    const s = toTheConvoy();
+  it('pulls onto the exfil once the black box is out; nobody knows unless ORION-3 is watching (ILI-1493)', () => {
+    const blind = toTheConvoy(undefined, false);
+    expect(blind.mission).toMatchObject({ phase: 'exfil', blackBox: true });
+    expect(blind.contacts.find((c) => c.id === 'convoy')).toMatchObject({ square: 'B1', status: 'hidden' });
+    expect(blind.events.some((e) => e.id === 'contact-convoy')).toBe(false);
+    expect(blind.comms.messages.some((m) => /convoy/i.test(m.text))).toBe(false);
+  });
+
+  it('ORION-3 over the scanned exfil sees it pull in; ALPHA isn\u2019t asked anything', () => {
+    const s = run(toTheConvoy(), 100);
     expect(s.mission).toMatchObject({ phase: 'exfil', blackBox: true });
     expect(s.contacts.find((c) => c.id === 'convoy')).toMatchObject({ square: 'B1', status: 'revealed' });
     expect(s.events.some((e) => e.id === 'contact-convoy' && e.square === 'B1')).toBe(true);

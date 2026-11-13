@@ -3,7 +3,6 @@ import { contactIn, makeContact } from '../contacts';
 import { dice, planArriveMs } from '../enemy';
 import { squareAt } from '../../map/grid';
 import { registerMission, say, type MissionDef } from '../script';
-import type { GameState } from '../state';
 
 // The salvage convoy turns up on most runs, not all: the mission's dice (ILI-1454).
 export const CONVOY_CHANCE = 0.7;
@@ -75,21 +74,16 @@ export const BLACK_BOX: MissionDef = registerMission({
       then: (s) => say(s, s.team.callsign, 'crash-site-hit', 'They\u2019re here for the drone too! Taking fire at the crash site.', true),
     },
     // The black box is out, and an enemy salvage convoy pulls onto the exfil with the loot
-    // off the wreck (ILI-1192), on the runs the mission's dice say it comes (ILI-1454). HQ
-    // knows; ALPHA weighs it on the way and takes it for the haul, or swings wide to the
-    // alternate exfil (ILI-1315).
+    // off the wreck (ILI-1192), on the runs the mission's dice say it comes (ILI-1454). Nobody
+    // knows until ORION-3 sees it (ILI-1493): over the exfil, scanned, it's found as it pulls in
+    // (satellite.ts); otherwise it's there for whoever looks, or walks in. Found, ALPHA weighs
+    // it on the way and takes it for the haul, or swings wide to the alternate exfil (ILI-1315).
     {
       id: 'convoy-on-exfil',
       when: (s) => s.mission.blackBox && s.mission.phase === 'exfil' && !s.team.fight && convoyComes(s.seed),
       then: (s) => {
-        const c = s.mission.c;
-        const convoy = { ...makeContact('convoy', c, 'a salvage convoy hauling loot', 0.8, [2, 3, 6]), status: 'revealed' as const, note: `Hauling salvage off the wreck: worth ${LOOT_TEXT} to the client if ALPHA takes it.` };
-        const next: GameState = {
-          ...s,
-          contacts: [...s.contacts, convoy],
-          events: [...s.events, { id: 'contact-convoy', kind: 'contact', square: c, title: 'Salvage convoy on the exfil', atMs: s.elapsedMs, status: 'new' }],
-        };
-        return say(next, 'HQ', 'convoy-intel', `Enemy salvage convoy pulled onto the exfil at ${c} with loot off the wreck. ALPHA can't get out through it without a fight.`, true);
+        const convoy = { ...makeContact('convoy', s.mission.c, 'a salvage convoy hauling loot', 0.8, [2, 3, 6]), note: `Hauling salvage off the wreck: worth ${LOOT_TEXT} to the client if ALPHA takes it.` };
+        return { ...s, contacts: [...s.contacts, convoy] };
       },
     },
     // ALPHA took the convoy and stands on its haul: the loot is the PMC's.

@@ -6,9 +6,12 @@ import { lockedStore as createStore } from './testkit';
 import { run, trafficId, untilTraffic } from './testkit';
 
 // Enemy traffic comes up near C2, where the patrol is hiding: on the default seed it talks first,
-// before a minute is up (ILI-1454).
-const atTraffic = () => {
-  const store = createStore({ ...untilTraffic(initialState()), comms: initialState().comms });
+// before a minute is up (ILI-1454). C2 is ground ORION-3 has scanned, as a scan's SIGINT report
+// brings the traffic in (ILI-1359); scanned: false is traffic heard from ground it hasn't (ILI-1493).
+const atTraffic = (scanned = true) => {
+  const s0 = initialState();
+  const s = scanned ? { ...s0, intel: { ...s0.intel, graded: ['C2'] } } : s0;
+  const store = createStore({ ...untilTraffic(s), comms: s0.comms });
   return store;
 };
 
@@ -89,11 +92,32 @@ describe('signal intercept', () => {
     expect(patrol.planKnown).toBeFalsy();
     expect(store.get().comms.messages.at(-1)?.text).toMatch(/they're at C2, but not what they plan/);
 
-    const deaf = atTraffic();
+    const deaf = atTraffic(false); // off unscanned ground: ORION-3 over a scanned C2 would see them itself (ILI-1493)
     deaf.intercept(trafficId(deaf.get()));
     deaf.abortMiniGame(); // nothing came through
     expect(deaf.get().minigame).toBeNull();
     expect(deaf.get().comms.messages.at(-1)?.text).toBe('Lost the signal.');
     expect(deaf.get().contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
+  });
+
+  it('heard off ground ORION-3 hasn\u2019t scanned, it gives their words but never where they are (ILI-1493)', () => {
+    const part = atTraffic(false);
+    part.intercept(trafficId(part.get()));
+    part.set({ ...part.get(), minigame: { ...part.get().minigame!, signal: { ...part.get().minigame!.signal!, progress: 0.5 } } });
+    part.abortMiniGame();
+    expect(part.get().contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
+    expect(part.get().events.some((e) => e.id === 'contact-patrol')).toBe(false);
+    expect(part.get().comms.messages.at(-1)?.text).toBe('Got part of it: no fix on where they are, and not what they plan.');
+
+    const store = atTraffic(false);
+    store.intercept(trafficId(store.get()));
+    for (let t = 0; t < TRANSMISSION_MS && store.get().minigame?.status === 'active'; t += 100) {
+      store.tune(store.get().minigame!.signal!.target);
+      store.tick(100);
+    }
+    const s = store.get();
+    expect(s.contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
+    expect(s.decoded[0].text).toBe('PATROL MOVING TO D3 FOR THE DRONE');
+    expect(s.comms.messages.some((m) => /\bAT C2\b/.test(m.text))).toBe(false);
   });
 });

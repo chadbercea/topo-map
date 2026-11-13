@@ -70,6 +70,24 @@ export const OBSERVE_MS = 13_000;
 const live = (c: Contact) => c.status === 'hidden' || c.status === 'revealed';
 export const contactIn = (s: GameState, sq: SquareId) => s.contacts.find((c) => c.square === sq && live(c));
 
+// Nothing about an enemy shows until ORION-3 has scanned the square it's in (ILI-1493). A scanned
+// square is one ORION-3's analysts have been through (intel.ts settled). The one exception is
+// ALPHA's own recon: a square it's in contact on, it reports itself.
+export const orionScanned = (s: GameState, sq: SquareId) => s.intel.graded.includes(sq);
+
+// Where HQ knows a found contact is (ILI-1493): where the last look put it, its map marker, or else
+// the newest picture that caught it. Never where it really is: it may have walked off since.
+export function knownSquare(s: GameState, c: Contact): SquareId | null {
+  if (c.status !== 'revealed') return null;
+  const e = s.events.find((x) => x.id === `contact-${c.id}` && x.status !== 'resolved');
+  if (e) return e.square;
+  let best: { square: SquareId; atMs: number } | null = null;
+  for (const snap of Object.values(s.imagery)) if (snap.seen.some((x) => x.contactId === c.id) && (!best || snap.atMs > best.atMs)) best = snap;
+  return best?.square ?? null;
+}
+// The found contacts HQ has in a square.
+export const knownIn = (s: GameState, sq: SquareId) => s.contacts.filter((c) => knownSquare(s, c) === sq);
+
 const radio = (s: GameState, from: string, id: string, text: string, holds = false, extra: Partial<Message> = {}): Message => ({
   id,
   from,
@@ -208,7 +226,7 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
         contacts: s.contacts.map((c) => (c === contact ? { ...c, observed: true, painted: true } : c)),
         team: { ...s.team, holdUntilMs: s.elapsedMs + OBSERVE_MS },
       };
-      return reveal(next, neighbours(square), s.team.callsign);
+      return reveal(next, neighbours(square).filter((n) => orionScanned(s, n)), s.team.callsign); // only scanned ground (ILI-1493)
     }
     case 'avoid':
       return detour(s, square);
@@ -250,7 +268,7 @@ export function detour(s: GameState, square: SquareId): GameState {
     const q = parseSquare(b)!;
     return Math.max(Math.abs(p.col - q.col), Math.abs(p.row - q.row)) <= 1;
   };
-  const known = (sq: SquareId) => s.contacts.some((c) => c.square === sq && c.status === 'revealed');
+  const known = (sq: SquareId) => knownIn(s, sq).length > 0;
   const options = neighbours(square).filter((n) => !route.includes(n) && touches(n, prev) && touches(n, after) && !known(n));
   const via = options.find((n) => s.map.scanned.includes(n)) ?? options[0];
   if (!via) return applyEffect(s, 'push', square); // nowhere to go: they go through

@@ -1,6 +1,7 @@
 import type { GameState } from './state';
 import { photoFactor } from './upgrades';
 import { CELL } from '../map/grid';
+import { knownIn } from './contacts';
 
 // ALPHA's intel gauge (ILI-1314): what keeps the team moving. The team is autonomous and has
 // its mission; HQ keeps it fed. Every scan goes to the analysts, who push what it was worth to
@@ -117,7 +118,7 @@ export const settled = (s: GameState, square: string) => s.intel.graded.includes
 // it all came to nothing (clear) or found something.
 export const squareReports = (s: GameState, square: string): IntelItem[] => s.intel.pushes.filter((p) => p.square === square).flatMap((p) => p.items ?? []);
 export const squareFindings = (s: GameState, square: string): 'clear' | 'found' =>
-  squareReports(s, square).some((r) => r.heat !== 'quiet') || s.contacts.some((c) => c.square === square && c.status === 'revealed') ? 'found' : 'clear';
+  squareReports(s, square).some((r) => r.heat !== 'quiet') || knownIn(s, square).length > 0 ? 'found' : 'clear';
 
 // Further along the route than the leg ALPHA is on: banked for later.
 export const ahead = (s: GameState, square: string) => s.team.route.slice(s.team.waypoint + 1).includes(square);
