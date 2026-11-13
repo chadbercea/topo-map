@@ -10,8 +10,6 @@ import { nextBlind } from '../sim/progress';
 import { CELL, squareCenter } from '../map/grid';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
-import { OrionAvatar } from './OrionAvatar';
-import { useFold, useTier } from './tier';
 import { imageryOk, weather } from '../sim/conditions';
 
 const CLOUD_WARN = 70; // cloud cover where ORION-3 could soon be blind (as EnvWidget's tile)
@@ -37,7 +35,6 @@ export function OrionPanel() {
 
   const result = sat.state === 'idle' ? sat.result : null;
   const picked = lookSquare(s); // the square HQ is working
-  const tier = useTier();
   useSeenVersion(); // its targets follow what the map has bracketed (ILI-1444)
   const pings = square ? s.events.filter((e) => e.square === square && e.status !== 'resolved' && e.kind !== 'site') : [];
   // The larger square while ORION-3 is on it, or what it last saw; else the placeholder (ILI-1229).
@@ -82,7 +79,6 @@ export function OrionPanel() {
     return () => slot.removeEventListener('animationend', on);
   }, []);
 
-  const avatar = tied ? 'tied' : sat.state === 'slewing' ? 'slewing' : 'idle';
   const status = tied ? 'Tied up' : sat.state === 'idle' ? 'Standby' : sat.state === 'slewing' ? 'Repositioning' : sat.state === 'onStation' ? 'On station' : CAPTURE[sat.mode!].label;
   const left = Math.max(0, sat.arriveMs - now);
   // The one state line (ILI-1400): status, square and the one countdown, in one row. The cloud
@@ -115,16 +111,14 @@ export function OrionPanel() {
     }
     return null;
   })();
-  const fold = useFold();
-  const wide = tier === 'wide' || fold; // a fold upright lays ORION-3 out like a wide screen, side to side (ILI-1461)
   const canMove = !!picked && !tied && sat.state === 'idle' && !satelliteBusy(s) && away > 0;
 
   // The priority ladder (ILI-1400): the panel never scrolls. As it gets shorter, what ranks
-  // lowest drops first (styles.css, container queries on the panel's own height): 8 the weather
-  // tiles, telemetry and Last look; 6 what it saw; 5 the 3D satellite (to its outline, then
-  // gone); 4 the name (to an icon); 3 the state line; 2 the picture, which takes what's left
-  // down to a floor; 1 the buttons, 60 px, pinned to the bottom, never hidden. The square's
-  // details are in its menu on the map now (tier three, tap the square).
+  // lowest drops first (styles.css, container queries on the panel's own height): 8 Last look;
+  // 6 what it saw; 4 the name (to an icon); 3 the state line; 2 the picture, which takes what's
+  // left down to a floor; 1 the buttons, 60 px, pinned to the bottom, never hidden. The picture is
+  // always exactly the one square ORION-3 is over, square, as big as the panel allows (ILI-1486).
+  // The square's details are in its menu on the map now (tier three, tap the square).
   return (
     <section ref={sectionRef} className="panel orion" data-testid="satellite" data-state={sat.state} aria-label={`${name} imaging satellite`}>
       <h2>
@@ -144,26 +138,8 @@ export function OrionPanel() {
         {tied ? `${name} · tied up` : satelliteStatus(s)}
       </p>
 
-      {/* ORION-3 itself (ILI-1235): the 3D satellite, its outline when space is short, and its
-          telemetry. */}
-      {!wide && tier !== 'compact' && ( // a glyph in the header names it on a phone too (ILI-1461)
-      <div className="o-satpanel" data-testid="orion-avatar" data-state={avatar}>
-        <OrionAvatar state={avatar} fallback={<SatelliteMark />} />
-        <span className="o-mark" aria-hidden>
-          <SatelliteMark />
-        </span>
-        <dl className="o-telemetry">
-          <div>
-            <dt>Status</dt>
-            <dd>{status}</dd>
-          </div>
-          <div>
-            <dt>{sat.state === 'slewing' ? 'Heading' : 'Over'}</dt>
-            <dd>{sat.aim}</dd>
-          </div>
-        </dl>
-      </div>
-      )}
+      {/* No 3D satellite in any layout now (ILI-1486): the picture of the square leads the panel,
+          under the header, and a glyph in the header names ORION-3 (ILI-1461, ILI-1465). */}
 
       {/* The AO's weather, three and three (ILI-1249); on a fold or phone it's the slim line. */}
 
@@ -266,24 +242,6 @@ function SatelliteIcon() {
       <rect x="1" y="6" width="4" height="4" />
       <rect x="6" y="5" width="4" height="6" />
       <rect x="11" y="6" width="4" height="4" />
-    </svg>
-  );
-}
-
-// ORION-3 in outline, still: shown until the Three.js satellite loads, or without WebGL (ILI-1196).
-function SatelliteMark() {
-  return (
-    <svg className="o-sat" viewBox="0 0 120 60" aria-hidden>
-      <rect x="4" y="22" width="34" height="16" />
-      <line x1="15" y1="22" x2="15" y2="38" />
-      <line x1="26" y1="22" x2="26" y2="38" />
-      <line x1="38" y1="30" x2="48" y2="30" />
-      <rect x="48" y="20" width="24" height="20" />
-      <line x1="72" y1="30" x2="82" y2="30" />
-      <rect x="82" y="22" width="34" height="16" />
-      <line x1="94" y1="22" x2="94" y2="38" />
-      <line x1="105" y1="22" x2="105" y2="38" />
-      <path d="M54 40 L60 50 L66 40" />
     </svg>
   );
 }
