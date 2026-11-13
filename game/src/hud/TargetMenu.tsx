@@ -1,31 +1,49 @@
-import { WEAPON, WEAPONS, weaponBlocked } from '../sim/ordnance';
+import type { ReactNode } from 'react';
+import { WEAPON, WEAPONS, weaponBlocked, type Weapon } from '../sim/ordnance';
 import { game, useGame } from '../sim/store';
 import { eyesOn, type Eyes } from '../sim/imagery';
 import { gameSpan } from '../sim/gameTime';
+import { perCall } from '../sim/upgrades';
+import { cash } from './MissionBar';
+import { WireAvatar } from './OrionAvatar';
+import { DroneMark, HeliMark } from './AirPanel';
+import { RifleMark } from './SniperPanel';
 
 const age = gameSpan;
 
-// What HQ can see of it, in words: strikes aim at this.
+// What HQ can see of it, in a few words: strikes aim at this. ISR terms (ILI-1488): coverage,
+// current, aging, stale. Short since ILI-1513.
 export function eyesLine(e: Eyes | null, now: number) {
-  // ISR terms (ILI-1488): coverage, current, aging, stale.
-  if (!e) return 'No coverage: the sniper and heli can\'t aim. Image it first, or a drone can guess.';
-  if (e.level === 'live') return 'Live feed: every fighter is where you see them.';
-  if (e.level === 'fresh') return `Current imagery, ${age(now - e.atMs)} old: they should still be there.`;
-  if (e.level === 'ghost') return `Aging imagery, ${age(now - e.atMs)} old: they may have moved. Shots can miss.`;
-  return `Stale imagery, ${age(now - e.atMs)} old: too old to aim on. Image it again.`;
+  if (!e) return 'No coverage. Only the drone can fire blind.';
+  if (e.level === 'live') return 'Live feed.';
+  if (e.level === 'fresh') return `Current imagery, ${age(now - e.atMs)} old.`;
+  if (e.level === 'ghost') return `Aging imagery, ${age(now - e.atMs)} old. Shots can miss.`;
+  return `Stale imagery, ${age(now - e.atMs)} old. Analyze again.`;
 }
 
-// Contextual target menu (GDD): tap a found enemy's ping and get every ordnance option for
-// it, with uses and cooldowns. It leads with what HQ can see of
-// it, since that decides which weapons can aim (ILI-1168).
+// The strike options (ILI-1513): one line on what HQ can see of the target, since that decides
+// which weapons can aim (ILI-1168), then one button a weapon: its aircraft or rifle turning in the
+// HUD's wireframe, a one-word name, and the price of a call, or why it can't fire now. The buttons
+// slide in one after another (styles.css).
+const SHORT: Record<Weapon, string> = { drone: 'Drone', sniper: 'Sniper', heli: 'Heli' };
+type Mount = (host: HTMLElement, stateRef: { current: string }, repaint: { current: (() => void) | null }) => (() => void) | null;
+const LOAD: Record<Weapon, () => Promise<{ mount: Mount }>> = {
+  drone: () => import('./droneScene') as Promise<{ mount: Mount }>,
+  sniper: () => import('./rifleScene') as Promise<{ mount: Mount }>,
+  heli: () => import('./heliScene') as Promise<{ mount: Mount }>,
+};
+const MARK: Record<Weapon, ReactNode> = { drone: <DroneMark />, sniper: <RifleMark />, heli: <HeliMark /> };
+
+// The scenes' own states: ready is their working look, blocked their dim one.
+function WeaponIcon({ w, ready }: { w: Weapon; ready: boolean }) {
+  const state = ready ? (w === 'sniper' ? 'aiming' : 'inbound') : 'done';
+  return <WireAvatar state={state} fallback={MARK[w]} load={LOAD[w]} className="w-icon" />;
+}
+
 export function TargetMenu({ contactId }: { contactId: string }) {
   const state = useGame((s) => s);
   const c = state.contacts.find((x) => x.id === contactId);
   if (!c) return null;
-  const status = (w: (typeof WEAPONS)[number]) => {
-    const o = state.ordnance[w];
-    return weaponBlocked(state, w, c) ?? (o.uses === null ? 'Ready' : `${o.uses} use${o.uses === 1 ? '' : 's'}`);
-  };
   return (
     <div className="target-menu" data-testid="target-menu">
       <p className="note" data-testid="eyes">
@@ -34,18 +52,22 @@ export function TargetMenu({ contactId }: { contactId: string }) {
           : c.status === 'avoided'
             ? 'Avoided.'
             : c.painted
-              ? 'PAINTED by ALPHA: every fighter is marked for your strike.'
+              ? 'Painted by ALPHA: every fighter marked.'
               : eyesLine(eyesOn(state, c), state.elapsedMs)}
       </p>
       {c.note && c.status === 'revealed' && <p className="note" data-testid="target-note">{c.note}</p>}
       {c.status === 'revealed' && (
         <div className="options" aria-label="Strike">
-          {WEAPONS.map((w) => (
-            <button key={w} disabled={!!weaponBlocked(state, w, c)} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`} data-cue={(state.team.waitFor?.square === c.square && !weaponBlocked(state, w, c)) || undefined /* ALPHA asked for this (ILI-1318) */}>
-              <span>{WEAPON[w].name}</span>
-              <small>{status(w)}</small>
-            </button>
-          ))}
+          {WEAPONS.map((w) => {
+            const blocked = weaponBlocked(state, w, c);
+            return (
+              <button key={w} disabled={!!blocked} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`} aria-label={WEAPON[w].name} data-cue={(state.team.waitFor?.square === c.square && !blocked) || undefined /* ALPHA asked for this (ILI-1318) */}>
+                <WeaponIcon w={w} ready={!blocked} />
+                <span>{SHORT[w]}</span>
+                <small>{blocked ?? cash(perCall(state, w))}</small>
+              </button>
+            );
+          })}
           {/* No "ALPHA attacks": HQ doesn't order the team, it changes the odds (ILI-1315). */}
         </div>
       )}
