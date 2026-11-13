@@ -37,73 +37,119 @@ export function WrapUp() {
   }, [extracted]);
   if (!ended) return null;
   const w = wrapUp(state);
+  const good = w.outcome === 'win' || w.outcome === 'casualties';
+  const done = w.objectives.filter((o) => o.done).length;
+  // The debrief (ILI-1372): a full screen over the dimmed war room, in the HUD's language. A header
+  // band (the outcome stamped, why, and four readouts: time, objectives, this mission, balance),
+  // the objectives as cards, ALPHA's walk against the clock, what HQ's intel did and turned up in
+  // labelled cells, the ledger, and the two actions pinned at the foot so they're always in reach.
   return (
-    <div className="overlay" data-testid="wrapup" data-outcome={w.outcome} data-extracted={extracted || undefined}>
-      <section className="panel menu wrapup" role="dialog" aria-label={`After Action Report: ${HEADLINE[w.outcome]}`}>
-        {extracted && (
-          <div className="aar-head" ref={head}>
-            <ExfilPanel header />
-          </div>
-        )}
-        <h2>AFTER ACTION REPORT</h2>
-        <p className="outcome">
-          {HEADLINE[w.outcome]}
-          {/* A job done can still lose money (ILI-1316). */}
-          {(w.outcome === 'win' || w.outcome === 'casualties') && w.pnl < 0 && ' · AT A LOSS'}
-        </p>
-        <p className="reason">{w.reason}</p>
-        <ul className="objectives">
-          {w.objectives.map((o) => (
-            <li key={o.label} data-done={o.done}>
-              {o.done ? '✓' : '✗'} {o.label}
-            </li>
-          ))}
-        </ul>
-        {/* The race (ILI-1392): time used against ALPHA's walk, here in the debrief. */}
-        <RaceBar s={state} />
-        <div className="columns">
-          <dl>
-            <dt>WITH YOUR INTEL</dt>
-            {w.teamWork.map((r) => (
-              <div key={r.label}>
-                <dd>{r.label}</dd>
-                <dd className="v">{r.value}</dd>
-              </div>
-            ))}
-          </dl>
-          <dl>
-            <dt>NEW INTEL</dt>
-            {w.newIntel.map((r) => (
-              <div key={r.label}>
-                <dd>{r.label}</dd>
-                <dd className="v">{r.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-        <dl className="payout">
-          <dt>P&amp;L · {clock(w.timeUsedMs)} on the clock</dt>
-          {w.payout.map((p) => (
-            <div key={p.label}>
-              <dd>{p.label}</dd>
-              <dd className="v">{money(p.amount)}</dd>
+    <div className="overlay aar" data-testid="wrapup" data-outcome={w.outcome} data-extracted={extracted || undefined}>
+      <section className="panel menu wrapup" role="dialog" aria-label={`After Action Report: ${HEADLINE[w.outcome]}`} data-good={good || undefined}>
+        <div className="aar-scroll">
+          {extracted && (
+            <div className="aar-head" ref={head}>
+              <ExfilPanel header />
             </div>
-          ))}
-          <div className="total">
-            <dd>This mission</dd>
-            <dd className="v" data-testid="pnl" data-loss={w.pnl < 0 || undefined}>
-              {money(w.pnl)}
-            </dd>
+          )}
+          <header className="aar-band">
+            <h2>AFTER ACTION REPORT</h2>
+            <p className="outcome" data-testid="outcome">
+              {HEADLINE[w.outcome]}
+              {/* A job done can still lose money (ILI-1316). */}
+              {good && w.pnl < 0 && ' · AT A LOSS'}
+            </p>
+            <p className="reason">{w.reason}</p>
+            <dl className="aar-read">
+              <div>
+                <dt>On the clock</dt>
+                <dd>{clock(w.timeUsedMs)}</dd>
+              </div>
+              <div>
+                <dt>Objectives</dt>
+                <dd>
+                  {done} / {w.objectives.length}
+                </dd>
+              </div>
+              <div>
+                <dt>This mission</dt>
+                <dd data-testid="pnl" data-loss={w.pnl < 0 || undefined}>
+                  {money(w.pnl)}
+                </dd>
+              </div>
+              <div>
+                <dt>{w.outcome === 'bankrupt' ? 'Balance at shutdown' : 'Closing balance'}</dt>
+                <dd data-testid="budget">{money(w.budget)}</dd>
+              </div>
+            </dl>
+          </header>
+
+          <ul className="objectives">
+            {w.objectives.map((o) => (
+              <li key={o.label} data-done={o.done}>
+                <i aria-hidden>{o.done ? '✓' : '✗'}</i>
+                {o.label}
+              </li>
+            ))}
+          </ul>
+
+          {/* The race (ILI-1392): time used against ALPHA's walk. */}
+          <section className="aar-sec">
+            <h3>The clock against the walk</h3>
+            <RaceBar s={state} />
+          </section>
+
+          <div className="columns">
+            <section className="aar-sec">
+              <h3>With your intel</h3>
+              <dl className="aar-cells">
+                {w.teamWork.map((r) => (
+                  <div key={r.label}>
+                    <dt>{r.label}</dt>
+                    <dd>{r.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+            <section className="aar-sec">
+              <h3>New intel</h3>
+              <dl className="aar-cells">
+                {w.newIntel.map((r) => (
+                  <div key={r.label}>
+                    <dt>{r.label}</dt>
+                    <dd>{r.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
           </div>
-          <div className="total">
-            <dd>{w.outcome === 'bankrupt' ? 'Balance at shutdown' : 'Closing balance'}</dd>
-            <dd className="v" data-testid="budget">
-              {money(w.budget)}
-            </dd>
-          </div>
-        </dl>
-        <button onClick={intro.reboot}>{w.outcome === 'bankrupt' ? 'Start a new PMC' : w.outcome === 'failed' ? 'Retry mission' : 'Play again'}</button>
-        <button onClick={introOn ? intro.home : game.exit}>Exit</button>
+
+          <section className="aar-sec">
+            <h3>Ledger</h3>
+            <dl className="payout">
+              {w.payout.map((p) => (
+                <div key={p.label}>
+                  <dd>{p.label}</dd>
+                  <dd className="v" data-neg={p.amount < 0 || undefined}>
+                    {money(p.amount)}
+                  </dd>
+                </div>
+              ))}
+              <div className="total">
+                <dd>This mission</dd>
+                <dd className="v" data-neg={w.pnl < 0 || undefined}>
+                  {money(w.pnl)}
+                </dd>
+              </div>
+            </dl>
+          </section>
+        </div>
+        <footer className="aar-actions">
+          <button className="aar-primary" onClick={intro.reboot}>
+            {w.outcome === 'bankrupt' ? 'Start a new PMC' : w.outcome === 'failed' ? 'Retry mission' : 'Play again'}
+          </button>
+          <button onClick={introOn ? intro.home : game.exit}>Exit</button>
+        </footer>
       </section>
     </div>
   );
