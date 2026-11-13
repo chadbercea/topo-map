@@ -2266,3 +2266,30 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* The stages' box takes its height in screen px (Stages.tsx), so the zoom goes on the stage in it. */
 .square-card.anchor > .sc-stages { zoom: 1; }
 .square-card.anchor > .sc-stages > .sc-stage { zoom: var(--k, 1); }
+
+/* ORION-3's picture never shrinks (ILI-1522). It is a fixed square, set by the panel's width (and
+   on a phone by the sheet, never by what's under it), so a report, a status line or the overlay
+   coming in can't squeeze it. What's under the picture scrolls instead; the picture stays put (the
+   map's renderer draws it at a fixed place on the screen). On a wide screen and in the rail the
+   panel grows to its content, down to the foot of its column. */
+.hud:not([data-layout='fold']) .orion { display: flex; flex-direction: column; overflow: hidden; }
+.hud:not([data-layout='fold']) .orion > h2 { order: 0; flex: none; }
+.hud:not([data-layout='fold']) .orion > .o-frame { order: 1; flex: none; width: 100%; aspect-ratio: 1; height: auto; }
+.hud:not([data-layout='fold']) .orion > .o-buttons { order: 2; flex: none; }
+.hud:not([data-layout='fold']) .orion > .o-saw { order: 3; flex: 0 1 auto; min-height: 0; overflow-y: auto; }
+.hud:not([data-layout='fold']) .orion > .o-last { order: 4; flex: none; }
+.hud:is([data-tier='wide'], [data-tier='medium']):not([data-layout='fold']) .slot-orion { display: flex; flex-direction: column; align-self: start !important; max-height: 100%; }
+.hud:is([data-tier='wide'], [data-tier='medium']):not([data-layout='fold']) .orion { flex: 0 1 auto; height: auto !important; max-height: none; min-height: 0; }
+/* A phone: the ORION-3 sheet is as tall as its picture (the sheet's width) plus its header, its
+   buttons and a few lines of report, up to what the screen has under the mission bar. */
+.hud[data-tier='compact'][data-tab='orion'] { --sheet: min(calc(100vw + 200px), calc(100dvh - 150px)); }
+.hud[data-tier='compact'] .orion > .o-frame { max-height: calc(100cqh - 190px); }
+/* A fold upright: the dock keeps its height; the picture fills it on the left, and the buttons and
+   then the report (which scrolls) stack on the right. */
+.hud[data-layout='fold'] .orion { grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: 'head head' 'frame buttons' 'frame saw'; }
+.hud[data-layout='fold'] .orion > .o-buttons { height: auto; }
+.hud[data-layout='fold'] .orion > .o-saw { min-height: 0; overflow-y: auto; }
+/* On a fold, in the rail and on a phone, the buttons are full width, one per row (ILI-1522). */
+.hud:not([data-tier='wide']) .orion .o-buttons .modes { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-rows: minmax(40px, auto); }
+.hud:not([data-tier='wide']) .orion .o-buttons .modes > button { grid-column: 1 / -1; }
+.hud:not([data-tier='wide']) .orion > .o-buttons { height: auto; }
