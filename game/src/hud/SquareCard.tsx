@@ -331,7 +331,9 @@ function TrafficItem({ s, id, square }: { s: GameState; id: string; square: stri
       </button>
       {open && listen && (
         <div className="sc-choice" data-testid="traffic-choice">
-          {!going && <p className="note">{listen.text.replace(/^Enemy radio traffic near \S+\. /, '')}</p>}
+          <p className="note" data-testid="traffic-hint">
+            {listen.hint}
+          </p>
           <div className="options">
             {listen.responses.map((r) => (
               <button key={r.id} onClick={() => game.answerPrompt(id, r.id)} disabled={r.disabled} data-response={r.id} data-testid="traffic-listen">

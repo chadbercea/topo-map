@@ -82,10 +82,11 @@ const intelNeeded: Source = (s) => {
   ];
 };
 
-// Enemy traffic (ILI-1394): to listen, get an asset in range. Each way's cost is on its button
-// before HQ commits: ORION-3 goes there and is tied up while it listens, off scanning for ALPHA;
-// or ALPHA holds and sets up the antenna, which burns mission clock. Once it's in place the
-// intercept starts by itself; no button starts it.
+// Enemy traffic (ILI-1394, ILI-1492): to listen, an asset has to be in range. The one asset that
+// can listen is ORION-3 (HQ's job, ILI-1435: no antenna), and in range means over that grid square
+// itself. Its one button sends it there, with the cost on it before HQ commits: the travel time,
+// and ORION-3 tied up while it listens, off scanning for ALPHA. Once it's locked on the intercept
+// starts by itself; no button starts it. The hint says all that in a line.
 const enemyTraffic: Source = (s) =>
   s.events
     .filter((e) => e.kind === 'signal' && e.status !== 'resolved' && !(s.minigame?.status === 'active' && s.minigame.eventId === e.id))
@@ -101,10 +102,18 @@ const enemyTraffic: Source = (s) =>
         : [
             satelliteBusy(s)
               ? { id: 'satellite', label: `${satName(s)} busy`, disabled: true }
-              : { id: 'satellite', label: lockedOn(s, e.square) ? `${satName(s)} listens` : `${satName(s)} listens · ${countdown(slewMs(s, e.square))} there` },
+              : { id: 'satellite', label: lockedOn(s, e.square) ? `Listen with ${satName(s)}` : `Send ${satName(s)} to ${e.square} · ${countdown(slewMs(s, e.square))}` },
             // Listening is HQ's job (ILI-1435): no "ALPHA sets up antenna"; HQ decodes and feeds ALPHA.
           ];
-      return { id: e.id, kind: 'enemy-traffic' as const, priority: PRIORITY.enemyTraffic, atMs: e.atMs, square: e.square, text: l ? `Getting in range of their traffic near ${e.square}` : `Enemy radio traffic near ${e.square}. Get an asset in range to listen`, responses };
+      const name = satName(s);
+      const hint = l
+        ? `${name} listens once it's over ${e.square}.`
+        : satelliteBusy(s)
+          ? `Only ${name} can listen, from over ${e.square}. Send it once it's free.`
+          : lockedOn(s, e.square)
+            ? `${name} is over ${e.square}: in range to listen.`
+            : `Only ${name} can listen, and only from over ${e.square}. Send it; the intercept starts once it's locked on.`;
+      return { id: e.id, kind: 'enemy-traffic' as const, priority: PRIORITY.enemyTraffic, atMs: e.atMs, square: e.square, text: `Enemy radio traffic near ${e.square}`, hint, responses };
     });
 
 // Decoded traffic (ILI-1394): a marker on the map, for HQ to send to ALPHA.
