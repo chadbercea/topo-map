@@ -8,7 +8,7 @@ async function targetE3(page: Page) {
   await freeze(page);
   await photo(page, 'E3');
   await openEvent(page, 'contact', 'E3');
-  await expect(page.getByTestId('event-card')).toContainText('A fortified checkpoint');
+  await expect(page.getByTestId('strike-flyout').getByTestId('event-card')).toContainText('A fortified checkpoint'); // the scan may have heard their radio too (ILI-1359)
   await expect(page.getByTestId('target-menu')).toBeVisible();
 }
 
@@ -67,7 +67,7 @@ test('drone strike: its panel counts down to target, then it clears the square, 
   await expect(log).toContainText('All targets neutralized');
   await expect(page.getByTestId('comms-feed')).toContainText('E3: all targets neutralized. 5 down.');
   await expect.poll(() => hasEvent(page, 'site', 'E3')).toBe(true); // ALPHA can search it
-  await expect(page.getByTestId('action-panel')).toHaveCount(0); // but no card for it: the X marks are the aftermath
+  await expect(page.getByTestId('action-panel').locator('[data-kind=site]')).toHaveCount(0); // but no card for it: the X marks are the aftermath
   // Then the panel goes.
   await tick(3_500);
   await expect(panel).toHaveCount(0);

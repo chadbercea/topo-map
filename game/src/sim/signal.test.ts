@@ -13,11 +13,10 @@ const atTraffic = () => {
 };
 
 describe('signal intercept', () => {
-  it('enemy traffic comes up on the map and HQ flags it', () => {
+  it('enemy traffic comes up on the map as a tag, with no HQ call (ILI-1359)', () => {
     const s = untilTraffic(initialState());
-    expect(s.elapsedMs).toBeLessThan(90_000);
     expect(s.events.find((e) => e.kind === 'signal')).toMatchObject({ square: 'C2', status: 'new' });
-    expect(s.comms.messages.find((m) => m.id === `hq-${trafficId(s)}`)?.text).toMatch(/enemy radio traffic near C2/);
+    expect(s.comms.messages.find((m) => m.id === `hq-${trafficId(s)}`)).toBeUndefined();
   });
 
   it('intercepting opens the transmission; the match reads 100% on their frequency', () => {

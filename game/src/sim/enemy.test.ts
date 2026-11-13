@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { dice, FIRST_TX_MS, trafficSystem } from './enemy';
+import { dice, hearTraffic, heardTraffic } from './enemy';
 import { convoyComes } from './missions/blackBox';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { fed, run, untilTraffic } from './testkit';
+import { fed, lockOn, run } from './testkit';
 
 // The enemy plays by rules and the mission's seeded dice, not a script (ILI-1454).
 const seeded = (seed: number): GameState => {
@@ -27,12 +27,11 @@ describe('a mission replays exactly (ILI-1454)', () => {
   it('the same seed gives the same events, radio and fights, to the tick', () => {
     const a = timeline(play(1234));
     const b = timeline(play(1234));
-    expect(a.events.some((e) => e.includes(' signal '))).toBe(true);
     expect(a).toEqual(b);
   });
 
   it('a different seed plays out differently', () => {
-    expect(timeline(play(1234)).events).not.toEqual(timeline(play(99)).events);
+    expect(timeline(play(1234))).not.toEqual(timeline(play(99)));
   });
 
   it('the dice: the same seed and key, the same number, 0 to 1', () => {
@@ -53,50 +52,49 @@ describe('a mission replays exactly (ILI-1454)', () => {
   });
 });
 
-describe('enemy radio traffic is a rule, not a script (ILI-1454)', () => {
-  it('a live group talks on its net, at its own square, early in the mission whatever the seed', () => {
-    for (let seed = 1; seed <= 30; seed++) {
-      const s = untilTraffic({ ...initialState(), seed, rng: seed });
-      const e = s.events.find((x) => x.kind === 'signal')!;
-      expect(s.elapsedMs).toBeLessThanOrEqual(FIRST_TX_MS[1] + 100);
-      expect(s.contacts.some((c) => c.square === e.square && c.status === 'hidden')).toBe(true);
-    }
-  });
-
-  it('on the default seed the patrol at C2 is first, inside a minute and a half', () => {
-    const s = untilTraffic(initialState());
-    expect(s.elapsedMs).toBeLessThan(90_000);
-    expect(s.events.find((e) => e.kind === 'signal')?.square).toBe('C2');
-  });
-
-  it('one net: while traffic is up and unanswered, nobody else comes up', () => {
-    const s = run(untilTraffic(initialState()), 300_000);
-    expect(s.events.filter((e) => e.kind === 'signal')).toHaveLength(1);
-  });
-
-  // Every transmission answered the moment it comes up: how many in ten minutes.
-  const transmissions = (alerted: boolean) => {
-    let s: GameState = { ...initialState(), alerted };
-    let n = 0;
-    for (let t = 0; t < 600_000; t += 100) {
-      s = trafficSystem({ ...s, elapsedMs: s.elapsedMs + 100 }, 100);
-      const open = s.events.find((e) => e.kind === 'signal' && e.status === 'new');
-      if (!open) continue;
-      n++;
-      s = { ...s, events: s.events.map((e) => (e === open ? { ...e, status: 'resolved' as const } : e)) };
-    }
-    return n;
+describe('enemy radio traffic is a reward of scanning, not a timer (ILI-1359)', () => {
+  // Scan a square with ORION-3 over it, on a given seed: the state once the capture is done.
+  const scanned = (seed: number, square: string) => {
+    const store = createStore(lockOn({ ...fed(initialState()), seed, rng: seed }, square));
+    store.scan(square);
+    for (let i = 0; i < 200 && store.get().satellite.state === 'capturing'; i++) store.tick(100);
+    return store.get();
   };
+  const heard = (s: GameState) => heardTraffic(s.intel.pushes.at(-1)?.items);
 
-  it('answered, the net carries on: more traffic comes, and faster once the enemy is alerted', () => {
-    expect(transmissions(false)).toBeGreaterThan(3);
-    expect(transmissions(true)).toBeGreaterThan(transmissions(false));
+  it('nothing comes up by itself: ten minutes without a scan, no traffic', () => {
+    expect(run(initialState(), 600_000).events.some((e) => e.kind === 'signal')).toBe(false);
   });
 
-  it('no live groups, no traffic', () => {
+  it('a scan whose SIGINT report heard something brings their traffic up on that square; one that did not, nothing', () => {
+    let yes = 0;
+    let no = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const s = scanned(seed, 'C2');
+      const e = s.events.find((x) => x.kind === 'signal');
+      if (heard(s)) {
+        yes++;
+        expect(e?.square).toBe('C2');
+      } else {
+        no++;
+        expect(e).toBeUndefined();
+      }
+    }
+    expect(yes).toBeGreaterThan(0); // a variable reward: some scans, not all
+    expect(no).toBeGreaterThan(0);
+  });
+
+  it('no HQ call pops up for it: the traffic is a tag on the square', () => {
+    const s = hearTraffic(initialState(), 'C2');
+    expect(s.events.filter((e) => e.kind === 'signal')).toHaveLength(1);
+    expect(s.comms.messages.some((m) => /radio traffic/i.test(m.text))).toBe(false);
+  });
+
+  it('one net: while traffic is up, nothing new; jammed or nobody left, nothing at all', () => {
     const s0 = initialState();
-    const s = run({ ...s0, contacts: s0.contacts.map((c) => ({ ...c, status: 'cleared' as const })) }, 300_000);
-    expect(s.events.some((e) => e.kind === 'signal')).toBe(false);
+    expect(hearTraffic(hearTraffic(s0, 'C2'), 'D3').events.filter((e) => e.kind === 'signal')).toHaveLength(1);
+    expect(hearTraffic({ ...s0, flags: { ...s0.flags, jammed: true } }, 'C2').events.some((e) => e.kind === 'signal')).toBe(false);
+    expect(hearTraffic({ ...s0, contacts: s0.contacts.map((c) => ({ ...c, status: 'cleared' as const })) }, 'C2').events.some((e) => e.kind === 'signal')).toBe(false);
   });
 });
 
