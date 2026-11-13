@@ -24,6 +24,7 @@ import { sightings, type Sighting } from '../sim/sightings';
 import { panelled, pins } from '../hud/pins';
 import { isImageryRequest } from '../sim/imageryRequest';
 import { intro, MAP_BOOT } from '../hud/intro';
+import { setCellSize } from '../hud/scale';
 
 const TEAL = 0x35d0a5;
 const TEAM = 0xf2c14e; // the mission's points and route, in amber
@@ -1039,6 +1040,7 @@ export class MapScene extends Phaser.Scene {
     const { zoom } = fitCamera({ w: width, h: height }, area, { x: 0, y: 0, w: WORLD_W, h: WORLD_H }, MARGIN, cover);
     this.baseZoom = this.fitZoom = zoom;
     cam.setZoom(zoom);
+    setCellSize((CELL * zoom) / DPR); // the HUD grows with the squares (ILI-1498)
     // Keep where the camera was, or start centred on ALPHA (ILI-1227).
     const screen = { w: width, h: height };
     const z = cam.zoom; // the fit

@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { uiScale } from './scale';
 import { bus, EV, getMapRect } from '../game/events';
 import { BuildingTag, tagSquares } from './PromptLayer';
 import { game, useGame } from '../sim/store';
@@ -75,7 +76,8 @@ export function SquareCard() {
   const area = getMapRect();
   if (!area) return null;
   if (!square) return null;
-  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, s.team.position, ANCHOR_W);
+  const k = tier === 'wide' ? uiScale() : 1; // it grows with the map's squares (ILI-1498)
+  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, s.team.position, ANCHOR_W * k);
   const locked = lockedOn(s, square);
   // Any square HQ clicks opens its flyout (ILI-1475): its intel is stored on the square, not in the
   // satellite, so it's there wherever ORION-3 is.
@@ -91,7 +93,7 @@ export function SquareCard() {
         data-side={at.side}
         data-minigame={playing ? playing.kind : undefined}
         data-locked={locked}
-        style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight }}
+        style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight, '--k': k } as CSSProperties}
         role="group"
         aria-label={`Act on ${square}`}
       >
