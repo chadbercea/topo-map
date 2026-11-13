@@ -8,6 +8,7 @@ import { sendResupply } from './support';
 import { nextRandom } from './firefight';
 import { missionDef } from './script';
 import { LOADOUT } from './team';
+import { knownTo } from './picture';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -127,7 +128,7 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 // ALPHA decides for itself (ILI-1315, decision logic ILI-1312). It doesn't ask HQ what to do:
 // HQ changes the ground (scans, strikes, intel), ALPHA reads it and radios what it's doing.
-// A contact HQ has found on the square it's heading into gets weighed: take it, hold short for
+// A contact ALPHA knows of (picture.ts) on the square it's heading into gets weighed: take it, hold short for
 // HQ to soften it (twenty seconds, then go around), or go around. A square nobody imaged it
 // just walks into if the intel gauge lets it (intel.ts), and finds out (ILI-1309). The exfil
 // always has a way out: a fight ALPHA won't take there sends it to the alternate exfil.
@@ -136,13 +137,14 @@ export const AVOID_ABOVE = 1; // over this: go around; between the two: soften i
 export const SOFTEN_MS = 20_000;
 
 // Their strength over ALPHA's: fighters weighted by how hard they are, against operators
-// still up, weighted by the ammo they've got left, halved when the meds are gone.
-export function odds(s: GameState, c: Contact): number {
+// still up, weighted by the ammo they've got left, halved when the meds are gone. units: how many
+// fighters ALPHA was told about (ILI-1495), the group's own count if not given.
+export function odds(s: GameState, c: Contact, units = c.units.length): number {
   const up = s.team.operators.filter((o) => o.health > 0);
   if (!up.length) return Infinity;
   const ammo = up.reduce((n, o) => n + Math.min(1, o.ammo / LOADOUT[o.role].ammo), 0) / up.length;
   const meds = up.some((o) => o.meds > 0) ? 1 : 0.5;
-  return (c.units.length * c.strength) / (up.length * ammo * meds);
+  return (units * c.strength) / (up.length * ammo * meds);
 }
 
 export const approachSystem: System = (s) => {
@@ -150,16 +152,17 @@ export const approachSystem: System = (s) => {
   const next = team.route[team.waypoint];
   if (!next || team.holdFor || team.fight || team.treating || s.minigame?.status === 'active') return s;
   if (squareAt(team.position.x, team.position.y) === next) return s; // already there
-  const contact = contactIn(s, next);
-  if (contact?.status === 'revealed' && team.decisions[next] !== 'attack') return assess(s, next, contact);
+  // Only what ALPHA knows (ILI-1495): intel HQ sent it, or its own eyes. Never the ground truth.
+  const known = knownTo(s, next);
+  if (known && team.decisions[next] !== 'attack') return assess(s, next, known.c, known.units);
   // Held short of a contact that HQ's support has since wiped out: it moves through.
-  if (team.waitFor?.square === next && !contact)
+  if (team.waitFor?.square === next && !known)
     return decideOn(say(s, `clear-${next}-${s.elapsedMs}`, `Targets in ${next} are down. Moving through.`), next, 'push');
   return s;
 };
 
-function assess(s: GameState, square: SquareId, c: Contact): GameState {
-  const r = odds(s, c);
+function assess(s: GameState, square: SquareId, c: Contact, units: number): GameState {
+  const r = odds(s, c, units);
   const waiting = s.team.waitFor?.square === square ? s.team.waitFor : null;
   const what = `Contact in ${square}, ${c.label}.`;
   if (r <= TAKE_AT) return decideOn(say(s, `take-${c.id}-${s.elapsedMs}`, waiting ? `That did it. Moving in on ${square}.` : `${what} We'll take them.`), square, 'attack');
@@ -268,7 +271,7 @@ export function detour(s: GameState, square: SquareId): GameState {
     const q = parseSquare(b)!;
     return Math.max(Math.abs(p.col - q.col), Math.abs(p.row - q.row)) <= 1;
   };
-  const known = (sq: SquareId) => knownIn(s, sq).length > 0;
+  const known = (sq: SquareId) => !!knownTo(s, sq); // what ALPHA knows of, not HQ (ILI-1495)
   const options = neighbours(square).filter((n) => !route.includes(n) && touches(n, prev) && touches(n, after) && !known(n));
   const via = options.find((n) => s.map.scanned.includes(n)) ?? options[0];
   if (!via) return applyEffect(s, 'push', square); // nowhere to go: they go through

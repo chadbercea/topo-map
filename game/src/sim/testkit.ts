@@ -32,6 +32,13 @@ export const walking = (): GameState => {
   return { ...s, contacts: [], map: { ...s.map, scanned: [...ROUTE] }, script: { ...s.script, fired: [...s.script.fired, 'convoy-on-exfil'] } };
 };
 
+// HQ has sent ALPHA everything it found (ILI-1495): every found contact is in ALPHA's picture, where
+// it is. For tests about what ALPHA does with what it knows, not how it came to know it.
+export const told = (s: GameState): GameState => ({
+  ...s,
+  team: { ...s.team, known: Object.fromEntries(s.contacts.filter((c) => c.status === 'revealed').map((c) => [c.id, { square: c.square, units: c.units.length, atMs: s.elapsedMs }])) },
+});
+
 // Answer every call the moment it comes in with the given response (or the first one that
 // isn't blocked), until the predicate holds or time runs out.
 export function playUntil(start: GameState, done: (s: GameState) => boolean, pick = (ids: string[]) => ids[0], maxMs = 600_000) {

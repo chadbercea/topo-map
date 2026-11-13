@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { RECOVER_MS } from './mission';
 import type { GameState } from './state';
-import { run, walking } from './testkit';
+import { run, told, walking } from './testkit';
 
 const until = (s: GameState, done: (x: GameState) => boolean, maxMs = 600_000) => {
   for (let t = 0; t < maxMs && !done(s); t += 100) s = run(s, 100);
@@ -37,10 +37,10 @@ describe('mission A to B to C', () => {
   it('the crash site cannot be detoured around: too strong to take, ALPHA goes in anyway (ILI-1315)', () => {
     const s0 = walking();
     const units = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-    const s = {
+    const s = told({
       ...s0,
       contacts: [{ id: 'x', square: 'D3', label: 'a squad', strength: 1, status: 'revealed' as const, observed: false, units, total: units.length }],
-    };
+    });
     const t = until(s, (x) => x.team.decisions.D3 !== undefined);
     expect(t.team.route).toContain('D3');
     expect(t.team.decisions.D3).toBe('attack');

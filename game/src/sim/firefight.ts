@@ -67,6 +67,7 @@ export const firefightSystem: System = (s, dt) => {
         contacts: ambush ? s.contacts.map((c) => (c === contact ? { ...c, status: 'revealed' as const } : c)) : s.contacts,
         team: {
           ...team,
+          known: { ...team.known, [contact.id]: { square: contact.square, units: contact.units.length, atMs: s.elapsedMs } }, // in contact: ALPHA sees them itself (ILI-1495)
           holdFor: null,
           fight: { contactId: contact.id, eventId: `contact-${contact.id}`, square: contact.square, enemy, full: enemy, units: contact.units.length, startedMs: s.elapsedMs, ...(ambush ? { ambush: true } : {}) },
           activity: ambush ? `Ambushed in ${contact.square}` : `Engaged in ${contact.square}`,

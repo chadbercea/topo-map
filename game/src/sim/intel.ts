@@ -2,6 +2,7 @@ import type { GameState } from './state';
 import { photoFactor } from './upgrades';
 import { CELL } from '../map/grid';
 import { knownIn } from './contacts';
+import { tell } from './picture';
 
 // ALPHA's intel gauge (ILI-1314): what keeps the team moving. The team is autonomous and has
 // its mission; HQ keeps it fed. Every scan goes to the analysts, who push what it was worth to
@@ -143,6 +144,13 @@ export function holdScan(s: GameState, square: string, fighters: number): { next
   return { next: { ...next, intel: { ...next.intel, graded: [...new Set([...next.intel.graded, square])] } }, grade: g };
 }
 
+// ORION-3 watching a scanned square sees a group walk in (ILI-1493): the analysts hold a fresh
+// report on it, for HQ to send ALPHA with Photo like a scan's (ILI-1495). ALPHA doesn't know until then.
+export function holdSighting(s: GameState, square: string, fighters: number): GameState {
+  if (heldIntel(s, square)) return s;
+  return record(s, { source: 'IMINT', square, grade: 'high', items: reports(s, square, 'high', fighters) }, GRADE_INTEL.high * photoFactor(s), 'held');
+}
+
 // Photo (ILI-1432): a scanned square's intel goes to ALPHA, now or banked for when it heads in.
 export const heldIntel = (s: GameState, square: string) => s.intel.pushes.find((p) => p.square === square && p.state === 'held');
 export function sendPhoto(s: GameState, square: string): GameState {
@@ -151,7 +159,7 @@ export function sendPhoto(s: GameState, square: string): GameState {
   const banked = ahead(s, square);
   const pushes = s.intel.pushes.map((x) => (x === p ? { ...x, state: banked ? ('banked' as const) : ('fed' as const), ...(banked ? {} : { fedMs: s.elapsedMs }) } : x));
   const intel = banked ? { ...s.intel, pushes, banked: [...s.intel.banked, { square, amount: p.amount }] } : { ...s.intel, pushes, fuel: Math.min(GAUGE_MAX, s.intel.fuel + p.amount) };
-  return { ...s, intel };
+  return tell({ ...s, intel }, square); // and ALPHA knows what the analysts saw there (ILI-1495)
 }
 
 // The bank pays out as ALPHA starts the leg into a square HQ scanned ahead (ILI-1316), or

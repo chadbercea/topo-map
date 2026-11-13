@@ -4,12 +4,12 @@ import { LINK_MS, waitingCalls } from './comms';
 import { blocked, TREE } from './responses';
 import type { GameState } from './state';
 import { createStore } from './store';
-import { asking, run, walking } from './testkit';
+import { asking, run, told, walking } from './testkit';
 
 // ALPHA decides for itself (ILI-1315, ILI-1312): HQ finds a contact on its route, ALPHA weighs
 // it and radios what it's doing. Take it, hold short for HQ to soften it, or go around.
 const contact = (units: number[], strength = 1): Contact => ({ id: 'tech', square: 'E3', label: 'two technicals', strength, status: 'revealed', observed: false, units, total: units.length });
-const facing = (c: Contact): GameState => ({ ...walking(), contacts: [c] });
+const facing = (c: Contact): GameState => told({ ...walking(), contacts: [c] }); // and HQ has sent it to ALPHA (ILI-1495)
 const until = (s: GameState, done: (x: GameState) => boolean, maxMs = 120_000) => {
   for (let t = 0; t < maxMs && !done(s); t += 100) s = run(s, 100);
   return s;

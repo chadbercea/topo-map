@@ -22,6 +22,7 @@ import type { Inbound } from './support';
 import { initialOrdnance, type Ordnance, type Weapon } from './ordnance';
 import { initialMission, type Mission } from './mission';
 import { initialStream, type Stream } from './stream';
+import type { Picture } from './picture';
 
 // The whole game in one plain object. Systems never mutate it: each tick returns a new
 // state, so React can tell what changed by reference and tests can compare snapshots.
@@ -63,6 +64,7 @@ export type GameState = {
     fight: Fight | null;
     treating: Treatment | null; // the medic at work
     decisions: Record<string, Decision>; // what HQ decided about squares on the route
+    known: Picture; // ALPHA's own picture of the enemy: what it was sent or saw (ILI-1495)
   };
   map: { cols: number; rows: number; scanned: string[]; selected: string | null; blind: BlindLook[] };
   contacts: Contact[]; // hidden until imagery finds them
@@ -138,6 +140,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
       fight: null,
       treating: null,
       decisions: {},
+      known: {},
     },
     map: { cols: 8, rows: 5, scanned: [ROUTE[0]], selected: null, blind: [] }, // the insertion point is known ground
     contacts: MISSION.contacts(),

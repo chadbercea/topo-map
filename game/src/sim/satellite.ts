@@ -1,4 +1,4 @@
-import { GRADE_LABEL, holdScan, pushVideo, settled } from './intel';
+import { GRADE_LABEL, holdScan, holdSighting, pushVideo, settled } from './intel';
 import { hearTraffic, heardTraffic } from './enemy';
 import { maybeBuilding } from './buildings';
 import { slewFactor } from './upgrades';
@@ -252,10 +252,14 @@ export const satelliteSystem: System = (s) => {
   return sat.mode === 'video' ? record(next, snapshot(next, sat.aim, 'video', true)) : next;
 };
 
-// A group walking into ground ORION-3 is watching live is found, like a scan would find it.
+// A group walking into ground ORION-3 is watching live is found, like a scan would find it, and
+// the analysts hold a report for HQ to send ALPHA with Photo (ILI-1495).
 function findWatched(s: GameState, squares: string[]): GameState {
-  const hidden = s.contacts.some((c) => c.status === 'hidden' && c.units.length && squares.includes(c.square));
-  return hidden ? reveal(s, squares, satName(s)) : s;
+  const walkedIn = s.contacts.filter((c) => c.status === 'hidden' && c.units.length && squares.includes(c.square));
+  if (!walkedIn.length) return s;
+  let next = reveal(s, squares, satName(s));
+  for (const sq of new Set(walkedIn.map((c) => c.square))) if (!(next.intel.live ?? []).includes(sq)) next = holdSighting(next, sq, walkedIn.filter((c) => c.square === sq).reduce((n, c) => n + c.units.length, 0));
+  return next;
 }
 
 // One line for the mission bar.
