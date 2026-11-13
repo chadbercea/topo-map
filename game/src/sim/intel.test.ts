@@ -128,7 +128,7 @@ describe('the intel gauge', () => {
     store.scan('G5');
     expect(gauge(store.get())).toBe(0); // on the shelf: HQ can't push it to the team
     expect(shelfState(store.get(), 'G5')).toBe('posted');
-    expect(store.get().comms.messages.at(-1)?.text).toMatch(/Analysts: (all clear|[a-z]+-grade intel), posted for ALPHA\./);
+    expect(store.get().comms.messages.at(-1)?.text).toMatch(/analysis complete: .*\. Intel posted for ALPHA\./);
     store.tick(100);
     expect(shelfState(store.get(), 'G5')).toBe('pulling'); // holding: it syncs at once
     expect(store.get().intel.download).toBeTruthy();

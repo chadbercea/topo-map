@@ -1,4 +1,4 @@
-import { GRADE_LABEL, postScan, postSighting, pushVideo, settled } from './intel';
+import { postScan, postSighting, pushVideo, settled } from './intel';
 import { hearTraffic, heardTraffic } from './enemy';
 import { maybeBuilding } from './buildings';
 import { slewFactor } from './upgrades';
@@ -208,7 +208,7 @@ function finishLook(s: GameState): GameState {
   if (mode === 'video') {
     next = pushVideo(next);
     if (heardTraffic(next.intel.pushes.at(-1)?.items)) next = hearTraffic(next, square);
-    pushed = `Analysts: live feed posted for ${s.team.callsign}`;
+    pushed = `Live feed posted for ${s.team.callsign}`;
   } else {
     if (!fighters) next = maybeBuilding(next, square); // the hunt: empty ground can turn up a building (ILI-1316)
     // Analyze (ILI-1432, ILI-1499): the analysts post its package on the shelf for ALPHA to pull.
@@ -216,9 +216,10 @@ function finishLook(s: GameState): GameState {
     next = p.next;
     // Their radio traffic is one of a scan's rewards (ILI-1359): a SIGINT report that heard something.
     if (heardTraffic(next.intel.pushes.at(-1)?.items)) next = hearTraffic(next, square);
-    pushed = `Analysts: ${GRADE_LABEL[p.grade]}, posted for ${s.team.callsign}`;
+    pushed = `Intel posted for ${s.team.callsign}`;
   }
-  next = log(next, radio(s, satName(s), `look-${s.elapsedMs}`, `${square} collection complete (${CAPTURE[mode].label.toLowerCase()}): ${describe(result)}. ${pushed}.`));
+  // In the words the flyout and the map use (ILI-1508).
+  next = log(next, radio(s, satName(s), `look-${s.elapsedMs}`, `${square} ${CAPTURE[mode].label.toLowerCase()} complete: ${describe(result)}. ${pushed}.`));
   return sat.callId ? log(next, radio(s, s.team.callsign, `look-${s.elapsedMs}-team`, 'Imagery received.')) : next;
 }
 

@@ -338,7 +338,34 @@ function Report({ s, square }: { s: GameState; square: string }) {
           </p>
         )}
       </section>
+      <NextStep s={s} square={square} />
     </>
+  );
+}
+
+// What happens next on this square (ILI-1508), so the flyout, ORION-3 and the comms log read as
+// one story: move ORION-3 here, then Analyze, then ALPHA pulls the intel. Nothing while ORION-3 is
+// on its way (the head counts it down) or once ALPHA has the intel.
+export function nextStep(s: GameState, square: string): string | null {
+  const sat = s.satellite;
+  const name = satName(s);
+  if (lockedOn(s, square)) {
+    const st = shelfState(s, square);
+    if (!st) return s.intel.graded.includes(square) ? null : `Analyze ${square} in ${name}`;
+    return st === 'posted' ? `${s.team.callsign} pulls it when holding or at ${square}` : null;
+  }
+  if (sat.state === 'slewing' && sat.aim === square) return null;
+  if (shelfState(s, square) === 'posted') return `${s.team.callsign} pulls it when holding or at ${square}`;
+  return sat.state === 'idle' && !s.intel.graded.includes(square) ? `Reposition ${name} here` : null;
+}
+
+function NextStep({ s, square }: { s: GameState; square: string }) {
+  const next = nextStep(s, square);
+  if (!next) return null;
+  return (
+    <p className="sc-next" data-testid="square-next">
+      <span>Next</span> {next}
+    </p>
   );
 }
 

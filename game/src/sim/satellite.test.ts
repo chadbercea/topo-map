@@ -50,7 +50,7 @@ describe('ORION-3 tasking', () => {
     expect(s.map.scanned).toContain('F4');
     expect(s.satellite).toMatchObject({ state: 'idle', aim: 'F4', result: { square: 'F4', mode: 'photo', fighters: 0 } });
     expect(s.imagery.F4).toMatchObject({ mode: 'photo', live: false, seen: [] });
-    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 collection complete \(analysis\): nothing there\. Analysts: [a-z -]+, posted for ALPHA\./.test(m.text))).toBe(true); // on the shelf (ILI-1499)
+    expect(s.comms.messages.some((m) => m.from === 'ORION-3' && /F4 analysis complete: nothing there\. Intel posted for ALPHA\./.test(m.text))).toBe(true); // on the shelf (ILI-1499)
   });
 
   it('a look at E3 finds the checkpoint: every fighter, and that they have not noticed ALPHA', () => {
