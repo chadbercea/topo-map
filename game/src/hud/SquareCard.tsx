@@ -4,7 +4,6 @@ import { BuildingTag, ContactTag, tagSquares } from './PromptLayer';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, lockedOn, satName } from '../sim/satellite';
 import { isImageryRequest } from '../sim/imageryRequest';
-import { settled, squareFindings, squareReports } from '../sim/intel';
 import { MiniGamePanel } from './MiniGamePanel';
 import { freshness, targets } from '../sim/imagery';
 import { squareAt } from '../map/grid';
@@ -164,15 +163,11 @@ type Placed = { left: number; top: number; width: number; maxHeight: number; sid
 // A contact HQ can hit: its strikes are in the anchor (ILI-1302).
 const strikeable = (e: GameState['events'][number]) => e.kind === 'contact' && e.id.startsWith('contact-');
 
-// Anything else in this square HQ can act on: an unresolved event that isn't a strike. (Resupply
-// is only ever a reply to ALPHA's ask, ILI-1232. A kill site has nothing to do until ALPHA
-// reaches it and asks, so it gets no card: the X marks are the aftermath, ILI-1252.)
-// ALPHA's imagery request is answered by Scan, at the top (ILI-1367).
-// A building is its tag, docked on the panel (ILI-1469): not a second card here too (ILI-1482).
-const actionable = (square: string) => (e: GameState['events'][number]) => e.square === square && e.status !== 'resolved' && !strikeable(e) && e.kind !== 'site' && e.kind !== 'building' && !isImageryRequest(e);
-export function hasActions(s: GameState, square: string) {
-  return s.events.some(actionable(square));
-}
+// Anything else on the square HQ may act on, as a plain line in its intel list: not a strike, a
+// building or radio traffic (they have their own), not a kill site (its X marks are the
+// aftermath, ILI-1252), not ALPHA's imagery ask (its own line).
+const otherItem = (square: string) => (e: GameState['events'][number]) =>
+  e.square === square && e.status !== 'resolved' && !strikeable(e) && !['site', 'building', 'signal'].includes(e.kind) && !isImageryRequest(e);
 
 // Off the reticle's edge (ILI-1397): flush against the square, so the menu and the square read as
 // one thing and move together. Right of it, else left, else under or over it, whichever is
@@ -262,56 +257,65 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       </>
     );
 
-  const done = settled(s, square);
-  const reports = done ? squareReports(s, square) : [];
-  const intelLine = !done ? 'none yet' : squareFindings(s, square) === 'clear' ? 'clear' : `${reports.length} ${reports.length === 1 ? 'report' : 'reports'}`;
-  const events = s.events.filter(actionable(square));
+  const traffic = s.events.filter((e) => e.square === square && e.kind === 'signal' && e.status !== 'resolved');
+  const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
+  const others = s.events.filter(otherItem(square));
+  const known = knownIn(s, square); // where HQ last saw them (ILI-1493)
   return (
     <>
       {head}
 
-      {/* The square's own tags dock here, with their buttons (ILI-1475). */}
-      {(contact || buildings.length > 0) && (
-        <div className="sc-tags" data-testid="docked-tags">
-          {contact && (
-            <div className="place-tag contact-tag docked" data-testid="contact-tag" data-kind="contact" data-square={square}>
-              <ContactTag square={square} />
-            </div>
-          )}
-          {buildings.map((e) => (
-            <div key={e.id} className="place-tag docked" data-testid="place-tag" data-kind="building" data-square={square}>
-              <BuildingTag id={e.id} />
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* ALPHA at work here: a live bar, so it stays out of the folds. */}
       <TeamWork s={s} square={square} />
 
-      <details className="sc-details sc-fold" data-testid="fold-intel">
-        <summary>
-          Intel · <span data-testid="intel-summary">{intelLine}</span>
-        </summary>
-        <SquareFacts s={s} square={square} />
-        <Readouts s={s} square={square} />
-        {st.marked.length > 0 && (
-          <p className="sc-marked" data-testid="fighters-marked">
-            {st.marked.length} {st.marked.length === 1 ? 'fighter' : 'fighters'} marked
+      {/* The square's intel list (ILI-1487): only what HQ can act on here, each with its button:
+          ALPHA's ask, contacts, buildings, radio traffic. What ORION-3's imagery found is ORION-3's,
+          under its picture, not here too. */}
+      <section className="sc-items" data-testid="intel-list" aria-label={`Intel on ${square}`}>
+        <h3 className="sc-items-head">Intel</h3>
+        {asked && <p className="sc-asked">{asked.title}</p>}
+        {(contact || buildings.length > 0) && (
+          <div className="sc-tags" data-testid="docked-tags">
+            {contact && (
+              <div className="place-tag contact-tag docked" data-testid="contact-tag" data-kind="contact" data-square={square}>
+                <ContactTag square={square} />
+              </div>
+            )}
+            {buildings.map((e) => (
+              <div key={e.id} className="place-tag docked" data-testid="place-tag" data-kind="building" data-square={square}>
+                <BuildingTag id={e.id} />
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Fighters HQ last saw here, with no fresh look to strike on (ILI-1493). */}
+        {!contact && known.length > 0 && (
+          <div className="sc-item" data-kind="contact" data-testid="intel-item">
+            <span>Contacts last seen here</span>
+            <small className="note">{known.map((c) => c.label).join(', ')}</small>
+          </div>
+        )}
+        {traffic.map((e) => (
+          <div key={e.id} className="sc-item" data-kind="signal" data-testid="intel-item" data-event={e.id}>
+            <span>Enemy radio traffic near {e.square}</span>
+            <small className="note">Listen or Jam from its tag on the map.</small>
+          </div>
+        ))}
+        {others.map((e) => (
+          <div key={e.id} className="sc-item" data-kind={e.kind} data-testid="intel-item" data-event={e.id}>
+            <span>
+              {EVENT_LABEL[e.kind]} · {e.square}
+            </span>
+            <small className="note">{e.title}</small>
+          </div>
+        ))}
+        {!asked && !contact && !known.length && !buildings.length && !traffic.length && !others.length && (
+          <p className="sc-none" data-testid="intel-none">
+            Nothing to act on
           </p>
         )}
-      </details>
+      </section>
       <Details s={s} square={square} />
-      {events.length > 0 && (
-        <details className="sc-details sc-fold" data-testid="fold-activity">
-          <summary>
-            Activity · <span>{events.map((e) => EVENT_LABEL[e.kind]).join(', ')}</span>
-          </summary>
-          <section className="sc-actions" data-testid="action-panel" aria-label={`Act on ${square}`}>
-            <Actions s={s} square={square} />
-          </section>
-        </details>
-      )}
     </>
   );
 }
@@ -352,38 +356,6 @@ function StrikeOptions({ s, square }: { s: GameState; square: string }) {
   );
 }
 
-// The square's intel (ILI-1399): every report its scan brought in, by discipline, or that it
-// came up clear. Once a square has one, it's settled.
-export function Readouts({ s, square }: { s: GameState; square: string }) {
-  if (!settled(s, square)) return null;
-  const items = squareReports(s, square);
-  const clear = squareFindings(s, square) === 'clear';
-  return (
-    <section className="sc-intel" data-testid="square-intel" data-clear={clear || undefined} aria-label={`Intel on ${square}`}>
-      <ul>
-        {items.map((r, i) => (
-          <li key={i} data-kind={r.kind} data-heat={r.heat} data-testid="square-intel-item">
-            <i className="int">{r.kind}</i>
-            <span>{r.text}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-// ALPHA's ask on this square, if any (ILI-1466). The square's intel state is the fold's summary
-// and its lock is the header's: each said once (ILI-1482).
-function SquareFacts({ s, square }: { s: GameState; square: string }) {
-  const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
-  if (!asked) return null;
-  return (
-    <section className="sc-facts" data-testid="square-details" aria-label={`${square} details`}>
-      <p className="sc-asked">{asked.title}</p>
-    </section>
-  );
-}
-
 // A square's details (ILI-1203, ILI-1220): tier three since the satellite panel's ladder
 // (ILI-1400), in the square's own menu, folded under one line that says how fresh its imagery is.
 export function Details({ s, square, open = false }: { s: GameState; square: string; open?: boolean }) {
@@ -394,7 +366,6 @@ export function Details({ s, square, open = false }: { s: GameState; square: str
   const wx = weather(s);
   const snap = s.imagery[square];
   const seen = snap ? freshness(snap, now) : null;
-  const found = knownIn(s, square); // where HQ last saw them (ILI-1493)
   const status = working
     ? sat.state === 'slewing'
       ? `${satName(s)} ${countdown(sat.arriveMs - now)} away`
@@ -424,54 +395,10 @@ export function Details({ s, square, open = false }: { s: GameState; square: str
         </dd>
         <dt>Imagery</dt>
         <dd>{snap ? `${snap.mode === 'eyes' ? 'eyes on' : snap.mode} ${zulu(snap.atMs)} · ${seen}` : g.imagery}</dd>
-        <dt>Contacts</dt>
-        <dd data-testid="square-contacts">
-          {found.length ? `${found.length} · ${found.map((c) => c.label).join(', ')}` : snap ? 'none seen' : 'not looked at yet'}
-        </dd>
       </dl>
     </details>
   );
 }
-
-// What HQ can do about the square (ILI-1211): one block per thing going on there, with its
-// options.
-export function Actions({ s, square }: { s: GameState; square: string }) {
-  // Strikes have their own block above (ILI-1302): the rest goes here.
-  const events = s.events.filter(actionable(square));
-  return (
-    <>
-      <header className="ap-head">
-        Act on <b>{square}</b>
-      </header>
-      {/* What's going on in this square, and what HQ can call in on it. */}
-      {events.map((e) => (
-        <div key={e.id} className="sc-event event-card" data-kind={e.kind} data-testid="event-card">
-          <h3>
-            {EVENT_LABEL[e.kind]} · {e.square}
-          </h3>
-          <p className="title">{e.title}</p>
-          {e.kind === 'signal' ? (
-            // Listen and Jam are on the traffic's tag on the map (ILI-1469).
-            <p className="note">Listen or Jam from its tag on the map.</p>
-          ) : (
-            <Call s={s} eventId={e.id} />
-          )}
-        </div>
-      ))}
-    </>
-  );
-}
-
-function Call({ s, eventId }: { s: GameState; eventId: string }) {
-  const call = s.comms.messages.find((m) => m.eventId === eventId);
-  if (!call) return <p className="note">Decision point. Responses arrive with comms and mini games.</p>;
-  return (
-    <p className="note">
-      {call.from}: “{call.text}” {call.status === 'new' && call.holds ? 'Answer at ALPHA’s flag.' : ''}
-    </p>
-  );
-}
-
 
 // ALPHA at work on this square (ILI-1427): a tiny event with its bar filling while it searches a
 // building or recovers the black box; when it's done the bar fades and what it found slides into

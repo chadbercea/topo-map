@@ -17,15 +17,15 @@ test('a tap opens the square\u2019s flyout and sends ORION-3; Scan is in ORION-3
   await expect(anchor).toHaveAttribute('data-locked', 'true');
   await expect(anchor.getByTestId('lock-status')).toHaveText('ORION-3 locked on');
   // Read-only: no intel until something has looked, and no Scan here.
-  await expect(anchor.getByTestId('intel-summary')).toHaveText('none yet');
+  await expect(anchor.getByTestId('intel-none')).toBeVisible(); // nothing to act on here yet
   await expect(anchor.getByRole('button', { name: /scan/i })).toHaveCount(0);
   if (isMobile) await page.getByTestId('tab-orion').click();
   await page.getByTestId('satellite').getByTestId('capture-scan').click();
   await expect.poll(() => page.evaluate(() => !!window.game.get().imagery.F4)).toBe(true);
-  await expect(anchor.getByTestId('intel-summary')).toHaveText(/^(clear|\d reports?)$/); // its intel state, said once (ILI-1482)
-  await expect(anchor.getByTestId('square-intel')).toBeHidden(); // compact: its sections start closed (11-12)
-  await anchor.getByTestId('fold-intel').locator('summary').click();
-  await expect(anchor.getByTestId('square-intel')).toBeVisible(); // the full report, on the square (ILI-1475)
+  // The scan report is ORION-3's, under its picture (ILI-1487); the flyout keeps what HQ can act on.
+  await expect(page.getByTestId('satellite').getByTestId('intel-summary')).toHaveText(/^(clear|\d reports?)$/);
+  await expect(anchor.getByTestId('square-intel')).toHaveCount(0);
+  await expect(anchor.getByTestId('intel-list')).toBeVisible();
 });
 
 test('the menu grows out of the square’s edge (ILI-1397)', async ({ page, isMobile }) => {

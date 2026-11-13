@@ -16,9 +16,9 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
   // Marker sits in the square's top-right quarter (F4 = col 5, row 3: next to ALPHA, in view).
   await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25, -0.25));
   const card = page.getByTestId('square-anchor');
-  const act = page.getByTestId('action-panel');
+  const act = page.getByTestId('intel-list'); // an item in the square's intel list (ILI-1487)
   await expect(page.getByTestId('square-anchor').getByTestId('square-card')).toHaveAttribute('data-square', 'F4'); // its report: on the square's flyout (ILI-1475)
-  await expect(act.getByTestId('event-card')).toContainText('Test contact');
+  await expect(act.getByTestId('intel-item')).toContainText('Test contact');
   await expect.poll(status).toBe('seen'); // seen, so no longer flagged
   await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the event picks its square
 
@@ -50,5 +50,5 @@ test('a report line that names a square in COMMS opens that square (ILI-1225)', 
   else await page.getByTestId('log-toggle').click(); // the log is a drawer (ILI-1393)
   await page.getByTestId('comms-feed').getByRole('button', { name: 'Imagery wanted at F2.' }).click();
   await expect(page.getByTestId('selected-square')).toHaveText('F2');
-  await expect(page.getByTestId('action-panel').getByTestId('event-card')).toContainText('REQUEST · F2');
+  await expect(page.getByTestId('intel-list').getByTestId('intel-item')).toContainText('REQUEST · F2');
 });

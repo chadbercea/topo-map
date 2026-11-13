@@ -1600,13 +1600,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .op[data-highlight] { outline: 2px solid #f2c14e; outline-offset: -2px; background: rgba(242, 193, 78, 0.08); }
 
 /* A square's intel (ILI-1399): in its menu, the detail readouts of what its one scan settled. */
-.square-card .sc-intel { display: grid; gap: 4px; padding: 6px 10px 8px; border-bottom: 1px solid var(--line); }
-.square-card .sc-intel ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
-.square-card .sc-intel li { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink); }
-.square-card .sc-intel li[data-heat='quiet'] { color: var(--dim); }
-.square-card .sc-intel .int { flex: 0 0 52px; font-style: normal; font-size: 9px; letter-spacing: 0.06em; text-align: center; padding: 0 3px; border: 1px solid rgba(207, 232, 220, 0.3); border-radius: 2px; color: var(--dim); }
-.square-card .sc-intel li[data-heat='some'] .int { border-color: rgba(255, 138, 42, 0.6); color: #ff8a2a; }
-.square-card .sc-intel li[data-heat='hot'] .int { border-color: #e5484d; color: #e5484d; }
 
 /* A square's details in its menu (ILI-1400): folded under one line. */
 .square-card .sc-details { border-bottom: 1px solid var(--line); }
@@ -1849,8 +1842,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* The report folds (11-12): closed by default, a one-line summary each. */
 .square-card .sc-fold summary span { color: var(--ink); text-transform: none; letter-spacing: 0.04em; }
 .square-card .sc-fold[open] summary { color: var(--accent); }
-.square-card .sc-fold .sc-intel { border-bottom: none; }
-.square-card .sc-fold .sc-actions { border-top: 1px solid var(--line); }
 @media (prefers-reduced-motion: reduce) { .sc-strike { animation: none; } }
 @keyframes flyout-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .sc-strike .sf-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
@@ -2072,7 +2063,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .place-tag.docked { position: static; transform: none; display: block; }
 .place-tag.docked .pt-tag { width: 100%; justify-content: space-between; }
 .place-tag.docked .pt-tag > span { flex: 1; }
-.square-card.anchor .sc-intel ul { max-height: none; }
 .hud[data-tier='wide'] .slot-orion { align-self: start !important; display: block; }
 .hud[data-tier='wide'] .orion { height: auto !important; max-height: none; }
 .hud[data-tier='wide'] .orion > .o-frame { height: auto; }
@@ -2133,3 +2123,26 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud[data-tier='wide'] .orion { grid-template-rows: auto auto 92px auto auto; }
 .hud[data-tier='wide'] .orion > .o-buttons { height: 92px; }
 .hud[data-tier='medium']:not([data-layout='fold']) .slot-orion { max-height: 516px; }
+/* What ORION-3's imagery found for the square it's on (ILI-1487): its last shot's readout, then the
+   scan report, item by item, under the picture. */
+.orion .o-saw { white-space: normal; overflow: visible; display: grid; gap: 4px; }
+.orion .o-saw > p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.orion .o-report { display: grid; gap: 3px; }
+.orion .o-report-head { margin: 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+.orion .o-report-head span { color: var(--ink); text-transform: none; letter-spacing: 0.04em; }
+.orion .o-report[data-clear] .o-report-head span { color: var(--accent); }
+.orion .o-report ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.orion .o-report li { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink); }
+.orion .o-report li[data-heat='quiet'] { color: var(--dim); }
+.orion .o-report .int { flex: 0 0 52px; font-style: normal; font-size: 9px; letter-spacing: 0.06em; text-align: center; padding: 0 3px; border: 1px solid rgba(207, 232, 220, 0.3); border-radius: 2px; color: var(--dim); }
+.orion .o-report li[data-heat='some'] .int { border-color: rgba(255, 138, 42, 0.6); color: #ff8a2a; }
+.orion .o-report li[data-heat='hot'] .int { border-color: #e5484d; color: #e5484d; }
+
+/* The square's intel list (ILI-1487): only what HQ can act on there. */
+.square-card .sc-items { display: grid; gap: 4px; padding: 6px 10px 8px; border-bottom: 1px solid var(--line); }
+.square-card .sc-items-head { margin: 0; font-size: 10px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+.square-card.anchor .sc-items .sc-tags { padding: 0; border: 0; }
+.square-card .sc-item { display: grid; gap: 2px; padding: 4px 8px; border-left: 3px solid #f2c14e; font-size: 11px; color: var(--ink); }
+.square-card .sc-item .note { font-size: 10px; color: var(--dim); }
+.square-card .sc-none { margin: 0; font-size: 11px; color: var(--dim); }
+

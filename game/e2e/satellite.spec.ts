@@ -60,10 +60,9 @@ test('pick a square, Reposition: ORION-3 moves, then on station the shots take i
   await expect(sat.getByTestId('satellite-result')).toContainText(/Video: 5 fighters/);
   await expect(sat.getByTestId('satellite-inset')).toHaveCount(1); // the picture stays up
   await expect(page.getByTestId('comms-feed')).toContainText(/E3 collection complete \(video\): 5 fighters.*Analysts: live feed to ALPHA/);
-  await expect(page.getByTestId('square-facts')).toContainText(/Contacts\s*\d+ · .*checkpoint/i);
+  await expect(page.getByTestId('square-anchor').getByTestId('intel-list').getByTestId('contact-tag')).toBeVisible(); // the contact is an item of the square's intel list (ILI-1487)
   await expect.poll(() => hasEvent(page, 'contact', 'E3')).toBe(true);
   // ORION-3 is the eye, not the gun (ILI-1474): the square's CONTACT tag has Strike; none in ORION-3.
-  await expect(page.getByTestId('action-panel').locator('[data-kind=contact]')).toHaveCount(0); // no strike here (the scan may have heard their radio, ILI-1359)
   await expect(page.getByTestId('square-anchor').getByTestId('strike-menu')).toHaveCount(0);
   await expect(sat.getByTestId('capture-strike')).toHaveCount(0);
   await page.locator('[data-testid=contact-tag][data-square=E3]').getByTestId('contact-strike').click();
@@ -105,7 +104,7 @@ test('a square with fighters in view gets a CONTACT tag; its Strike, or a fighte
   await expect(page.getByTestId('strike-flyout').getByTestId('fire-drone')).toBeVisible();
   const anchor = page.getByTestId('square-anchor');
   await expect(anchor.getByTestId('strike-menu')).toHaveCount(1); // the options slide in inside the square's panel (11-12)
-  await expect(anchor.getByTestId('fold-intel')).toHaveCount(0); // in place of its report
+  await expect(anchor.getByTestId('intel-list')).toHaveCount(0); // in place of its intel list
   // Firing: the whole panel is the drone's countdown; ORION-3's picture goes to targeting.
   await page.getByTestId('fire-drone').click();
   await expect(page.getByTestId('strike-flyout')).toHaveCount(0);
@@ -208,7 +207,7 @@ test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMob
   if (isMobile) await page.getByTestId('tab-orion').click();
   await expect.poll(() => page.getByTestId('target-pin').count()).toBeGreaterThan(0); // the map brackets them on its next frame
   const n = await page.getByTestId('target-pin').count();
-  await expect(page.getByTestId('square-anchor').getByTestId('fighters-marked')).toHaveText(`${n} ${n === 1 ? 'fighter' : 'fighters'} marked`);
+  await expect(page.getByTestId('satellite').getByTestId('fighters-marked')).toHaveText(` · ${n} ${n === 1 ? 'fighter' : 'fighters'} marked`); // a readout of ORION-3's scan (ILI-1487)
 });
 
 test('ORION-3 never scrolls, and nothing in it moves through a scan; the picture stays up after the shot (ILI-1354, ILI-1400)', async ({ page, isMobile }) => {
