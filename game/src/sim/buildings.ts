@@ -5,6 +5,8 @@ import { earn } from './sites';
 import type { GameState } from './state';
 import { LOADOUT } from './team';
 import type { System } from './systems';
+import { neighbours, odds, TAKE_AT } from './contacts';
+import { knownTo } from './picture';
 
 // Buildings (ILI-1316): the hunt. A photo of empty ground sometimes turns up a building worth a
 // search: RNG by square, seeded, so a mission replays. It pings on the map; HQ decides whether
@@ -50,15 +52,83 @@ export function maybeBuilding(s: GameState, square: SquareId): GameState {
   return { ...s, events: [...s.events, { id, kind: 'building', square, title: 'A building worth a search', atMs: s.elapsedMs, status: 'new' }] };
 }
 
-// HQ sends ALPHA: the square goes onto its route next, unless it's already on the way.
+// Reaching a building (ILI-1518). ALPHA judges it on its own picture of the enemy (picture.ts),
+// never the ground truth, the same way it judges its route (contacts.ts):
+// - a square with a contact ALPHA knows of is in the way, unless ALPHA would take that fight
+//   anyway (odds at or under TAKE_AT). That goes for the building's own square too;
+// - it plans a way there and back to its route around every square in the way. No way round:
+//   it can't reach the building;
+// - once it's on the way, its route is its route: if it later goes around the building's square
+//   (a contact turned up there), the search is off and the building waits for HQ again.
+// Contact it didn't know of is an ambush like anywhere else (firefight.ts); it searches once the
+// fight is over.
+export type Reach = { ok: true; route: SquareId[] } | { ok: false; why: 'contact' | 'cut-off'; at: SquareId };
+
+// In the way, as ALPHA sees it: a contact it knows of, too strong to walk through.
+export function blocking(s: GameState, square: SquareId): boolean {
+  const k = knownTo(s, square);
+  return !!k && odds(s, k.c, k.units) > TAKE_AT;
+}
+
+// The shortest walk, square by square, from one square to another, around what's in the way.
+// The squares after `from`, up to and including `to`; null if there's no way.
+function way(s: GameState, from: SquareId, to: SquareId): SquareId[] | null {
+  if (from === to) return [];
+  const prev = new Map<SquareId, SquareId>([[from, from]]);
+  const queue = [from];
+  while (queue.length) {
+    const at = queue.shift()!;
+    for (const n of neighbours(at)) {
+      if (prev.has(n) || blocking(s, n)) continue;
+      prev.set(n, at);
+      if (n === to) {
+        const out = [n];
+        for (let p = at; p !== from; p = prev.get(p)!) out.unshift(p);
+        return out;
+      }
+      queue.push(n);
+    }
+  }
+  return null;
+}
+
+// Can ALPHA reach the building in this square from where it is? If so, the route that takes it
+// there and back to the square it was heading for.
+export function reach(s: GameState, square: SquareId): Reach {
+  const { route, waypoint } = s.team;
+  const here = squareAt(s.team.position.x, s.team.position.y);
+  if (here === square || route.slice(waypoint).includes(square)) return { ok: true, route }; // on its way already
+  if (blocking(s, square)) return { ok: false, why: 'contact', at: square };
+  const there = here ? way(s, here, square) : null;
+  if (!there) return { ok: false, why: 'cut-off', at: square };
+  // Back onto its route at the first square ahead it didn't already walk through on the way there.
+  let j = waypoint;
+  while (j < route.length && there.includes(route[j])) j++;
+  const back = j < route.length ? way(s, square, route[j]) : [];
+  if (!back) return { ok: false, why: 'cut-off', at: square };
+  return { ok: true, route: [...route.slice(0, waypoint), ...there, ...back.slice(0, -1), ...route.slice(j)] };
+}
+
+// HQ sends ALPHA: the way there goes onto its route next, if it can reach it.
 export function sendToSearch(s: GameState, square: SquareId): GameState {
   const e = s.events.find((x) => x.id === buildingId(square) && x.status !== 'resolved');
   if (!e || s.searching.includes(square)) return s;
-  const { route, waypoint } = s.team;
-  const onRoute = route.slice(waypoint).includes(square) || squareAt(s.team.position.x, s.team.position.y) === square;
-  const next: GameState = { ...s, searching: [...s.searching, square], events: s.events.map((x) => (x === e ? { ...x, status: 'seen' as const } : x)) };
-  if (onRoute) return next;
-  return { ...next, team: { ...next.team, route: [...route.slice(0, waypoint), square, ...route.slice(waypoint)] } };
+  const r = reach(s, square);
+  if (!r.ok) return s;
+  return { ...s, searching: [...s.searching, square], team: { ...s.team, route: r.route }, events: s.events.map((x) => (x === e ? { ...x, status: 'seen' as const } : x)) };
+}
+
+// A building ALPHA has gone around since (ILI-1518): off its route, so the search is off.
+function droppedOff(s: GameState): GameState {
+  const here = squareAt(s.team.position.x, s.team.position.y);
+  const ahead = s.team.route.slice(s.team.waypoint);
+  const off = s.searching.filter((sq) => sq !== here && !ahead.includes(sq));
+  if (!off.length) return s;
+  return {
+    ...s,
+    searching: s.searching.filter((sq) => !off.includes(sq)),
+    events: s.events.map((e) => (e.kind === 'building' && off.includes(e.square) && e.status !== 'resolved' ? { ...e, status: 'new' as const } : e)),
+  };
 }
 
 // The square of the building ALPHA is inside, searching, or null (ILI-1418): while it searches
@@ -72,7 +142,8 @@ export function searchingIn(s: GameState): SquareId | null {
 const radio = (s: GameState, id: string, text: string): Message => ({ id, from: s.team.callsign, text, atMs: s.elapsedMs, status: 'new', holds: false });
 
 // In a building HQ sent it to: it holds and searches, then reports what it found.
-export const buildingSystem: System = (s) => {
+export const buildingSystem: System = (s0) => {
+  const s = droppedOff(s0);
   const { team } = s;
   if (team.fight || !s.searching.length) return s;
   const here = squareAt(team.position.x, team.position.y);

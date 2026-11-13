@@ -82,3 +82,70 @@ describe('supplies from a search', () => {
     expect(full[0].ammo).toBe(LOADOUT[full[0].role].ammo); // never past a full loadout
   });
 });
+
+// Reaching a building (ILI-1518): ALPHA plans the way on what it knows of the enemy, around any
+// contact it wouldn't take, and drops the search if it later goes around the building.
+import { reach, sendToSearch } from './buildings';
+import { makeContact } from './contacts';
+import { parseSquare } from '../map/grid';
+import { told } from './testkit';
+const building = (s: GameState, sq: string): GameState => ({ ...s, events: [...s.events, { id: buildingId(sq), kind: 'building' as const, square: sq, title: 'A building worth a search', atMs: 0, status: 'new' as const }] });
+const strong = (id: string, sq: string) => ({ ...makeContact(id, sq, 'a dug-in squad', 5, [0, 1, 2, 3]), status: 'revealed' as const });
+const weak = (id: string, sq: string) => ({ ...makeContact(id, sq, 'a lookout', 0.5, [0]), status: 'revealed' as const });
+const withContacts = (s: GameState, cs: ReturnType<typeof strong>[], tell = true): GameState => {
+  const next = { ...s, contacts: cs };
+  return tell ? told(next) : next;
+};
+const chained = (route: string[]) =>
+  route.every((sq, i) => {
+    if (!i) return true;
+    const a = parseSquare(route[i - 1])!;
+    const b = parseSquare(sq)!;
+    return Math.max(Math.abs(a.col - b.col), Math.abs(a.row - b.row)) === 1;
+  });
+
+describe('reaching a building', () => {
+  it('goes the long way round a contact ALPHA knows of, square by square, and back onto its route', () => {
+    const s = building(withContacts(walking(), [strong('wall', 'F5')]), 'E5');
+    const r = reach(s, 'E5');
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.route).not.toContain('F5');
+    expect(r.route).toContain('E5');
+    expect(chained(r.route)).toBe(true);
+    expect(r.route.slice(-4)).toEqual(['E3', 'D3', 'C2', 'B1']); // back on its way
+  });
+
+  it('can’t reach a building with a contact in it ALPHA won’t take', () => {
+    const s = building(withContacts(walking(), [strong('inside', 'E5')]), 'E5');
+    expect(reach(s, 'E5')).toEqual({ ok: false, why: 'contact', at: 'E5' });
+    const sent = sendToSearch(s, 'E5');
+    expect(sent.searching).toEqual([]);
+    expect(sent.team.route).toEqual(s.team.route);
+  });
+
+  it('goes in on a contact it would take anyway', () => {
+    const s = building(withContacts(walking(), [weak('lookout', 'E5')]), 'E5');
+    expect(reach(s, 'E5').ok).toBe(true);
+  });
+
+  it('can’t reach a building every way to which runs into contact', () => {
+    const s = building(withContacts(walking(), [strong('a', 'G1'), strong('b', 'G2'), strong('c', 'H2')]), 'H1');
+    expect(reach(s, 'H1')).toEqual({ ok: false, why: 'cut-off', at: 'H1' });
+  });
+
+  it('only weighs what ALPHA knows: a contact it was never told of is no obstacle', () => {
+    const s = building(withContacts(walking(), [strong('inside', 'E5')], false), 'E5');
+    expect(reach(s, 'E5').ok).toBe(true);
+  });
+
+  it('drops the search once ALPHA goes around the building, and the building waits for HQ again', () => {
+    const s0 = sendToSearch(building(walking(), 'G4'), 'G4');
+    expect(s0.searching).toEqual(['G4']);
+    // A contact turns up in G4 and ALPHA swings round it: G4 is off its route.
+    const rerouted = { ...s0, team: { ...s0.team, route: s0.team.route.map((sq) => (sq === 'G4' ? 'H4' : sq)) } };
+    const s = run(rerouted, 100);
+    expect(s.searching).toEqual([]);
+    expect(s.events.find((e) => e.id === buildingId('G4'))?.status).toBe('new');
+  });
+});
