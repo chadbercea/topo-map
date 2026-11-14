@@ -2201,6 +2201,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud:not([data-layout='fold']) .orion > .o-saw { order: 3; flex: 0 1 auto; min-height: 0; overflow-y: auto; }
 .hud:not([data-layout='fold']) .orion > .o-last { order: 4; flex: none; }
 .hud:is([data-tier='wide'], [data-tier='medium']):not([data-layout='fold']) .slot-orion { display: flex; flex-direction: column; align-self: start !important; max-height: 100%; }
+/* On tabs (tablet landscape: medium, not fold), ORION-3 shows only on its own tab (ILI-1536). The rule
+   above outranks the tab hide, so ORION-3 stayed up and painted over COMMS and TEAM. */
+.hud[data-tier='medium']:not([data-layout='fold']):not([data-tab='orion']) .slot-orion { display: none; }
 .hud:is([data-tier='wide'], [data-tier='medium']):not([data-layout='fold']) .orion { flex: 0 1 auto; height: auto !important; max-height: none; min-height: 0; }
 /* A phone: the ORION-3 sheet is as tall as its picture (the sheet's width) plus its header, its
    buttons and a few lines of report, up to what the screen has under the mission bar. */
