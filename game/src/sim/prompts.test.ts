@@ -17,7 +17,7 @@ describe('the prompt queue', () => {
 
   it('ALPHA needing intel is a prompt pinned on the grid square it needs, with no button (ILI-1450)', () => {
     const p = activePrompt(run(blindAhead(), 3_000))!;
-    expect(p).toMatchObject({ kind: 'intel-needed', priority: PRIORITY.teamRequest, square: 'F4', grid: 'F4', step: 'click', hint: 'ALPHA requested imagery of F4 · click it' });
+    expect(p).toMatchObject({ kind: 'intel-needed', priority: PRIORITY.teamRequest, square: 'F4', grid: 'F4', step: 'click', hint: 'ALPHA requested imagery of F4 · tap F4' });
     expect(p.text).toBe('ALPHA requested imagery of F4');
     expect(p.responses).toEqual([]);
   });
@@ -28,7 +28,7 @@ describe('the prompt queue', () => {
     const aim = store.get().satellite.aim;
     for (let i = 0; i < 300; i++) store.tick(100);
     expect(store.get().satellite.aim).toBe(aim); // left alone, ORION-3 stays put
-    expect(p()).toMatchObject({ step: 'click', hint: 'ALPHA requested imagery of F4 · click it' });
+    expect(p()).toMatchObject({ step: 'click', hint: 'ALPHA requested imagery of F4 · tap F4' });
     // Click F4 on the map: picked, and ORION-3 goes.
     store.selectSquare('F4');
     store.lookAt('F4');

@@ -57,7 +57,7 @@ const intelNeeded: Source = (s) => {
   const grid = req.square;
   const step = intelStep(s, grid);
   const hint = {
-    click: `${s.team.callsign} requested imagery of ${grid} · click it`,
+    click: `${s.team.callsign} requested imagery of ${grid} · tap ${grid}`, // a tap sends ORION-3 (MapScene)
     moving: `${satName(s)} moving to ${grid}…`,
     analyze: `Analyze ${grid} in ${satName(s)}`,
   }[step];

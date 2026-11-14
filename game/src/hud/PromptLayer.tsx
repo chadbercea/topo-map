@@ -24,16 +24,18 @@ const GAP = 12; // between the prompt and its square
 export function PromptLayer() {
   return (
     <>
-      <MainPrompt />
+      {/* ALPHA's imagery ask and a team call each show (ILI-1553): a call never waits unseen behind the ask. */}
+      <MainPrompt which="intel" />
+      <MainPrompt which="call" />
       <TrafficPrompt />
       <PlaceTags />
     </>
   );
 }
 
-function MainPrompt() {
+function MainPrompt({ which }: { which: 'intel' | 'call' }) {
   const s = useGame((x) => x);
-  const queue = promptQueue(s);
+  const queue = promptQueue(s).filter((x) => (x.kind === 'intel-needed') === (which === 'intel'));
   const p = queue[0];
   const tier = useTier();
   const ref = useRef<HTMLElement>(null);
@@ -80,7 +82,7 @@ function MainPrompt() {
         ref={ref as React.RefObject<HTMLDivElement>}
         className="prompt-tag"
         data-testid="prompt"
-        data-overlay="prompt"
+        data-overlay="asktag"
         data-kind={p.kind}
         data-square={p.square}
         data-step={p.step}
@@ -101,7 +103,7 @@ function MainPrompt() {
   const width = Math.min(team ? Math.min(W + 60, team.width) : W, area.width - 16);
   // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
   // on a phone a strip along the map's foot), the toolbox, the timer and the log.
-  const strip = overlaysNamed(['actions', 'strike', 'alert', 'band', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']); // the square's menu, the toolbox, the timer (ILI-1392), the log (ILI-1393)
+  const strip = overlaysNamed(['asktag', 'traffic', 'actions', 'strike', 'alert', 'band', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']); // the square's menu, the toolbox, the timer (ILI-1392), the log (ILI-1393)
   const at = team ? { x: team.left, y: team.top - 8 - (h || 96), w: width, h: h || 96 } : place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
   const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
   const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 96))) };
@@ -180,7 +182,7 @@ function TrafficPrompt() {
   if (!p || !area || s.minigame?.status === 'active') return null;
   const sq = squareBox(p.square);
   const width = Math.min(W, area.width - 16);
-  const strip = overlaysNamed(['prompt', 'actions', 'strike', 'alert', 'band', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']);
+  const strip = overlaysNamed(['prompt', 'asktag', 'actions', 'strike', 'alert', 'band', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']);
   const at = place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
   const going = s.listen?.eventId === p.id;
   const locked = lockedOn(s, p.square);
