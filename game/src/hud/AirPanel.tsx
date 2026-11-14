@@ -30,13 +30,13 @@ export function AirPanel({ weapon, square }: { weapon: AirWeapon; square: string
       <h2>
         <span>{AIR[weapon].callsign}</span>
         <span className="where">
-          {AIR[weapon].label} · {r.square}
+          {r.square}
         </span>
       </h2>
       <WireAvatar state={state} fallback={weapon === 'drone' ? <DroneMark /> : <HeliMark />} load={LOAD[weapon]} className="d-model" />
       {!over ? (
         <div className="d-clock">
-          <small>Time to target</small>
+          <small>ETA</small>
           <b data-testid={`${weapon}-eta`}>0:{String(Math.ceil(left / 1000)).padStart(2, '0')}</b>
           <span className="decay" role="progressbar" aria-label="Time to target" aria-valuenow={Math.round((left / flight) * 100)}>
             <span style={{ width: `${(left / flight) * 100}%` }} />
