@@ -7,16 +7,10 @@ import { lockedOn, satName } from '../sim/satellite';
 import { trafficPrompts } from '../sim/prompts';
 import { isImageryRequest } from '../sim/imageryRequest';
 import { MiniGamePanel } from './MiniGamePanel';
-import { AGE_LABEL, freshness, targets } from '../sim/imagery';
-import { squareAt } from '../map/grid';
-import { SniperPanel } from './SniperPanel';
-import { AirPanel } from './AirPanel';
-import { airGone } from '../sim/air';
-import { sniperGone } from '../sim/sniper';
-import { countdown, zulu } from '../sim/gameTime';
+import { countdown } from '../sim/gameTime';
 import { EVENT_LABEL } from '../sim/stream';
 import { useTier } from './tier';
-import { alphaBox, obstacles, pick, squareBox } from './overlays';
+import { squareBox } from './overlays';
 import type { GameState } from '../sim/state';
 import { shownEvents } from '../sim/events';
 import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
@@ -24,19 +18,17 @@ import { RECOVER_MS } from '../sim/mission';
 import { knownIn } from '../sim/contacts';
 import { ESCROW_BOX } from '../sim/prices';
 import { downloadProgress, kindLabel, shelfState, squareReports } from '../sim/intel';
-import { TargetMenu } from './TargetMenu';
-import { Stages } from './Stages';
-import { cash } from './MissionBar';
+import { alertSquares, strikeable, strikeState } from '../sim/strike';
+import { contactLine, useStrikeOpen } from './StrikeAlert';
 
 const ANCHOR_W = 240; // the flyout's width off its square's edge: compact, so it doesn't bury the map (ILI-1505)
 
 // The square's anchor (ILI-1278, ILI-1302, ILI-1308): the contextual menu for the square HQ
 // picked, pinned beside it on the map, so what's done there stays tied to its ground however
-// many things are going on. Only what HQ can *do* to the square: its fighters and every way to
-// strike them, the sniper, drone and heli at work on it, anything else going on there (a
-// signal, a request). It only opens when there's something to act on. What's known of the
-// square, and Reposition, are ORION-3's (OrionPanel). Beside the square on the side away from
-// ALPHA and clear of the other panels; on a phone, a strip along the foot of the map.
+// many things are going on: its intel, ALPHA's work there, anything else going on (a signal, a
+// request). Strikes aren't here (ILI-1524): they're the square's ALERT (StrikeAlert). Reposition is
+// ORION-3's (OrionPanel). Always to the right of its square (ILI-1524); on a phone, a strip along
+// the foot of the map.
 // What happens on a square stays with the square (ILI-1367): every picked square opens it, and
 // a mini game plays here, at its square.
 // The satellite is the player's avatar (ILI-1397): the menu grows out of the reticle's edge and
@@ -49,6 +41,7 @@ export function SquareCard() {
   const actRef = useRef<HTMLElement>(null);
   const [actHeight, setActHeight] = useState(0);
   const tier = useTier();
+  const strikeOpen = useStrikeOpen();
   const placedKey = useRef('');
   const [, redraw] = useState(0);
   useEffect(() => {
@@ -79,7 +72,9 @@ export function SquareCard() {
   if (!area) return null;
   if (!square) return null;
   const k = tier === 'wide' ? uiScale() : 1; // it grows with the map's squares (ILI-1498)
-  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, s.team.position, ANCHOR_W * k);
+  // On a phone the open strike panel takes the strip along the map's foot (ILI-1524): one sheet at a time.
+  if (tier === 'compact' && !playing && strikeOpen === square) return null;
+  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, ANCHOR_W * k);
   const locked = lockedOn(s, square);
   // Any square HQ clicks opens its flyout (ILI-1475): its intel is stored on the square, not in the
   // satellite, so it's there wherever ORION-3 is.
@@ -165,71 +160,40 @@ type Box = { x: number; y: number; w: number; h: number };
 
 type Placed = { left: number; top: number; width: number; maxHeight: number; side: string };
 
-// A contact HQ can hit: its strikes are in the anchor (ILI-1302).
-const strikeable = (e: GameState['events'][number]) => e.kind === 'contact' && e.id.startsWith('contact-');
-
 // Anything else on the square HQ may act on, as a plain line in its intel list: not a strike, a
 // building or radio traffic (they have their own), not a kill site (its X marks are the
 // aftermath, ILI-1252), not ALPHA's imagery ask (its own line).
 const otherItem = (square: string) => (e: GameState['events'][number]) =>
   e.square === square && e.status !== 'resolved' && !strikeable(e) && !['site', 'building', 'signal'].includes(e.kind) && !isImageryRequest(e);
 
-// Off the reticle's edge (ILI-1397): flush against the square, so the menu and the square read as
-// one thing and move together. Right of it, else left, else under or over it, whichever is
-// clear of ALPHA and the other panels, kept inside the open map.
-function attached(square: string, area: Area, height: number, team: { x: number; y: number }, width: number): Placed {
+// Its home (ILI-1524): flush against the square's right edge, top aligned with the square, always.
+// It never flips side to dodge anything; it floats above everything else on the map instead (the
+// strike panel hangs below the square, right-aligned with it, so the two never meet). Near the
+// map's edge it slides along the edge to stay inside the open map; dragging the map gives it room.
+function attached(square: string, area: Area, height: number, width: number): Placed {
   const sq = squareBox(square);
   const maxHeight = area.height - 16;
   if (!sq) return { left: area.x + 8, top: area.y + 8, width, maxHeight, side: 'right' };
   const h = Math.min(height || 160, maxHeight);
-  const cx = (x: number) => Math.max(area.x + 8, Math.min(x, area.x + area.width - 8 - width));
-  const cy = (y: number) => Math.max(area.y + 8, Math.min(y, area.y + area.height - 8 - h));
-  const spots = [
-    { x: cx(sq.x + sq.w), y: cy(sq.y), w: width, h, side: 'right' },
-    { x: cx(sq.x - width), y: cy(sq.y), w: width, h, side: 'left' },
-    { x: cx(sq.x), y: cy(sq.y + sq.h), w: width, h, side: 'below' },
-    { x: cx(sq.x), y: cy(sq.y - h), w: width, h, side: 'above' },
-  ];
-  // The prompt moves out of the menu's way, not the other way round: the menu stays flush with its
-  // square, and the prompt has a leader line to reach its own (ILI-1393).
-  const at = pick(spots, [...obstacles(['card', 'actions', 'flag', 'prompt']), alphaBox(team), sq]);
-  return { left: at.x, top: at.y, width, maxHeight, side: at.side };
+  const left = Math.max(area.x + 8, Math.min(sq.x + sq.w, area.x + area.width - 8 - width));
+  const top = Math.max(area.y + 8, Math.min(sq.y, area.y + area.height - 8 - h));
+  return { left, top, width, maxHeight, side: 'right' };
 }
 
 const SLACK = 32; // px a measured height may shrink by before the panel moves for it
 const settle = (was: number, now: number) => (now > was || was - now > SLACK ? now : was);
 
 
-// The anchor's contents (ILI-1302, ILI-1308): the square, what's hitting it, its fighters and
-// every way to strike them, then anything else going on there.
-// What can be struck on a square, and whether it can be now (ILI-1467): only the square ORION-3 is
-// locked on, only once a look (photo or video) shows fighters there and isn't stale (ILI-1417: a
-// radio report of a contact is a report, not a target), and not while a strike is already under
-// way there (ILI-1425). The square's CONTACT tag and its strike menu read this (ILI-1474).
-export function strikeState(s: GameState, square: string) {
-  const marked = targets(s).filter((t) => squareAt(t.x, t.y) === square);
-  const look = s.imagery[square];
-  const now = s.elapsedMs;
-  const running = (!!s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now)) || [s.drone, s.heli].some((r) => !!r && r.square === square && !airGone(r, now));
-  const seenHere = !!look && freshness(look, now) !== 'stale' && marked.length > 0;
-  const strikes = s.events.filter((e) => e.square === square && strikeable(e) && e.status !== 'resolved');
-  return { marked, running, strikes, seen: seenHere && strikes.length > 0, locked: lockedOn(s, square), can: lockedOn(s, square) && seenHere && strikes.length > 0 && !running };
-}
-
-// Compact (11-12, ILI-1506): the head with its status (ORION-3 locked on or on its way, ALPHA
-// asking for imagery), then its intel list. Strike on the CONTACT tag slides the
-// strike options into the panel in place of the report; once a strike is under way here (drone,
-// heli or sniper), the whole panel is that strike's asset and countdown until it's done.
+// The anchor's contents (ILI-1302, ILI-1308): the head with its status (ORION-3 locked on or on
+// its way, ALPHA asking for imagery), then the square's intel list. Its strikes are the ALERT's.
 function AnchorBody({ s, square }: { s: GameState; square: string }) {
-  const st = strikeState(s, square);
   const locked = lockedOn(s, square);
   const sat = s.satellite;
   const coming = sat.state === 'slewing' && sat.aim === square;
-  const striking = st.can && s.events.some((e) => e.id === s.openEvent && e.kind === 'contact' && e.square === square);
   // The flyout's status is only what matters (ILI-1506): is ORION-3 locked on here or on its way,
   // and is ALPHA asking for imagery of it. Ground and weather are on ORION-3's picture (ILI-1504).
   const asked = s.events.find((e) => e.square === square && e.status !== 'resolved' && isImageryRequest(e));
-  const head = (
+  return (
     <>
       <header className="sc-head" data-state={locked ? 'locked' : coming ? 'slewing' : 'away'}>
         <b>{square}</b>
@@ -245,47 +209,15 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
           {asked.title}
         </p>
       )}
-    </>
-  );
-
-  // The three stages slide from one to the next and the panel grows to fit each (ILI-1514): the
-  // report, the strike options, then the strike under way, the selected asset and its time to
-  // target (OVERWATCH ILI-1303, REAPER-1 and HAMMER-2 ILI-1304).
-  const stage = st.running ? 'asset' : striking ? 'options' : 'report';
-  return (
-    <>
-      {head}
-      <Stages stage={stage} order={STAGES}>
-        {stage === 'asset' ? <StrikeAsset s={s} square={square} /> : stage === 'options' ? <StrikeOptions s={s} square={square} /> : <Report s={s} square={square} />}
-      </Stages>
+      <Report s={s} square={square} />
     </>
   );
 }
 
-const STAGES = ['report', 'options', 'asset'] as const;
-
-// The third stage (ILI-1514): the asset HQ picked, its callsign and its wireframe, with its time
-// to target counting down, then what it hit (its own panel, below the stage's head).
-function StrikeAsset({ s, square }: { s: GameState; square: string }) {
-  return (
-    <section className="sc-strike sc-asset" data-testid="strike-asset" aria-label={`Strike ${square}`}>
-      <header className="sf-head">
-        <b>Strike · {square}</b>
-        <span>{satName(s)} watching</span>
-      </header>
-      <div className="sc-running" data-testid="strike-running">
-        <SniperPanel square={square} />
-        <AirPanel weapon="drone" square={square} />
-        <AirPanel weapon="heli" square={square} />
-      </div>
-    </section>
-  );
-}
-
-// The first stage: the square's report.
+// The square's report.
 function Report({ s, square }: { s: GameState; square: string }) {
   const tags = tagSquares(s);
-  const contact = tags.contacts.includes(square);
+  const contact = alertSquares(s).includes(square) && strikeState(s, square).strikes.length > 0;
   const buildings = tags.buildings.filter((e) => e.square === square);
   const traffic = shownEvents(s).filter((e) => e.square === square && e.kind === 'signal' && e.status !== 'resolved');
   const others = shownEvents(s).filter(otherItem(square));
@@ -302,8 +234,8 @@ function Report({ s, square }: { s: GameState; square: string }) {
         <h3 className="sc-items-head">Intel</h3>
         <PackageLine s={s} square={square} />
         <Reports s={s} square={square} />
-        {/* The contact is a line of the list like the rest (ILI-1490): no red CONTACT tag docked on
-            the panel beside it, a second red flyout over the square's own panel. */}
+        {/* The contact is a plain line of the list like the rest (ILI-1490, ILI-1524): intel, not a
+            button. Striking it is the square's ALERT. */}
         {contact && <ContactItem s={s} square={square} />}
         {buildings.length > 0 && (
           <div className="sc-tags" data-testid="docked-tags">
@@ -455,78 +387,21 @@ function TrafficItem({ s, id, square }: { s: GameState; id: string; square: stri
   );
 }
 
-// The square's contact, as a line of its intel list (ILI-1490, ILI-1497): the whole line is the
-// button. What's there sits with it (who, how many fighters marked, how fresh the look); a click
-// slides the strike options in under it, inside this panel, and a click again slides them out.
-// ORION-3 goes there first if it isn't over the square: a strike needs it watching (ILI-1397).
-function ContactItem({ s, square, open = false }: { s: GameState; square: string; open?: boolean }) {
+// The square's contact, as a line of its intel list (ILI-1490, ILI-1524): what's there (who, how
+// many fighters marked, how fresh the look). Not a button: strikes are the square's ALERT.
+function ContactItem({ s, square }: { s: GameState; square: string }) {
   const st = strikeState(s, square);
-  const look = s.imagery[square];
-  const fresh = look ? freshness(look, s.elapsedMs) : null;
-  const what = [...new Set(st.strikes.map((e) => e.title))].join(', ');
   const n = st.marked.length;
-  const hint = st.can ? 'Strike options ▸' : !st.locked ? `${satName(s)} has to be over ${square}` : !st.seen ? 'Needs current imagery to strike' : 'Strike under way';
-  const go = () => {
-    if (open) return void game.dropEvent();
-    if (!st.strikes[0]) return;
-    game.openEvent(st.strikes[0].id);
-    if (!lockedOn(game.get(), square)) game.lookAt(square);
-  };
   return (
-    <button
-      className="sc-item sc-contact"
-      data-kind="contact"
-      data-testid="contact-item"
-      data-square={square}
-      data-event={st.strikes[0]?.id}
-      data-focus={st.strikes.some((e) => e.id === s.openEvent) || undefined}
-      data-open={open || undefined}
-      aria-expanded={open}
-      onClick={go}
-    >
+    <div className="sc-item sc-contact" data-kind="contact" data-testid="contact-item" data-square={square} data-event={st.strikes[0]?.id} data-focus={st.strikes.some((e) => e.id === s.openEvent) || undefined}>
       <span className="sc-contact-name">
         Contact · {square}
         {n > 0 && <b data-testid="contact-count"> · {n}</b>}
       </span>
       <span className="note" data-testid="contact-details">
-        {what}
-        {n > 0 && ` · ${n} ${n === 1 ? 'fighter' : 'fighters'} marked`}
-        {look && fresh && ` · ${look.mode === 'eyes' ? 'eyes on' : look.mode} ${zulu(look.atMs)} · ${AGE_LABEL[fresh]}`}
+        {contactLine(s, square)}
       </span>
-      {!open && <small className="sc-contact-act">{hint}</small>}
-    </button>
-  );
-}
-
-// The strike options, slid into the square's panel (11-12, ILI-1477) under its contact line
-// (ILI-1497): the line itself says who's there, so no second card repeats it. Then the budget and
-// every way to hit it, cost and readiness. Back, or the line again, slides them out; firing turns
-// the panel into the strike's countdown.
-function StrikeOptions({ s, square }: { s: GameState; square: string }) {
-  const st = strikeState(s, square);
-  return (
-    <section className="sc-strike" data-testid="strike-flyout" data-square={square} aria-label={`Strike ${square}`}>
-      <header className="sf-head">
-        <button className="sf-back" onClick={() => game.dropEvent()} data-testid="strike-back" aria-label="Back to the square">
-          ‹
-        </button>
-        <b>Strike · {square}</b>
-        <span>{satName(s)} watching</span>
-      </header>
-      <ContactItem s={s} square={square} open />
-      <p className="sf-budget">
-        <small>Budget</small>
-        <b>{cash(s.resources.budget)}</b>
-      </p>
-      <section className="sc-strikes" data-testid="strike-menu">
-        {st.strikes.map((e) => (
-          <div key={e.id} className="sc-target" data-testid="strike-target">
-            {st.strikes.length > 1 && <p className="title">{e.title}</p>}
-            <TargetMenu contactId={e.id.slice('contact-'.length)} />
-          </div>
-        ))}
-      </section>
-    </section>
+    </div>
   );
 }
 

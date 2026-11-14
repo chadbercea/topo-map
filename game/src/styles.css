@@ -233,7 +233,7 @@ html, body {
 /* The mini game plays in its square's menu (ILI-1367): no second frame inside the anchor. */
 .square-card .minigame { border: 0; animation: none; }
 .square-card[data-minigame] { z-index: 8; background: var(--bg); }
-.square-card .sc-strikes { --kind: #e5484d; }
+.strike-alert .sc-strikes { --kind: #e5484d; }
 .square-card .sc-marked { margin: 0; padding: 6px 10px 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #e5484d; border-top: 1px solid var(--line); }
 .square-card .sc-actions .ap-head { display: none; } /* the anchor's header already names the square */
 .square-card > .sc-body { background: none; display: flex; flex-direction: column; }
@@ -904,6 +904,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .orion .o-picture .o-target { animation: marked 700ms ease-out 2; }
 @keyframes marked { 0% { border-color: #e5484d; box-shadow: 0 0 0 0 rgba(229, 72, 77, 0.6); } 100% { border-color: transparent; box-shadow: 0 0 0 10px rgba(229, 72, 77, 0); } }
 .orion .o-picture .o-ping { --c: #e5484d; position: absolute; width: 26px; height: 26px; min-height: 0; padding: 0; transform: translate(-50%, -50%); border: 1px solid transparent; border-radius: 50%; background: none; cursor: pointer; }
+.orion .o-picture span.o-ping { cursor: default; } /* a contact's mark: hover names it, no click (ILI-1524) */
 .orion .o-picture .o-ping[data-kind='request'] { --c: #f2c14e; }
 .orion .o-picture .o-ping[data-kind='signal'] { --c: #8fb8ff; }
 .orion .o-picture .o-ping[data-kind='building'] { --c: #f2c14e; }
@@ -1156,10 +1157,10 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .air .d-log .d-all { margin-top: 4px; color: var(--ink); font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { .air, .air[data-leaving], .air .d-log li { animation: none; } .air .decay > span { transition: none; } }
 /* At its square's anchor (ILI-1304): a block in the anchor, not a panel of its own. */
-.square-card .air { border: none; border-bottom: 1px solid #e5484d; padding: 8px 10px; }
-.square-card .air h2 { margin: 0 0 4px; font-size: 11px; letter-spacing: 0.12em; }
-.square-card .air .d-model { height: 64px; }
-.square-card .air { grid-template-columns: 110px 1fr; }
+:is(.square-card, .strike-alert) .air { border: none; border-bottom: 1px solid #e5484d; padding: 8px 10px; }
+:is(.square-card, .strike-alert) .air h2 { margin: 0 0 4px; font-size: 11px; letter-spacing: 0.12em; }
+:is(.square-card, .strike-alert) .air .d-model { height: 64px; }
+:is(.square-card, .strike-alert) .air { grid-template-columns: 110px 1fr; }
 /* The exfil (ILI-1264): an air panel in orange, not a strike's red. */
 .air.exfil { border-color: #ff8a2a; }
 .air.exfil h2, .air.exfil .d-log { color: #ff8a2a; }
@@ -1857,8 +1858,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 
 /* Strike (ILI-1467): ORION-3's fourth button, red; its flyout slides out of ORION-3's left edge, by
    the buttons, over the map; while a strike runs on its square, the picture goes to targeting. */
-.orion .o-buttons .modes .o-strike:not(:disabled) { border-color: #e5484d; color: #f08a8d; background: rgba(229, 72, 77, 0.08); }
-.orion .o-buttons .modes .o-strike:hover:not(:disabled), .orion .o-buttons .modes .o-strike[aria-pressed='true'] { color: #fff; background: rgba(229, 72, 77, 0.35); }
 .hud[data-tier='wide'] .orion .o-buttons .modes { grid-template-columns: 1fr 1fr; }
 .hud:not([data-tier='wide']) .orion .o-buttons .modes { grid-template-columns: 1.3fr 1fr 1fr; }
 /* Out of ORION-3's left edge (its column is 380 px on a wide screen), by its buttons. */
@@ -1866,17 +1865,16 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* The square panel's stages (ILI-1514): report, strike options, the asset under way. Each new
    stage slides in (from the right going forward, the left going back) and the panel eases to
    its height. */
-.square-card .sc-stages { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow: hidden; transition: height 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-.square-card .sc-stage { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; }
-.square-card .sc-stage[data-dir='fwd'] { animation: strike-slide 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-.square-card .sc-stage[data-dir='back'] { animation: stage-back 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.strike-alert .sc-stages { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; overflow: hidden; transition: height 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.strike-alert .sc-stage { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; }
+.strike-alert .sc-stage[data-dir='fwd'] { animation: strike-slide 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.strike-alert .sc-stage[data-dir='back'] { animation: stage-back 240ms cubic-bezier(0.2, 0.8, 0.2, 1); }
 @keyframes stage-back { from { transform: translateX(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .square-card .sc-stages { transition: none; } .square-card .sc-stage[data-dir] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .strike-alert .sc-stages { transition: none; } .strike-alert .sc-stage[data-dir] { animation: none; } }
 @keyframes strike-slide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
-.square-card .sc-strike .sf-back { min-height: 28px; min-width: 32px; padding: 0 8px; font-size: 16px; line-height: 1; color: var(--ink); border: 1px solid var(--line); }
 /* A strike under way: the whole panel is its countdown (11-12). */
-.square-card .sc-running { display: grid; background: none; }
-.square-card .sc-running > :last-child { border-bottom: none; }
+.strike-alert .sc-running { display: grid; background: none; }
+.strike-alert .sc-running > :last-child { border-bottom: none; }
 /* The report folds (11-12): closed by default, a one-line summary each. */
 .square-card .sc-fold summary span { color: var(--ink); text-transform: none; letter-spacing: 0.04em; }
 .square-card .sc-fold[open] summary { color: var(--accent); }
@@ -2219,9 +2217,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .square-card button.sc-contact:hover, .square-card button.sc-contact:focus-visible { background: rgba(229, 72, 77, 0.08); outline: none; }
 .square-card button.sc-contact[data-open] { cursor: default; background: rgba(229, 72, 77, 0.06); }
 .square-card .sc-contact .sc-contact-act { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #f08a8d; }
-.square-card .sc-strike > .sc-contact { margin: 6px 10px 0; width: auto; }
-.square-card .sc-target { padding: 6px 10px 8px; }
-.square-card .sc-target .title { margin: 0 0 4px; font-size: 12px; }
+.strike-alert .sc-target { padding: 6px 10px 8px; }
+.strike-alert .sc-target .title { margin: 0 0 4px; font-size: 12px; }
 .contact-tag .pt-tag button.pt-open { color: #f08a8d; background: none; border: 0; letter-spacing: 0.1em; }
 .contact-tag .pt-tag button.pt-open:hover, .contact-tag .pt-tag button.pt-open:focus-visible { color: #0b0f0d; background: #f08a8d; }
 
@@ -2264,8 +2261,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    atmospherics strip already carries. */
 @container (max-height: 180px) { .orion .o-ov-wx { display: none; } }
 /* The stages' box takes its height in screen px (Stages.tsx), so the zoom goes on the stage in it. */
-.square-card.anchor > .sc-stages { zoom: 1; }
-.square-card.anchor > .sc-stages > .sc-stage { zoom: var(--k, 1); }
+.strike-alert > .sa-body > .sc-stages { zoom: 1; }
+.strike-alert > .sa-body > .sc-stages > .sc-stage { zoom: var(--k, 1); }
 
 /* ORION-3's picture never shrinks (ILI-1522). It is a fixed square, set by the panel's width (and
    on a phone by the sheet, never by what's under it), so a report, a status line or the overlay
@@ -2298,3 +2295,26 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    place tags, sightings, contact tags and prompts all go under it, so it's always seen whole.
    Only the pause menu and the intro sit above it. */
 .square-card.anchor { z-index: 12; }
+
+/* The ALERT (ILI-1524): strikes live here, not in the intel list or ORION-3. A red hazard band
+   hangs off the bottom edge of a square with fighters that threaten ALPHA, right-aligned with the
+   square. A click opens it downward into the strike panel: the options, then the asset under way.
+   Its home is always below the square, the flyout's always to its right; both float above
+   everything else on the map, the strike panel highest. */
+.strike-alert { position: fixed; z-index: 11; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; pointer-events: auto; }
+.strike-alert[data-open] { z-index: 13; overflow-y: auto; background: var(--bg); border: 1px solid #e5484d; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55); }
+.strike-alert .sa-band { zoom: var(--k, 1); display: flex; align-items: center; gap: 6px; width: 100%; min-height: 24px; margin: 0; padding: 0; font: inherit; color: #fff; text-align: left; cursor: pointer; background: rgba(60, 10, 12, 0.94); border: 1px solid #e5484d; }
+.strike-alert[data-open] .sa-band { border-width: 0 0 1px; }
+.strike-alert .sa-band:hover, .strike-alert .sa-band:focus-visible { background: rgba(110, 16, 20, 0.96); outline: none; }
+.strike-alert .sa-hazard { align-self: stretch; flex: 0 0 18px; background: repeating-linear-gradient(-45deg, #e5484d 0 4px, transparent 4px 8px); }
+.strike-alert .sa-hazard:last-child { margin-left: auto; }
+.strike-alert[data-open] .sa-hazard { flex-basis: 36px; }
+.strike-alert .sa-band b { font-size: 11px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: #fff; }
+.strike-alert .sa-band small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #f08a8d; }
+.strike-alert .sa-body { display: grid; grid-template-columns: minmax(0, 1fr); animation: alert-open 200ms cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: top; }
+@keyframes alert-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+.strike-alert .sc-strike .sf-contact { margin: 0; padding: 6px 10px 0; font-size: 10px; color: #f08a8d; }
+.strike-alert .sc-strike .sf-head b { font-size: 11px; }
+@media (prefers-reduced-motion: reduce) { .strike-alert .sa-body { animation: none; } }
+/* The intel list's contact is a plain line now (ILI-1524): no button look. */
+.square-card .sc-contact { grid-template-columns: minmax(0, 1fr); cursor: default; }

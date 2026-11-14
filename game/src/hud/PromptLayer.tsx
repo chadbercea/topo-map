@@ -2,9 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { promptQueue } from '../sim/prompts';
-import { lockedOn } from '../sim/satellite';
 import { searchingIn } from '../sim/buildings';
-import { strikeState } from './SquareCard';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { countdown } from '../sim/gameTime';
@@ -92,7 +90,7 @@ function MainPrompt() {
   const width = Math.min(team ? Math.min(W + 60, team.width) : W, area.width - 16);
   // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
   // on a phone a strip along the map's foot), the toolbox, the timer and the log.
-  const strip = overlaysNamed(['actions', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']); // the square's menu, the toolbox, the timer (ILI-1392), the log (ILI-1393)
+  const strip = overlaysNamed(['actions', 'strike', 'alert', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']); // the square's menu, the toolbox, the timer (ILI-1392), the log (ILI-1393)
   const at = team ? { x: team.left, y: team.top - 8 - (h || 96), w: width, h: h || 96 } : place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
   const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
   const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 96))) };
@@ -188,18 +186,6 @@ function PlaceTags() {
   };
   return (
     <>
-      {tagSquares(s).contacts.map((square) => {
-        const p = at(square, 0.25);
-        return (
-          p && (
-            <div key={`contact-${square}`} className="place-tag contact-tag" data-testid="contact-tag" data-kind="contact" data-square={square} style={p}>
-              <i className="pt-dot" aria-hidden />
-              <i className="pt-lead" aria-hidden />
-              <ContactTag square={square} />
-            </div>
-          )
-        );
-      })}
       {tagSquares(s).buildings.map((e) => {
         const p = at(e.square, 0.5);
         return (
@@ -216,49 +202,11 @@ function PlaceTags() {
   );
 }
 
-// Which squares have tags: contacts whose fresh look shows fighters, or with a strike under way
-// (ILI-1474); buildings worth a search (ILI-1469).
+// Which squares have tags: buildings worth a search (ILI-1469). Fighters get the square's ALERT
+// instead (ILI-1524, StrikeAlert).
 export function tagSquares(s: GameState) {
-  const contacts = [...new Set(shownEvents(s).filter((e) => e.kind === 'contact' && e.status !== 'resolved').map((e) => e.square))].filter((sq) => strikeState(s, sq).seen || !!strikeWork(s, sq));
   const buildings = shownEvents(s).filter((e) => e.kind === 'building' && e.status !== 'resolved');
-  return { contacts, buildings };
-}
-
-// A square's CONTACT tag (ILI-1474): a pointer to the contact on a square that isn't open. The tag
-// is the button (ILI-1497): it opens the square's panel on its contact line, which slides in the
-// strike options; while a strike is under way it says how it's going.
-export function ContactTag({ square }: { square: string }) {
-  const s = useGame((x) => x);
-  const st = strikeState(s, square);
-  const work = strikeWork(s, square);
-  const label = (
-    <>
-      Contact · {square}
-      {st.marked.length > 0 && <b data-testid="contact-count"> · {st.marked.length}</b>}
-    </>
-  );
-  return (
-    <div className="pt-tag" role="group" aria-label={`Contact · ${square}`}>
-      {work ? (
-        <>
-          <span>{label}</span>
-          <em data-testid="strike-work">{work}</em>
-        </>
-      ) : (
-        <button
-          className="pt-open"
-          onClick={() => {
-            if (!st.strikes[0]) return;
-            game.openEvent(st.strikes[0].id);
-            if (!lockedOn(game.get(), square)) game.lookAt(square);
-          }}
-          data-testid="contact-open"
-        >
-          {label}
-        </button>
-      )}
-    </div>
-  );
+  return { buildings };
 }
 
 // A building's tag (ILI-1316, ILI-1469, ILI-1517): HQ posts its intel on the building for ALPHA
@@ -298,9 +246,9 @@ export function BuildingTag({ id }: { id: string }) {
   );
 }
 
-// What's hitting a square right now, for its CONTACT tag (ILI-1474): the asset's callsign and how
-// it's going.
-function strikeWork(s: GameState, square: string): string | null {
+// What's hitting a square right now, for its ALERT (ILI-1474, ILI-1524): the asset's callsign and
+// how it's going.
+export function strikeWork(s: GameState, square: string): string | null {
   const now = s.elapsedMs;
   if (s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now)) return `${SNIPER_CALLSIGN} · ${s.sniper.done ? 'done' : 'firing'}`;
   for (const w of ['drone', 'heli'] as const) {
