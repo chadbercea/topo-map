@@ -125,10 +125,14 @@ function Alert({ s, square, open, area }: { s: GameState; square: string; open: 
     left = area.x + 8;
     top = mapFoot - Math.min(ht, maxHeight);
   } else if (open) {
+    // The flyout on the square's left: the panel hangs left-aligned instead, so the two never meet (ILI-1554).
+    const flyLeft = document.querySelector(`.square-card.anchor[data-square="${square}"]`)?.getAttribute('data-side') === 'left';
+    if (flyLeft) left = sq.x;
     if (mapFoot - top < MIN_H) {
-      left = sq.x - width;
+      // No room below: beside the square, on the side the flyout isn't.
+      left = flyLeft ? sq.x + sq.w : sq.x - width;
       top = sq.y;
-      if (left < area.x + 8) left = sq.x + sq.w; // no room left either: the right side
+      if (!flyLeft && left < area.x + 8) left = sq.x + sq.w; // no room left either: the right side
     }
     left = Math.max(area.x + 8, Math.min(left, area.x + area.width - 8 - width));
     top = Math.max(mapTop, Math.min(top, mapFoot - MIN_H));
