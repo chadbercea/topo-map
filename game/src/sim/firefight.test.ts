@@ -32,6 +32,12 @@ const totalAmmo = (s: GameState) => s.team.operators.reduce((n, o) => n + o.ammo
 const totalHealth = (s: GameState) => s.team.operators.reduce((n, o) => n + o.health, 0);
 
 describe('firefight', () => {
+  it("doesn't drop a call ALPHA is holding on (ILI-1552)", () => {
+    const s0 = inContact();
+    const s = step({ ...s0, team: { ...s0.team, holdFor: 'call-1' } }, 100);
+    expect(s.team.fight).toBeTruthy();
+    expect(s.team.holdFor).toBe('call-1');
+  });
   it('starts when the team stands in a square with a live contact', () => {
     const s = step(inContact(), 100);
     expect(s.team.fight).toMatchObject({ contactId: 'c', square: 'E3' });

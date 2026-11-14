@@ -149,7 +149,7 @@ export function odds(s: GameState, c: Contact, units = c.units.length): number {
 export const approachSystem: System = (s) => {
   const { team } = s;
   const next = team.route[team.waypoint];
-  if (!next || team.holdFor || team.fight || team.treating || s.minigame?.status === 'active') return s;
+  if (!next || team.holdFor || team.fight || team.treating) return s; // it decides during the mini game too (ILI-1552)
   if (squareAt(team.position.x, team.position.y) === next) return s; // already there
   // Only what ALPHA knows (ILI-1495): intel HQ sent it, or its own eyes. Never the ground truth.
   const known = knownTo(s, next);
