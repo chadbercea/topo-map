@@ -84,7 +84,7 @@ html, body {
 .recentre kbd { font: inherit; font-size: 9px; color: #0b0f0d; border: 1px solid rgba(11, 15, 13, 0.4); padding: 0 3px; margin-left: 4px; }
 /* The band (the exfil card) floats at the map's foot: the map runs down to COMMS's foot, with no
    row of its own under it now the ability bar is in the toolbox (ILI-1397). */
-.slot-band { grid-area: map; align-self: end; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-items: end; margin-bottom: 10px; pointer-events: none; z-index: 4; }
+.slot-band { grid-area: map; align-self: end; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-items: end; margin-bottom: 10px; pointer-events: none; z-index: 5; }
 .slot-band > * > * { pointer-events: auto; }
 .band-cards { display: grid; gap: 6px; justify-items: center; align-content: end; min-width: 0; }
 .band-cards > * { width: min(420px, 100%); }
@@ -217,7 +217,7 @@ html, body {
 .busy-chip:hover, .busy-chip:focus-visible { border-color: var(--accent); outline: none; }
 .busy-chip:hover b { color: var(--accent); }
 /* The anchor's leader (ILI-1305): a dashed line to its square; an arrow at the map's edge when the square is off it. */
-.anchor-leader { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 6; pointer-events: none; overflow: visible; }
+.anchor-leader { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; overflow: visible; }
 .anchor-leader line { stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 4 3; opacity: 0.85; }
 .anchor-leader circle, .anchor-leader polygon { fill: var(--accent); }
 .anchor-leader text { fill: var(--accent); font-size: 11px; letter-spacing: 0.1em; text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
@@ -232,7 +232,7 @@ html, body {
 @media (prefers-reduced-motion: reduce) { .square-card .sc-scan button[data-cue] { animation: none; box-shadow: 0 0 0 1px var(--accent); } }
 /* The mini game plays in its square's menu (ILI-1367): no second frame inside the anchor. */
 .square-card .minigame { border: 0; animation: none; }
-.square-card[data-minigame] { z-index: 8; background: var(--bg); }
+.square-card[data-minigame] { z-index: 2; background: var(--bg); }
 .strike-alert .sc-strikes { --kind: #e5484d; }
 .square-card .sc-marked { margin: 0; padding: 6px 10px 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #e5484d; border-top: 1px solid var(--line); }
 .square-card .sc-actions .ap-head { display: none; } /* the anchor's header already names the square */
@@ -1555,7 +1555,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 
 /* Tier two (ILI-1391): the one call to action on screen, pinned to its square. The loudest thing
    on screen: amber, a heavier frame and a glow, over every other panel. */
-.prompt { position: fixed; z-index: 9; display: grid; gap: 8px; padding: 10px 12px; pointer-events: auto; background: var(--bg); border: 2px solid #f2c14e; box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.25), 0 0 24px rgba(242, 193, 78, 0.35); animation: prompt-in 180ms ease-out, prompt-glow 1.6s ease-in-out 180ms infinite alternate; }
+.prompt { position: fixed; z-index: 4; display: grid; gap: 8px; padding: 10px 12px; pointer-events: auto; background: var(--bg); border: 2px solid #f2c14e; box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.25), 0 0 24px rgba(242, 193, 78, 0.35); animation: prompt-in 180ms ease-out, prompt-glow 1.6s ease-in-out 180ms infinite alternate; }
 .prompt-text { margin: 0; font-size: 13px; line-height: 1.35; color: var(--ink); }
 .prompt-text b { color: #f2c14e; font-weight: 600; letter-spacing: 0.08em; margin-right: 4px; }
 .prompt-responses { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1563,10 +1563,10 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .prompt-responses button:hover:not(:disabled), .prompt-responses button:focus-visible { background: #ffd56b; outline: none; }
 .prompt-responses button:disabled { color: #f2c14e; background: none; cursor: default; }
 .prompt-waiting { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
-.prompt-leader { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 6; pointer-events: none; overflow: visible; } /* under the panels, so it never crosses a menu (ILI-1397) */
+.prompt-leader { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; overflow: visible; } /* under the panels, so it never crosses a menu (ILI-1397) */
 .prompt-leader line { stroke: #f2c14e; stroke-width: 1.5; }
 .prompt-leader circle { fill: #f2c14e; }
-.prompt-tag { position: fixed; z-index: 7; max-width: min(240px, calc(100vw - 32px)); padding: 3px 8px; pointer-events: none; font-size: 11px; line-height: 1.3; letter-spacing: 0.04em; color: #f2c14e; background: var(--bg); border: 1px solid #f2c14e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* ALPHA's intel ask: a small tag on its grid square, never in the way of the click (ILI-1450) */
+.prompt-tag { position: fixed; z-index: 1; max-width: min(240px, calc(100vw - 32px)); padding: 3px 8px; pointer-events: none; font-size: 11px; line-height: 1.3; letter-spacing: 0.04em; color: #f2c14e; background: var(--bg); border: 1px solid #f2c14e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* ALPHA's intel ask: a small tag on its grid square, never in the way of the click (ILI-1450) */
 @keyframes prompt-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes prompt-glow { from { box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.25), 0 0 12px rgba(242, 193, 78, 0.2); } to { box-shadow: 0 0 0 1px rgba(242, 193, 78, 0.4), 0 0 28px rgba(242, 193, 78, 0.45); } }
 @media (prefers-reduced-motion: reduce) { .prompt { animation: none; } }
@@ -1886,7 +1886,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* Callout tags (ILI-1469, the ILI-1459 design, after the red-map reference): a dot on the square,
    a short leader, and a compact tag with its own buttons. The prompts and the traffic card take
    the same look: tight, one accent, the action inside. */
-.place-tag { position: fixed; z-index: 7; display: flex; align-items: center; transform: translate(-5px, -50%); pointer-events: none; }
+.place-tag { position: fixed; z-index: 1; display: flex; align-items: center; transform: translate(-5px, -50%); pointer-events: none; }
 .place-tag .pt-dot { width: 10px; height: 10px; border-radius: 50%; background: #f2c14e; box-shadow: 0 0 0 4px rgba(242, 193, 78, 0.2); flex: none; }
 .place-tag .pt-lead { width: 22px; height: 1px; background: #f2c14e; flex: none; }
 .place-tag .pt-tag { pointer-events: auto; display: flex; align-items: stretch; background: rgba(11, 15, 13, 0.94); border: 1px solid #f2c14e; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
@@ -2222,15 +2222,15 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* The focused square's flyout is the topmost thing on the map (ILI-1523): ALPHA's request tag,
    place tags, sightings, contact tags and prompts all go under it, so it's always seen whole.
    Only the pause menu and the intro sit above it. */
-.square-card.anchor { z-index: 12; }
+.square-card.anchor { z-index: 2; }
 
 /* The ALERT (ILI-1524): strikes live here, not in the intel list or ORION-3. A red hazard band
    hangs off the bottom edge of a square with fighters that threaten ALPHA, right-aligned with the
    square. A click opens it downward into the strike panel: the options, then the asset under way.
    Its home is always below the square, the flyout's always to its right; both float above
    everything else on the map, the strike panel highest. */
-.strike-alert { position: fixed; z-index: 11; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; pointer-events: auto; }
-.strike-alert[data-open] { z-index: 13; overflow-y: auto; background: var(--bg); border: 1px solid #e5484d; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55); }
+.strike-alert { position: fixed; z-index: 3; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; pointer-events: auto; }
+.strike-alert[data-open] { z-index: 3; overflow-y: auto; background: var(--bg); border: 1px solid #e5484d; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55); }
 .strike-alert .sa-band { zoom: var(--k, 1); display: flex; align-items: center; gap: 6px; width: 100%; min-height: 24px; margin: 0; padding: 0; font: inherit; color: #fff; text-align: left; cursor: pointer; background: rgba(60, 10, 12, 0.94); border: 1px solid #e5484d; }
 .strike-alert[data-open] .sa-band { border-width: 0 0 1px; }
 .strike-alert .sa-band:hover, .strike-alert .sa-band:focus-visible { background: rgba(110, 16, 20, 0.96); outline: none; }
@@ -2466,3 +2466,11 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    tiles, the strike under way, resupply and the exfil transport. min-* wins over every height above. */
 :is(.d-model, .s-model, .w-icon) { min-width: 80px; min-height: 80px; }
 .strike-alert .sc-strike .target-menu .options { grid-template-columns: repeat(3, minmax(86px, 1fr)); }
+
+/* Layers (ILI-1546), bottom to top: the map; its marks (leaders, place tags, ALPHA's ask tag) 1;
+   the square's flyout 2; the ALERT 3; the prompt 4; the game UI panels 5 and up; edge markers 6;
+   pause and AAR 20; intro 50. The map's layers stay inside the open map and under the game UI. */
+.edge-marker { position: fixed; z-index: 6; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 6px; font: inherit; font-family: 'Fira Mono', 'JetBrains Mono', ui-monospace, monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; background: rgba(60, 10, 12, 0.94); border: 1px solid #e5484d; cursor: pointer; pointer-events: auto; white-space: nowrap; }
+.edge-marker b { font-weight: 700; letter-spacing: 0.14em; }
+.edge-marker i { font-style: normal; color: #e5484d; display: inline-block; }
+.edge-marker:hover, .edge-marker:focus-visible { background: rgba(110, 16, 20, 0.96); outline: none; }

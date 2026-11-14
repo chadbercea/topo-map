@@ -5,7 +5,8 @@ import { AGE_LABEL, freshness } from '../sim/imagery';
 import { zulu } from '../sim/gameTime';
 import { alertSquares, strikeState } from '../sim/strike';
 import type { GameState } from '../sim/state';
-import { squareBox } from './overlays';
+import { coveredBy, squareBox } from './overlays';
+import { EdgeMarker } from './EdgeMarker';
 import { uiScale } from './scale';
 import { useTier } from './tier';
 import { Stages } from './Stages';
@@ -105,28 +106,37 @@ function Alert({ s, square, open, area }: { s: GameState; square: string; open: 
   };
 
   // Its home (ILI-1524): hanging off the square's bottom edge, right-aligned with the square, so the
-  // flyout to the square's right never meets it. Closed, the square's width; open, the panel's.
-  // Near the map's edge it stays below its square and slides along the edge to stay inside the map.
-  // On a phone the open panel is the strip along the map's foot, where the square's flyout goes.
+  // flyout beside the square never meets it. Closed, the square's width; open, the panel's. It sits
+  // beneath the game UI and inside the open map (ILI-1546). With no room below its square, the open
+  // panel goes to the square's left (ILI-1547 call B). Off the open map, or under a game UI panel,
+  // the closed band gives way to an edge marker that pans the map to it. On a phone the open panel
+  // is the strip along the map's foot.
   const compact = tier === 'compact';
   const width = open ? (compact ? area.width - 16 : Math.max(sq.w, STRIKE_W * k)) : Math.max(sq.w, 96 * k);
   const ht = h || (open ? 240 : 28);
+  const mapTop = area.y + 8;
+  const mapFoot = area.y + area.height - 8;
   let left = sq.x + sq.w - width;
   let top = sq.y + sq.h;
   let maxHeight: number | undefined;
   if (open && compact) {
     maxHeight = Math.round(area.height * 0.6);
     left = area.x + 8;
-    top = area.y + area.height - 8 - Math.min(ht, maxHeight);
+    top = mapFoot - Math.min(ht, maxHeight);
+  } else if (open) {
+    if (mapFoot - top < MIN_H) {
+      left = sq.x - width;
+      top = sq.y;
+      if (left < area.x + 8) left = sq.x + sq.w; // no room left either: the right side
+    }
+    left = Math.max(area.x + 8, Math.min(left, area.x + area.width - 8 - width));
+    top = Math.max(mapTop, Math.min(top, mapFoot - MIN_H));
+    maxHeight = mapFoot - top;
   } else {
     left = Math.max(area.x + 8, Math.min(left, area.x + area.width - 8 - width));
-    if (open) {
-      // It floats above everything, so it may run past the map onto the panels below it, to the
-      // window's foot. Only when even that leaves too little room does it ride up over its square.
-      const foot = window.innerHeight - 8;
-      maxHeight = Math.max(MIN_H, foot - top);
-      top = Math.max(area.y + 8, Math.min(top, foot - maxHeight));
-    } else if (top < area.y || top > area.y + area.height - ht || sq.x + sq.w < area.x || sq.x > area.x + area.width) return null; // its square is off the open map
+    const off = top < area.y || top > area.y + area.height - ht || sq.x + sq.w < area.x || sq.x > area.x + area.width;
+    if (off || coveredBy({ x: left, y: top, w: width, h: ht }) > 0.5)
+      return <EdgeMarker square={square} target={{ x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 }} area={area} label="Alert" />;
   }
 
   return (

@@ -15,6 +15,7 @@ export const EV = {
   openAsk: 'open-ask', // open ALPHA's waiting ask (from the intel stream's alert)
   panned: 'panned', // HQ panned the map by hand, so it stopped following ALPHA (boolean)
   recentre: 'recentre', // back to ALPHA, and follow it again
+  panTo: 'pan-to', // pan the map to a grid square, and stop following ALPHA (ILI-1546 edge markers)
   overlays: 'overlays', // the square card or its action panel opened, moved, resized or closed
   openTeam: 'open-team', // open the team drawer, an operator highlighted (ILI-1396)
 } as const;

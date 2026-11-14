@@ -228,6 +228,7 @@ export class MapScene extends Phaser.Scene {
     this.keys = this.input.keyboard!.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT,F', false) as Record<string, Phaser.Input.Keyboard.Key>;
     this.keys.F.on('down', () => !typing() && this.recentre());
     bus.on(EV.recentre, this.recentre, this);
+    bus.on(EV.panTo, this.panTo, this);
     // Touch and mouse (ILI-1214): drag pans, a tap (released where it went down) selects. The
     // zoom is fixed (ILI-1484): no pinch, no wheel.
     this.input.addPointer(1);
@@ -252,6 +253,7 @@ export class MapScene extends Phaser.Scene {
       bus.off(EV.mapRect, this.layout, this);
       bus.off(EV.inset, this.placeInset, this);
       bus.off(EV.recentre, this.recentre, this);
+      bus.off(EV.panTo, this.panTo, this);
       this.unsubscribe?.();
     });
 
@@ -1053,6 +1055,20 @@ export class MapScene extends Phaser.Scene {
     const area = this.openArea(r, width, height);
     this.camTarget = centreOn(game.get().team.position, area, { w: width, h: height }, this.cameras.main.zoom, this.cover(r, height), PAN);
     if (this.panned) bus.emit(EV.panned, (this.panned = false));
+  }
+
+  // An edge marker's tap (ILI-1546): bring its square into the open map; the camera stops following ALPHA.
+  private panTo(square: string) {
+    const sq = parseSquare(square);
+    if (!sq) return;
+    const { width, height } = this.scale;
+    const r = getMapRect();
+    const area = this.openArea(r, width, height);
+    const cam = this.cameras.main;
+    this.camCenter = this.camTarget = centreOn({ x: (sq.col + 0.5) * CELL, y: (sq.row + 0.5) * CELL }, area, { w: width, h: height }, cam.zoom, this.cover(r, height), PAN);
+    cam.centerOn(this.camCenter.x, this.camCenter.y);
+    if (!this.panned) bus.emit(EV.panned, (this.panned = true));
+    bus.emit(EV.camera);
   }
 
   // Where ALPHA is centred, in device px: the open map.
