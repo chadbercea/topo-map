@@ -86,7 +86,7 @@ function MainPrompt() {
   }
   // A prompt with no place of its own (an operator hit, a team call) sits on the team dock, not on
   // the map (ILI-1470): right over the team panel's header, no leader.
-  const team = tier === 'wide' && (p.kind === 'operator' || p.kind === 'team-call') ? document.querySelector('.slot-team')?.getBoundingClientRect() : null;
+  const team = tier === 'wide' && p.kind === 'team-call' ? document.querySelector('.slot-team')?.getBoundingClientRect() : null;
   const sq = team ? null : squareBox(p.square);
   const width = Math.min(team ? Math.min(W + 60, team.width) : W, area.width - 16);
   // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
@@ -126,7 +126,6 @@ function MainPrompt() {
               key={r.id}
               onClick={() => {
                 game.answerPrompt(p.id, r.id);
-                if (p.kind === 'operator') bus.emit(EV.openTeam, p.operator); // the team drawer, them highlighted (ILI-1396)
               }} disabled={r.disabled} data-response={r.id} data-testid="prompt-response">
               {r.label}
             </button>

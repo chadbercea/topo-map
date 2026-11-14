@@ -134,7 +134,6 @@ export function createStore(initial: GameState = initialState()) {
       // Get an asset in range of enemy traffic; the intercept starts once it is (ILI-1394).
       if (p.kind === 'enemy-traffic' && response === 'satellite') set(listenWith(state, p.id, 'satellite')); // HQ listens; no antenna (ILI-1435)
       // An operator in trouble (ILI-1396): seen to. The HUD opens the team drawer on it.
-      if (p.kind === 'operator') set({ ...state, acked: [...state.acked, p.id] });
       // ALPHA's call (ILI-1393): a reply, or a plain Copy.
       if (p.kind === 'team-call') set(send(state, p.id, response === 'copy' ? null : response));
     },
