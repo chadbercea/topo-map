@@ -3,7 +3,7 @@ import { bus, EV, getMapRect, setProjector, type InsetRect, type SceneStatus } f
 import { centreOn, clampCenter, fitCamera, PAN } from './fit';
 import { createLoop } from '../sim/loop';
 import { game } from '../sim/store';
-import { CELL, COLS, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
+import { CELL, COLS, METRES_PER_UNIT, ROWS, squareAt, squareCenter, squareId, parseSquare, WORLD_H, WORLD_W } from '../map/grid';
 import { COARSE, FINE, outerTheater, theater, traceContours, type Area, type ContourLine, type Terrain } from '../map/terrain';
 import { generateCity, type City } from '../map/city';
 import { legPath, theaterWater } from '../map/paths';
@@ -23,6 +23,7 @@ import { freshLeft } from '../sim/intel';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 import { sightings, type Sighting } from '../sim/sightings';
+import { SIGHT_M } from '../sim/sight';
 import { panelled, pins } from '../hud/pins';
 import { isImageryRequest } from '../sim/imageryRequest';
 import { intro, MAP_BOOT } from '../hud/intro';
@@ -93,6 +94,7 @@ export class MapScene extends Phaser.Scene {
   private dotGfx!: Phaser.GameObjects.Graphics; // the team's triangles at the map's zoom: the map only (ILI-1521)
   private arrowGfx!: Phaser.GameObjects.Graphics; // the team as tiny heading arrows: ORION-3's picture only (ILI-1419)
   private bracketGfx!: Phaser.GameObjects.Graphics; // four corners round everything HQ can interact with (ILI-1410)
+  private ringGfx!: Phaser.GameObjects.Graphics; // ORION-3's range rings (ILI-1550)
   private insetBracketGfx!: Phaser.GameObjects.Graphics; // the same, at ORION-3's picture's scale (ILI-1415)
   private opSpots = new Map<string, { x: number; y: number }>(); // where each operator's dot was drawn this frame
   private seen: Sighting[] = [];
@@ -173,6 +175,8 @@ export class MapScene extends Phaser.Scene {
     for (const sq of game.get().map.scanned) this.scansSeen.add(sq);
     this.insetBracketGfx = this.add.graphics();
     this.cameras.main.ignore(this.insetBracketGfx); // only ORION-3's picture draws these (ILI-1415)
+    this.ringGfx = this.add.graphics();
+    this.cameras.main.ignore(this.ringGfx); // and these (ILI-1550)
     this.teamLabel = this.add.text(0, 0, game.get().team.callsign, {
       fontFamily: 'JetBrains Mono, monospace',
       fontSize: `${11 * DPR}px`,
@@ -781,12 +785,46 @@ export class MapScene extends Phaser.Scene {
     // ORION-3's picture gets them too (ILI-1415): sized to wrap the dots as drawn (they're drawn
     // for the map's zoom), with a line as thin as the map's at the picture's zoom.
     const g = this.insetBracketGfx.clear();
+    this.ringGfx.clear();
     const id = this.inset.visible ? orionSquare(s) : null;
     const sq = id ? parseSquare(id) : null;
     if (!sq) return;
+    this.drawRings(sq);
     const pad = CELL * 0.25; // the sliver of neighbours round the square
     const inView = this.seen.filter((t) => t.kind !== 'team' && t.x >= sq.col * CELL - pad && t.x <= (sq.col + 1) * CELL + pad && t.y >= sq.row * CELL - pad && t.y <= (sq.row + 1) * CELL + pad);
     this.bracketsInto(g, inView, DPR / this.zoom, DPR / this.inset.zoom, true);
+  }
+
+  // Range rings in ORION-3's picture (ILI-1550, option A): a dotted 250 m sight ring round ALPHA
+  // and round each enemy group it can see. Contact is symmetric (ILI-1544): rings crossing is the
+  // fight starting, and the ALERT comes up on the square (ILI-1524).
+  private drawRings(sq: { col: number; row: number }) {
+    const g = this.ringGfx;
+    const r = SIGHT_M / METRES_PER_UNIT;
+    const near = (t: { x: number; y: number }) => t.x >= (sq.col - 0.5) * CELL - r && t.x <= (sq.col + 1.5) * CELL + r && t.y >= (sq.row - 0.5) * CELL - r && t.y <= (sq.row + 1.5) * CELL + r;
+    const groups = new Map<string, { x: number; y: number; n: number }>();
+    for (const t of this.seen) {
+      if (t.kind !== 'hostile') continue;
+      const k = t.id.slice(0, t.id.lastIndexOf(':'));
+      const a = groups.get(k) ?? { x: 0, y: 0, n: 0 };
+      groups.set(k, { x: a.x + t.x, y: a.y + t.y, n: a.n + 1 });
+    }
+    const rings: { x: number; y: number; color: number }[] = [];
+    const team = this.seen.find((t) => t.kind === 'team');
+    if (team) rings.push({ x: team.x, y: team.y, color: 0x35d0a5 });
+    for (const a of groups.values()) rings.push({ x: a.x / a.n, y: a.y / a.n, color: 0xe5484d });
+    const w = DPR / this.inset.zoom;
+    const DASHES = 48;
+    for (const c of rings) {
+      if (!near(c)) continue;
+      g.lineStyle(w, c.color, 0.8);
+      for (let i = 0; i < DASHES; i++) {
+        const a0 = (i / DASHES) * Math.PI * 2;
+        g.beginPath();
+        g.arc(c.x, c.y, r, a0, a0 + (Math.PI / DASHES), false);
+        g.strokePath();
+      }
+    }
   }
 
   // A scan of a square nobody had scanned (ILI-1423): the intro's wipe, on the square. It snaps
