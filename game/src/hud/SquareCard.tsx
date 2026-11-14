@@ -43,6 +43,7 @@ export function SquareCard() {
   const tier = useTier();
   const strikeOpen = useStrikeOpen();
   const placedKey = useRef('');
+  const sideOf = useRef<{ square: string; side: 'right' | 'left' } | null>(null); // the side it opened on, kept while open (ILI-1543)
   const [, redraw] = useState(0);
   useEffect(() => {
     const again = () => redraw((n) => n + 1);
@@ -70,11 +71,16 @@ export function SquareCard() {
 
   const area = getMapRect();
   if (!area) return null;
-  if (!square) return null;
+  if (!square) {
+    sideOf.current = null; // closed: the next open picks its side afresh
+    return null;
+  }
   const k = tier === 'wide' ? uiScale() : 1; // it grows with the map's squares (ILI-1498)
   // On a phone the open strike panel takes the strip along the map's foot (ILI-1524): one sheet at a time.
   if (tier === 'compact' && !playing && strikeOpen === square) return null;
-  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, ANCHOR_W * k);
+  const kept = sideOf.current?.square === square ? sideOf.current.side : undefined;
+  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, ANCHOR_W * k, kept);
+  if (at.side === 'right' || at.side === 'left') sideOf.current = { square, side: at.side };
   const locked = lockedOn(s, square);
   // Any square HQ clicks opens its flyout (ILI-1475): its intel is stored on the square, not in the
   // satellite, so it's there wherever ORION-3 is.
@@ -166,18 +172,21 @@ type Placed = { left: number; top: number; width: number; maxHeight: number; sid
 const otherItem = (square: string) => (e: GameState['events'][number]) =>
   e.square === square && e.status !== 'resolved' && !strikeable(e) && !['site', 'building', 'signal'].includes(e.kind) && !isImageryRequest(e);
 
-// Its home (ILI-1524): flush against the square's right edge, top aligned with the square, always.
-// It never flips side to dodge anything; it floats above everything else on the map instead (the
-// strike panel hangs below the square, right-aligned with it, so the two never meet). Near the
-// map's edge it slides along the edge to stay inside the open map; dragging the map gives it room.
-function attached(square: string, area: Area, height: number, width: number): Placed {
+// Its home (ILI-1543, Chad 11-14): right of its square, top aligned with it. If there's no room on
+// the right inside the open map, it goes left. It never covers its own square. It picks its side
+// when it opens and keeps it while open (keep), so it never jumps; it moves only as its square
+// moves on screen, and slides up or down to stay inside the map.
+function attached(square: string, area: Area, height: number, width: number, keep?: 'right' | 'left'): Placed {
   const sq = squareBox(square);
   const maxHeight = area.height - 16;
   if (!sq) return { left: area.x + 8, top: area.y + 8, width, maxHeight, side: 'right' };
   const h = Math.min(height || 160, maxHeight);
-  const left = Math.max(area.x + 8, Math.min(sq.x + sq.w, area.x + area.width - 8 - width));
+  const roomRight = area.x + area.width - 8 - (sq.x + sq.w);
+  const roomLeft = sq.x - (area.x + 8);
+  const side = keep ?? (roomRight >= width || roomRight >= roomLeft ? 'right' : 'left');
+  const left = side === 'right' ? sq.x + sq.w : sq.x - width;
   const top = Math.max(area.y + 8, Math.min(sq.y, area.y + area.height - 8 - h));
-  return { left, top, width, maxHeight, side: 'right' };
+  return { left, top, width, maxHeight, side };
 }
 
 const SLACK = 32; // px a measured height may shrink by before the panel moves for it
