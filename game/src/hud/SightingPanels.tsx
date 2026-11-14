@@ -101,7 +101,7 @@ function MapTag({ t }: { t: Sighting }) {
     t.kind === 'hostile' ? `HOSTILE · TANGO-${pins.tango(t.id)}`
     : t.kind === 'site' ? `KILL SITE · ${t.square}`
     : t.kind === 'wreck' ? `WRECK · BLACK BOX · ${t.square}`
-    : t.id === 'air:exfil' ? `${TRANSPORT.callsign} · exfil · ${t.square}`
+    : t.id === 'air:exfil' ? `${TRANSPORT.callsign} · EXFIL · ${t.square}`
     : t.id === 'air:heli' ? `${AIR.heli.callsign} · gun run · ${t.square}`
     : `${AIR.drone.callsign} · drone strike · ${t.square}`;
   return <p className={`sp-tag${t.kind === 'hostile' || t.kind === 'site' ? ' hostile' : ''}`} data-testid="panel-tag">{line}</p>;

@@ -28,7 +28,7 @@ describe('mission script', () => {
 
   it('a trigger fires once, the first tick its condition holds', () => {
     let s = walking();
-    s = reveal({ ...s, contacts: FIXTURE() }, ['E3'], 'ORION-3');
+    s = reveal({ ...s, contacts: FIXTURE() }, ['E3']);
     s = step(s, 100);
     expect(s.script.fired).toContain('first-contact-hint');
     expect(s.comms.messages.filter((m) => m.id === 'hint-first-contact')).toHaveLength(1);
@@ -60,7 +60,7 @@ describe('mission script', () => {
 describe('a dug-in group on the route', () => {
   it('softened by ordnance first, ALPHA takes it with far less damage than walking in', () => {
     const fightAt = (soften: boolean) => {
-      let s = reveal({ ...walking(), contacts: FIXTURE() }, ['E3'], 'ORION-3');
+      let s = reveal({ ...walking(), contacts: FIXTURE() }, ['E3']);
       if (soften) s = { ...s, contacts: s.contacts.map((c) => (c.id === 'checkpoint' ? { ...c, units: c.units.slice(0, 1) } : c)) };
       s = { ...s, team: { ...s.team, position: { x: 900, y: 500 }, waypoint: 3, decisions: { E3: 'attack' } } };
       s = run(s, 30_000);

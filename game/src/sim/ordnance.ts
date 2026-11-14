@@ -81,7 +81,7 @@ export function spendWeapon(s: GameState, w: Weapon): GameState {
 // back without checking. Only those with a cooldown: the drone's one use and the sniper's fresh
 // team every call never go away to come back.
 export const CALLSIGN: Record<Weapon, string> = { drone: 'REAPER-1', sniper: 'OVERWATCH', heli: 'HAMMER-2' };
-const BACK: Record<Weapon, string> = { drone: 'HQ, REAPER-1, rearmed, ON STATION.', sniper: 'HQ, OVERWATCH, set.', heli: 'HQ, HAMMER-2, rearmed, ON STATION.' };
+const BACK: Record<Weapon, string> = { drone: 'HQ, REAPER-1, rearmed.', sniper: 'HQ, OVERWATCH, set.', heli: 'HQ, HAMMER-2, rearmed.' };
 
 export const ordnanceSystem: System = (s, dt) => {
   let next = s;

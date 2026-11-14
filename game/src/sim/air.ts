@@ -6,7 +6,7 @@ import { BOARD } from './minigame';
 import { confirmKills, eyesOn, groupOrigin, unitSpot } from './imagery';
 import { makeNoise, NOISE } from './noise';
 import { spendWeapon, weaponBlocked } from './ordnance';
-import { CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
+import { addBda, CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
 
 // Air strikes: no mini game and no aiming. HQ picks the target and watches.
 // - The drone (ILI-1252), REAPER-1, flies to the square on a countdown, then crosses it once,
@@ -144,16 +144,12 @@ function fly(s: GameState, r: AirRun): GameState {
     events: next.events.map((e) => (e.kind === 'contact' && gone.has(e.id.replace('contact-', '')) ? { ...e, status: 'resolved' as const } : e)),
   };
   const confirmed = kills.filter((k) => k.seen).length;
-  next = earn(next, confirmed * CASH_PER_STRIKE_KILL);
+  next = addBda(earn(next, confirmed * CASH_PER_STRIKE_KILL), r.square, confirmed);
   const left = next.contacts.filter((c) => c.square === r.square && (c.status === 'hidden' || c.status === 'revealed')).reduce((n, c) => n + c.units.length, 0);
-  const pay = confirmed ? ` +$${(confirmed * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` : kills.length ? ' BDA unconfirmed.' : '';
-  // Comms standard (ILI-1541): called, then caller; a finished strike reads "clear".
+  // Comms standard (ILI-1541): called, then caller; a finished strike reads "clear". Counts go on
+  // the flyout's BDA line and cash on the budget chip, not the radio.
   const head = `HQ, ${AIR[r.weapon].callsign},`;
-  const text = !kills.length
-    ? `${head} NO JOY ${r.square}.`
-    : left
-      ? `${head} ${r.square}, ${kills.length} down, ${left} remain.${pay}`
-      : `${head} ${r.square} clear. ${kills.length} down.${pay}`;
+  const text = !kills.length ? `${head} NO JOY ${r.square}.` : left ? `${head} ${r.square}, hostiles remain.` : `${head} ${r.square} clear.`;
   return {
     ...next,
     [r.weapon]: { ...run, doneMs: s.elapsedMs },

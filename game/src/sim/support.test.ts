@@ -66,7 +66,7 @@ const ineffective = (s: GameState) => s.comms.messages.find((m) => m.node === 'r
 describe('combat ineffective', () => {
   it('two down: the team holds and asks for the same resupply bird', () => {
     const s = run(mauled(), 200);
-    expect(ineffective(s)?.text).toBe('HQ, ALPHA, request resupply at G5. Combat ineffective, 2 down.');
+    expect(ineffective(s)?.text).toBe('HQ, ALPHA, request resupply at G5. 2 KIA, URGENT.');
     expect(s.team.holdFor).toBe(ineffective(s)?.id);
   });
 

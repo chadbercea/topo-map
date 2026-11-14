@@ -82,7 +82,7 @@ describe('the stack', () => {
     store.capture('photo');
     store.tick(10_000);
     const s = store.get();
-    expect(s.comms.messages.some((m) => m.from === 'ORION-3')).toBe(true);
+    expect(s.comms.messages.some((m) => m.from === 'ORION-3')).toBe(false); // ALPHA didn't ask: ORION-3's panel says it
     expect(ofType(s, 'radio').every((c) => c.from === 'ALPHA' || c.from === 'HQ')).toBe(true);
   });
 

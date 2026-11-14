@@ -100,11 +100,11 @@ const radio = (s: GameState, from: string, id: string, text: string, holds = fal
 });
 
 // Imagery of these squares reaches the team: hidden contacts in them are found and marked.
-export function reveal(s: GameState, squares: SquareId[], by: string): GameState {
+export function reveal(s: GameState, squares: SquareId[]): GameState {
   const found = s.contacts.filter((c) => c.status === 'hidden' && squares.includes(c.square));
   if (!found.length) return s;
   const ids = new Set(found.map((c) => c.id));
-  const ahead = s.team.route.slice(s.team.waypoint);
+  // No radio line (comms standard): the map and the flyout show what was found.
   return {
     ...s,
     contacts: s.contacts.map((c) => (ids.has(c.id) ? { ...c, status: 'revealed' as const } : c)),
@@ -112,15 +112,6 @@ export function reveal(s: GameState, squares: SquareId[], by: string): GameState
       ...s.events,
       ...found.map((c) => ({ id: `contact-${c.id}`, kind: 'contact' as const, square: c.square, title: cap(c.label), atMs: s.elapsedMs, status: 'new' as const })),
     ],
-    comms: {
-      ...s.comms,
-      messages: [
-        ...s.comms.messages,
-        ...found.map((c) =>
-          radio(s, by, `found-${c.id}`, `CONTACT ${c.square}, ${c.label}.${ahead.includes(c.square) ? ` On ${s.team.callsign}’s route.` : ''}`),
-        ),
-      ],
-    },
   };
 }
 
@@ -228,7 +219,7 @@ export function applyEffect(s: GameState, effect: Effect, square: SquareId): Gam
         contacts: s.contacts.map((c) => (c === contact ? { ...c, observed: true, painted: true } : c)),
         team: { ...s.team, holdUntilMs: s.elapsedMs + OBSERVE_MS },
       };
-      return reveal(next, neighbours(square).filter((n) => orionScanned(s, n)), s.team.callsign); // only scanned ground (ILI-1493)
+      return reveal(next, neighbours(square).filter((n) => orionScanned(s, n))); // only scanned ground (ILI-1493)
     }
     case 'avoid':
       return detour(s, square);

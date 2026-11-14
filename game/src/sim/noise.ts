@@ -1,4 +1,3 @@
-import type { Message } from './comms';
 import type { GameState } from './state';
 import type { System } from './systems';
 
@@ -30,21 +29,12 @@ export const noiseSystem: System = (s, dt) => {
   return next;
 };
 
+// No radio line (comms standard): HQ didn't act. The team panel shows the alerted state.
 function alert(s: GameState): GameState {
-  const call: Message = {
-    id: 'enemy-alerted',
-    from: 'HQ',
-    text: 'ALL STATIONS, HQ, enemy net active after the strikes. Enemy alerted to the PMC.',
-    atMs: s.elapsedMs,
-    status: 'new',
-    holds: false,
-    alert: true,
-  };
   return {
     ...s,
     alerted: true,
     contacts: s.contacts.map((c) => (c.status === 'hidden' || c.status === 'revealed' ? { ...c, strength: c.strength * ALERT_HARDEN } : c)),
-    comms: { ...s.comms, messages: [...s.comms.messages, call] },
   };
 }
 

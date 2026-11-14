@@ -5,6 +5,7 @@ import { slewFactor } from './upgrades';
 import { parseSquare, squareId, type SquareId } from '../map/grid';
 import type { Message } from './comms';
 import { reveal } from './contacts';
+import { openImageryRequest } from './imageryRequest';
 import { awarenessOf, record, snapshot, type Awareness, type CaptureMode } from './imagery';
 import { countdown, gameSpan } from './gameTime';
 
@@ -151,7 +152,16 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     satellite: sat, // the picked square stays picked: its anchor shows ORION-3 on its way (ILI-1302)
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
-  return log(next, radio(s, satName(s), `slew-${s.elapsedMs}`, ms ? `HQ, ${satName(s)}, slewing to ${square}. ON STATION in ${countdown(ms)}.` : `HQ, ${satName(s)}, ON STATION ${square}.`));
+  // No log line for the slew: ORION-3's panel shows SLEWING · F4 · 0:12 (comms standard). Already
+  // over the square, it's ON STATION now: on the radio only when ALPHA asked for it.
+  return ms ? next : onStationLine(next, square);
+}
+
+// ON STATION goes on the radio only when ALPHA asked for imagery of the square (its call, or its
+// open imagery ask); otherwise ORION-3's panel says it (comms standard).
+function onStationLine(s: GameState, square: SquareId): GameState {
+  const asked = !!s.satellite.callId || openImageryRequest(s)?.square === square;
+  return asked ? log(s, radio(s, satName(s), `station-${s.elapsedMs}`, `${satName(s)}, ON STATION ${square}.`)) : s;
 }
 
 // Scan a square (ILI-1367), from its square menu: the photo, now. Only once ORION-3 is locked on
@@ -194,7 +204,7 @@ function finishLook(s: GameState): GameState {
   const square = sat.aim;
   const snap = snapshot(s, square, mode, false);
   let next = record(s, snap);
-  next = reveal({ ...next, map: { ...next.map, scanned: [...new Set([...next.map.scanned, square])] } }, [square], satName(s));
+  next = reveal({ ...next, map: { ...next.map, scanned: [...new Set([...next.map.scanned, square])] } }, [square]);
   const fighters = snap.seen.reduce((n, x) => n + x.units.length, 0);
   const moving = snap.seen.filter((x) => x.to).reduce((n, x) => n + x.units.length, 0);
   const contacts = snap.seen.map((x) => s.contacts.find((c) => c.id === x.contactId)!);
@@ -244,7 +254,7 @@ export const satelliteSystem: System = (s) => {
   const sat = s.satellite;
   if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs) {
     // It says what's next (ILI-1257): the shot is HQ's to take, always by hand (ILI-1451).
-    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, satName(s), `station-${s.elapsedMs}`, `HQ, ${satName(s)}, ON STATION ${sat.aim}.`));
+    return onStationLine({ ...s, satellite: { ...sat, state: 'onStation' } }, sat.aim);
   }
   // Video is real time (ILI-1423): once it's run on a square, the picture stays live for as long
   // as ORION-3 stays over it. No rescan.
@@ -274,7 +284,7 @@ export const satelliteSystem: System = (s) => {
 function findWatched(s: GameState, squares: string[]): GameState {
   const walkedIn = s.contacts.filter((c) => c.status === 'hidden' && c.units.length && squares.includes(c.square));
   if (!walkedIn.length) return s;
-  let next = reveal(s, squares, satName(s));
+  let next = reveal(s, squares);
   for (const sq of new Set(walkedIn.map((c) => c.square))) if (!(next.intel.live ?? []).includes(sq)) next = postSighting(next, sq, walkedIn.filter((c) => c.square === sq).reduce((n, c) => n + c.units.length, 0));
   return next;
 }
@@ -291,6 +301,6 @@ export function satelliteStatus(s: GameState): string {
     case 'onStation':
       return `${satName(s)} · ON STATION · ${sat.aim}`;
     case 'capturing':
-      return `${satName(s)} · COLLECTING · IMAGERY · ${sat.aim} · ${secs(sat.captureUntilMs - s.elapsedMs)}`;
+      return `${satName(s)} · COLLECTING · ${sat.mode === 'video' ? 'VIDEO' : 'IMAGERY'} · ${sat.aim} · ${secs(sat.captureUntilMs - s.elapsedMs)}`;
   }
 }

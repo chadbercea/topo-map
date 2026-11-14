@@ -52,9 +52,9 @@ export const kindLabel = (code: string) => (KIND_LABEL as Record<string, string>
 
 const REPORT: Record<IntKind, Record<Heat, string>> = {
   GEOINT: { quiet: 'nothing significant', some: 'fresh tracks, a vehicle came through', hot: 'armed men in the open' },
-  SIGINT: { quiet: 'nothing significant', some: 'radio traffic on their net', hot: 'radio traffic, they’re calling for help' },
+  SIGINT: { quiet: 'nothing significant', some: 'radio traffic on their net', hot: 'radio traffic, enemy requesting support' },
   HUMINT: { quiet: 'nothing significant', some: 'a shepherd saw a truck pass', hot: 'a local says fighters came through at dawn' },
-  MASINT: { quiet: 'nothing significant', some: 'one heat signature, could be an animal', hot: 'heat signatures, several, close together' },
+  MASINT: { quiet: 'nothing significant', some: '1 heat source', hot: 'heat signatures, several, close together' },
   OSINT: { quiet: 'nothing significant', some: 'a photo from here, two days old', hot: 'a post shows armed men here today' },
 };
 

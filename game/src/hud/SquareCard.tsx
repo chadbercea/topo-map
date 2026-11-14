@@ -204,7 +204,7 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
       <header className="sc-head" data-state={locked ? 'locked' : coming ? 'slewing' : 'away'}>
         <b>{square}</b>
         <span className="sc-status" data-testid="lock-status">
-          {locked ? `${satName(s)} locked on` : coming ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `${satName(s)} over ${sat.aim}`}
+          {locked ? `${satName(s)} locked on` : coming ? `SLEWING · ${square} · ${countdown(sat.arriveMs - s.elapsedMs)}` : `${satName(s)} over ${sat.aim}`}
         </span>
       </header>
       {asked && (
@@ -256,6 +256,12 @@ function Report({ s, square }: { s: GameState; square: string }) {
             <small className="note">{known.map((c) => c.label).join(', ')}</small>
           </div>
         )}
+        {/* Battle damage from strikes here (comms standard: counts go on the flyout, not the radio). */}
+        {!!s.bda?.[square] && (
+          <div className="sc-item" data-kind="bda" data-testid="intel-item">
+            <span>BDA · {square} · {s.bda[square]} HOSTILE DOWN</span>
+          </div>
+        )}
         {traffic.map((e) => (
           <TrafficItem key={e.id} s={s} id={e.id} square={e.square} />
         ))}
@@ -267,7 +273,7 @@ function Report({ s, square }: { s: GameState; square: string }) {
             <small className="note">{e.title}</small>
           </div>
         ))}
-        {!shelfState(s, square) && !squareReports(s, square).length && !contact && !known.length && !buildings.length && !traffic.length && !others.length && (
+        {!shelfState(s, square) && !squareReports(s, square).length && !contact && !known.length && !s.bda?.[square] && !buildings.length && !traffic.length && !others.length && (
           <p className="sc-none" data-testid="intel-none">
             No intel on this square yet
           </p>
@@ -315,13 +321,13 @@ function PackageLine({ s, square }: { s: GameState; square: string }) {
     <div className="sc-item sc-package" data-kind="package" data-state={st} data-testid="square-package">
       {st === 'received' ? (
         <span data-testid="intel-received">
+          Intel received{' '}
           <b className="check" aria-hidden>
             ✓
-          </b>{' '}
-          Intel received
+          </b>
         </span>
       ) : (
-        <span>{st === 'posted' ? `Intel posted · waiting for ${who}` : `${who} downloading intel`}</span>
+        <span>{st === 'posted' ? 'POSTED' : `${who} downloading intel`}</span>
       )}
       {st === 'pulling' && (
         <span className="decay fill" role="progressbar" aria-valuenow={Math.round(downloadProgress(s) * 100)}>

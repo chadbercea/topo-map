@@ -32,7 +32,7 @@ export const BLACK_BOX: MissionDef = registerMission({
     {
       id: 'crash-site-contact',
       when: (s) => s.team.fight?.square === s.mission.b && s.mission.phase === 'objective',
-      then: (s) => say(s, s.team.callsign, 'crash-site-hit', `HQ, ${s.team.callsign}, CONTACT at the crash site. TIC.`, true),
+      then: (s) => say(s, s.team.callsign, 'crash-site-hit', `HQ, ${s.team.callsign}, CONTACT, ${s.mission.b}. TIC.`, true),
     },
     // The contract window, called out as it closes, in the clock's real minutes (ILI-1251).
     {

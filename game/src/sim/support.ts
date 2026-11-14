@@ -35,7 +35,7 @@ const radio = (s: GameState, from: string, id: string, text: string): Message =>
 function need(s: GameState): { what: string; key: string; holds: boolean } | null {
   const down = s.team.operators.filter((o) => o.health <= 0).length;
   const hurt = avg(standing(s).map((o) => o.health)) < 40;
-  if ((down >= 2 || hurt) && standing(s).length) return { what: `Combat ineffective, ${down ? `${down} down` : 'all WIA'}`, key: `ineffective-${down}`, holds: true };
+  if ((down >= 2 || hurt) && standing(s).length) return { what: `${down ? `${down} KIA` : 'All WIA'}, URGENT${ammoLevel(s) < LOW ? '. Ammo red' : ''}`, key: `ineffective-${down}`, holds: true };
   const ammo = ammoLevel(s) < LOW;
   const meds = medsLevel(s) < LOW;
   if (ammo || meds) return { what: `${ammo ? (meds ? 'Ammo and meds' : 'Ammo') : 'Meds'} low`, key: 'low', holds: false };

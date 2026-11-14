@@ -34,7 +34,7 @@ export function ExfilPanel() {
       <WireAvatar state={state} fallback={<TransportMark />} load={LOAD} className="d-model" />
       {stage === 'enroute' ? (
         <div className="d-clock">
-          <small>Exfil helo en route</small>
+          <small>EXFIL · INBOUND</small>
           <b data-testid="exfil-eta">0:{String(Math.ceil(left / 1000)).padStart(2, '0')}</b>
           <span className="decay" role="progressbar" aria-label="Time to exfil" aria-valuenow={Math.round((left / EXFIL_FLIGHT_MS) * 100)}>
             <span style={{ width: `${(left / EXFIL_FLIGHT_MS) * 100}%` }} />

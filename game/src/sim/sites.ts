@@ -26,6 +26,10 @@ export const spend = (s: GameState, amount: number): GameState => {
   return next.resources.budget <= bankruptAt(s) && !s.bankrupt ? { ...next, bankrupt: true, phase: 'ended' } : next;
 };
 
+// A strike's battle damage on the square, for the flyout's BDA line (counts go there, not on the radio).
+export const addBda = (s: GameState, square: string, n: number): GameState =>
+  n ? { ...s, bda: { ...s.bda, [square]: (s.bda?.[square] ?? 0) + n } } : s;
+
 export function markSite(s: GameState, c: Contact): GameState {
   const id = `site-${c.id}`;
   if (s.events.some((e) => e.id === id)) return s;
@@ -44,7 +48,7 @@ export const siteSystem: System = (s) => {
   const found: Message = {
     id: `search-${site.id}`,
     from: team.callsign,
-    text: `HQ, ${s.team.callsign}, kill site ${site.square} searched: documents, maps, a phone. +$${SEARCH_CASH.toLocaleString('en-US')}.`,
+    text: `HQ, ${s.team.callsign}, kill site ${site.square} searched: documents, maps, a phone.`, // the budget chip shows the cash
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,
