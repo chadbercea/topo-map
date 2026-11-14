@@ -146,6 +146,12 @@ function Alert({ s, square, open, area }: { s: GameState; square: string; open: 
         <i className="sa-hazard" aria-hidden />
         <b>Alert</b>
         <small data-testid="alert-line">{line}</small>
+        {/* The one thing to press, in the word for what it does (ILI-1534, option A). */}
+        {!open && !work && (
+          <span className="sa-go" data-testid="alert-strike">
+            Strike ▸
+          </span>
+        )}
         <i className="sa-hazard" aria-hidden />
       </button>
       {open && (

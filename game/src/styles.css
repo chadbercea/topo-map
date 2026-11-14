@@ -2252,6 +2252,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .strike-alert .sa-band b { font-size: 10px; letter-spacing: 0.14em; }
 .strike-alert .sa-band small { font-size: 10px; letter-spacing: 0.04em; }
 .strike-alert[data-open] .sa-hazard { flex-basis: 24px; }
+/* ILI-1534 A: a filled red STRIKE ▸ button on the band. */
+.strike-alert .sa-go { flex: none; margin-left: auto; padding: 2px 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; background: #e5484d; }
+.strike-alert .sa-go + .sa-hazard { margin-left: 0; }
 .strike-alert .sc-strike .sf-head { display: flex; align-items: baseline; gap: 6px; padding: 4px 6px; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; border-bottom: 1px solid rgba(229, 72, 77, 0.35); }
 .strike-alert .sc-strike .sf-sq { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: #f08a8d; }
 .strike-alert .sc-strike .sf-cash { margin-left: auto; font-size: 10px; letter-spacing: 0.04em; color: var(--accent); }
