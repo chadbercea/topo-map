@@ -1,51 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
-import { ABOUT, APPLY, CAPABILITIES, DIVISIONS, FOOTER, HERO, NAV, PAY, SELECTION, STANDARDS, type Shot } from './content';
+import { useEffect, useRef } from 'react';
+import { ABOUT, APPLY, CAPABILITIES, DIVISIONS, BRAND, FOOTER, NAV, OPEN, PAY, SELECTION, STANDARDS, type Shot } from './content';
 
 // Castle House's recruitment site (ILI-1480), rebuilt as a mobile-first brochure (ILI-1526):
 // mostly pictures, a headline and a line per section. Castle House's own website, written as if
-// it were real: it recruits the visitor as a contractor. The hero is the war room's title screen
-// (the rook, the globe behind), and the page slides up over it. Every section below is carried
+// it were real: it recruits the visitor as a contractor. It opens on the house's own pieces (ILI-1531):
+// the rook, oversized and cropped, over the globe and its satellites, under the recruiting line;
+// the way in (Begin selection) waits in Apply, further down. Every section is carried
 // by one of the line-drawn models, framed tight and cinematic, that turns and dollies as you
 // scroll (studio.ts: one shared renderer, only on-screen stages drawn). Text rises into place as
 // it scrolls in. Nothing depends on hover. The copy is all in content.ts.
 
 const APPLY_HREF = '../'; // selection starts at Castle House's secure terminal
-
-// The rook and the globe, live: the title screen's two canvases (castleScene). Parked once the
-// page has covered it.
-function Hero3D() {
-  const back = useRef<HTMLDivElement>(null);
-  const front = useRef<HTMLDivElement>(null);
-  const [flat, setFlat] = useState(false);
-  useEffect(() => {
-    let castle: { stop(): void; hold(on: boolean): void } | null = null;
-    let dead = false;
-    let held = false;
-    const watch = () => {
-      const on = scrollY >= innerHeight;
-      if (castle && on !== held) castle.hold((held = on));
-    };
-    import('../hud/castleScene').then(({ mountCastle }) => {
-      if (dead || !back.current || !front.current) return;
-      castle = mountCastle(back.current, front.current, () => {}, navigator.webdriver === true);
-      if (!castle) setFlat(true);
-      watch();
-    });
-    addEventListener('scroll', watch, { passive: true });
-    return () => {
-      dead = true;
-      removeEventListener('scroll', watch);
-      castle?.stop();
-    };
-  }, []);
-  return (
-    <div className="ch-hero-3d" aria-hidden>
-      <div ref={back} className="castle-scene ch-hero-back" />
-      <div ref={front} className="castle-scene ch-hero-front" />
-      {flat && <Rook className="ch-rook ch-hero-flat" />}
-    </div>
-  );
-}
 
 function Rook({ className = 'ch-rook' }: { className?: string }) {
   return (
@@ -121,60 +86,17 @@ function useReveal(root: React.RefObject<HTMLElement | null>) {
   }, [root]);
 }
 
-// The hero: the title screen. Fixed; the page slides up over it.
-function Hero() {
-  return (
-    <div className="ch-intro" data-testid="intro-hero">
-      <Hero3D />
-      <div className="ch-intro-mark">
-        <h1>{HERO.name}</h1>
-        <p>{HERO.line}</p>
-        <nav className="ch-menu" aria-label="Castle House">
-          <Apply className="ch-menu-go" />
-          <a href="#divisions">Divisions</a>
-          <a href="#compensation">Pay</a>
-        </nav>
-        <p className="ch-status">
-          {HERO.status}
-          <span className="ch-caret" aria-hidden>
-            ▌
-          </span>
-        </p>
-      </div>
-      <div className="ch-intro-scrim" aria-hidden />
-    </div>
-  );
-}
-
 export function Site() {
   const root = useRef<HTMLDivElement>(null);
   useReveal(root);
-  // How far the page has covered the hero, 0 to 1: written once a frame at most.
-  useEffect(() => {
-    let raf = 0;
-    const set = () => {
-      raf = 0;
-      root.current?.style.setProperty('--cover', String(Math.min(1, scrollY / Math.max(1, innerHeight))));
-    };
-    const on = () => void (raf ||= requestAnimationFrame(set));
-    set();
-    addEventListener('scroll', on, { passive: true });
-    addEventListener('resize', on);
-    return () => {
-      cancelAnimationFrame(raf);
-      removeEventListener('scroll', on);
-      removeEventListener('resize', on);
-    };
-  }, []);
   const roles = DIVISIONS.items.reduce((n, d) => n + d.roles.length, 0);
   return (
     <div className="ch" ref={root}>
-      <Hero />
       <div className="ch-page">
         <header className="ch-nav">
-          <a className="ch-brand" href="#about">
+          <a className="ch-brand" href="#top">
             <Rook />
-            <span>{HERO.name}</span>
+            <span>{BRAND}</span>
           </a>
           <nav aria-label="Site">
             {NAV.map(([id, label]) => (
@@ -185,6 +107,30 @@ export function Site() {
           </nav>
           <Apply className="ch-enlist ch-small">Apply</Apply>
         </header>
+
+        {/* The opener: the globe and its satellites as a horizon, the rook huge and cropped over it, the line, and a pointer to Apply. */}
+        <section className="ch-open" id="top" data-testid="opener">
+          <Stage shot={OPEN.globe} className="ch-open-globe" />
+          <Stage shot={OPEN.rook} className="ch-open-rook" />
+          <div className="ch-open-text">
+            <p className="ch-stamp">{OPEN.stamp}</p>
+            <h1 className="ch-shout">
+              {OPEN.title[0]} <em>{OPEN.title[1]}</em>
+            </h1>
+            <p className="ch-lede">{OPEN.lede}</p>
+            <dl className="ch-read">
+              {[...OPEN.read, ['Postings', String(roles)]].map(([k, v]) => (
+                <div key={k}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+            <a className="ch-jump" href="#apply">
+              {OPEN.jump} <span aria-hidden>↓</span>
+            </a>
+          </div>
+        </section>
 
         {/* Who we are: the globe and its three satellites sweeping through the frame, the statement and three numbers under it. */}
         <section className="ch-sec ch-about" id="about">
@@ -363,7 +309,7 @@ export function Site() {
         <footer className="ch-foot">
           <div className="ch-brand">
             <Rook />
-            <span>{HERO.name}</span>
+            <span>{BRAND}</span>
           </div>
           <nav aria-label="Footer">
             {NAV.map(([id, label]) => (
