@@ -2446,3 +2446,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .strike-alert .sniper .s-model { order: -1; height: 64px; }
 .strike-alert .sniper h3 { font-size: 9px; margin: 0; }
 .strike-alert .sniper .s-read b { font-size: 9px; }
+
+/* The turning 3D icons are never smaller than 80 x 80 px, at any size or state (ILI-1539): the strike
+   tiles, the strike under way, resupply and the exfil transport. min-* wins over every height above. */
+:is(.d-model, .s-model, .w-icon) { min-width: 80px; min-height: 80px; }
+.strike-alert .sc-strike .target-menu .options { grid-template-columns: repeat(3, minmax(86px, 1fr)); }
