@@ -2480,3 +2480,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud:not([data-tier='compact']) .band-cards { justify-items: stretch; align-content: start; }
 .hud:not([data-tier='compact']) .band-cards > * { width: 100%; }
 .hud[data-tier='compact'] .band-cards { grid-area: map; align-self: start; position: relative; z-index: 5; margin: 6px 8px 0; }
+/* Traffic's own prompt (ILI-1543): the prompt's frame, steady (only the most urgent thing pulses). */
+.prompt.prompt-traffic { animation: prompt-in 180ms ease-out; border-color: #ff8a2a; box-shadow: none; }
+.prompt.prompt-traffic .note { margin: 0; font-size: 11px; color: var(--dim); }
+.band-cards > .minigame { width: 100%; }
