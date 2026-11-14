@@ -54,7 +54,7 @@ export function createStore(initial: GameState = initialState()) {
     listeners.forEach((l) => l());
   };
 
-  const keepBase = (s: GameState): GameState => ({ ...s, intel: { ...s.intel, base: state.intel.base } });
+  const keepBase = (s: GameState): GameState => ({ ...s, intel: { ...s.intel, walkFree: state.intel.walkFree } });
   return {
     get: () => state,
     set,
@@ -80,8 +80,8 @@ export function createStore(initial: GameState = initialState()) {
     // Tuning: start over with a different mission length (1 to 30 minutes).
     setMissionLength: (minutes: number) =>
       set(keepBase(initialState(state.settings, Math.round(Math.min(30, Math.max(1, minutes)) * 60_000), 0, [], [], state.seed))),
-    // Tuning and tests: a fixed offset on ALPHA's intel gauge that survives restarts (ILI-1314).
-    setIntelBase: (base: number) => set({ ...state, intel: { ...state.intel, base } }),
+    // Tuning and tests: ALPHA moves without fresh intel, across restarts (ILI-1532; was the gauge offset).
+    setWalkFree: (walkFree: boolean) => set({ ...state, intel: { ...state.intel, walkFree } }),
     exit: () => state.phase !== 'exited' && set({ ...state, phase: 'exited' }),
     // The intro holds the clock until the war room is online, then starts it (ILI-1282).
     standby: () => state.phase === 'running' && state.elapsedMs === 0 && set({ ...state, phase: 'standby' }),

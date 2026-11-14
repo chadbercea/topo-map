@@ -28,15 +28,6 @@ describe('intel cards', () => {
     expect(card.grade).toMatch(/clear|low|medium|high/);
   });
 
-  it('a photo further ahead is banked, and its card turns fed when ALPHA heads into the square', () => {
-    const s0 = blindAhead();
-    const later = s0.team.route[s0.team.waypoint + 1];
-    const banked = pushPhoto(s0, later, 3).next;
-    expect(ofType(banked, 'intel')[0]).toMatchObject({ square: later, grade: 'high', fed: false });
-    const s = run({ ...banked, intel: { ...banked.intel, base: 100 } }, 60_000);
-    expect(ofType(s, 'intel')[0]).toMatchObject({ square: later, fed: true });
-  });
-
   it('video, a decode and what ALPHA finds itself are cards too; a bare feed (tuning) is not', () => {
     const s = pushVideo(feed(feed(feed(initialState(), 10), 35, { source: 'SIGINT', square: 'C2' }), 20, { source: 'ALPHA', square: 'E3' }));
     expect(ofType(s, 'intel').map((c) => c.source)).toEqual(['SIGINT', 'ALPHA', 'IMINT']);

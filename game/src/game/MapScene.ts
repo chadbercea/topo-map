@@ -19,6 +19,7 @@ import { searchingIn } from '../sim/buildings';
 import { shelfState, squareFindings } from '../sim/intel';
 import { knownIn, knownSquare, orionScanned } from '../sim/contacts';
 import { follows, freshness, GHOST_MS, groupOrigin, shownAt, unitSpot } from '../sim/imagery';
+import { freshLeft } from '../sim/intel';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 import { sightings, type Sighting } from '../sim/sightings';
@@ -581,7 +582,8 @@ export class MapScene extends Phaser.Scene {
       if (!p) continue;
       const x = p.col * CELL;
       const y = p.row * CELL;
-      const left = Math.max(0, 1 - (now - snap.atMs) / GHOST_MS);
+      // The square's fresh time (ILI-1532): it holds while ORION-3 is over it, and drains to empty.
+      const left = freshLeft(st, snap.square);
       const stale = left <= 0;
       const inset = 6 * px;
       const w = CELL - inset * 2;

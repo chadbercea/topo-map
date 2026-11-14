@@ -11,7 +11,7 @@ import { feed } from './intel';
 import { bankruptAt } from './upgrades';
 import { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH } from './prices';
 export { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH };
-export const SITE_INTEL = 25; // intel a swept site feeds ALPHA's gauge (ILI-1315)
+export const SITE_INTEL = 25; // what a swept site's intel is worth, on the record (ILI-1315)
 
 // Money in (the field, or out of escrow) and money out (support), kept on the mission's
 // ledger for the P&L (ILI-1316). Spending can go as deep into the red as HQ likes, until the

@@ -1,25 +1,23 @@
 import type { GameState } from './state';
 import type { MapEvent } from './events';
 import type { System } from './systems';
-import { gauge, LOW_AT } from './intel';
+import { settled, waiting } from './intel';
 
-// The never-stuck rule (option D, ILI-1349): when ALPHA is running low on intel on the move, or
-// holding because it's out, it asks HQ for imagery of the next square on its route nobody has
-// scanned. The ask is an event card in COMMS (tap it: ORION-3 goes there) and a marker on the
+// ALPHA asks for imagery and holds (ILI-1532): short of a square without fresh intel, it asks HQ
+// for imagery of it. The ask is an event card in COMMS (tap it: ORION-3 goes there) and a marker on the
 // map. One at a time; a photo, burst or video of the square answers it. So there's always
 // something HQ can do, and it says where.
 
 export const IMAGERY_REQUEST = 'imagery-';
 export const isImageryRequest = (e: MapEvent) => e.kind === 'request' && e.id.startsWith(IMAGERY_REQUEST);
 
-// Running low, or out and holding for it.
-export const needsImagery = (s: GameState) => s.team.activity === 'Holding · needs intel' || (s.team.activity.startsWith('Moving') && gauge(s) < LOW_AT);
+// Holding short of a square for want of fresh intel.
+export const needsImagery = (s: GameState) => s.team.activity === 'Holding · needs intel';
 
-// The next square on ALPHA's way the analysts haven't been through. One scan settles a square
-// (ILI-1399): never one already scanned, so HQ is never asked to look twice.
+// The square it's holding short of, unless fresh intel on it is already on the shelf for ALPHA.
 export function requestSquare(s: GameState): string | undefined {
-  const route = s.team.route.slice(s.team.waypoint);
-  return route.find((sq) => !s.map.scanned.includes(sq) && !s.intel.graded.includes(sq));
+  const next = s.team.route[s.team.waypoint];
+  return next && !settled(s, next) && !waiting(s, next) ? next : undefined;
 }
 
 // HQ's look at the square since ALPHA asked: ORION-3's, not ALPHA's own eyes on it as it walks up.

@@ -4,7 +4,7 @@ import { slewMs } from './satellite';
 import { initialState } from './state';
 import { createStore } from './store';
 import { bankruptAt, escrow, perCall, UPGRADES } from './upgrades';
-import { gauge, pushPhoto, pushVideo } from './intel';
+import { pushPhoto, pushVideo } from './intel';
 import { pulled, run, walking } from './testkit';
 
 // The store's upgrades (ILI-1317): each changes the game where it says, from the next mission.
@@ -26,14 +26,15 @@ describe('upgrades', () => {
   });
 
   it('more analysts: a photo is worth more', () => {
-    expect(gauge(pushPhoto(withUp('analysts'), 'B1', 0).next)).toBe(gauge(pushPhoto(initialState(), 'B1', 0).next) * 1.5);
+    const worth = (s: ReturnType<typeof initialState>) => pushPhoto(s, 'B1', 0).next.intel.pushes.at(-1)!.amount;
+    expect(worth(withUp('analysts'))).toBe(worth(initialState()) * 1.5);
   });
 
   it('video has no limit any more (ILI-1432): each one raises the floor', () => {
     const once = pushVideo(withUp('video2'));
     const twice = pushVideo(once);
     expect(twice.intel.videoUsed).toBe(false);
-    expect(gauge(pulled(twice))).toBeGreaterThan(gauge(pulled(once))); // once ALPHA pulls them (ILI-1499)
+    expect(pulled(twice).intel.pushes.filter((p) => p.grade === 'video' && p.state === 'fed')).toHaveLength(2); // once ALPHA pulls them (ILI-1499)
   });
 
   it('field hospital: more meds; training: faster on foot', () => {

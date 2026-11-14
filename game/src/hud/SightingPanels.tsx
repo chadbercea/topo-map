@@ -8,7 +8,6 @@ import { exfilStage, TRANSPORT } from '../sim/exfil';
 import type { Sighting } from '../sim/sightings';
 import { OperatorRow, STATUS } from './OperatorRow';
 import { condition } from '../sim/team';
-import { gauge, GAUGE_MAX, LOW_AT } from '../sim/intel';
 import { panelled, pins, usePins } from './pins';
 
 // Panels over bracketed things (ILI-1411): hover one for a mini panel beside it; click it and
@@ -90,14 +89,10 @@ function MapTag({ t }: { t: Sighting }) {
     const ops = s.team.operators;
     const down = ops.filter((o) => o.health <= 0).length;
     const worst = ops.map(condition).sort((a, b) => RANK[b] - RANK[a])[0];
-    const v = Math.min(1, gauge(s) / GAUGE_MAX);
     return (
       <>
         <h3 className="sp-title team" data-testid="panel-team-title">{s.team.callsign} TEAM</h3>
         <p className="sp-line">{s.team.activity}</p>
-        <span className="sp-bar" data-level={gauge(s) <= 0 ? 'out' : gauge(s) <= LOW_AT ? 'low' : 'ok'} aria-label="Intel">
-          <span style={{ width: `${v * 100}%` }} />
-        </span>
         <p className="sp-line" data-testid="panel-team-worst">{down ? `${down} down` : STATUS[worst]}</p>
       </>
     );

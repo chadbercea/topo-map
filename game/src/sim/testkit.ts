@@ -18,9 +18,9 @@ export const FIXTURE = (): Contact[] => [
 ];
 export const fixed = (s: GameState): GameState => ({ ...s, contacts: FIXTURE() });
 
-// The sim's tests run with ALPHA's intel gauge pinned full, unless they're about the gauge
-// (intel.test.ts): keeping the team fed is a game of its own (ILI-1314).
-export const fed = (s: GameState): GameState => ({ ...s, intel: { ...s.intel, base: 100 }, ordnance: initialOrdnance(WEAPONS) }); // and every capability open (ILI-1316)
+// The sim's tests let ALPHA walk without fresh intel, unless they're about it (intel.test.ts):
+// keeping the team on fresh intel is a game of its own (ILI-1532).
+export const fed = (s: GameState): GameState => ({ ...s, intel: { ...s.intel, walkFree: true }, ordnance: initialOrdnance(WEAPONS) }); // and every capability open (ILI-1316)
 
 export const run = (s: GameState, ms: number) => {
   for (let t = 0; t < ms; t += 100) s = step(s, 100);
@@ -85,7 +85,7 @@ export function asking(s: GameState = walking()): GameState {
 }
 
 // ALPHA pulls what's on the shelf (ILI-1499): run until no package is waiting for it (posted or
-// coming down), so what HQ posted is in ALPHA's picture and gauge.
+// coming down), so what HQ posted is in ALPHA's picture.
 export function pulled(s: GameState, maxMs = 60_000) {
   const pending = (x: GameState) => x.intel.pushes.some((p) => p.state === 'posted' || p.state === 'pulling');
   for (let t = 0; t < maxMs && pending(s); t += 100) s = step(s, 100);

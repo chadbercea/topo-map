@@ -3,7 +3,7 @@ import { heightAt, theater } from '../map/terrain';
 import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
 import type { Message } from './comms';
-import { burn, moving, settled, waiting } from './intel';
+import { settled, waiting } from './intel';
 import { speedFactor } from './upgrades';
 import { footfall } from './noise';
 
@@ -32,17 +32,17 @@ export const movementSystem: System = (s, dt) => {
     const activity = `Holding short of ${target} · soften them up`;
     return team.activity === activity ? s : { ...s, team: { ...team, activity } };
   }
-  // Out of intel (ILI-1314): it holds where it is until HQ feeds the gauge again. Into settled
-  // ground it needs none (ILI-1399), once it has pulled the square's package (ILI-1499).
-  const known = settled(s, target) && !waiting(s, target);
-  if (!moving(s) && !known) {
+  // Fresh intel or nothing (ILI-1532): before it sets off into a square, ALPHA needs a fresh Analyze
+  // of it that it has pulled. Short of that it holds and asks for imagery (imageryRequest.ts), and
+  // the mission clock keeps running. A leg already under way it finishes, fresh or not: the check is
+  // only ever before it enters the next square.
+  const ready = (settled(s, target) && !waiting(s, target)) || !!s.intel.walkFree;
+  if (!ready && team.pathTo !== target) {
     if (team.activity === STARVED) return s;
     const held = { ...s, team: { ...team, activity: STARVED } };
-    // The first time it stalls, it says what it needs (ILI-1318): eyes on the ground ahead. Once
-    // a mission: after that the gauge and the need line say it.
+    // The first time it holds, it says what it needs (ILI-1318). After that the request on the map says it.
     if (s.comms.messages.some((m) => m.id === 'needs-intel')) return held;
-    const ahead = team.route.slice(team.waypoint).find((sq) => !s.map.scanned.includes(sq)) ?? target;
-    const line: Message = { id: 'needs-intel', from: team.callsign, text: `Holding. No intel on what's ahead. Get us eyes on ${ahead}.`, atMs: s.elapsedMs, status: 'new', holds: false };
+    const line: Message = { id: 'needs-intel', from: team.callsign, text: `Holding. No intel on what's ahead. Get us eyes on ${target}.`, atMs: s.elapsedMs, status: 'new', holds: false };
     return { ...held, comms: { ...held.comms, messages: [...held.comms.messages, line] } };
   }
 
@@ -69,8 +69,7 @@ export const movementSystem: System = (s, dt) => {
   const waypoint = arrived ? team.waypoint + 1 : team.waypoint;
   const next = team.route[waypoint];
 
-  // The ground covered burns intel (ILI-1341), unless it's settled ground (ILI-1399).
-  return burn({
+  return {
     ...s,
     team: {
       ...team,
@@ -81,5 +80,5 @@ export const movementSystem: System = (s, dt) => {
       activity: next ? `Moving to ${next}` : `Holding at ${target}`,
       operators: team.operators.map((o, i) => (o.health > 0 ? { ...o, steps: footfall(i, s.elapsedMs, grade) } : o)), // heard on the move (ILI-1266)
     },
-  }, known ? 0 : step);
+  };
 };

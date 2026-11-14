@@ -130,7 +130,7 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 // HQ changes the ground (scans, strikes, intel), ALPHA reads it and radios what it's doing.
 // A contact ALPHA knows of (picture.ts) on the square it's heading into gets weighed: take it, hold short for
 // HQ to soften it (twenty seconds, then go around), or go around. A square nobody imaged it
-// just walks into if the intel gauge lets it (intel.ts), and finds out (ILI-1309). The exfil
+// only enters on fresh intel (movement.ts, ILI-1532). The exfil
 // always has a way out: a fight ALPHA won't take there sends it to the alternate exfil.
 export const TAKE_AT = 0.6; // their strength over ours at or under this: take the fight
 export const AVOID_ABOVE = 1; // over this: go around; between the two: soften it first
