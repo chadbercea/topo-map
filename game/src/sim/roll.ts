@@ -12,9 +12,9 @@ import { dice } from './enemy';
 //   square. They hold where they are: no patrols, no plans, no scripted moves.
 // The insert square and the ground around it roll no enemies, so ALPHA isn't in contact on landing.
 
-export const ENEMY_CHANCE = 0.22;
+export const ENEMY_CHANCE = 0.3;
 export const GROUP_SIZE = [2, 6] as const;
-export const GROUP_STRENGTH = [0.5, 1.2] as const;
+export const GROUP_STRENGTH = [0.8, 1.6] as const;
 
 const CELLS = 16;
 
