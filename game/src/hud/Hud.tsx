@@ -6,7 +6,6 @@ import { ExfilPanel } from './ExfilPanel';
 import { ResupplyPanel } from './ResupplyPanel';
 import { SquareCard } from './SquareCard';
 import { StrikeAlerts } from './StrikeAlert';
-import { lookSquare } from '../sim/satellite';
 import { useTier, useFold } from './tier';
 import { MissionBar } from './MissionBar';
 import { ChipStatus } from './ChipStatus';
@@ -42,7 +41,7 @@ type Sheet = 'peek' | 'half' | 'full';
 export function Hud() {
   const playing = useGame((s) => s.minigame?.status === 'active');
   const [tab, setTab] = useState<Tab>('orion');
-  const [teamOpen, setTeamOpen] = useState(true); // ALPHA's table opens expanded (ILI-1501); HQ folds it to the bar
+  const [teamOpen, setTeamOpen] = useState(false); // ALPHA's table starts folded to its bar, so nothing covers the map at start (ILI-1547 call E)
   const [highlight, setHighlight] = useState<string | null>(null);
   // On a wide screen the log is a drawer over the map's left edge, behind one small button (ILI-1393).
   const [log, setLog] = useState(false);
@@ -62,28 +61,8 @@ export function Hud() {
   // On a phone the dock is a bottom sheet (ILI-1214): peek (just the tabs), half or full.
   // Folded to its tabs to start (ILI-1396): COMMS, ORION-3 and TEAM are drawers, closed until HQ opens one.
   const [sheet, setSheet] = useState<Sheet>('peek');
-  // Tasking ORION-3 brings its panel forward on a fold or phone (ILI-1219).
-  // So does picking a square: its details and Reposition are there (ILI-1228, ILI-1308).
-  // Keyed on what changed, so a strike ending with a square still picked brings it back too.
-  const tasked = useGame((s) => (lookSquare(s) ? `${lookSquare(s)}|${s.satellite.state}|${!!s.minigame}` : ''));
-  useEffect(() => {
-    if (tasked) {
-      setTab('orion');
-      // On a phone a picked square has the map to itself (below): its menu is the action.
-      setSheet((h) => (h === 'peek' && !(tier === 'compact' && game.get().map.selected) ? 'half' : h));
-    }
-  }, [tasked]); // eslint-disable-line react-hooks/exhaustive-deps
-  // A mini game plays at its square on the map (ILI-1367), and a picked square's menu works
-  // there (ILI-1397): on a phone the sheet folds to give them the map, and comes back half open
-  // when they're done.
-  const minigame = useGame((s) => s.minigame?.status === 'active');
+  // Tabs and sheets never switch or fold by themselves (ILI-1546): news dots a tab, the player opens it.
   const picked = useGame((s) => !!s.map.selected);
-  const busyMap = useRef(false);
-  useEffect(() => {
-    const busy = minigame || picked;
-    if (tier === 'compact' && busy !== busyMap.current) setSheet(busy ? 'peek' : (h) => (h === 'peek' ? 'half' : h)); // only on a change: it starts folded (ILI-1396)
-    busyMap.current = busy;
-  }, [minigame, picked, tier]);
   // News in a panel out of sight dots its tab; a panel in view flashes its frame (ILI-1287).
   // ALPHA waiting on HQ lights TEAM's tab whole: its call box is there.
   const tabbed = tier !== 'wide' && !fold;
