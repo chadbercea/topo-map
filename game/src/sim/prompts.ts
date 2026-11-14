@@ -5,8 +5,6 @@ import { lockedOn, satelliteBusy, satName, slewMs } from './satellite';
 import { currentCall } from './comms';
 import { blocked } from './responses';
 import { squareAt } from '../map/grid';
-import { ammoLeft, condition } from './team';
-import { LOW } from './support';
 import { countdown } from './gameTime';
 
 // The HUD's tiers (ILI-1391). Tier one is always on and tiny (the mission timer, the team's
@@ -17,7 +15,7 @@ import { countdown } from './gameTime';
 // the others wait. A prompt is a map anchor, one line saying what's happening, and one to three
 // responses. It's derived from the game's state, so it goes away the moment it's handled.
 
-export type PromptKind = 'intel-needed' | 'enemy-traffic' | 'intel-ready' | 'team-call' | 'operator';
+export type PromptKind = 'intel-needed' | 'enemy-traffic' | 'intel-ready' | 'team-call';
 export type PromptResponse = { id: string; label: string; disabled?: boolean };
 export type Prompt = {
   id: string;
@@ -123,29 +121,12 @@ const teamCall: Source = (s) => {
   return [{ id: m.id, kind: 'team-call', priority: PRIORITY.teamRequest, atMs: m.atMs, square: squareAt(x, y) ?? s.team.route[0], text: `${m.from}: “${m.text}”`, responses }];
 };
 
-// An operator in trouble (ILI-1396): red health or low ammo, the most urgent thing there is. It
-// opens the team drawer with them highlighted; seen to, it stays down. Down is ALPHA's own call
-// (combat ineffective), and so is low ammo while ALPHA is on the radio asking for a resupply.
-export const operatorTrouble = (s: GameState) => {
-  const calling = !!currentCall(s.comms);
-  return s.team.operators.flatMap((o) => {
-    const c = condition(o);
-    const out: { o: typeof o; key: string; text: string }[] = [];
-    if (c === 'danger') out.push({ o, key: `op-${o.id}-hit`, text: `${o.role} hit, medic needs time` });
-    if (c !== 'down' && !calling && ammoLeft(o) < LOW) out.push({ o, key: `op-${o.id}-ammo`, text: `${o.role} low on ammo` });
-    return out;
-  });
-};
-
-const operatorHurt: Source = (s) => {
-  const { x, y } = s.team.position;
-  return operatorTrouble(s)
-    .filter((t) => !s.acked.includes(t.key))
-    .map((t) => ({ id: t.key, kind: 'operator' as const, priority: PRIORITY.operatorHurt, atMs: 0, square: squareAt(x, y) ?? s.team.route[0], operator: t.o.id, text: t.text, responses: [{ id: 'team', label: 'Open team' }] }));
-};
+// No operator prompt (ILI-1535): its "Open team" button took HQ to a panel with nothing to do while
+// ALPHA died. ALPHA in contact raises the ALERT on its square instead (strike.ts alertSquares), and
+// the team panel only shows ALPHA's state.
 
 // Enemy traffic isn't in the queue (ILI-1452): it has its own lane, so nothing knocks it off mid-read.
-const SOURCES: Source[] = [operatorHurt, intelNeeded, teamCall];
+const SOURCES: Source[] = [intelNeeded, teamCall];
 
 // Most urgent first: by priority, then the one that's waited longest.
 export const byUrgency = (a: Prompt, b: Prompt) => a.priority - b.priority || a.atMs - b.atMs;

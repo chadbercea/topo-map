@@ -34,7 +34,7 @@ test('the team panel is a bar at rest; a slot opens its table with them highligh
   await expect(panel).toHaveAttribute('data-state', 'min');
 });
 
-test('an operator hit is a prompt; it opens the team panel with them highlighted', async ({ page }) => {
+test('an operator hit puts up no prompt: no Open team button (ILI-1535)', async ({ page }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
@@ -43,12 +43,7 @@ test('an operator hit is a prompt; it opens the team panel with them highlighted
     window.game.set({ ...s, team: { ...s.team, operators: s.team.operators.map((o) => (o.id === 'gunner' ? { ...o, health: 10 } : o)) } });
   });
   await fastForward(page, 100);
-  const prompt = page.locator('[data-testid=prompt][data-kind=operator]');
-  await expect(prompt.getByTestId('prompt-text')).toContainText('Gunner hit, medic needs time');
-  await prompt.getByRole('button', { name: 'Open team' }).click();
-  await expect(page.getByTestId('team-panel')).toBeVisible();
-  await expect(page.getByTestId('op-gunner')).toHaveAttribute('data-highlight', 'true');
-  await expect(prompt).toHaveCount(0); // seen to
+  await expect(page.locator('[data-testid=prompt][data-kind=operator]')).toHaveCount(0);
 });
 
 // Names and status on the strip; the drawer as wide as its rows (ILI-1406).
