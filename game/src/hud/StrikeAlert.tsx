@@ -15,7 +15,7 @@ import { AirPanel } from './AirPanel';
 import { cash } from './MissionBar';
 import { strikeWork } from './PromptLayer';
 
-const STRIKE_W = 264; // the strike panel's width at scale 1
+const STRIKE_W = 288; // the strike panel's width at scale 1: three 80 px icons and their padding (ILI-1539)
 const MIN_H = 200; // the least room below its square the open panel needs before it rides up
 
 // Strikes aren't intel and they aren't ORION-3 (ILI-1524): a square with fighters that threaten
