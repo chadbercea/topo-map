@@ -22,9 +22,8 @@ test('a tap opens the square\u2019s flyout and sends ORION-3; Scan is in ORION-3
   if (isMobile) await page.getByTestId('tab-orion').click();
   await page.getByTestId('satellite').getByTestId('capture-scan').click();
   await expect.poll(() => page.evaluate(() => !!window.game.get().imagery.F4)).toBe(true);
-  // The scan report is ORION-3's, under its picture (ILI-1487); the flyout keeps what HQ can act on.
-  await expect(page.getByTestId('satellite').getByTestId('intel-summary')).toHaveText(/^(cleared|\d reports?)$/);
-  await expect(anchor.getByTestId('square-intel')).toHaveCount(0);
+  // The square's flyout owns the report (ILI-1548); ORION-3 has no Analysis block.
+  await expect(page.getByTestId('satellite').getByTestId('square-intel')).toHaveCount(0);
   await expect(anchor.getByTestId('intel-list')).toBeVisible();
 });
 

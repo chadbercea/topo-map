@@ -1,14 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
-import { AGE_LABEL, freshness, targets } from '../sim/imagery';
-import { analyzable, kindLabel, reopened, settled, shelfState, squareFindings, squareReports } from '../sim/intel';
+import { AGE_LABEL, freshness } from '../sim/imagery';
+import { analyzable, reopened, settled, shelfState } from '../sim/intel';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { pins, useSeenVersion } from './pins';
 import { nextBlind } from '../sim/progress';
-import { CELL, squareAt, squareCenter } from '../map/grid';
-import type { GameState } from '../sim/state';
+import { CELL, squareCenter } from '../map/grid';
 import { shownEvents } from '../sim/events';
 import { countdown, gameSpan, zulu } from '../sim/gameTime';
 import { bus, EV } from '../game/events';
@@ -218,17 +217,13 @@ export function OrionPanel() {
         )}
       </div>
 
-      {/* What its imagery found for the square it's on (rank 6, ILI-1487): the readout of its last
-          shot, and the scan report, item by item. Satellite intel is ORION-3's; the square's
-          flyout keeps only what HQ can act on there. */}
-      {!tied && (result || analyzed) && (
+      {/* The readout of its last shot (rank 6, ILI-1487). The analysis itself is the square's: its
+          flyout owns the report (ILI-1548). ORION-3 is the imagery tool. */}
+      {!tied && result && (
         <div className="o-saw" data-testid="orion-found">
-          {result && (
-            <p data-testid="satellite-result">
-              Saw {result.square} · {CAPTURE[result.mode].label}: {describe(result)}
-            </p>
-          )}
-          {analyzed && <ScanReport s={s} square={sat.aim} />}
+          <p data-testid="satellite-result">
+            Saw {result.square} · {CAPTURE[result.mode].label}: {describe(result)}
+          </p>
         </div>
       )}
       {/* The one Last look (rank 8). */}
@@ -305,31 +300,6 @@ function PictureOverlay({ square, wx, cloud }: { square: string; wx: Weather; cl
         </div>
       </dl>
     </div>
-  );
-}
-
-// The scan report of the square ORION-3 is on (ILI-1399, moved here from the square's flyout by
-// ILI-1487): every report its scan brought in, by discipline, or that it came up clear, and the
-// fighters it marked.
-function ScanReport({ s, square }: { s: GameState; square: string }) {
-  const items = squareReports(s, square);
-  const clear = squareFindings(s, square) === 'clear';
-  const marked = targets(s).filter((t) => squareAt(t.x, t.y) === square).length;
-  return (
-    <section className="o-report" data-testid="square-intel" data-clear={clear || undefined} aria-label={`Analysis of ${square}`}>
-      <p className="o-report-head">
-        Analysis · {square} · <span data-testid="intel-summary">{clear ? 'cleared' : `${items.length} ${items.length === 1 ? 'report' : 'reports'}`}</span>
-        {marked > 0 && <span data-testid="fighters-marked"> · {marked} {marked === 1 ? 'fighter' : 'fighters'} marked</span>}
-      </p>
-      <ul>
-        {items.map((r, i) => (
-          <li key={i} data-kind={r.kind} data-heat={r.heat} data-testid="square-intel-item">
-            <i className="int">{kindLabel(r.kind)}</i>
-            <span>{r.text}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
 

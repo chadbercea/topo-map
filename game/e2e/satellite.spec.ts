@@ -204,8 +204,7 @@ test('a photo says how many fighters it marked (ILI-1270)', async ({ page, isMob
   });
   if (isMobile) await page.getByTestId('tab-orion').click();
   await expect.poll(() => page.getByTestId('target-pin').count()).toBeGreaterThan(0); // the map brackets them on its next frame
-  const n = await page.getByTestId('target-pin').count();
-  await expect(page.getByTestId('satellite').getByTestId('fighters-marked')).toHaveText(` · ${n} ${n === 1 ? 'fighter' : 'fighters'} marked`); // a readout of ORION-3's scan (ILI-1487)
+  await expect(page.getByTestId('satellite').getByTestId('square-intel')).toHaveCount(0); // the report is the square's, not ORION-3's (ILI-1548)
 });
 
 test('ORION-3 never scrolls, and nothing in it moves through a scan; the picture stays up after the shot (ILI-1354, ILI-1400)', async ({ page, isMobile }) => {

@@ -2101,16 +2101,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    scan report, item by item, under the picture. */
 .orion .o-saw { white-space: normal; overflow: visible; display: grid; gap: 4px; }
 .orion .o-saw > p { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.orion .o-report { display: grid; gap: 3px; }
-.orion .o-report-head { margin: 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
-.orion .o-report-head span { color: var(--ink); text-transform: none; letter-spacing: 0.04em; }
-.orion .o-report[data-clear] .o-report-head span { color: var(--accent); }
-.orion .o-report ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
-.orion .o-report li { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink); }
-.orion .o-report li[data-heat='quiet'] { color: var(--dim); }
-.orion .o-report .int { flex: 0 0 52px; font-style: normal; font-size: 9px; letter-spacing: 0.06em; text-align: center; padding: 0 3px; border: 1px solid rgba(207, 232, 220, 0.3); border-radius: 2px; color: var(--dim); }
-.orion .o-report li[data-heat='some'] .int { border-color: rgba(255, 138, 42, 0.6); color: #ff8a2a; }
-.orion .o-report li[data-heat='hot'] .int { border-color: #e5484d; color: #e5484d; }
 
 /* The square's intel list (ILI-1487): only what HQ can act on there. */
 .square-card .sc-items { display: grid; gap: 2px; padding: 3px 8px 4px; border-bottom: 1px solid var(--line); }
