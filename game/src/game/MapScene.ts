@@ -797,12 +797,12 @@ export class MapScene extends Phaser.Scene {
     this.bracketsInto(g, inView, DPR / this.zoom, DPR / this.inset.zoom, true);
   }
 
-  // Range rings in ORION-3's picture (ILI-1550, option A): a dotted 250 m sight ring round ALPHA
-  // and round each enemy group it can see. Contact is symmetric (ILI-1544): rings crossing is the
-  // fight starting, and the ALERT comes up on the square (ILI-1524).
+  // Range rings in ORION-3's picture (ILI-1550, option A): a dotted ring round ALPHA and round each
+  // enemy group it can see. Each ring is half the 250 m sight range, so two rings touch exactly when
+  // the units are in sight range of each other (ILI-1553): contact, with line of sight.
   private drawRings(sq: { col: number; row: number }) {
     const g = this.ringGfx;
-    const r = SIGHT_M / METRES_PER_UNIT;
+    const r = SIGHT_M / 2 / METRES_PER_UNIT;
     const near = (t: { x: number; y: number }) => t.x >= (sq.col - 0.5) * CELL - r && t.x <= (sq.col + 1.5) * CELL + r && t.y >= (sq.row - 0.5) * CELL - r && t.y <= (sq.row + 1.5) * CELL + r;
     const groups = new Map<string, { x: number; y: number; n: number }>();
     for (const t of this.seen) {
