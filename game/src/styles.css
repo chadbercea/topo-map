@@ -2427,3 +2427,16 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .aar-last::after { inset: 0 auto 0 0; width: 60%; height: auto; background: linear-gradient(to right, var(--bg) 30%, transparent); }
   .aar-last { align-content: center; }
 }
+
+/* ALERT, taller and flashing (ILI-1529): a band you can't miss. Closed and waiting on HQ, the
+   band flashes red and its hazard stripes march; opened (or a strike already working the square)
+   it holds steady. Off under reduced motion. */
+.strike-alert .sa-band { min-height: 34px; gap: 8px; }
+.strike-alert .sa-band b { font-size: 13px; letter-spacing: 0.18em; }
+.strike-alert .sa-band small { font-size: 11px; }
+.strike-alert .sa-hazard { flex-basis: 24px; background-size: 11.3px 11.3px; }
+.strike-alert:not([data-open]) .sa-band:not([data-work]) { animation: sa-flash 0.9s steps(1, end) infinite; }
+.strike-alert:not([data-open]) .sa-band:not([data-work]) .sa-hazard { animation: sa-march 0.6s linear infinite; }
+@keyframes sa-flash { 0%, 100% { background: rgba(60, 10, 12, 0.94); } 50% { background: #b3262b; box-shadow: 0 0 0 1px #e5484d, 0 0 18px rgba(229, 72, 77, 0.6); } }
+@keyframes sa-march { to { background-position: 11.3px 0; } }
+@media (prefers-reduced-motion: reduce) { .strike-alert .sa-band, .strike-alert .sa-hazard { animation: none !important; } }
