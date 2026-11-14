@@ -36,7 +36,7 @@ describe('firefight', () => {
     const s = step(inContact(), 100);
     expect(s.team.fight).toMatchObject({ contactId: 'c', square: 'E3' });
     expect(s.team.activity).toBe('Engaged in E3');
-    expect(s.comms.messages.at(-1)?.text).toBe('Contact! Engaging in E3.');
+    expect(s.comms.messages.at(-1)?.text).toBe('HQ, ALPHA, CONTACT, E3. Engaging.');
   });
 
   it('an attack on a found contact has surprise: the enemy starts at half strength', () => {
@@ -58,13 +58,13 @@ describe('firefight', () => {
     const s0 = inContact('revealed', false);
     const s = step({ ...s0, team: { ...s0.team, known: {} } }, 100);
     expect(s.team.fight).toMatchObject({ ambush: true });
-    expect(s.comms.messages.at(-1)?.text).toBe('Ambush in E3! Returning fire.');
+    expect(s.comms.messages.at(-1)?.text).toBe('HQ, ALPHA, CONTACT, ambush, E3. TIC.');
   });
 
   it('a group ALPHA knew nothing of is an ambush: their first volley is aimed, it fights back from cover, and they fight harder', () => {
     const s = step(inContact('hidden', false), 100);
     expect(s.team.fight).toMatchObject({ square: 'E3', ambush: true, coverUntilMs: 20_100 + AMBUSH_COVER_MS, full: AMBUSH_EDGE * 100 });
-    expect(s.comms.messages.at(-1)?.text).toBe('Ambush in E3! Returning fire.');
+    expect(s.comms.messages.at(-1)?.text).toBe('HQ, ALPHA, CONTACT, ambush, E3. TIC.');
     // The opening seconds: one man takes all of it, and ALPHA is barely shooting back.
     const early = run(s, AMBUSH_COVER_MS - 200);
     expect(early.team.operators.filter((o) => o.health < 100)).toHaveLength(1);
@@ -117,13 +117,13 @@ describe('firefight', () => {
     expect(seen).toBe(1);
     const end = run(s, 30_000);
     expect(end.contacts[0].status).toBe('cleared');
-    expect(end.comms.messages.some((m) => /^E3 clear\..*\+\$20,000\.$/.test(m.text))).toBe(true); // both fighters paid
+    expect(end.comms.messages.some((m) => /^HQ, ALPHA, E3 clear\..*\+\$20,000\.$/.test(m.text))).toBe(true); // both fighters paid
   });
 
   it('ends with the contact cleared and a report on the radio', () => {
     const s = run(inContact(), 30_000);
     expect(s.contacts[0].status).toBe('cleared');
-    expect(s.comms.messages.some((m) => /^E3 clear\./.test(m.text))).toBe(true);
+    expect(s.comms.messages.some((m) => /^HQ, ALPHA, E3 clear\./.test(m.text))).toBe(true);
   });
 
   it('the medic treats the wounded with their own meds, then the team moves on', () => {
@@ -132,7 +132,7 @@ describe('firefight', () => {
     expect(medic.meds).toBeLessThan(LOADOUT.Medic.meds);
     expect(s.team.operators.filter((o) => o.health > 0).every((o) => o.health >= 90)).toBe(true);
     expect(s.team.treating).toBeNull();
-    expect(s.comms.messages.some((m) => m.text === 'Patched up. Moving.')).toBe(true);
+    expect(s.comms.messages.some((m) => m.text === 'HQ, ALPHA, wounded treated, moving.')).toBe(true);
     expect(s.team.position).not.toEqual(squareCenter('E3')); // it walked on (to the crash site in D3)
   });
 
@@ -151,6 +151,6 @@ describe('firefight', () => {
     const blind = { ...walking(), contacts: [{ id: 'c', square: 'F4', label: 'test', strength: 1, status: 'hidden' as const, observed: false, units: [0], total: 1 }] };
     const s = playUntil(blind, (x) => !!x.team.fight).get();
     expect(s.team.fight?.square).toBe('F4');
-    expect(s.comms.messages.some((m) => m.text.startsWith('Ambush in F4'))).toBe(true);
+    expect(s.comms.messages.some((m) => m.text.startsWith('HQ, ALPHA, CONTACT, ambush, F4'))).toBe(true);
   });
 });

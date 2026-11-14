@@ -34,10 +34,10 @@ export const TREE: Record<string, CallNode> = {
   // ALPHA decides the rest itself and says so (ILI-1315): resupply is the one thing it asks.
   // The team running low or combat ineffective (support.ts): one resupply bird covers both.
   resupply: {
-    text: ({ label }) => `${label}. We need a resupply bird.`,
+    text: ({ square, label }) => `request resupply${square ? ` at ${square}` : ''}. ${label}.`,
     responses: [
-      { id: 'resupply', label: `Send resupply ($${RESUPPLY_COST.toLocaleString('en-US')})`, effect: 'resupply', reply: 'Copy, we\u2019ll watch for it.' },
-      { id: 'push', label: 'Move on without', effect: 'pass', reply: 'Understood. Moving with what we have.' },
+      { id: 'resupply', label: `Send resupply ($${RESUPPLY_COST.toLocaleString('en-US')})`, effect: 'resupply', reply: 'ROGER.' },
+      { id: 'push', label: 'Move on without', effect: 'pass', reply: 'WILCO, moving without resupply.' },
     ],
   },
 };
@@ -48,7 +48,7 @@ export function treeCall(s: GameState, id: string, node: string, square: string,
   return {
     id,
     from: s.team.callsign,
-    text: n.text({ square, label }),
+    text: `HQ, ${s.team.callsign}, ${n.text({ square, label })}`, // called, then caller (comms standard, ILI-1541)
     atMs: s.elapsedMs,
     status: 'new',
     holds: true,

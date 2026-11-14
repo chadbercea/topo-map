@@ -16,7 +16,7 @@ describe('the exfil sequence (ILI-1264)', () => {
     expect(inC(s)).toBe(true);
     expect(s.mission.blackBox).toBe(true);
     expect(s.exfil).toMatchObject({ square: 'B1', arriveMs: s.elapsedMs + EXFIL_FLIGHT_MS, boardMs: null });
-    expect(s.comms.messages.at(-1)).toMatchObject({ id: 'exfil-called', from: 'RAVEN-6' });
+    expect(s.comms.messages.at(-1)).toMatchObject({ id: 'exfil-called', from: 'SKYHOOK-1' });
     expect(s.phase).toBe('running');
   });
 
@@ -43,7 +43,7 @@ describe('the exfil sequence (ILI-1264)', () => {
 
     s = until(s, (x) => x.exfil!.boardMs !== null);
     const r = s.exfil!;
-    expect(s.comms.messages.at(-1)).toMatchObject({ id: 'exfil-down', from: 'RAVEN-6' });
+    expect(s.comms.messages.at(-1)).toMatchObject({ id: 'exfil-down', from: 'SKYHOOK-1' });
     const ids = s.team.operators.map((o) => o.id);
     const counts = [1, 2, 3, 4, 5].map((n) => aboard(r, ids, r.boardMs! + n * BOARD_MS).length);
     expect(counts).toEqual([1, 2, 3, 4, 5]);
@@ -53,6 +53,6 @@ describe('the exfil sequence (ILI-1264)', () => {
     expect(s.mission.phase).toBe('complete');
     expect(exfilStage(s.exfil!, s.elapsedMs)).toBe('done');
     expect(transportAt(s.exfil!, s.elapsedMs)).toBeNull();
-    expect(s.comms.messages.find((m) => m.id === 'exfil')?.text).toMatch(/We're out/);
+    expect(s.comms.messages.find((m) => m.id === 'exfil')?.text).toMatch(/all aboard SKYHOOK-1, wheels up/);
   });
 });

@@ -24,7 +24,7 @@ describe('fresh intel', () => {
     const s = run(s0, 3_000);
     expect(s.team.position).toEqual(s0.team.position);
     expect(s.team.activity).toBe('Holding · needs intel');
-    expect(s.comms.messages.filter((m) => m.id === 'needs-intel').map((m) => m.text)).toEqual(["Holding. No intel on what's ahead. Get us eyes on F4."]);
+    expect(s.comms.messages.filter((m) => m.id === 'needs-intel').map((m) => m.text)).toEqual(['HQ, ALPHA, holding short of F4. Request imagery, F4.']);
     expect(s.timer.remainingMs).toBeLessThan(s0.timer.remainingMs);
   });
 
@@ -115,7 +115,7 @@ describe('fresh intel', () => {
     const store = createStore(lockOn(initialState(), 'F4'));
     store.scan('F4');
     expect(shelfState(store.get(), 'F4')).toBe('posted'); // on the shelf: HQ can't push it to the team
-    expect(store.get().comms.messages.at(-1)?.text).toMatch(/analysis complete: .*\. Intel posted for ALPHA\./);
+    expect(store.get().comms.messages.some((m) => /Intel posted/.test(m.text))).toBe(false); // the post shows on the instruments, not the radio (ILI-1541)
     store.tick(100);
     expect(shelfState(store.get(), 'F4')).toBe('pulling'); // holding: it syncs at once
     expect(store.get().intel.download).toBeTruthy();

@@ -63,7 +63,7 @@ test('HQ finds the checkpoint in E3; heading into it, ALPHA weighs it and says i
     for (let i = 0; i < 900 && window.game.get().team.route.includes('E3'); i++) window.game.tick(100);
   });
   if (isMobile) await page.getByTestId('tab-satcom').click();
-  await expect(page.getByTestId('comms-feed')).toContainText(/Contact in E3, a fortified checkpoint\. Not taking that\. Going around via [A-H]\d\./);
+  await expect(page.getByTestId('comms-feed')).toContainText(/CONTACT E3, a fortified checkpoint\. Too strong to take\. Moving around via [A-H]\d\./);
   await expect(call(page)).toHaveCount(0); // it told HQ; it didn't ask
 });
 

@@ -25,6 +25,9 @@ const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.le
 export const ammoLevel = (s: GameState) => avg(standing(s).map(ammoLeft));
 export const medsLevel = (s: GameState) => avg(standing(s).map(medsLeft));
 
+export const RESUPPLY_CALLSIGN = 'HAULER-2'; // the resupply bird (comms standard, ILI-1541)
+const birdAt = (s: GameState) => squareAt(s.team.position.x, s.team.position.y) ?? s.team.route[s.team.waypoint] ?? '';
+
 const radio = (s: GameState, from: string, id: string, text: string): Message => ({ id, from, text, atMs: s.elapsedMs, status: 'new', holds: false });
 
 // What the team needs, in its own words, or null if it's fine. Ineffective (two down, or
@@ -32,10 +35,10 @@ const radio = (s: GameState, from: string, id: string, text: string): Message =>
 function need(s: GameState): { what: string; key: string; holds: boolean } | null {
   const down = s.team.operators.filter((o) => o.health <= 0).length;
   const hurt = avg(standing(s).map((o) => o.health)) < 40;
-  if ((down >= 2 || hurt) && standing(s).length) return { what: `Combat ineffective, ${down ? `${down} down` : 'everyone hurt'}`, key: `ineffective-${down}`, holds: true };
+  if ((down >= 2 || hurt) && standing(s).length) return { what: `Combat ineffective, ${down ? `${down} down` : 'all WIA'}`, key: `ineffective-${down}`, holds: true };
   const ammo = ammoLevel(s) < LOW;
   const meds = medsLevel(s) < LOW;
-  if (ammo || meds) return { what: `Running low on ${ammo ? (meds ? 'ammo and meds' : 'ammo') : 'meds'}`, key: 'low', holds: false };
+  if (ammo || meds) return { what: `${ammo ? (meds ? 'Ammo and meds' : 'Ammo') : 'Meds'} low`, key: 'low', holds: false };
   return null;
 }
 
@@ -74,7 +77,7 @@ export const supportSystem: System = (s) => {
       },
       comms: {
         ...next.comms,
-        messages: [...next.comms.messages, radio(s, 'DUSTOFF-2', `resupply-${s.elapsedMs}`, replaced ? 'Bird on the ground: full reload and replacements. ALPHA is back to strength.' : 'Bundle on the ground. Full reload for ALPHA.')],
+        messages: [...next.comms.messages, radio(s, RESUPPLY_CALLSIGN, `resupply-${s.elapsedMs}`, `HQ, ${RESUPPLY_CALLSIGN}, wheels down ${birdAt(s)}. ${replaced ? 'Supplies and replacements' : 'Supplies'} on the ground, RTB.`)],
       },
     };
   }
@@ -88,7 +91,7 @@ export function sendResupply(s: GameState): GameState {
   return {
     ...paid,
     inbound: [...s.inbound, { kind: 'resupply', arrivesMs: s.elapsedMs + RESUPPLY_FLIGHT_MS }],
-    comms: { ...s.comms, messages: [...s.comms.messages, radio(s, 'DUSTOFF-2', `resupply-out-${s.elapsedMs}`, 'Resupply bird is up. Twenty seconds out.')] },
+    comms: { ...s.comms, messages: [...s.comms.messages, radio(s, RESUPPLY_CALLSIGN, `resupply-out-${s.elapsedMs}`, `HQ, ${RESUPPLY_CALLSIGN}, inbound ${birdAt(s)}, ${Math.round(RESUPPLY_FLIGHT_MS / 1000)} seconds.`)] },
   };
 }
 

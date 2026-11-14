@@ -17,7 +17,7 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
   });
   await expect(page.getByTestId('objective')).toContainText('Exfil at B1 with the black box');
 
-  // In B1 and it's clear: RAVEN-6 confirms and the orange exfil panel counts it in (ILI-1264).
+  // In B1 and it's clear: SKYHOOK-1 confirms and the orange exfil panel counts it in (ILI-1264).
   await page.evaluate(() => {
     for (let i = 0; i < 7000 && !window.game.get().exfil; i++) window.game.tick(100);
   });
@@ -44,7 +44,7 @@ test('the objective leads ALPHA from the crash site to exfil, and the mission co
   });
   const wrap = page.getByTestId('wrapup');
   await expect(wrap).toContainText('AFTER ACTION REPORT');
-  // The report notes the extraction; the band's RAVEN-6 panel is gone (ILI-1528).
+  // The report notes the extraction; the band's SKYHOOK-1 panel is gone (ILI-1528).
   await expect(wrap.getByTestId('aar-exfil')).toContainText('Successful extraction');
   await expect(page.getByTestId('exfil-panel')).toHaveCount(0);
   await expect(wrap).toHaveAttribute('data-outcome', 'win');

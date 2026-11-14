@@ -116,7 +116,7 @@ const enemyTraffic: Source = (s) =>
 const teamCall: Source = (s) => {
   const m = currentCall(s.comms);
   if (!m) return [];
-  const responses: PromptResponse[] = m.responses?.length ? m.responses.slice(0, 3).map((r) => ({ id: r.id, label: r.label, disabled: !!blocked(s, r) })) : [{ id: 'copy', label: 'Copy' }];
+  const responses: PromptResponse[] = m.responses?.length ? m.responses.slice(0, 3).map((r) => ({ id: r.id, label: r.label, disabled: !!blocked(s, r) })) : [{ id: 'copy', label: 'Roger' }];
   const { x, y } = s.team.position;
   return [{ id: m.id, kind: 'team-call', priority: PRIORITY.teamRequest, atMs: m.atMs, square: squareAt(x, y) ?? s.team.route[0], text: `${m.from}: “${m.text}”`, responses }];
 };

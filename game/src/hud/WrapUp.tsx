@@ -43,7 +43,7 @@ const COPY: Record<Outcome, { title: string; em: string; sign: string[]; last: s
 };
 
 // The line-drawn models, framed like the Castle House site's (studio.ts): the globe and its
-// satellites behind the headline, RAVEN-6 for the extraction, ORION-3 overhead at the foot.
+// satellites behind the headline, SKYHOOK-1 for the extraction, ORION-3 overhead at the foot.
 const RED = '#e5484d';
 const HERO: Shot = { scene: 'constellation', opacity: 0.85, zoom: [1.1, 1.9], yaw: [-0.9, 0.7], pitch: [0.25, -0.05], pan: [0.45, -0.1, 0.15, -0.05], spin: 0.06 };
 const LIFT: Shot = { scene: 'airlift', state: 'done', zoom: [1.6, 2.6], yaw: [-0.5, 0.6], pitch: [0.15, -0.1], pan: [0.3, -0.25, 0, 0], spin: 0 };

@@ -20,7 +20,7 @@ export const SIGNAL_INTEL = 35;
 // What the analysts make of a photo, by what it found there.
 export type Grade = 'clear' | 'low' | 'medium' | 'high';
 export const GRADE_INTEL: Record<Grade, number> = { clear: 12, low: 25, medium: 50, high: 75 }; // half a square to three
-export const GRADE_LABEL: Record<Grade, string> = { clear: 'all clear', low: 'low-grade intel', medium: 'medium-grade intel', high: 'high-grade intel' };
+export const GRADE_LABEL: Record<Grade, string> = { clear: 'nothing significant', low: 'low-grade intel', medium: 'medium-grade intel', high: 'high-grade intel' };
 
 // graded: squares with fresh intel (analyzed, not yet decayed); fresh: each one's time left.
 // walkFree: tests and tuning only, ALPHA moves without fresh intel (the old pinned-full gauge).
@@ -51,11 +51,11 @@ export const KIND_LABEL: Record<IntKind | PushSource, string> = { GEOINT: 'Image
 export const kindLabel = (code: string) => (KIND_LABEL as Record<string, string>)[code] ?? code;
 
 const REPORT: Record<IntKind, Record<Heat, string>> = {
-  GEOINT: { quiet: 'nothing moving in the picture', some: 'fresh tracks, a vehicle came through', hot: 'armed men in the open' },
-  SIGINT: { quiet: 'no traffic on their nets', some: 'radio traffic on their net', hot: 'radio traffic, they’re calling for help' },
-  HUMINT: { quiet: 'locals say nothing unusual', some: 'a shepherd saw a truck pass', hot: 'a local says fighters came through at dawn' },
-  MASINT: { quiet: 'no heat signatures', some: 'one heat signature, could be an animal', hot: 'heat signatures, several, close together' },
-  OSINT: { quiet: 'nothing posted from here', some: 'a photo from here, two days old', hot: 'a post shows armed men here today' },
+  GEOINT: { quiet: 'nothing significant', some: 'fresh tracks, a vehicle came through', hot: 'armed men in the open' },
+  SIGINT: { quiet: 'nothing significant', some: 'radio traffic on their net', hot: 'radio traffic, they’re calling for help' },
+  HUMINT: { quiet: 'nothing significant', some: 'a shepherd saw a truck pass', hot: 'a local says fighters came through at dawn' },
+  MASINT: { quiet: 'nothing significant', some: 'one heat signature, could be an animal', hot: 'heat signatures, several, close together' },
+  OSINT: { quiet: 'nothing significant', some: 'a photo from here, two days old', hot: 'a post shows armed men here today' },
 };
 
 const HEAT: Record<Grade | 'video', Heat> = { clear: 'quiet', low: 'some', medium: 'some', high: 'hot', video: 'some' };
@@ -89,7 +89,7 @@ export const feed = (s: GameState, amount: number, from?: PushFrom): GameState =
 
 // The square's worth (RNG, by square): mostly nothing or a lot at low quality, now and then
 // more. Seeded by the mission's seed so a mission replays exactly. Fighters in the picture are
-// always high grade; a square the analysts have been through already is only all clear.
+// always high grade; a square the analysts have been through already is only nothing significant.
 export function grade(s: GameState, square: string, fighters: number): Grade {
   if (fighters) return 'high';
   if (s.intel.graded.includes(square)) return 'clear';

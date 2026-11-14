@@ -11,7 +11,7 @@ describe('teaching through play', () => {
     const s = run(initialState(), 3_000);
     const lines = s.comms.messages.filter((m) => m.id === 'needs-intel');
     expect(lines).toHaveLength(1);
-    expect(lines[0].text).toBe("Holding. No intel on what's ahead. Get us eyes on F4.");
+    expect(lines[0].text).toBe('HQ, ALPHA, holding short of F4. Request imagery, F4.');
     expect(run(s, 10_000).comms.messages.filter((m) => m.id === 'needs-intel')).toHaveLength(1);
   });
 

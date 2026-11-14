@@ -132,13 +132,13 @@ export function postBuilding(s: GameState, square: SquareId): GameState {
 }
 
 // Why ALPHA can't, as it says it: short, plain.
-const UNABLE = { contact: 'enemy in it', 'cut-off': 'no way round the enemy' } as const;
+const UNABLE = { contact: 'enemy present', 'cut-off': 'no route around the enemy' } as const;
 const unable = (s: GameState, square: SquareId, why: 'contact' | 'cut-off'): GameState => {
   const id = `unable-building-${square}-${s.elapsedMs}`;
   return {
     ...s,
     events: s.events.map((e) => (e.id === buildingId(square) ? { ...e, status: 'new' as const, reach: why } : e)),
-    comms: { ...s.comms, messages: [...s.comms.messages, radio(s, id, `Unable to reach the building in ${square}: ${UNABLE[why]}.`)] },
+    comms: { ...s.comms, messages: [...s.comms.messages, radio(s, id, `HQ, ${s.team.callsign}, NEGATIVE, building in ${square}, ${UNABLE[why]}.`)] },
   };
 };
 
@@ -189,7 +189,7 @@ export const buildingSystem: System = (s0) => {
     return {
       ...s,
       team: { ...team, holdUntilMs: s.elapsedMs + SEARCH_MS, activity: `Searching the building in ${here}` },
-      comms: { ...s.comms, messages: [...s.comms.messages, radio(s, searchingId, `At the building in ${here}. Searching it.`)] },
+      comms: { ...s.comms, messages: [...s.comms.messages, radio(s, searchingId, `HQ, ${s.team.callsign}, at the building in ${here}. Searching.`)] },
     };
   }
   if (s.elapsedMs < team.holdUntilMs) return s;
@@ -202,6 +202,6 @@ export const buildingSystem: System = (s0) => {
     searching: paid.searching.filter((sq) => sq !== here),
     stats: { ...paid.stats, searched: paid.stats.searched + 1 },
     events: paid.events.map((e) => (e.id === id ? { ...e, status: 'resolved' as const } : e)),
-    comms: { ...paid.comms, messages: [...paid.comms.messages, radio(s, `found-building-${here}`, `Building in ${here} searched: ${find.what}, plus ammo and medical supplies. +$${find.cash.toLocaleString('en-US')}, and intel to keep us moving.`)] },
+    comms: { ...paid.comms, messages: [...paid.comms.messages, radio(s, `found-building-${here}`, `HQ, ${s.team.callsign}, building in ${here} searched: ${find.what}, plus ammo and medical supplies. +$${find.cash.toLocaleString('en-US')}.`)] },
   };
 };

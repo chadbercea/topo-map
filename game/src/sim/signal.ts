@@ -167,7 +167,15 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
   const report: Message = {
     id: `signal-${m.startedMs}`,
     from: 'SIGINT',
-    text: plan ? `Decoded: "${g.plain}". Posted for ${s.team.callsign}.` : where ? (fix ? `Got part of it: they're at ${c!.square}, but not what they plan.` : 'Got part of it: no fix on where they are, and not what they plan.') : 'Lost the signal.',
+    // Analysts' format (comms standard, ILI-1541): grid and kind, then the result. The post to
+    // ALPHA is the package's check on the instruments, not part of the line.
+    text: plan
+      ? `${m.square} audio, decoded: "${g.plain}".`
+      : where
+        ? fix
+          ? `${m.square} audio, partial intercept. Enemy at ${c!.square}, intent unknown.`
+          : `${m.square} audio, partial intercept. No fix, intent unknown.`
+        : `${m.square} audio, signal lost.`,
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,
@@ -190,7 +198,7 @@ export function jam(s: GameState, eventId: string): GameState {
   const m: Message = {
     id: `jam-${eventId}`,
     from: 'HQ',
-    text: `Jamming their net near ${e.square}. They'll be slow to coordinate, but we won't hear what they're planning.`,
+    text: `ALL STATIONS, HQ, jamming enemy net near ${e.square}. Enemy slowed, no intercepts while jammed.`,
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,

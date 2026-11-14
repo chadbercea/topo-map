@@ -117,7 +117,7 @@ export function reveal(s: GameState, squares: SquareId[], by: string): GameState
       messages: [
         ...s.comms.messages,
         ...found.map((c) =>
-          radio(s, by, `found-${c.id}`, `Contact in ${c.square}: ${c.label}.${ahead.includes(c.square) ? ' It is on ALPHA’s route.' : ''}`),
+          radio(s, by, `found-${c.id}`, `CONTACT ${c.square}, ${c.label}.${ahead.includes(c.square) ? ` On ${s.team.callsign}’s route.` : ''}`),
         ),
       ],
     },
@@ -157,21 +157,21 @@ export const approachSystem: System = (s) => {
   if (known && team.decisions[next] !== 'attack') return assess(s, next, known.c, known.units);
   // Held short of a contact that HQ's support has since wiped out: it moves through.
   if (team.waitFor?.square === next && !known)
-    return decideOn(say(s, `clear-${next}-${s.elapsedMs}`, `Targets in ${next} are down. Moving through.`), next, 'push');
+    return decideOn(say(s, `clear-${next}-${s.elapsedMs}`, `${next} clear, moving through.`), next, 'push');
   return s;
 };
 
 function assess(s: GameState, square: SquareId, c: Contact, units: number): GameState {
   const r = odds(s, c, units);
   const waiting = s.team.waitFor?.square === square ? s.team.waitFor : null;
-  const what = `Contact in ${square}, ${c.label}.`;
-  if (r <= TAKE_AT) return decideOn(say(s, `take-${c.id}-${s.elapsedMs}`, waiting ? `That did it. Moving in on ${square}.` : `${what} We'll take them.`), square, 'attack');
+  const what = `CONTACT ${square}, ${c.label}.`;
+  if (r <= TAKE_AT) return decideOn(say(s, `take-${c.id}-${s.elapsedMs}`, waiting ? `moving in on ${square}.` : `${what} Moving to engage.`), square, 'attack');
   if (r <= AVOID_ABOVE) {
-    if (!waiting) return say({ ...s, team: { ...s.team, waitFor: { square, untilMs: s.elapsedMs + SOFTEN_MS } } }, `soften-${c.id}-${s.elapsedMs}`, `${what} Too many to walk into. Soften them up and we'll go.`);
+    if (!waiting) return say({ ...s, team: { ...s.team, waitFor: { square, untilMs: s.elapsedMs + SOFTEN_MS } } }, `soften-${c.id}-${s.elapsedMs}`, `${what} Too strong to take. Holding short, request fires on ${square}.`);
     if (s.elapsedMs < waiting.untilMs) return s;
-    return goAround(s, square, `No change in ${square}.`);
+    return goAround(s, square, `no change in ${square}.`);
   }
-  return goAround(s, square, `${what} Not taking that.`);
+  return goAround(s, square, `${what} Too strong to take.`);
 }
 
 // It won't take the fight: around it, or out by the alternate exfil. The crash site it can't
@@ -180,20 +180,21 @@ function goAround(s: GameState, square: SquareId, why: string): GameState {
   const cleared = { ...s, team: { ...s.team, waitFor: null } };
   if (square === s.mission.c) {
     const next = divertExfil(cleared, square);
-    if (next.mission.c !== square) return say(next, `divert-${s.elapsedMs}`, `${why} Swinging wide to the alternate exfil at ${next.mission.c}.`);
+    if (next.mission.c !== square) return say(next, `divert-${s.elapsedMs}`, `${why} Moving to the alternate exfil at ${next.mission.c}.`);
   }
-  if (isMissionPoint(s, square)) return decideOn(say(cleared, `go-${s.elapsedMs}`, `${why} It's the crash site: we're going in.`), square, 'attack');
+  // The crash site, or the exfil with no alternate left: ALPHA names the place it can't skip.
+  if (isMissionPoint(s, square)) return decideOn(say(cleared, `go-${s.elapsedMs}`, `${why} ${square === s.mission.b ? 'Crash site' : 'Exfil'}, no way around. Moving to engage.`), square, 'attack');
   const i = s.team.route.indexOf(square, s.team.waypoint);
   // Only ALPHA's route changes: the contact stays where it is, live, for HQ to hit if it likes.
   const next = { ...detour(cleared, square), contacts: cleared.contacts, events: cleared.events };
   const via = next.team.route[i];
-  return via && via !== square ? say(next, `around-${s.elapsedMs}`, `${why} Going around via ${via}.`) : decideOn(say(cleared, `through-${s.elapsedMs}`, `${why} No way around: going through.`), square, 'attack');
+  return via && via !== square ? say(next, `around-${s.elapsedMs}`, `${why} Moving around via ${via}.`) : decideOn(say(cleared, `through-${s.elapsedMs}`, `${why} No way around. Moving to engage.`), square, 'attack');
 }
 
 const decideOn = (s: GameState, square: SquareId, d: Decision): GameState => ({ ...s, team: { ...s.team, waitFor: null, decisions: { ...s.team.decisions, [square]: d } } });
 
 // What ALPHA tells HQ: its decision, not a question.
-const say = (s: GameState, id: string, text: string): GameState => ({ ...s, comms: { ...s.comms, messages: [...s.comms.messages, radio(s, s.team.callsign, id, text)] } });
+const say = (s: GameState, id: string, text: string): GameState => ({ ...s, comms: { ...s.comms, messages: [...s.comms.messages, radio(s, s.team.callsign, id, `HQ, ${s.team.callsign}, ${text}`)] } }); // called, then caller (ILI-1541)
 
 // Moving in blind pays out where the player can see it (ILI-1309): the moment ALPHA reaches a
 // square nobody had imaged, the square is known ground, and the map stamps what it found

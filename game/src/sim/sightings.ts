@@ -70,7 +70,7 @@ export function sightings(s: GameState, operators: ReadonlyMap<string, { x: numb
     if (e.status === 'resolved' || e.kind === 'site') continue; // a kill site's X marks stand for it (ILI-1252)
     out.push({ id: e.id, kind: 'event', ...markerSpot(e.square), age: 'tracked', square: e.square });
   }
-  // Our own aircraft (ILI-1420): RAVEN-6 for the exfil always; REAPER-1 and HAMMER-2 over their
+  // Our own aircraft (ILI-1420): SKYHOOK-1 for the exfil always; REAPER-1 and HAMMER-2 over their
   // target only while HQ can watch that square (ILI-1515): their passes are the fight.
   for (const w of ['drone', 'heli'] as const) {
     const run = w === 'drone' ? s.drone : s.heli;

@@ -78,7 +78,7 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   // ORION-3 down the right, right of the map.
   expect(orion.x).toBeGreaterThanOrEqual(map.x + map.width - 1);
   expect(orion.x + orion.width).toBeGreaterThan(view.width - 40);
-  await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 over G5');
+  await expect(page.getByTestId('satellite-status')).toHaveText('ORION-3 · ON STATION · G5');
   // ORION-3 on a wide screen (ILI-1465): no 3D satellite; the picture at the top, the buttons under it.
   await expect(page.getByTestId('orion-avatar')).toHaveCount(0);
   const pic = await box('satellite-inset');

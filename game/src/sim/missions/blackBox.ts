@@ -18,7 +18,7 @@ export const BLACK_BOX: MissionDef = registerMission({
 
   // Flavor only. Enemy radio traffic isn't scheduled: every live group talks on its net by the
   // rules in enemy.ts (ILI-1454).
-  schedule: [{ atMs: 5_000, id: 'insert', from: 'team', radio: 'Boots on the ground at G5.' }],
+  schedule: [{ atMs: 5_000, id: 'insert', from: 'team', radio: 'HQ, ALPHA, on the ground at G5.' }],
 
   triggers: [
     // The first contact found by imagery or an intercept (a marker on the map, not an
@@ -26,25 +26,25 @@ export const BLACK_BOX: MissionDef = registerMission({
     {
       id: 'first-contact-hint',
       when: (s) => s.events.some((e) => e.kind === 'contact' && e.id.startsWith('contact-')) && !s.team.fight,
-      then: (s) => say(s, 'HQ', 'hint-first-contact', 'Contact on the map. Tap it to hit it with ordnance, or let ALPHA decide when it gets there.', true),
+      then: (s) => say(s, 'HQ', 'hint-first-contact', 'CONTACT ON THE MAP · TAP IT TO STRIKE, OR LET ALPHA DECIDE', true),
     },
     // A fight at the crash site while ALPHA recovers the drive.
     {
       id: 'crash-site-contact',
       when: (s) => s.team.fight?.square === s.mission.b && s.mission.phase === 'objective',
-      then: (s) => say(s, s.team.callsign, 'crash-site-hit', 'They\u2019re here for the drone too! Taking fire at the crash site.', true),
+      then: (s) => say(s, s.team.callsign, 'crash-site-hit', `HQ, ${s.team.callsign}, CONTACT at the crash site. TIC.`, true),
     },
     // The contract window, called out as it closes, in the clock's real minutes (ILI-1251).
     {
       id: 'five-minutes',
       when: (s) => s.timer.remainingMs <= 300_000 && s.mission.phase !== 'complete',
-      then: (s) => say(s, 'HQ', 'warn-5min', 'Five minutes on the contract window.'),
+      then: (s) => say(s, 'HQ', 'warn-5min', 'ALL STATIONS, HQ, 5 minutes remaining.'),
     },
     {
       id: 'one-minute',
       when: (s) => s.timer.remainingMs <= 60_000 && s.mission.phase !== 'complete',
       then: (s) =>
-        say(s, 'HQ', 'warn-1min', s.mission.blackBox ? 'One minute. Get them to exfil.' : 'One minute, and no black box. This is slipping.'),
+        say(s, 'HQ', 'warn-1min', s.mission.blackBox ? 'ALL STATIONS, HQ, 1 minute remaining.' : 'ALL STATIONS, HQ, 1 minute remaining. Black box not secured.'),
     },
   ],
 });

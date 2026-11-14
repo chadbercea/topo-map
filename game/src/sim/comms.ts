@@ -23,7 +23,7 @@ export type Message = {
   node?: string; // response tree node it came from
   square?: string;
   label?: string;
-  responses?: Response[]; // from the response tree; none means a plain "Copy"
+  responses?: Response[]; // from the response tree; none means a plain "Roger"
   answer?: string; // id of the response HQ sent
   alert?: boolean; // news the map doesn't show: a short banner, not a card
 };
@@ -47,7 +47,7 @@ export const CHATTER_MS = 8_000; // routine calls mark themselves read after thi
 // The link (ILI-1209): HQ's answer takes a moment to reach the team. Until it lands the team
 // keeps doing what it was doing; then it reads the order back and acts on it.
 export const LINK_MS = 2_500;
-export type Sent = { id: string; responseId: string | null; atMs: number }; // null: a plain Copy
+export type Sent = { id: string; responseId: string | null; atMs: number }; // null: a plain Roger
 export const sending = (c: Comms, id: string) => c.inFlight.find((x) => x.id === id);
 
 
@@ -72,7 +72,7 @@ export const commsSystem: System = (st) => {
   const due = comms.queued.filter((m) => m.atMs <= s.elapsedMs);
   incoming.push(...due.map((m) => ({ ...m, atMs: s.elapsedMs })));
   if (team.waypoint !== comms.lastWaypoint && team.waypoint >= team.route.length)
-    incoming.push(call(s, 'in-position', `In position at ${team.route.at(-1)}. Holding.`));
+    incoming.push(call(s, 'in-position', `HQ, ${team.callsign}, set at ${team.route.at(-1)}.`));
 
   // Age out: chatter marks itself read. Holds wait for HQ.
   let holdFor = team.holdFor;
@@ -114,7 +114,7 @@ export function currentCall(c: Comms): Message | undefined {
 // Calls still waiting on HQ: an answer on its way up the link no longer waits.
 export const waitingCalls = (c: Comms) => c.messages.filter((m) => m.status === 'new' && kindOf(m) === 'call' && !sending(c, m.id));
 
-// HQ answers a call: a reply (responseId), or a plain Copy (null). It goes up the link and
+// HQ answers a call: a reply (responseId), or a plain Roger (null). It goes up the link and
 // lands LINK_MS later (deliver).
 export function send(s: GameState, id: string, responseId: string | null): GameState {
   const m = s.comms.messages.find((x) => x.id === id);
@@ -146,7 +146,7 @@ export function confirm(s: GameState, id: string): GameState {
   if (!m || m.status !== 'new') return s;
   const released = s.team.holdFor === id;
   const messages = s.comms.messages.map((x) => (x.id === id ? { ...x, status: 'read' as const } : x));
-  if (released) messages.push(call(s, `${id}-ack`, 'Copy, moving.'));
+  if (released) messages.push(call(s, `${id}-ack`, `HQ, ${s.team.callsign}, ROGER, moving.`));
   // Mark the ack read straight away: it answers HQ, nobody needs to open it.
   const settled = released ? messages.map((x) => (x.id === `${id}-ack` ? { ...x, status: 'read' as const } : x)) : messages;
   const next = released ? nextHold(settled) : s.team.holdFor;
@@ -177,7 +177,8 @@ export function respond(s: GameState, id: string, responseId: string): GameState
   if (!m || !r || m.status !== 'new' || blocked(s, r)) return s;
 
   // The answer goes back to whoever called: the team replies to HQ, HQ replies to the client.
-  const reply: Message = { ...call(s, `${id}-${r.id}`, r.reply), status: 'read', from: m.from === s.team.callsign ? s.team.callsign : 'HQ' };
+  const team = m.from === s.team.callsign;
+  const reply: Message = { ...call(s, `${id}-${r.id}`, team ? `HQ, ${s.team.callsign}, ${r.reply}` : r.reply), status: 'read', from: team ? s.team.callsign : 'HQ' };
   // A follow-up waits for its hold (an observation) before it comes in; see followSystem.
   const follow = r.follow && m.square ? treeCall(s, `${id}-${r.follow}`, r.follow, m.square, m.eventId, m.label) : undefined;
   const messages = [

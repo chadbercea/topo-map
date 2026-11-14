@@ -44,7 +44,7 @@ export const siteSystem: System = (s) => {
   const found: Message = {
     id: `search-${site.id}`,
     from: team.callsign,
-    text: `Swept the kill site in ${site.square} on the way through: documents, maps, a phone. +$${SEARCH_CASH.toLocaleString('en-US')}, and intel to keep us moving.`,
+    text: `HQ, ${s.team.callsign}, kill site ${site.square} searched: documents, maps, a phone. +$${SEARCH_CASH.toLocaleString('en-US')}.`,
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,

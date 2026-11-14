@@ -27,7 +27,7 @@ describe('ALPHA decides (ILI-1315)', () => {
 
   it('light odds: it says it will take them, and goes in fighting without a hold', () => {
     const s = until(facing(contact([5, 6])), (x) => !!x.team.fight);
-    expect(said(s, /Contact in E3, two technicals\. We'll take them\./)).toBe(true);
+    expect(said(s, /CONTACT E3, two technicals\. Moving to engage\./)).toBe(true);
     expect(s.team.decisions.E3).toBe('attack');
     expect(s.team.holdFor).toBeNull();
     expect(s.team.fight).toMatchObject({ square: 'E3' });
@@ -35,14 +35,14 @@ describe('ALPHA decides (ILI-1315)', () => {
 
   it('close odds: it holds short for HQ to soften them, and goes in once HQ has', () => {
     let s = until(facing(contact([1, 5, 6, 9])), (x) => !!x.team.waitFor);
-    expect(said(s, /Too many to walk into\. Soften them up and we'll go\./)).toBe(true);
+    expect(said(s, /Too strong to take\. Holding short, request fires on E3\./)).toBe(true);
     s = run(s, 2_000);
     expect(s.team.activity).toBe('Holding short of E3 · soften them up');
     const at = s.team.position;
     expect(run(s, 3_000).team.position).toEqual(at); // it waits
     // HQ's strike leaves one standing: now it'll take them.
     s = run({ ...s, contacts: s.contacts.map((c) => ({ ...c, units: [5] })) }, 200);
-    expect(said(s, /That did it\. Moving in on E3\./)).toBe(true);
+    expect(said(s, /moving in on E3\./)).toBe(true);
     expect(s.team.decisions.E3).toBe('attack');
     expect(s.team.waitFor).toBeNull();
   });
@@ -50,7 +50,7 @@ describe('ALPHA decides (ILI-1315)', () => {
   it('close odds and HQ does nothing: after twenty seconds it goes around', () => {
     let s = until(facing(contact([1, 5, 6, 9])), (x) => !!x.team.waitFor);
     s = run(s, SOFTEN_MS + 500);
-    expect(said(s, /No change in E3\. Going around via [A-H]\d\./)).toBe(true);
+    expect(said(s, /no change in E3\. Moving around via [A-H]\d\./)).toBe(true);
     expect(s.team.route).not.toContain('E3');
     expect(s.contacts[0].status).toBe('revealed'); // still there for HQ to hit
   });
@@ -58,13 +58,13 @@ describe('ALPHA decides (ILI-1315)', () => {
   it('support wipes them out while it holds: it moves through', () => {
     let s = until(facing(contact([1, 5, 6, 9])), (x) => !!x.team.waitFor);
     s = run({ ...s, contacts: s.contacts.map((c) => ({ ...c, status: 'cleared' as const, units: [] })) }, 200);
-    expect(said(s, /Targets in E3 are down\. Moving through\./)).toBe(true);
+    expect(said(s, /E3 clear, moving through\./)).toBe(true);
     expect(s.team.decisions.E3).toBe('push');
   });
 
   it('heavy odds: it goes around at once, through a neighbour, and the detour needs no question', () => {
     const s = until(facing(contact([1, 2, 5, 6, 9, 10], 1.6)), (x) => !x.team.route.includes('E3'));
-    expect(said(s, /Not taking that\. Going around via [A-H]\d\./)).toBe(true);
+    expect(said(s, /Too strong to take\. Moving around via [A-H]\d\./)).toBe(true);
     expect(s.contacts[0].status).toBe('revealed');
     expect(s.team.holdFor).toBeNull();
   });
@@ -74,7 +74,7 @@ describe('ALPHA decides (ILI-1315)', () => {
     const site = { id: 'site-x', kind: 'site' as const, square: 'G5', title: 'Kill site', atMs: 0, status: 'new' as const };
     const s = run({ ...s0, events: [...s0.events, site] }, 100);
     expect(s.intel.pushes.some((p) => p.source === 'ALPHA' && p.square === 'G5')).toBe(true);
-    expect(s.comms.messages.some((m) => /intel to keep us moving/.test(m.text))).toBe(true);
+    expect(s.comms.messages.some((m) => /kill site G5 searched/.test(m.text))).toBe(true);
   });
 });
 

@@ -34,7 +34,7 @@ function alert(s: GameState): GameState {
   const call: Message = {
     id: 'enemy-alerted',
     from: 'HQ',
-    text: 'Enemy radio net just lit up: they heard the strikes. They know a PMC is in the area.',
+    text: 'ALL STATIONS, HQ, enemy net active after the strikes. Enemy alerted to the PMC.',
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,

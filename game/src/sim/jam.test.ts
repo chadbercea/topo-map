@@ -16,7 +16,7 @@ describe('jamming', () => {
     const s = store.get();
     expect(s.flags.jammed).toBe(true);
     expect(s.events.find((e) => e.id === id)?.status).toBe('resolved');
-    expect(s.comms.messages.find((m) => m.id === `jam-${id}`)?.text).toMatch(/won't hear what they're planning/);
+    expect(s.comms.messages.find((m) => m.id === `jam-${id}`)?.text).toMatch(/no intercepts while jammed/);
   });
 
   it('a jammed net carries no more traffic (ILI-1454)', () => {

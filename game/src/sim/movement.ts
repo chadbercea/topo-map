@@ -42,7 +42,7 @@ export const movementSystem: System = (s, dt) => {
     const held = { ...s, team: { ...team, activity: STARVED } };
     // The first time it holds, it says what it needs (ILI-1318). After that the request on the map says it.
     if (s.comms.messages.some((m) => m.id === 'needs-intel')) return held;
-    const line: Message = { id: 'needs-intel', from: team.callsign, text: `Holding. No intel on what's ahead. Get us eyes on ${target}.`, atMs: s.elapsedMs, status: 'new', holds: false };
+    const line: Message = { id: 'needs-intel', from: team.callsign, text: `HQ, ${team.callsign}, holding short of ${target}. Request imagery, ${target}.`, atMs: s.elapsedMs, status: 'new', holds: false };
     return { ...held, comms: { ...held.comms, messages: [...held.comms.messages, line] } };
   }
 

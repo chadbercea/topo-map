@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mountWire, type WireSpec } from './wireScene';
 
-// DUSTOFF-2's drop in 3D (ILI-1520): the resupply bundle, an A-22-style cargo bag strapped on a
+// HAULER-2's drop in 3D (ILI-1520): the resupply bundle, an A-22-style cargo bag strapped on a
 // skid board, coming down under its cargo chute on four risers. It swings gently as it falls,
 // turning slowly; on the ground it settles still. In the HUD's line language (wireScene), and
 // in the HUD's green: support, not a strike. Loaded lazily with its panel.
