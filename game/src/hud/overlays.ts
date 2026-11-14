@@ -43,3 +43,16 @@ export function pick<T extends Box>(candidates: T[], avoid: (Box | null)[]): T {
   const cost = (c: Box) => solid.reduce((n, b) => n + overlap(c, b), 0);
   return candidates.find((c) => cost(c) === 0) ?? candidates.reduce((best, c) => (cost(c) < cost(best) ? c : best));
 }
+
+// The game UI's panels that sit over the open map (ILI-1546): the mission bar, the band cards,
+// the comms log, the team drawer, the map controls and ALPHA's heartbeats. The map's own layers
+// (tags, the square's flyout, the ALERT, the prompt) sit beneath these and keep clear of them.
+const GAME_UI = '.slot-widget, .slot-band > *, .team-drawer, .comms-strip .slot-satcom, .map-ctl > *, .recentre, .heartbeat-strip, .log-toggle';
+export const gameUiBoxes = (): Box[] =>
+  [...document.querySelectorAll<HTMLElement>(GAME_UI)]
+    .map((el) => el.getBoundingClientRect())
+    .filter((r) => r.width && r.height)
+    .map((r) => ({ x: r.x, y: r.y, w: r.width, h: r.height }));
+
+// How much of a box the game UI covers, 0 to 1.
+export const coveredBy = (b: Box, ui: Box[] = gameUiBoxes()) => (b.w * b.h ? Math.min(1, ui.reduce((n, u) => n + overlap(b, u), 0) / (b.w * b.h)) : 0);
