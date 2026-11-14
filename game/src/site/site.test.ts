@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { BANNED } from './banned';
 import { Site } from './Site';
-import { ABOUT, CAPABILITIES, DIVISIONS } from './content';
+import { ABOUT, CAPABILITIES, DIVISIONS, OPEN } from './content';
 import head from '../../castle-house/index.html?raw';
 
 // Castle House's site stays in its own world (ILI-1336, ILI-1480): the page as rendered, its
@@ -42,9 +42,24 @@ describe("Castle House's site", () => {
     expect(ABOUT.lede.length).toBeLessThanOrEqual(110);
   });
 
+  // It opens on the house's own pieces, not its terminal (ILI-1531): the rook and the globe with
+  // its satellites, framed in the page, the recruiting line as the heading, and a pointer down to
+  // Apply. No menu, nothing fixed behind the page.
+  it('opens on the rook and the globe under the recruiting line, pointing down to Apply', () => {
+    expect(markup).not.toContain('intro-hero');
+    const open = markup.slice(markup.indexOf('data-testid="opener"'));
+    const opener = open.slice(0, open.indexOf('</section>'));
+    expect(opener.match(/data-testid="stage"/g)).toHaveLength(2);
+    expect(opener).toMatch(/<h1[^>]*>Hold the line/);
+    expect(opener).toContain('href="#apply"');
+    expect(opener).not.toContain('data-testid="apply"');
+    expect(OPEN.rook.scene).toBe('rook');
+    expect(OPEN.globe.scene).toBe('constellation');
+  });
+
   it('every apply link begins selection at the terminal', () => {
     const applies = [...markup.matchAll(/<a[^>]*data-testid="apply"[^>]*>/g)].map((m) => m[0]);
-    expect(applies.length).toBeGreaterThanOrEqual(3);
+    expect(applies.length).toBeGreaterThanOrEqual(2); // the bar's Apply and Apply's Begin selection
     for (const a of applies) expect(a).toContain('href="../"');
     expect(markup).toMatch(/data-testid="apply"[^>]*>Begin selection</);
   });

@@ -4,7 +4,7 @@
 // people, agencies or programmes. Each section's picture is a shot: one of the line-drawn models,
 // framed tight and moved by the scroll (studio.ts).
 
-export type SceneKey = 'satellite' | 'uav' | 'rotary' | 'airlift' | 'rifle' | 'marksman' | 'medical' | 'comms' | 'nav' | 'drop' | 'constellation';
+export type SceneKey = 'satellite' | 'uav' | 'rotary' | 'airlift' | 'rifle' | 'marksman' | 'medical' | 'comms' | 'nav' | 'drop' | 'constellation' | 'rook';
 
 // How a model is framed as its stage scrolls up the screen, from entering (first value) to
 // leaving (second). zoom: 1 fits the whole model, 2 is twice as close (cropped by the frame).
@@ -24,10 +24,22 @@ export type Shot = {
   spin?: number; // the slow idle turn, radians a second (0: none)
 };
 
-export const HERO = {
-  name: 'CASTLE HOUSE',
-  line: 'Private military support · now recruiting',
-  status: 'RECRUITING · selection intake open',
+export const BRAND = 'CASTLE HOUSE';
+
+// The opener (ILI-1531): the house's own pieces, the rook and the globe with its satellites,
+// framed oversized and cropped, under the recruiting line. The way in is further down (Apply);
+// the opener only points to it.
+export const OPEN = {
+  stamp: 'Now recruiting',
+  title: ['Hold the line', "for those who can't."],
+  lede: 'Selected teams. Full kit. Eyes overhead. Four divisions taking applications.',
+  read: [
+    ['Intake', 'Open'],
+    ['Theatres', '6'],
+  ] as [string, string][],
+  jump: 'Begin selection',
+  rook: { scene: 'rook', zoom: [1.9, 2.6], yaw: [-0.5, 1.2], pitch: [0.18, -0.12], pan: [0.22, 0.1, -0.32, -0.1], spin: 0.08 } as Shot,
+  globe: { scene: 'constellation', opacity: 0.45, zoom: [1.6, 2.2], yaw: [0.6, -0.8], pitch: [0.35, 0.1], pan: [-0.35, -0.2, 0.45, 0.25], spin: 0.03 } as Shot,
 };
 
 export const NAV: [string, string][] = [

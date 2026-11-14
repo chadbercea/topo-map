@@ -26,6 +26,7 @@ const LOAD: Record<SceneKey, () => Promise<Spec>> = {
   nav: () => import('../hud/mapScene').then((m) => m.COMPASS as Spec),
   drop: () => import('../hud/resupplyScene').then((m) => m.DROP as Spec),
   constellation: () => import('../hud/constellationScene').then((m) => m.CONSTELLATION as Spec),
+  rook: () => import('../hud/rookScene').then((m) => m.ROOK as Spec),
 };
 
 const MAX_RATIO = 1.5; // device pixels per CSS pixel, at most

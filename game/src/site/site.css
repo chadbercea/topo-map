@@ -45,33 +45,29 @@ html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-fa
 .ch-read dt { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--dim); }
 .ch-read dd { margin-top: 0.15rem; font-family: var(--mono); font-size: 1rem; color: var(--accent); }
 
-/* ---------- The hero: the war room's title screen ---------- */
-.ch-intro { position: fixed; inset: 0; z-index: 0; overflow: hidden; color: var(--ink); background: radial-gradient(ellipse at 50% 70%, rgba(53, 208, 165, 0.07), transparent 60%), var(--bg); }
-.ch-hero-3d { position: absolute; inset: 0; }
-.ch-hero-3d .castle-scene { position: absolute; inset: 0; }
-.ch-hero-3d canvas { width: 100%; height: 100%; display: block; }
-.ch-hero-back { filter: blur(7px); opacity: 0.45; } /* the globe and satellites, blurred and dimmed, as on the title screen */
-.ch-hero-flat { position: absolute; left: 50%; top: 34%; width: clamp(4rem, 20vw, 6rem); transform: translate(-50%, -50%); color: var(--accent); }
-.ch-intro-mark { position: absolute; left: 0; right: 0; bottom: max(8svh, 2.5rem); z-index: 1; display: grid; justify-items: center; gap: 0.4rem; padding: 0 var(--pad); text-align: center; font-family: var(--mono); text-shadow: 0 0 12px var(--bg), 0 0 4px var(--bg); transform: translateY(calc(var(--cover, 0) * -40px)); opacity: calc(1 - var(--cover, 0) * 1.4); }
-.ch-intro-mark h1 { font-size: clamp(1.4rem, 7vw, 2.6rem); font-weight: 600; letter-spacing: 0.36em; margin-right: -0.36em; color: var(--ink); }
-.ch-intro-mark > p { margin: 0; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); }
-.ch-menu { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; width: min(100%, 26rem); margin: 0.9rem 0 0.25rem; }
-.ch-menu a { display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: 0 0.6rem; font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; text-decoration: none; text-shadow: none; color: var(--ink); background: rgba(11, 15, 13, 0.7); border: 1px solid var(--line); }
-.ch-menu a.ch-menu-go { grid-column: 1 / -1; color: var(--accent); border-color: var(--accent); }
-.ch-menu a:active, .ch-menu a:focus-visible { color: var(--bg); background: var(--accent); border-color: var(--accent); outline: none; }
-.ch-intro-mark .ch-status { color: var(--accent); letter-spacing: 0.14em; }
-.ch-caret { animation: ch-blink 1s steps(2) infinite; }
-@keyframes ch-blink { 50% { opacity: 0; } }
-.ch-intro-scrim { position: absolute; inset: 0; background: #000; opacity: calc(var(--cover, 0) * 0.85); pointer-events: none; }
-
-/* ---------- The page, sliding over the hero ---------- */
-.ch-page { position: relative; z-index: 1; margin-top: 100svh; background: var(--bg); box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.6); }
+/* ---------- The page ---------- */
+.ch-page { position: relative; background: var(--bg); }
 .ch-nav { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 1.5rem; padding: 0.7rem var(--pad); background: rgba(11, 15, 13, 0.9); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
 .ch-nav nav { display: none; }
 .ch-nav .ch-enlist { margin-left: auto; }
 .ch-sec { position: relative; padding: clamp(4rem, 14vw, 8rem) var(--pad); border-bottom: 1px solid var(--line); scroll-margin-top: 3.5rem; overflow: hidden; }
 .ch-sec > *, .ch-sec-head > * { position: relative; }
 .ch-sec h2, .ch-sec-head h2 { font-size: clamp(1.9rem, 8vw, 3.4rem); font-weight: 700; line-height: 1.02; max-width: 18ch; }
+
+/* The opener (ILI-1531): the globe and its satellites as a horizon low in the frame, the rook huge
+   and cropped off the right edge over it, the recruiting line at the foot. On a phone it fills the
+   screen under the bar; wide, the words sit left and the rook fills the right. */
+.ch-open { position: relative; display: grid; align-content: end; min-height: calc(100svh - 3.5rem); padding: 0 var(--pad) clamp(2rem, 7svh, 4.5rem); overflow: hidden; border-bottom: 1px solid var(--line); background: radial-gradient(ellipse at 70% 85%, rgba(53, 208, 165, 0.1), transparent 60%), var(--bg); }
+.ch-open > .ch-stage { position: absolute; }
+.ch-open-globe { inset: 0; }
+.ch-open-rook { inset: 0 -18% 22% 18%; }
+.ch-open::after { content: ''; position: absolute; inset: auto 0 0 0; height: 55%; background: linear-gradient(to top, var(--bg) 30%, rgba(11, 15, 13, 0.75) 60%, transparent); pointer-events: none; }
+.ch-open-text { position: relative; z-index: 1; display: grid; justify-items: start; max-width: 40rem; animation: ch-rise 0.9s var(--ease) both; }
+.ch-open .ch-stamp { margin-bottom: 0.9rem; }
+.ch-open .ch-read { margin-top: 1.4rem; align-self: stretch; }
+.ch-jump { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; margin-top: 0.9rem; font-family: var(--mono); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; color: var(--orange) !important; border-bottom: 1px solid var(--orange); }
+.ch-jump:active { filter: brightness(1.2); }
+@keyframes ch-rise { from { opacity: 0; transform: translate3d(0, 1.5rem, 0); } }
 
 /* An oversized model behind a whole section. */
 .ch-sec > .ch-bg-art { position: absolute; inset: 0; }
@@ -162,8 +158,6 @@ html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-fa
 
 /* ---------- Wider screens ---------- */
 @media (min-width: 640px) {
-  .ch-menu { display: flex; flex-wrap: wrap; justify-content: center; width: auto; }
-  .ch-menu a { min-width: 7rem; padding: 0 1rem; }
   .ch-kit { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ch-kit figure:first-child { grid-column: auto; }
   .ch-kit figure .ch-stage, .ch-kit figure:first-child .ch-stage { aspect-ratio: 4 / 3; }
@@ -174,6 +168,12 @@ html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-fa
   .ch-nav nav a { text-decoration: none; color: var(--dim); }
   .ch-nav nav a:focus-visible { color: var(--ink); }
   .ch-nav .ch-enlist { margin-left: 0; }
+  /* The opener: the words on the left, the rook filling the right and off the edge. */
+  .ch-open { align-content: center; min-height: calc(100svh - 3.75rem); padding-bottom: 0; }
+  .ch-open-globe { inset: 0 0 0 30%; }
+  .ch-open-rook { inset: -4% 0 -8% 48%; }
+  .ch-open-text { max-width: 48rem; }
+  .ch-open::after { inset: 0 auto 0 0; width: 60%; height: auto; background: linear-gradient(to right, var(--bg) 25%, rgba(11, 15, 13, 0.6) 60%, transparent); }
   /* Who we are: the words on the left, the aircraft filling the right and off the edge. */
   .ch-about { min-height: 100svh; align-content: center; padding-top: clamp(4rem, 14vw, 8rem); }
   .ch-about > .ch-about-art { position: absolute; inset: 0 0 0 35%; height: auto; margin: 0; }
@@ -199,7 +199,7 @@ html.ch-root body { margin: 0; background: var(--bg); color: var(--ink); font-fa
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ch-caret { animation: none; }
+  .ch-open-text { animation: none; }
   html.ch-root { scroll-behavior: auto; }
   .ch [data-reveal] { opacity: 1; transform: none; transition: none; }
   .ch-bar s { transform: none; transition: none; }
