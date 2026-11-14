@@ -102,7 +102,7 @@ export const firefightSystem: System = (s, dt) => {
         team: {
           ...team,
           known: { ...team.known, [contact.id]: { square: contact.square, units: contact.units.length, atMs: s.elapsedMs } }, // in contact: ALPHA sees them itself (ILI-1495)
-          holdFor: null,
+          // A call HQ hasn't answered still holds ALPHA after the fight (ILI-1552).
           fight: { contactId: contact.id, eventId: `contact-${contact.id}`, square: contact.square, enemy, full: enemy, units: contact.units.length, startedMs: s.elapsedMs, ...(ambush ? { ambush: true, coverUntilMs: s.elapsedMs + AMBUSH_COVER_MS } : {}) },
           activity: ambush ? `Ambushed in ${contact.square}` : `Engaged in ${contact.square}`,
         },
