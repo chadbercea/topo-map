@@ -12,7 +12,6 @@ export const ESCROW_EXFIL = 750_000; // and the rest at exfil
 export const CASH_PER_STRIKE_KILL = 15_000;
 export const CASH_PER_TEAM_KILL = 10_000;
 export const SEARCH_CASH = 25_000; // a swept kill site's documents
-export const LOOT = 200_000; // the salvage convoy's haul
 export const RESUPPLY_COST = 40_000;
 export const CASUALTY_PENALTY = 100_000; // per operator down, at the end
 export const BANKRUPT_AT = -4_000_000; // the PMC's credit line: below this it's shut down

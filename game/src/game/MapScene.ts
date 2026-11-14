@@ -526,8 +526,10 @@ export class MapScene extends Phaser.Scene {
     }
     for (const snap of Object.values(imagery)) {
       const age = freshness(snap, now);
-      // Old looks fade as they age (ILI-1430): full while live, then smoothly down to faint at stale.
-      const alpha = age === 'live' ? 1 : age === 'stale' ? 0.18 : Math.max(0.18, 1 - ((now - snap.atMs) / GHOST_MS) * 0.82);
+      // Old looks fade as they age (ILI-1430), frozen where they were seen, and are gone once the
+      // look has decayed (ILI-1544): no faint last-known mark left behind.
+      if (age === 'stale') continue;
+      const alpha = age === 'live' ? 1 : Math.max(0.12, 1 - (now - snap.atMs) / GHOST_MS);
       for (const seen of snap.seen) {
         const c = contacts.find((x) => x.id === seen.contactId);
         if (!c || c.status === 'cleared' || drawn.has(c.id)) continue;
@@ -546,7 +548,7 @@ export class MapScene extends Phaser.Scene {
           if (age === 'ghost') g.lineStyle(px, 0xe5484d, 0.35).strokeCircle(x, y, (CELL / BOARD) * 0.45);
         }
         const to = seen.to && squareCenter(seen.to);
-        if (to && units.length && age !== 'stale') {
+        if (to && units.length) {
           const d = Math.hypot(to.x - cx, to.y - cy) || 1;
           const len = Math.min(d, CELL * 0.45);
           const ex = cx + ((to.x - cx) / d) * len;

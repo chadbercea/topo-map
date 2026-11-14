@@ -5,7 +5,10 @@ import { ground } from './conditions';
 import { squareFindings } from './intel';
 import { blockers } from './progress';
 import { sightings } from './sightings';
-import { initialState, type GameState } from './state';
+import { initialState as rolledState, type GameState } from './state';
+import { fixed } from './testkit';
+// A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
+const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { fed, lockOn, lockedStore, run } from './testkit';
 
 // Nothing about an enemy shows until ORION-3 has scanned the square it's in (ILI-1493). The one

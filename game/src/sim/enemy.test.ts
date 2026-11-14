@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { dice, hearTraffic, heardTraffic } from './enemy';
-import { convoyComes } from './missions/blackBox';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
 import { fed, lockOn, run } from './testkit';
@@ -95,14 +94,5 @@ describe('enemy radio traffic is a reward of scanning, not a timer (ILI-1359)', 
     expect(hearTraffic(hearTraffic(s0, 'C2'), 'D3').events.filter((e) => e.kind === 'signal')).toHaveLength(1);
     expect(hearTraffic({ ...s0, flags: { ...s0.flags, jammed: true } }, 'C2').events.some((e) => e.kind === 'signal')).toBe(false);
     expect(hearTraffic({ ...s0, contacts: s0.contacts.map((c) => ({ ...c, status: 'cleared' as const })) }, 'C2').events.some((e) => e.kind === 'signal')).toBe(false);
-  });
-});
-
-describe('the salvage convoy comes on the dice (ILI-1454)', () => {
-  it('on most seeds, not all; the default seed has it', () => {
-    expect(convoyComes(initialState().seed)).toBe(true);
-    const comes = Array.from({ length: 200 }, (_, seed) => convoyComes(seed)).filter(Boolean).length;
-    expect(comes).toBeGreaterThan(100);
-    expect(comes).toBeLessThan(200);
   });
 });

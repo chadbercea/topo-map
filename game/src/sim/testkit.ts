@@ -6,6 +6,17 @@ import { initialOrdnance, WEAPONS } from './ordnance';
 import { LINK_MS } from './comms';
 import { initialSatellite } from './satellite';
 import { hearTraffic } from './enemy';
+import { makeContact, type Contact } from './contacts';
+
+// The real map is rolled square by square from the seed (roll.ts, ILI-1544). Tests about how a
+// contact behaves use this fixed one instead: a dug-in group on the route at E3, a fire team at C2
+// next to the crash site, a pair at C3. They hold where they are, like every group now.
+export const FIXTURE = (): Contact[] => [
+  makeContact('checkpoint', 'E3', 'a fortified checkpoint', 1.6, [1, 5, 6, 9, 10]),
+  makeContact('patrol', 'C2', 'a foot patrol', 0.7, [1, 7, 12], 'MOVING TO D3 FOR THE DRONE', 'D3'), // its plan is intel to decode; it never sets off
+  makeContact('post', 'C3', 'an observation post', 0.5, [10, 11]),
+];
+export const fixed = (s: GameState): GameState => ({ ...s, contacts: FIXTURE() });
 
 // The sim's tests run with ALPHA's intel gauge pinned full, unless they're about the gauge
 // (intel.test.ts): keeping the team fed is a game of its own (ILI-1314).
@@ -26,11 +37,10 @@ export function untilTraffic(s: GameState, square = 'C2') {
 // The enemy traffic up on the map (open, unless any will do).
 export const trafficId = (s: GameState, open = true) => s.events.find((e) => e.kind === 'signal' && (!open || e.status !== 'resolved'))!.id;
 
-// The team just walks: every square imaged and no contacts, so nothing stops it (not even
-// the salvage convoy that cuts the exfil, ILI-1192; convoy.test.ts plays that).
+// The team just walks: every square imaged and no contacts, so nothing stops it.
 export const walking = (): GameState => {
   const s = fed(initialState());
-  return { ...s, contacts: [], map: { ...s.map, scanned: [...ROUTE] }, script: { ...s.script, fired: [...s.script.fired, 'convoy-on-exfil'] } };
+  return { ...s, contacts: [], map: { ...s.map, scanned: [...ROUTE] } };
 };
 
 // HQ has sent ALPHA everything it found (ILI-1495): every found contact is in ALPHA's picture, where

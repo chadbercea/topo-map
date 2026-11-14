@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { initialState } from './state';
+import { initialState as rolledState } from './state';
+import { fixed } from './testkit';
+// A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
+const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { fed, playUntil } from './testkit';
 
 // Moving in blind pays out on the map (ILI-1309): reaching a square HQ sent ALPHA into blind

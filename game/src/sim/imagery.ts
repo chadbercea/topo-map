@@ -31,7 +31,10 @@ export type Snapshot = {
 };
 
 export const FRESH_MS = 33_000;
-export const GHOST_MS = 100_000;
+// A look decays to nothing in DECAY_MS (ILI-1544, Chad: 60 s per ILI-1532): its enemy marks stay
+// frozen where they were seen, fade, and are gone at zero.
+export const DECAY_MS = 60_000;
+export const GHOST_MS = DECAY_MS;
 export type Freshness = 'live' | 'fresh' | 'ghost' | 'stale';
 // What the player reads for a look's age (ILI-1488): ISR terms. A live feed; imagery still current;
 // aging; stale (too old to act on).

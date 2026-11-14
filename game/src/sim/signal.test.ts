@@ -1,7 +1,10 @@
 import { promptQueue } from './prompts';
 import { describe, expect, it } from 'vitest';
 import { HOP_MS, match, RECEIVE_MS, TRANSMISSION_MS, transcript } from './signal';
-import { initialState, type GameState } from './state';
+import { initialState as rolledState, type GameState } from './state';
+import { fixed } from './testkit';
+// A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
+const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { lockedStore as createStore } from './testkit';
 import { pulled, run, trafficId, untilTraffic } from './testkit';
 

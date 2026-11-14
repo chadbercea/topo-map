@@ -142,7 +142,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
       known: {},
     },
     map: { cols: 8, rows: 5, scanned: [ROUTE[0]], selected: null, blind: [] }, // the insertion point is known ground
-    contacts: MISSION.contacts(),
+    contacts: MISSION.contacts(seed),
     events: [],
     schedule: MISSION.schedule,
     openEvent: null,

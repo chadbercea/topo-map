@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { planArriveMs } from './enemy';
 import { nextUp, race } from './progress';
 import { initialState } from './state';
 import { run, walking } from './testkit';
@@ -29,13 +28,6 @@ describe('mission progression', () => {
   it('a decision waiting stays on the call card; Next keeps pointing at the objective', () => {
     const s = run(initialState(), 500); // ALPHA holds short of F4
     expect(nextUp(s)).toEqual({ tone: 'objective', text: 'Reach the crash site at D3' });
-  });
-
-  it('the patrol shows an ETA only once someone has found it', () => {
-    const s = walking();
-    expect(nextUp(s).tone).toBe('objective');
-    const contacts = initialState().contacts.map((c) => (c.id === 'patrol' ? { ...c, status: 'revealed' as const } : c));
-    expect(nextUp({ ...s, contacts })).toEqual({ tone: 'threat', text: 'Patrol moves on D3', atMs: planArriveMs(s, contacts.find((c) => c.id === 'patrol')!) });
   });
 
 });
