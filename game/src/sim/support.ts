@@ -7,6 +7,7 @@ import { spend } from './sites';
 export { RESUPPLY_COST };
 import type { GameState } from './state';
 import type { System } from './systems';
+import { exfilLocked } from './mission';
 
 // Support (GDD, folded into one order in ILI-1178): HQ sends a resupply bird, paid from the
 // budget. It reloads everyone standing and brings replacements for anyone down. The team
@@ -44,7 +45,7 @@ export const supportSystem: System = (s) => {
   const n = need(s);
   if (!n && s.flags.low) next = { ...next, flags: { ...next.flags, low: false } };
   const coming = s.inbound.length > 0;
-  if (n && !s.flags[n.key] && !coming && !s.team.fight && !s.team.treating && !(n.holds && next.team.holdFor)) {
+  if (n && !exfilLocked(s) && !s.flags[n.key] && !coming && !s.team.fight && !s.team.treating && !(n.holds && next.team.holdFor)) {
     const here = squareAt(s.team.position.x, s.team.position.y) ?? '';
     const call = { ...treeCall(next, `resupply-${s.elapsedMs}`, 'resupply', here, undefined, n.what), holds: n.holds };
     next = {
@@ -81,7 +82,7 @@ export const supportSystem: System = (s) => {
 };
 
 export function sendResupply(s: GameState): GameState {
-  if (s.inbound.length) return s; // into the red if need be (ILI-1316)
+  if (s.inbound.length || exfilLocked(s)) return s; // no bird once exfil is under way (ILI-1545) // into the red if need be (ILI-1316)
   const paid = spend(s, RESUPPLY_COST);
   if (paid.bankrupt) return paid;
   return {

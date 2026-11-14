@@ -35,6 +35,11 @@ export const initialMission = (route: SquareId[], satellite: string): Mission =>
   recoverUntilMs: null,
 });
 
+// Exfil locks out what no longer applies (ILI-1545, Chad 11-14): once the box is out and ALPHA is
+// heading for the pickup, HQ can't post building intel or send a resupply bird. ORION-3 and strikes
+// stay open, to cover the exfil.
+export const exfilLocked = (s: Pick<GameState, 'mission'>) => s.mission.phase === 'exfil' || s.mission.phase === 'complete';
+
 export const isMissionPoint = (s: GameState, sq: SquareId) => sq === s.mission.b || sq === s.mission.c;
 
 const radio = (s: GameState, id: string, text: string): Message => ({ id, from: s.team.callsign, text, atMs: s.elapsedMs, status: 'new', holds: false });
