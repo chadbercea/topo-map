@@ -34,11 +34,15 @@ describe('playthrough', () => {
   const tally = (strategy: 'sharp' | 'silent') =>
     seeds.map((seed) => play(strategy, seed)).reduce((n, s) => ({ wins: n.wins + +(s.mission.phase === 'complete'), lost: n.lost + s.stats.lost.length, ambushes: n.ambushes + s.comms.messages.filter((m) => m.text.startsWith('Ambush')).length }), { wins: 0, lost: 0, ambushes: 0 });
 
-  it('a sharp HQ scans ahead: ALPHA makes its own calls on what it was sent, and gets out on every seed', () => {
+  it('a sharp HQ scans ahead: ALPHA makes its own calls on what it was sent, and gets out on nearly every seed', () => {
     const s = play('sharp');
     expect(s.mission.phase).toBe('complete');
     expect(s.comms.messages.filter((m) => m.from === 'ALPHA' && m.responses).every((m) => m.node === 'resupply')).toBe(true); // nothing else asked
-    expect(tally('sharp').wins).toBe(seeds.length);
+    // Groups beside the route can see ALPHA too (ILI-1544), and this HQ only scans the route itself:
+    // it can still lose a map to a flank ambush, never by ALPHA getting stuck.
+    const runs = seeds.map((seed) => play('sharp', seed));
+    expect(runs.filter((r) => r.mission.phase === 'complete').length).toBeGreaterThanOrEqual(seeds.length - 2);
+    for (const r of runs) if (r.mission.phase !== 'complete') expect(r.team.operators.every((o) => o.health <= 0)).toBe(true);
   });
 
   // The player's intel decides how ALPHA does (ILI-1496). With nothing sent, every group it meets is
@@ -58,7 +62,7 @@ describe('playthrough', () => {
   // The real gauge, no pinning (ILI-1485, ILI-1499): HQ only works ALPHA's intel asks by hand
   // (click, Analyze) and ALPHA pulls each package off the shelf itself. The opening works (held at
   // the infil, released by its first pull within seconds) and the mission is won across seeds.
-  it('unfed, HQ only answers the intel asks: ALPHA pulls each package, moves off the infil, and gets out', () => {
+  it('unfed, HQ only answers the intel asks: ALPHA pulls each package, moves off the infil, and never stalls', () => {
     for (const seed of Array.from({ length: 6 }, (_, i) => i + 1)) {
       const store = createStore(initialState(DEFAULT_SETTINGS, MISSION_MS, 0, [], [], seed));
       let moved = -1;
@@ -73,7 +77,9 @@ describe('playthrough', () => {
       }
       expect(moved).toBeGreaterThan(0);
       expect(moved).toBeLessThan(15_000);
-      expect(store.get().mission.phase).toBe('complete');
+      // Out, or lost in a fight on the harder rolled map (ILI-1544): never stuck on the way.
+      const end = store.get();
+      expect(end.mission.phase === 'complete' || end.team.operators.every((o) => o.health <= 0)).toBe(true);
     }
   });
 });
