@@ -1,16 +1,15 @@
-import { squareAt } from '../map/grid';
 import type { GameState } from './state';
 import type { System } from './systems';
 import type { Operator, Role } from './team';
 import type { Message } from './comms';
 import { effectiveStrength } from './contacts';
-import { inView } from './sight';
+import { inContact } from './sight';
 import { confirmKills, FRESH_MS, GHOST_MS, type Freshness } from './imagery';
 import { CASH_PER_TEAM_KILL, earn, markSite } from './sites';
 import { ALERT_AMBUSH, makeNoise, NOISE, NOISE_PER_ROUND } from './noise';
 
-// Contact resolves on its own (GDD: the player doesn't control the team). Walking into a
-// square with a live contact starts a firefight. What decides it is what ALPHA knew going in
+// Contact resolves on its own (GDD: the player doesn't control the team). Either side seeing the
+// other, or the two meeting, starts a firefight (sight.ts inContact, ILI-1544). What decides it is what ALPHA knew going in
 // (ILI-1496), its own picture (picture.ts), never HQ's map:
 // - It knew, and went in to take them: it has the initiative, and they fight at a fraction of
 //   their strength. The fresher its intel, the bigger the edge (live or fresh, ghost, stale).
@@ -76,12 +75,10 @@ export const firefightSystem: System = (s, dt) => {
   const { team } = s;
   const secs = dt / 1000;
 
-  // Contact: the team is standing in a square with a live contact, and has eyes on it (ILI-1512):
-  // one it can't see from where it stands, too far or behind the ground, it walks on past. A group
-  // that came to this ground hunting (its plan) sweeps it, and finds ALPHA there either way.
+  // Contact (ILI-1544): one rule for both sides, wherever the squares fall: either side sees the
+  // other, or they're close enough that they meet anyway (sight.ts inContact).
   if (!team.fight && !team.treating) {
-    const here = squareAt(team.position.x, team.position.y);
-    const contact = here ? [...inView(s), ...s.contacts.filter((c) => c.planTo === here && !c.move)].find((c) => c.square === here && c.units.length && (c.status === 'hidden' || c.status === 'revealed')) : undefined;
+    const contact = inContact(s);
     if (contact) {
       // What ALPHA knew of them going in (ILI-1496): its own picture, not HQ's map.
       const told = team.known[contact.id];
@@ -93,7 +90,7 @@ export const firefightSystem: System = (s, dt) => {
       const text = ambush ? `Ambush in ${contact.square}! Returning fire.` : `Contact! Engaging in ${contact.square}.`;
       return {
         ...makeNoise(s, NOISE.firefight),
-        contacts: ambush ? s.contacts.map((c) => (c === contact ? { ...c, status: 'revealed' as const } : c)) : s.contacts,
+        contacts: ambush || contact.status === 'avoided' ? s.contacts.map((c) => (c === contact ? { ...c, status: 'revealed' as const } : c)) : s.contacts,
         team: {
           ...team,
           known: { ...team.known, [contact.id]: { square: contact.square, units: contact.units.length, atMs: s.elapsedMs } }, // in contact: ALPHA sees them itself (ILI-1495)

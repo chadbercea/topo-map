@@ -1,4 +1,3 @@
-import { missionDef } from './script';
 import type { GameState } from './state';
 import { waitingCalls } from './comms';
 import { condition } from './team';
@@ -54,14 +53,9 @@ export function race(s: GameState): Race {
 
 export type Pressing = { tone: 'threat' | 'support' | 'objective'; text: string; atMs?: number };
 
-// The single most pressing thing beyond the call card (which speaks for itself): a known
-// threat with an ETA, support inbound, else the objective itself.
+// The single most pressing thing beyond the call card (which speaks for itself): support
+// inbound, else the objective itself. No scripted threat ETAs since ILI-1544.
 export function nextUp(s: GameState): Pressing {
-  const threat = missionDef(s.script.mission)
-    ?.threats?.(s)
-    .filter((t) => t.atMs > s.elapsedMs)
-    .sort((a, b) => a.atMs - b.atMs)[0];
-  if (threat) return { tone: 'threat', ...threat };
   const inbound = [...s.inbound].sort((a, b) => a.arrivesMs - b.arrivesMs)[0];
   if (inbound) return { tone: 'support', text: 'Resupply lands', atMs: inbound.arrivesMs };
   const { mission } = s;

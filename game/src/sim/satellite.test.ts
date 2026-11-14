@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { moveContact } from './contacts';
+import { moveContact, startMove } from './contacts';
 import { FRESH_MS, GHOST_MS, freshness } from './imagery';
-import { planDepartMs } from './enemy';
 import { lockedOn, SETTLE_MS, SLEW_MS_PER_SQUARE, slewMs } from './satellite';
 import { blockers } from './progress';
-import { initialState, type GameState } from './state';
+import { initialState as rolledState, type GameState } from './state';
+import { fixed } from './testkit';
+// A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
+const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { createStore, type Store } from './store';
 import { run, trafficId, untilTraffic, walking } from './testkit';
 
@@ -89,11 +91,11 @@ describe('ORION-3 tasking', () => {
 });
 
 describe('fog of war', () => {
-  // The patrol is on its way from C2 to D3 for the last half minute before it gets there.
+  // A group on its way from C2 to D3. Nothing in the game moves groups any more (ILI-1544), but a
+  // look still tells who is moving if anything does.
   const walkingPatrol = (): GameState => {
     const s0: GameState = { ...walking(), contacts: initialState().contacts };
-    let s: GameState = { ...s0, elapsedMs: planDepartMs(s0, s0.contacts.find((c) => c.id === 'patrol')!) - 100 };
-    s = run(s, 1_000);
+    const s = run(startMove(s0, 'patrol', 'D3', s0.elapsedMs + 50_000), 1_000);
     expect(s.contacts.find((c) => c.id === 'patrol')!.move?.to).toBe('D3');
     return s;
   };
@@ -109,7 +111,7 @@ describe('fog of war', () => {
     expect(photo.get().imagery.C2.seen[0].to).toBeNull();
   });
 
-  it('video is live while it runs, and stays live for good even once ORION-3 is tasked away (ILI-1423, ILI-1432)', () => {
+  it('video is live while ORION-3 stays over it; tasked away, the feed ends and the look ages from then (ILI-1544)', () => {
     const store = createStore(walkingPatrol());
     look(store, 'C2', 'video');
     store.set(run(store.get(), 2_000));
@@ -117,7 +119,8 @@ describe('fog of war', () => {
     store.set(run(store.get(), 14_000));
     expect(store.get().imagery.C2.live).toBe(true); // still over it: real time
     store.lookAt('E3');
-    expect(store.get().imagery.C2.live).toBe(true); // video is live for good (ILI-1432)
+    expect(store.get().imagery.C2).toMatchObject({ live: false, atMs: store.get().elapsedMs });
+    expect(store.get().intel.live).not.toContain('C2');
   });
 
   it('a look ages: fresh, then a ghost, then stale', () => {
@@ -220,16 +223,20 @@ describe("the satellite's name", () => {
   });
 });
 
-// Video is real time (ILI-1423): its square stays live while ORION-3 stays over it.
-describe('video stays live', () => {
-  it('keeps refreshing for good, wherever ORION-3 goes (ILI-1432)', () => {
+// Video is real time (ILI-1423): its square stays live while ORION-3 stays over it, and no longer
+// (ILI-1544, overriding ILI-1432's live for good).
+describe('video ends when ORION-3 leaves', () => {
+  it('tasked away, the feed stops and the look decays to nothing', () => {
     const store = atStart();
     look(store, 'G4', 'video');
-    for (let i = 0; i < 200 && store.get().satellite.state === 'capturing'; i++) store.tick(100);
+    for (let i = 0; i < 200 && store.get().satellite.state === 'capturing'; i++) store.set(run(store.get(), 100));
+    store.set(run(store.get(), 100)); // the feed picks it up the tick after the capture ends
+    expect(store.get().imagery.G4).toMatchObject({ mode: 'video', live: true });
     store.lookAt('F4');
-    for (let i = 0; i < (GHOST_MS + 5_000) / 100; i++) store.tick(100); // long past any look's life
+    expect(store.get().satellite.aim).toBe('F4');
+    store.set(run(store.get(), GHOST_MS + 5_000));
     const s = store.get();
-    expect(s.imagery.G4?.live).toBe(true);
-    expect(freshness(s.imagery.G4!, s.elapsedMs)).toBe('live');
+    expect(s.imagery.G4?.live).toBe(false);
+    expect(freshness(s.imagery.G4!, s.elapsedMs)).toBe('stale');
   });
 });

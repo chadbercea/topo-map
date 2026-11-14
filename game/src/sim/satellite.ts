@@ -139,12 +139,15 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     watching: null, // and ends any live feed (ILI-1423)
   };
   // Leaving a square it was watching live (ILI-1423): that picture stops being live and ages
-  // from now like any other look.
-  const was = s.satellite.watching;
-  const left = was && was !== square && s.imagery[was]?.live && !(s.intel.live ?? []).includes(was) ? { ...s.imagery, [was]: { ...s.imagery[was]!, live: false, atMs: s.elapsedMs } } : s.imagery;
+  // from now like any other look. A video feed ends with it (ILI-1544, overriding ILI-1432's
+  // "live for good"): nothing on the map moves where ORION-3 isn't looking.
+  const was = s.satellite.watching ?? ((s.intel.live ?? []).includes(s.satellite.aim) ? s.satellite.aim : null);
+  const leaving = was && was !== square;
+  const left = leaving && s.imagery[was]?.live ? { ...s.imagery, [was]: { ...s.imagery[was]!, live: false, atMs: s.elapsedMs } } : s.imagery;
   const next: GameState = {
     ...s,
     imagery: left,
+    intel: leaving ? { ...s.intel, live: (s.intel.live ?? []).filter((x) => x !== was) } : s.intel,
     satellite: sat, // the picked square stays picked: its anchor shows ORION-3 on its way (ILI-1302)
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
@@ -239,7 +242,7 @@ export const satelliteSystem: System = (s) => {
   // as ORION-3 stays over it. No rescan.
   // The square ORION-3 is over is the one live square on the map (ILI-1430): once it's looked
   // there, it follows what moves for as long as it stays.
-  // Video squares are live for good (ILI-1432), wherever ORION-3 is.
+  // A video square stays live while ORION-3 stays over it; leaving ends the feed (lookAt, ILI-1544).
   let next = s;
   const live = s.intel.live ?? [];
   for (const sq of live) next = record(next, snapshot(next, sq, 'video', true));

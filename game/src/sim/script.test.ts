@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { BLACK_BOX } from './missions/blackBox';
 import { missionDef, registerMission, say } from './script';
-import { initialState, MISSION, type GameState } from './state';
+import { initialState as rolledState, MISSION, type GameState } from './state';
+import { fixed } from './testkit';
+// A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
+const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { step } from './systems';
 import { reveal } from './contacts';
-import { run, walking } from './testkit';
+import { FIXTURE, run, walking } from './testkit';
 
 describe('mission script', () => {
   it('the game plays the Black Box script: route, clock, contacts and schedule', () => {
@@ -18,13 +21,14 @@ describe('mission script', () => {
     expect(s.script).toEqual({ mission: 'black-box', fired: [] });
   });
 
-  it('each mission start gets fresh contacts', () => {
-    expect(BLACK_BOX.contacts()).not.toBe(BLACK_BOX.contacts());
+  it('each mission start gets fresh contacts, rolled from its seed (ILI-1544)', () => {
+    expect(BLACK_BOX.contacts(1)).not.toBe(BLACK_BOX.contacts(1));
+    expect(BLACK_BOX.contacts(1)).toEqual(BLACK_BOX.contacts(1));
   });
 
   it('a trigger fires once, the first tick its condition holds', () => {
     let s = walking();
-    s = reveal({ ...s, contacts: BLACK_BOX.contacts() }, ['E3'], 'ORION-3');
+    s = reveal({ ...s, contacts: FIXTURE() }, ['E3'], 'ORION-3');
     s = step(s, 100);
     expect(s.script.fired).toContain('first-contact-hint');
     expect(s.comms.messages.filter((m) => m.id === 'hint-first-contact')).toHaveLength(1);
@@ -53,23 +57,10 @@ describe('mission script', () => {
   });
 });
 
-describe('the checkpoint', () => {
-  it('is dug in on the route, much stronger than a patrol', () => {
-    const cp = BLACK_BOX.contacts().find((c) => c.id === 'checkpoint')!;
-    expect(cp).toMatchObject({ square: 'E3', label: 'a fortified checkpoint', total: 5 });
-    expect(cp.strength).toBeGreaterThan(1.5);
-    expect(BLACK_BOX.route).toContain('E3');
-  });
-
-  it('once found, its target menu tags it fortified (no radio card)', () => {
-    const s = step(reveal({ ...walking(), contacts: BLACK_BOX.contacts() }, ['E3'], 'ORION-3'), 100);
-    expect(s.contacts.find((c) => c.id === 'checkpoint')?.note).toBe('Fortified');
-    expect(s.comms.messages.some((m) => m.id === 'checkpoint-brief')).toBe(false);
-  });
-
+describe('a dug-in group on the route', () => {
   it('softened by ordnance first, ALPHA takes it with far less damage than walking in', () => {
     const fightAt = (soften: boolean) => {
-      let s = reveal({ ...walking(), contacts: BLACK_BOX.contacts() }, ['E3'], 'ORION-3');
+      let s = reveal({ ...walking(), contacts: FIXTURE() }, ['E3'], 'ORION-3');
       if (soften) s = { ...s, contacts: s.contacts.map((c) => (c.id === 'checkpoint' ? { ...c, units: c.units.slice(0, 1) } : c)) };
       s = { ...s, team: { ...s.team, position: { x: 900, y: 500 }, waypoint: 3, decisions: { E3: 'attack' } } };
       s = run(s, 30_000);

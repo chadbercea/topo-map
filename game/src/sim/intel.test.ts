@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { activePrompt } from './prompts';
-import { initialState, type GameState } from './state';
+import { initialState as rolledState, type GameState } from './state';
+import { fixed } from './testkit';
+// A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
+const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { createStore } from './store';
 import { DOWNLOAD_MS, feed, gauge, grade, GRADE_INTEL, INT_KINDS, LOW_AT, pushPhoto, pushVideo, reports, shelfState, SQUARE_INTEL, VIDEO_INTEL } from './intel';
 import { squareAt, squareCenter } from '../map/grid';

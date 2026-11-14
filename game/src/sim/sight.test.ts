@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import type { Terrain } from '../map/terrain';
-import { inSight, inView, lineOfSight, SIGHT_M } from './sight';
-import { initialState, type GameState } from './state';
+import { FORCED_M, inContact, inSight, inView, lineOfSight, SIGHT_M } from './sight';
+import { fighterSpots } from './sight';
+import { initialState as rolledState, type GameState } from './state';
+import { fixed } from './testkit';
+// A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
+const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { step } from './systems';
 import { firefightSystem } from './firefight';
 import { eyesSystem } from './imagery';
@@ -44,7 +48,7 @@ describe('ALPHA’s sight (ILI-1512)', () => {
     const s = at(squareCenter('C2')!, 'patrol');
     expect(inView(s)).toEqual([]);
     const after = firefightSystem(s, 100);
-    expect(after.team.fight).toBeNull(); // no contact: it walks on past
+    expect(after.team.fight).toBeNull(); // no contact yet: out of sight, and not close enough to meet
     expect(eyesSystem(after, 100).imagery.C2?.seen).toEqual([]); // and its eyes report nobody
   });
 
@@ -56,11 +60,28 @@ describe('ALPHA’s sight (ILI-1512)', () => {
     expect(eyesSystem(after, 100).imagery.E3?.seen.map((x) => x.contactId)).toEqual(['checkpoint']);
   });
 
-  it('a group it sees in another square goes into its own picture, where it is', () => {
+  it('contact is the same rule for both sides, whatever the squares (ILI-1544): seen across a square edge is contact', () => {
     const s = step(at({ x: 1000, y: 500 }, 'checkpoint'), 100); // F3's edge, looking into E3
-    expect(s.team.known.checkpoint).toMatchObject({ square: 'E3', units: 5 });
-    expect(s.team.fight).toBeNull();
-    const blind = step(at({ x: 1000, y: 650 }, 'checkpoint'), 100); // further down F4: nothing to see
-    expect(blind.team.known.checkpoint).toBeUndefined();
+    expect(s.team.fight).toMatchObject({ contactId: 'checkpoint', square: 'E3' });
+    const blind = step(at({ x: 1000, y: 650 }, 'checkpoint'), 100); // further down F4: neither side sees the other
+    expect(blind.team.fight).toBeNull();
+  });
+
+  it('units that meet always resolve contact: inside FORCED_M it is contact, ground or no ground', () => {
+    const s0 = at(squareCenter('C2')!, 'patrol');
+    expect(inContact(s0)).toBeUndefined(); // out of sight across the square
+    const man = fighterSpots(s0.contacts[0], s0.elapsedMs)[0];
+    const close = { x: man.x + (FORCED_M / 2.5) * 0.8, y: man.y };
+    const s = { ...s0, team: { ...s0.team, position: close } };
+    expect(inContact(s)?.id).toBe('patrol');
+    expect(firefightSystem(s, 100).team.fight).toMatchObject({ contactId: 'patrol' });
+  });
+
+  it('a group ALPHA routed around is still there: walk up on it and it is contact', () => {
+    const s0 = at(squareCenter('E3')!, 'checkpoint');
+    const s = { ...s0, contacts: s0.contacts.map((c) => ({ ...c, status: 'avoided' as const })) };
+    const after = firefightSystem(s, 100);
+    expect(after.team.fight).toMatchObject({ contactId: 'checkpoint' });
+    expect(after.contacts[0].status).toBe('revealed');
   });
 });
