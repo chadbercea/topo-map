@@ -63,9 +63,9 @@ export function MissionBar() {
 }
 
 // Castle House's rook, small, at the head of the bar.
-function RookGlyph() {
+export function RookGlyph({ className = 'mb-rook' }: { className?: string }) {
   return (
-    <svg className="mb-rook" viewBox="0 0 40 52" aria-hidden>
+    <svg className={className} viewBox="0 0 40 52" aria-hidden>
       <path d="M6 50h28v-4l-3-3h-2l-2-24 4-4V5h-5v4h-4V5h-4v4h-4V5H9v10l4 4-2 24H9l-3 3z" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" />
     </svg>
   );

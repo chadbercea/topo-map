@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef } from 'react';
 import { useGame } from '../sim/store';
 import { aboard, EXFIL_FLIGHT_MS, exfilStage, TRANSPORT } from '../sim/exfil';
 import type { TransportState } from './transportScene'; // a type only: the scene loads lazily
@@ -8,22 +7,13 @@ const LOAD = () => import('./transportScene');
 
 // The exfil's panel (ILI-1264), built like an air strike's but orange: an exfil, not a strike.
 // RAVEN-6 and its time out counting down; on the ground, each operator as they board; then the
-// extraction called good, until the After Action Report takes over.
-// Where the panel last sat on screen (ILI-1426): the After Action Report grows it from there.
-export let exfilRect: DOMRect | null = null;
-
-// header: the After Action Report's own copy, at its top (ILI-1426). The band's copy steps aside
-// once the mission's over, so there's one RAVEN-6 on screen.
-export function ExfilPanel({ header = false }: { header?: boolean }) {
+// extraction called good, until the After Action Report takes over (it notes the extraction itself).
+export function ExfilPanel() {
   const r = useGame((s) => s.exfil);
   const now = useGame((s) => s.elapsedMs);
   const operators = useGame((s) => s.team.operators);
   const ended = useGame((s) => s.phase === 'ended');
-  const ref = useRef<HTMLElement>(null);
-  useLayoutEffect(() => {
-    if (!header && ref.current) exfilRect = ref.current.getBoundingClientRect();
-  });
-  if (!r || (ended && !header)) return null;
+  if (!r || ended) return null;
   const stage = exfilStage(r, now);
   const left = Math.max(0, r.arriveMs - now);
   const ids = aboard(
@@ -34,7 +24,7 @@ export function ExfilPanel({ header = false }: { header?: boolean }) {
   const state: TransportState = stage === 'enroute' ? 'enroute' : stage === 'done' ? 'done' : 'down';
   const where = stage === 'enroute' ? 'en route' : stage === 'landing' ? 'inbound' : stage === 'waiting' || stage === 'boarding' ? 'on the ground' : 'lifting';
   return (
-    <section ref={ref} className="panel air exfil" data-testid={header ? 'aar-exfil' : 'exfil-panel'} data-stage={stage} data-header={header || undefined} role="status" aria-label="Exfil">
+    <section className="panel air exfil" data-testid="exfil-panel" data-stage={stage} role="status" aria-label="Exfil">
       <h2>
         <span>{TRANSPORT.callsign}</span>
         <span className="where">
