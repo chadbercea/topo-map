@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { odds, SOFTEN_MS, type Contact } from './contacts';
+import { odds, type Contact } from './contacts';
 import { LINK_MS, waitingCalls } from './comms';
 import { blocked, TREE } from './responses';
 import type { GameState } from './state';
@@ -47,12 +47,13 @@ describe('ALPHA decides (ILI-1315)', () => {
     expect(s.team.waitFor).toBeNull();
   });
 
-  it('close odds and HQ does nothing: after twenty seconds it goes around', () => {
+  it('close odds and HQ does nothing: it keeps holding, no timer (ILI-1551)', () => {
     let s = until(facing(contact([1, 5, 6, 9])), (x) => !!x.team.waitFor);
-    s = run(s, SOFTEN_MS + 500);
-    expect(said(s, /no change in E3\. Moving around via [A-H]\d\./)).toBe(true);
-    expect(s.team.route).not.toContain('E3');
-    expect(s.contacts[0].status).toBe('revealed'); // still there for HQ to hit
+    const at = s.team.position;
+    s = run(s, 120_000);
+    expect(s.team.position).toEqual(at);
+    expect(s.team.waitFor?.square).toBe('E3');
+    expect(s.team.route).toContain('E3');
   });
 
   it('support wipes them out while it holds: it moves through', () => {

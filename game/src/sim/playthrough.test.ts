@@ -76,9 +76,10 @@ describe('playthrough', () => {
       }
       expect(moved).toBeGreaterThan(0);
       expect(moved).toBeLessThan(15_000);
-      // Out, or lost in a fight on the harder rolled map (ILI-1544): never stuck on the way.
+      // Out, lost in a fight on the harder rolled map (ILI-1544), or holding short of a contact it
+      // can't take, waiting on a strike this HQ never sends (no timer, ILI-1551). Never stuck otherwise.
       const end = store.get();
-      expect(end.mission.phase === 'complete' || end.team.operators.every((o) => o.health <= 0)).toBe(true);
+      expect(end.mission.phase === 'complete' || end.team.operators.every((o) => o.health <= 0) || !!end.team.waitFor).toBe(true);
     }
   });
 });
