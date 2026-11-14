@@ -28,7 +28,7 @@ export const movementSystem: System = (s, dt) => {
   const goal = target && squareCenter(target);
   if (!goal || team.holdFor || team.fight || team.treating || s.elapsedMs < team.holdUntilMs) return s; // holding, fighting or treating
   // Holding short of a contact for HQ to soften it (ILI-1315), until it's done or time's up.
-  if (team.waitFor?.square === target && s.elapsedMs < team.waitFor.untilMs) {
+  if (team.waitFor?.square === target) {
     const activity = `Holding short of ${target} · soften them up`;
     return team.activity === activity ? s : { ...s, team: { ...team, activity } };
   }

@@ -129,12 +129,11 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 // ALPHA decides for itself (ILI-1315, decision logic ILI-1312). It doesn't ask HQ what to do:
 // HQ changes the ground (scans, strikes, intel), ALPHA reads it and radios what it's doing.
 // A contact ALPHA knows of (picture.ts) on the square it's heading into gets weighed: take it, hold short for
-// HQ to soften it (twenty seconds, then go around), or go around. A square nobody imaged it
+// HQ to soften it (for as long as it takes: no timer, ILI-1551), or go around. A square nobody imaged it
 // only enters on fresh intel (movement.ts, ILI-1532). The exfil
 // always has a way out: a fight ALPHA won't take there sends it to the alternate exfil.
 export const TAKE_AT = 0.6; // their strength over ours at or under this: take the fight
 export const AVOID_ABOVE = 1; // over this: go around; between the two: soften it first
-export const SOFTEN_MS = 20_000;
 
 // Their strength over ALPHA's: fighters weighted by how hard they are, against operators
 // still up, weighted by the ammo they've got left, halved when the meds are gone. units: how many
@@ -167,9 +166,8 @@ function assess(s: GameState, square: SquareId, c: Contact, units: number): Game
   const what = `CONTACT ${square}, ${c.label}.`;
   if (r <= TAKE_AT) return decideOn(say(s, `take-${c.id}-${s.elapsedMs}`, waiting ? `moving in on ${square}.` : `${what} Moving to engage.`), square, 'attack');
   if (r <= AVOID_ABOVE) {
-    if (!waiting) return say({ ...s, team: { ...s.team, waitFor: { square, untilMs: s.elapsedMs + SOFTEN_MS } } }, `soften-${c.id}-${s.elapsedMs}`, `${what} Too strong to take. Holding short, request fires on ${square}.`);
-    if (s.elapsedMs < waiting.untilMs) return s;
-    return goAround(s, square, `no change in ${square}.`);
+    if (!waiting) return say({ ...s, team: { ...s.team, waitFor: { square } } }, `soften-${c.id}-${s.elapsedMs}`, `${what} Too strong to take. Holding short, request fires on ${square}.`);
+    return s; // it holds until HQ changes the ground (ILI-1551)
   }
   return goAround(s, square, `${what} Too strong to take.`);
 }

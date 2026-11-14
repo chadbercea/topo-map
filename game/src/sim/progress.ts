@@ -82,7 +82,7 @@ export function blockers(s: GameState): Blocker[] {
   if (s.team.fight) out.push({ tone: 'threat', text: `${s.team.callsign} in contact` });
   // Teaching through play (ILI-1318): what ALPHA needs from HQ right now, and where.
   const w = s.team.waitFor;
-  if (w && s.elapsedMs < w.untilMs) out.push({ tone: 'decision', text: `${s.team.callsign} holding short of ${w.square}: soften them up`, go: { square: w.square } });
+  if (w) out.push({ tone: 'decision', text: `${s.team.callsign} holding short of ${w.square}: soften them up`, go: { square: w.square } });
   // ALPHA's imagery request (ILI-1349) isn't here: it's a tier two prompt on the map (ILI-1391).
   const ahead = s.team.route.slice(s.team.waypoint);
   const contact = ahead.find((sq) => knownIn(s, sq).length > 0);
