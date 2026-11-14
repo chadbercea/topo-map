@@ -34,7 +34,7 @@ export const learn = (s: GameState, c: Contact, square: SquareId, units = c.unit
 });
 
 // The video feeds ALPHA has pulled keep its picture of their squares live.
-const onFeed = (s: GameState, sq: string) => s.intel.pushes.some((p) => p.square === sq && p.grade === 'video' && (p.state === 'fed' || p.state === 'banked'));
+const onFeed = (s: GameState, sq: string) => s.intel.pushes.some((p) => p.square === sq && p.grade === 'video' && p.state === 'fed');
 export const pictureSystem: System = (s) => {
   let next = s;
   for (const sq of s.intel.live ?? []) {

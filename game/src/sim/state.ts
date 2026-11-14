@@ -90,7 +90,7 @@ export type GameState = {
   noise: number; // 0-100, how loud the PMC has been
   script: { mission: string; fired: string[] }; // the mission script and which triggers have run
   flags: Record<string, boolean>; // choices the mission script reacts to (jammed, ...)
-  intel: Intel; // ALPHA's intel gauge: what keeps it moving (ILI-1314)
+  intel: Intel; // what HQ has analyzed, and how fresh it is: what lets ALPHA move (ILI-1532)
   stats: { searched: number; decoded: number; lost: string[] }; // for the wrap-up; lost: ids of operators who went down
   inbound: Inbound[]; // support on its way
   alerted: boolean; // the enemy knows a PMC is in the area
@@ -107,9 +107,9 @@ export const MISSION_MS = MISSION.durationMs; // GDD started at six minutes; ten
 
 // missionMs: the mission's length, the script's ten minutes unless tuned (?minutes=). This is
 // how the game opens: live, ALPHA on the ground, the clock running.
-// The opening (ILI-1485): ALPHA holds at the infil with ORION-3 locked on over it. The gauge
-// starts empty, so the hold is the intel gauge's own (movement.ts): ALPHA moves off once HQ's
-// first intel lands. Tests and automation pin the gauge full (testkit fed, main.tsx), so there
+// The opening (ILI-1485): ALPHA holds at the infil with ORION-3 locked on over it. Nothing is
+// fresh yet, so the hold is the fresh-intel rule's own (movement.ts, ILI-1532): ALPHA moves off once
+// HQ's first Analyze of the next square lands. Tests and automation let ALPHA walk free (testkit fed, main.tsx), so there
 // the team walks from the first tick as before.
 // opening: Castle House's balance coming into the mission, carried from the last; unlocked:
 // the capabilities it carries in (ILI-1316).
@@ -130,7 +130,7 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
       waypoint: 1,
       path: [],
       pathTo: null,
-      activity: `Holding at ${ROUTE[0]}`, // at the infil until HQ's first intel fills the gauge (ILI-1485)
+      activity: `Holding at ${ROUTE[0]}`, // at the infil until HQ's first fresh intel on the next square (ILI-1485, ILI-1532)
       holdFor: null,
       holdUntilMs: 0,
       waitFor: null,

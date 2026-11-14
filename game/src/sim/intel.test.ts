@@ -5,69 +5,83 @@ import { fixed } from './testkit';
 // A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
 const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { createStore } from './store';
-import { DOWNLOAD_MS, feed, gauge, grade, GRADE_INTEL, INT_KINDS, LOW_AT, pushPhoto, pushVideo, reports, shelfState, SQUARE_INTEL, VIDEO_INTEL } from './intel';
+import { analyzable, DECAY_MS, DOWNLOAD_MS, grade, INT_KINDS, pushPhoto, pushVideo, reports, settled, shelfState, VIDEO_INTEL } from './intel';
 import { squareAt, squareCenter } from '../map/grid';
-import { answerIntel, fed as fedGauge, lockOn, pulled, run } from './testkit';
+import { answerIntel, fed as walkFree, lockOn, pulled, run } from './testkit';
+import { initialSatellite } from './satellite';
 
-// ALPHA's intel gauge (ILI-1314): it moves only while HQ keeps it fed.
+// Fresh intel (ILI-1532): ALPHA moves only into squares HQ has analyzed in the last DECAY_MS.
 const blindAhead = (): GameState => {
   const s = initialState();
-  // HQ has said "move in blind" everywhere, so only the gauge decides whether ALPHA moves.
   return { ...s, team: { ...s.team, decisions: Object.fromEntries(s.team.route.map((sq) => [sq, 'blind' as const])) } };
 };
+// ORION-3 parked far off, so no square's clock is held.
+const away = (s: GameState): GameState => ({ ...s, satellite: initialSatellite('A1') });
 
-describe('the intel gauge', () => {
-  it('starts empty, and an unfed team holds where it is', () => {
+describe('fresh intel', () => {
+  it('starts with nothing fresh: ALPHA holds short of the next square, says so once, and the clock runs', () => {
     const s0 = blindAhead();
-    expect(gauge(s0)).toBe(0);
     const s = run(s0, 3_000);
     expect(s.team.position).toEqual(s0.team.position);
     expect(s.team.activity).toBe('Holding · needs intel');
+    expect(s.comms.messages.filter((m) => m.id === 'needs-intel').map((m) => m.text)).toEqual(["Holding. No intel on what's ahead. Get us eyes on F4."]);
+    expect(s.timer.remainingMs).toBeLessThan(s0.timer.remainingMs);
   });
 
-  it('intel is fuel: it holds while ALPHA stands still, and burns only as ALPHA walks (ILI-1341)', () => {
-    const fed = feed(initialState(), 30);
-    expect(gauge(fed)).toBe(30);
-    // Holding for another reason (a call, say): nothing burns.
-    const held = run({ ...fed, team: { ...fed.team, holdUntilMs: 60_000 } }, 30_000);
-    expect(gauge(held)).toBe(30);
-    // Walking burns it.
-    const s0 = feed(blindAhead(), 30);
-    expect(gauge(run(s0, 5_000))).toBeLessThan(30);
+  it('a fresh Analyze of the next square releases it', () => {
+    const s0 = run(blindAhead(), 1_000);
+    const s = run(pushPhoto(s0, 'F4', 0).next, 3_000);
+    expect(s.team.activity).toBe('Moving to F4');
+    expect(s.team.position).not.toEqual(s0.team.position);
   });
 
-  it('every grade of photo moves ALPHA, even all clear', () => {
-    const s0 = feed(blindAhead(), GRADE_INTEL.clear);
-    const moved = run(s0, 3_000);
-    expect(moved.team.position).not.toEqual(s0.team.position);
+  it('an analyzed square decays back to unknown in DECAY_MS once ORION-3 is off it', () => {
+    const s0 = away(pushPhoto(blindAhead(), 'C4', 0).next);
+    expect(settled(s0, 'C4')).toBe(true);
+    expect(analyzable(s0, 'C4')).toBe(false);
+    const mid = run(s0, DECAY_MS - 1_000);
+    expect(settled(mid, 'C4')).toBe(true);
+    const gone = run(mid, 1_100);
+    expect(settled(gone, 'C4')).toBe(false);
+    expect(gone.intel.fresh.C4).toBeUndefined();
+    expect(analyzable(gone, 'C4')).toBe(true); // as if never visited: Analyze is open again
   });
 
-  it("a square's worth of intel walks ALPHA about a square, then it holds", () => {
-    const s0 = feed(blindAhead(), SQUARE_INTEL);
-    const s = run(s0, 120_000);
-    expect(gauge(s)).toBe(0);
-    expect(s.team.activity).toBe('Holding · needs intel');
-    const dx = Math.hypot(s.team.position.x - s0.team.position.x, s.team.position.y - s0.team.position.y);
-    expect(dx).toBeGreaterThan(150); // a square is 200 units; paths wind
-    expect(dx).toBeLessThanOrEqual(200);
+  it('its clock holds while ORION-3 is over the square, and runs again once it leaves', () => {
+    const s0 = lockOn(pushPhoto(blindAhead(), 'C4', 0).next, 'C4');
+    const held = run(s0, DECAY_MS * 2);
+    expect(held.intel.fresh.C4).toBe(DECAY_MS);
+    const s = run(away(held), DECAY_MS + 100);
+    expect(settled(s, 'C4')).toBe(false);
   });
 
-  it('running low on the move, ALPHA requests imagery before it stops (ILI-1341, ILI-1349)', () => {
-    const s = run(feed(blindAhead(), LOW_AT - 1), 1_000);
-    expect(s.team.activity).toMatch(/^Moving/);
-    expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', grid: expect.stringMatching(/^[A-H]\d$/), text: expect.stringMatching(/^ALPHA requested imagery of [A-H]\d$/) });
+  it('decayed, the square loses its picture, its stamp, and what ALPHA learned from it', () => {
+    const base = pushPhoto(blindAhead(), 'C4', 0).next;
+    const s0 = away({ ...base, map: { ...base.map, scanned: ['C4'] }, imagery: { C4: { square: 'C4', atMs: 0, mode: 'photo', seen: [], live: false } }, team: { ...base.team, known: { x: { square: 'C4', units: 2, atMs: 0 } } } });
+    const s = run(s0, DECAY_MS + 100);
+    expect(s.imagery.C4).toBeUndefined();
+    expect(s.map.scanned).not.toContain('C4');
+    expect(s.team.known.x).toBeUndefined();
   });
 
-  it('the stretch after the opening scans: scanning where the prompt points keeps ALPHA going (ILI-1341, ILI-1391)', () => {
-    // Play it the way the player is told to: when the prompt says scan, scan where it points.
+  it('the stretch after the opening: answering where the prompt points keeps ALPHA going (ILI-1391)', () => {
     const store = createStore(blindAhead());
     const start = store.get().team.waypoint;
     for (let t = 0; t < 300_000; t += 100) {
       store.tick(100);
-      const p = activePrompt(store.get());
-      answerIntel(store, p); // click the square, wait for the lock, Analyze; ALPHA pulls it (ILI-1451, ILI-1499)
+      answerIntel(store, activePrompt(store.get())); // click the square, wait for the lock, Analyze; ALPHA pulls it
     }
-    expect(store.get().team.waypoint).toBeGreaterThan(start + 3);
+    // Slower than the gauge was: every square waits on its own Analyze, and E3's dug-in group holds it up.
+    expect(store.get().team.waypoint).toBeGreaterThan(start + 1);
+  });
+
+  it('decayed under ALPHA mid-crossing: it finishes the crossing, then holds before the next square', () => {
+    const s0 = run(pushPhoto(blindAhead(), 'F4', 0).next, 3_000);
+    expect(s0.team.activity).toBe('Moving to F4');
+    const lost = { ...s0, intel: { ...s0.intel, graded: [], fresh: {} } }; // F4's intel gone while ALPHA is on its way
+    const s = run(lost, 60_000);
+    expect(s.team.waypoint).toBe(s0.team.waypoint + 1); // it got to F4
+    expect(s.team.activity).toBe('Holding · needs intel'); // and holds short of E3
   });
 
   it('video comes after a scan, is one big fill, and has no limit (ILI-1432)', () => {
@@ -93,60 +107,28 @@ describe('the intel gauge', () => {
     const s = initialState();
     expect(grade(s, 'E3', 5)).toBe('high');
     const { next, grade: first } = pushPhoto(s, 'F2', 0);
-    expect(gauge(next)).toBe(GRADE_INTEL[first]);
     expect(grade(next, 'F2', 0)).toBe('clear');
     expect(grade(s, 'F2', 0)).toBe(first); // the same square grades the same in a replay
   });
 
-  it('scanning ahead pays: a square past the next one banks, and hits the gauge as ALPHA heads into it (ILI-1316)', () => {
-    const s0 = blindAhead();
-    const next = s0.team.route[s0.team.waypoint]; // F4: the leg it's on
-    const later = s0.team.route[s0.team.waypoint + 1]; // E3: further on
-    const near = pushPhoto(s0, next, 0);
-    expect(near.banked).toBe(false);
-    expect(gauge(near.next)).toBeGreaterThan(0); // the square it's heading into feeds now
-    const far = pushPhoto(s0, later, 3);
-    expect(far.banked).toBe(true);
-    expect(gauge(far.next)).toBe(0); // banked: nothing yet
-    // ALPHA reaches F4 and starts for E3: the bank pays out, high grade.
-    const s = run({ ...far.next, intel: { ...far.next.intel, base: 100 } }, 60_000);
-    expect(s.team.route[s.team.waypoint]).not.toBe(next);
-    expect(s.intel.banked).toHaveLength(0);
-    expect(s.intel.fuel).toBeGreaterThan(GRADE_INTEL.medium); // E3's high grade paid out, less the walk since
-  });
-
-  it('banked intel for a square ALPHA no longer goes to (it went around it) pays out at once (ILI-1315)', () => {
-    const s0 = blindAhead();
-    const later = s0.team.route[s0.team.waypoint + 1];
-    const far = pushPhoto(s0, later, 3).next;
-    const rerouted = { ...far, team: { ...far.team, route: far.team.route.map((sq) => (sq === later ? 'E4' : sq)) } };
-    const s = run(rerouted, 100);
-    expect(s.intel.banked).toHaveLength(0);
-    expect(gauge(s)).toBeGreaterThan(0);
-  });
-
-  it('Analyze posts the package on the shelf; ALPHA, holding at the infil, pulls it down, and only then has it (ILI-1499)', () => {
-    const store = createStore(initialState());
-    store.lookAt('G5');
-    store.scan('G5');
-    expect(gauge(store.get())).toBe(0); // on the shelf: HQ can't push it to the team
-    expect(shelfState(store.get(), 'G5')).toBe('posted');
+  it('Analyze posts the package on the shelf; ALPHA, holding at the infil, pulls it down, and only then moves (ILI-1499, ILI-1532)', () => {
+    const store = createStore(lockOn(initialState(), 'F4'));
+    store.scan('F4');
+    expect(shelfState(store.get(), 'F4')).toBe('posted'); // on the shelf: HQ can't push it to the team
     expect(store.get().comms.messages.at(-1)?.text).toMatch(/analysis complete: .*\. Intel posted for ALPHA\./);
     store.tick(100);
-    expect(shelfState(store.get(), 'G5')).toBe('pulling'); // holding: it syncs at once
+    expect(shelfState(store.get(), 'F4')).toBe('pulling'); // holding: it syncs at once
     expect(store.get().intel.download).toBeTruthy();
     for (let t = 100; t < DOWNLOAD_MS - 100; t += 100) store.tick(100);
-    expect(gauge(store.get())).toBe(0); // still coming down
-    expect(store.get().team.position).toEqual(squareCenter('G5'));
+    expect(store.get().team.position).toEqual(squareCenter('G5')); // still coming down
     store.tick(200);
-    expect(shelfState(store.get(), 'G5')).toBe('received');
-    expect(gauge(store.get())).toBeGreaterThan(0);
+    expect(shelfState(store.get(), 'F4')).toBe('received');
     for (let i = 0; i < 20; i++) store.tick(100);
     expect(store.get().team.activity).toMatch(/^Moving/); // the opening (ILI-1485): released by its first pull
   });
 
   it('on the move, ALPHA pulls at the next square it reaches, not before (ILI-1499)', () => {
-    const s0 = fedGauge(initialState());
+    const s0 = walkFree(initialState());
     const mid = run(s0, 3_000); // on its way out of the infil
     expect(mid.team.activity).toMatch(/^Moving/);
     const far = mid.team.route[mid.team.waypoint + 2];
@@ -165,11 +147,10 @@ describe('the intel gauge', () => {
     expect(shelfState(s, far)).toBe('received');
   });
 
-  it('a video feed goes on the shelf too, and fills the gauge once pulled (ILI-1499)', () => {
+  it('a video feed goes on the shelf too, and lands once pulled (ILI-1499)', () => {
     const s = pushVideo(lockOn(initialState(), 'G5'));
-    expect(gauge(s)).toBe(0);
     expect(shelfState(s, 'G5')).toBe('posted');
-    expect(gauge(run(s, DOWNLOAD_MS + 100))).toBe(VIDEO_INTEL);
+    expect(run(s, DOWNLOAD_MS + 100).intel.pushes.find((p) => p.grade === 'video')).toMatchObject({ state: 'fed', amount: VIDEO_INTEL });
   });
 });
 
@@ -200,19 +181,18 @@ describe('intel reports', () => {
   });
 });
 
-// One scan settles a square (ILI-1399).
+// An Analyze settles a square while it's fresh (ILI-1399, ILI-1532).
 describe('settled squares', () => {
-  it('ALPHA crosses settled ground on an empty gauge, and burns nothing doing it', () => {
+  it('ALPHA moves into a square with fresh intel it has pulled, without asking', () => {
     const s0 = blindAhead();
     const next = s0.team.route[s0.team.waypoint];
-    const known = { ...s0, intel: { ...s0.intel, graded: [next] } };
+    const known = { ...s0, intel: { ...s0.intel, graded: [next], fresh: { [next]: DECAY_MS } } };
     const s = run(known, 5_000);
     expect(s.team.position).not.toEqual(s0.team.position);
-    expect(gauge(s)).toBe(0);
     expect(s.team.activity).toMatch(/^Moving/);
   });
 
-  it('HQ is never asked to scan a square twice', async () => {
+  it('HQ is never asked for a square that is still fresh', async () => {
     const { requestSquare } = await import('./imageryRequest');
     const s0 = blindAhead();
     const all = { ...s0, intel: { ...s0.intel, graded: [...s0.team.route] } };

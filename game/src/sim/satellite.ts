@@ -206,7 +206,7 @@ function finishLook(s: GameState): GameState {
     team: sat.callId && next.team.holdFor === sat.callId ? { ...next.team, holdFor: null } : next.team,
   };
   // To the analysts, and what it was worth to ALPHA (ILI-1314): a photo's grade feeds its
-  // gauge for ten seconds; video, once, is a permanent feed.
+  // record; video is the live feed while ORION-3 stays over it.
   let pushed: string;
   if (mode === 'video') {
     next = pushVideo(next);

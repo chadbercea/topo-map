@@ -69,11 +69,11 @@ describe('ALPHA decides (ILI-1315)', () => {
     expect(s.team.holdFor).toBeNull();
   });
 
-  it('a swept kill site feeds ALPHA’s gauge as well as the budget', () => {
+  it('a swept kill site is intel on the record as well as money in the budget', () => {
     const s0 = walking();
     const site = { id: 'site-x', kind: 'site' as const, square: 'G5', title: 'Kill site', atMs: 0, status: 'new' as const };
     const s = run({ ...s0, events: [...s0.events, site] }, 100);
-    expect(s.intel.fuel).toBeGreaterThan(20); // 25, less the few metres walked since
+    expect(s.intel.pushes.some((p) => p.source === 'ALPHA' && p.square === 'G5')).toBe(true);
     expect(s.comms.messages.some((m) => /intel to keep us moving/.test(m.text))).toBe(true);
   });
 });

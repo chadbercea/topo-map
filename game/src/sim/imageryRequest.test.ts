@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { initialState, type GameState } from './state';
 import { createStore } from './store';
-import { feed, LOW_AT } from './intel';
 import { isImageryRequest, openImageryRequest } from './imageryRequest';
 import { openCards } from './cards';
 import { activePrompt } from './prompts';
 import { answerIntel, fed, run } from './testkit';
 
-// The never-stuck rule (ILI-1349): low or out of intel, ALPHA asks HQ for imagery of the next
-// square on its route nobody has scanned. One at a time; a look at the square answers it.
+// ALPHA asks for imagery and holds (ILI-1532): with no fresh intel on the next square on its route,
+// it asks HQ for imagery of it. One at a time; a look at the square answers it.
 
 const blindAhead = (): GameState => {
   const s = initialState();
@@ -17,19 +16,13 @@ const blindAhead = (): GameState => {
 const requests = (s: GameState) => s.events.filter(isImageryRequest);
 
 describe('the never-stuck rule', () => {
-  it('out of intel, ALPHA requests imagery of the next square it needs: one card, and it waits', () => {
+  it('no fresh intel on the next square: ALPHA requests imagery of it, and waits', () => {
     const s = run(blindAhead(), 3_000);
     expect(s.team.activity).toBe('Holding · needs intel');
     expect(openImageryRequest(s)).toMatchObject({ square: 'F4', title: 'ALPHA requested imagery of F4' });
     expect(requests(run(s, 60_000))).toHaveLength(1); // one at a time, and it never expires
     expect(activePrompt(s)).toMatchObject({ kind: 'intel-needed', grid: 'F4' }); // a prompt on the map (ILI-1391)
     expect(openCards(s).some((c) => c.kind === 'request')).toBe(false); // not a card in COMMS any more
-  });
-
-  it('running low on the move, the request goes up before ALPHA stops', () => {
-    const s = run(feed(blindAhead(), LOW_AT - 1), 500);
-    expect(s.team.activity).toMatch(/^Moving/);
-    expect(openImageryRequest(s)).toBeTruthy();
   });
 
   it('a fed team asks for nothing', () => {

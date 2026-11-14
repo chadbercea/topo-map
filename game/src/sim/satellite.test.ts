@@ -236,7 +236,6 @@ describe('video ends when ORION-3 leaves', () => {
     expect(store.get().satellite.aim).toBe('F4');
     store.set(run(store.get(), GHOST_MS + 5_000));
     const s = store.get();
-    expect(s.imagery.G4?.live).toBe(false);
-    expect(freshness(s.imagery.G4!, s.elapsedMs)).toBe('stale');
+    expect(s.imagery.G4).toBeUndefined(); // decayed: the square is unknown again (ILI-1532)
   });
 });

@@ -1,7 +1,7 @@
 import type { GameState } from './state';
 import { movementSystem } from './movement';
 import { buildingSystem } from './buildings';
-import { intelSystem, pullSystem } from './intel';
+import { decaySystem, pullSystem } from './intel';
 import { imageryRequestSystem } from './imageryRequest';
 import { eventSystem } from './events';
 import { commsSystem } from './comms';
@@ -48,7 +48,7 @@ export const readoutSystem: System = (s) => {
   return { ...s, team: { ...s.team, vitals, activeUntilMs: s.elapsedMs + ACTIVE_MS } };
 };
 
-export const SYSTEMS: System[] = [timerSystem, noiseSystem, eventSystem, scriptSystem, satelliteSystem, pictureSystem, listenSystem, signalSystem, minigameSystem, airSystem, sniperSystem, ordnanceSystem, commsSystem, approachSystem, siteSystem, buildingSystem, firefightSystem, casualtySystem, supportSystem, missionSystem, movementSystem, pullSystem, intelSystem, imageryRequestSystem, driftSystem, sightSystem, eyesSystem, blindSystem, readoutSystem];
+export const SYSTEMS: System[] = [timerSystem, noiseSystem, eventSystem, scriptSystem, satelliteSystem, pictureSystem, listenSystem, signalSystem, minigameSystem, airSystem, sniperSystem, ordnanceSystem, commsSystem, approachSystem, siteSystem, buildingSystem, firefightSystem, casualtySystem, supportSystem, missionSystem, movementSystem, pullSystem, decaySystem, imageryRequestSystem, driftSystem, sightSystem, eyesSystem, blindSystem, readoutSystem];
 
 // One fixed tick: advance the clocks, then let every system have its turn.
 export function step(state: GameState, dtMs: number, systems: System[] = SYSTEMS): GameState {

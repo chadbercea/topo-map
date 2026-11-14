@@ -11,7 +11,7 @@ import { knownTo } from './picture';
 // Buildings (ILI-1316): the hunt. A photo of empty ground sometimes turns up a building worth a
 // search: RNG by square, seeded, so a mission replays. It pings on the map; HQ decides whether
 // to spend mission time sending ALPHA to it. ALPHA detours through the square, searches it, and
-// what it finds pays on the spot and feeds its gauge: a folder, a hard drive, a person who can
+// what it finds pays on the spot: a folder, a hard drive, a person who can
 // be paid for what they know. Starting values are Claude's picks, for tuning by feel.
 
 export const BUILDING_CHANCE = 0.25; // of an empty square HQ photographs

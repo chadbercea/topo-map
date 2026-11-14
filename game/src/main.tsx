@@ -33,7 +33,7 @@ game.subscribe(() => {
 if (navigator.webdriver) document.documentElement.dataset.automated = '';
 // Under test automation ALPHA's intel gauge is pinned full, so a test of something else isn't
 // a test of keeping the team fed; ?gauge plays it for real (ILI-1314).
-if (navigator.webdriver && !new URLSearchParams(location.search).has('gauge')) game.setIntelBase(100);
+if (navigator.webdriver && !new URLSearchParams(location.search).has('gauge')) game.setWalkFree(true);
 // Every mission opens on $10M with everything on call; nothing carries over (ILI-1405).
 clearOldSaves();
 game.setOpening(...opening());

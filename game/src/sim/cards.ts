@@ -6,8 +6,7 @@ import { isImageryRequest } from './imageryRequest';
 
 // COMMS as a card stack (option D, ILI-1342; the sim side is ILI-1346). Everything that reaches
 // HQ, in the order it came in:
-// - intel cards: routine, every push of intel to ALPHA; they feed the gauge on their own, or
-//   wait banked for the square ALPHA heads into next;
+// - intel cards: routine, every push of intel to ALPHA;
 // - event cards: something that wants HQ (a contact, radio traffic, a building, a request,
 //   ALPHA asking). Open until it's answered; they never expire;
 // - radio lines: ALPHA's and HQ's own words, plain, between the cards.
