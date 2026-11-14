@@ -24,7 +24,7 @@ export function AirPanel({ weapon, square }: { weapon: AirWeapon; square: string
   const leaving = done && now >= r.doneMs! + LINGER_MS - LEAVE_MS;
   const state: AirState = done ? 'done' : over ? 'strike' : 'inbound';
   const cleared = done && !contacts.some((c) => c.square === r.square && (c.status === 'hidden' || c.status === 'revealed') && c.units.length);
-  const signOff = !kills.length ? 'No targets in the square' : cleared ? 'All targets neutralized' : `${kills.length} down`;
+  const signOff = !kills.length ? 'NO JOY' : cleared ? 'Clear' : `${kills.length} down`; // the standard's words (ILI-1553)
   return (
     <section className={`panel air ${weapon}`} data-testid={`${weapon}-panel`} data-state={state} data-leaving={leaving || undefined} role="status" aria-label={AIR[weapon].label}>
       <h2>

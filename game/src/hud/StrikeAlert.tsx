@@ -96,7 +96,8 @@ function Alert({ s, square, open, area }: { s: GameState; square: string; open: 
   const st = strikeState(s, square);
   const work = strikeWork(s, square);
   const n = st.marked.length;
-  const line = work ?? (n ? `${n} tango` : square);
+  const fighting = s.team.fight?.square === square; // ALPHA in it: say so first (ILI-1553)
+  const line = work ?? (fighting ? `${s.team.callsign} in contact · ${square}` : n ? `${n} tango · ${square}` : square);
   const toggle = () => {
     if (open) return closeStrike();
     // Focus the square too: its flyout comes up to the right, the strike panel below.

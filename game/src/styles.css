@@ -2495,3 +2495,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work])) .prompt { animation: prompt-in 180ms ease-out; }
 .hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) :is(.orion .o-buttons .modes button[data-cue], .dock-tabs button[data-alert='true'], .target-menu .options button[data-cue], .square-card .sc-scan button[data-cue]) { animation: none; }
 .hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) .log-toggle .tab-dot::after { animation: none; }
+
+/* Edge markers on top of every game UI panel, under pause/AAR (ILI-1553). */
+.edge-marker { z-index: 9; }
