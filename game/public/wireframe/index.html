@@ -720,6 +720,29 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 .l72 .g .tprompt { position: absolute; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 7px 9px; background: var(--bg); border: 1px solid var(--amber); border-left-width: 3px; font-size: 11px; }
 .l72 .g .tprompt b { color: var(--amber); letter-spacing: 0.08em; }
 .l72 .g .tprompt button { margin-left: auto; padding: 4px 10px; background: var(--amber); color: #0b0f0d; border: 0; letter-spacing: 0.1em; text-transform: uppercase; font-size: 10px; }
+
+/* ILI-1534 · ALERT options (2026-11-14) */
+.a34 .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.a34 .g { --bg: #0b0f0d; --ink: #cfe8dc; --dim: #6f8a7d; --teal: #35d0a5; --red: #e5484d; position: relative; height: 260px; overflow: hidden; border: 1px solid #222; border-radius: 6px; background: #0b0f0d; font: 11px/1.3 var(--mono); color: var(--ink);
+  background-image: linear-gradient(rgba(53,208,165,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(53,208,165,.12) 1px, transparent 1px); background-size: 80px 80px; }
+.a34 .sq { position: absolute; left: 100px; top: 60px; width: 80px; height: 80px; border: 1px solid rgba(207,232,220,.6); }
+.a34 .sq i { position: absolute; width: 7px; height: 7px; border: 1px solid var(--red); border-radius: 50%; }
+.a34 .sq small { position: absolute; left: 3px; top: 2px; font-size: 9px; color: var(--dim); }
+.a34 .band { position: absolute; left: 100px; top: 140px; display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 8px; background: rgba(60,10,12,.94); border: 1px solid var(--red); color: #fff; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+.a34 .band b { font-weight: 700; letter-spacing: .24em; }
+.a34 .hz { width: 14px; align-self: stretch; background: repeating-linear-gradient(-45deg, var(--red) 0 4px, transparent 4px 8px); }
+.a34 .act { margin-left: 6px; padding: 3px 8px; background: var(--red); color: #fff; font-weight: 700; letter-spacing: .16em; }
+.a34 .flash { animation: a34-flash .9s steps(1, end) infinite; }
+.a34 .ring { position: absolute; left: 92px; top: 52px; width: 96px; height: 96px; border: 2px solid var(--red); animation: a34-ring 1.2s ease-out infinite; }
+.a34 .edge { position: absolute; right: 0; top: 96px; display: flex; align-items: center; gap: 6px; padding: 5px 8px; background: rgba(60,10,12,.94); border: 1px solid var(--red); border-right: 0; color: #fff; font-size: 10px; letter-spacing: .14em; }
+.a34 .two { flex-direction: column; align-items: stretch; gap: 0; padding: 0; }
+.a34 .two .l1 { display: flex; align-items: center; gap: 6px; padding: 4px 8px; }
+.a34 .two .l2 { padding: 3px 8px 5px; color: #f08a8d; letter-spacing: .08em; }
+.a34 .tapchip { position: absolute; left: 196px; top: 140px; padding: 7px 10px; background: var(--red); color: #fff; font-weight: 700; letter-spacing: .16em; font-size: 10px; }
+.a34 figcaption { font: 12px var(--mono); color: var(--dim); margin-top: 6px; }
+@keyframes a34-flash { 0%, 100% { background: rgba(60,10,12,.94); } 50% { background: #b3262b; box-shadow: 0 0 0 1px #e5484d, 0 0 18px rgba(229,72,77,.6); } }
+@keyframes a34-ring { from { opacity: 1; transform: scale(.92); } to { opacity: 0; transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) { .a34 .flash, .a34 .ring { animation: none; } }
 </style>
 </head>
 <body>
@@ -727,10 +750,51 @@ td.name { font: 600 13px var(--mono); white-space: nowrap; }
 <main>
 <header>
   <p class="mono"><a href="../review/">← Review hub: everything up for review</a></p>
-  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03 · ILI-1358 step 2 added · ILI-1363 step 3 added 2026-11-05 · ILI-1459 desktop design pass added 2026-11-12 · ILI-1461 Fold and phone added 2026-11-12 · ILI-1472 team panel added 2026-11-12</p>
+  <p class="eyebrow">ILI-1221 · working session · 2026-10-28 · rev 6 · ILI-1245 mission panel and ILI-1249 environment added 2026-10-29 · ILI-1343 panels rework added 2026-11-02 · ILI-1344 option D added 2026-11-03 · ILI-1352 ability bar added 2026-11-03 · ILI-1357 IA v2 started 2026-11-03 · ILI-1358 step 2 added · ILI-1363 step 3 added 2026-11-05 · ILI-1459 desktop design pass added 2026-11-12 · ILI-1461 Fold and phone added 2026-11-12 · ILI-1472 team panel added 2026-11-12 · ILI-1534 alert options added 2026-11-14</p>
   <h1>PMC War Room: wireframe and information architecture</h1>
   <p class="lede">A first pass to argue with. It covers what's on screen today, how it could be grouped and ranked, one name per thing, and where each panel goes on desktop, a Fold and a phone. Nothing here is built. Mark it up in chat.</p>
 </header>
+
+<section class="opts a34" id="alert-1534">
+  <div class="sect-head">
+    <p class="eyebrow">ILI-1534 · ALERT that says "tap me" · 2026-11-14 · map, desktop</p>
+    <h2>Three ways to make the ALERT unmissable, with the action on it</h2>
+    <p>Your note: the alert didn't alert anyone. It looks like a styled box, and nothing says tap me to deal with it. Today's band (taller, flashing, ILI-1529) reads <code>ALERT · 2 TANGO</code> and nothing more. Each option below keeps the band on the square's bottom edge (ILI-1524) and works with the edge marker you picked for covered or off-screen alerts (ILI-1546). The words follow the comms standard once ILI-1549 lands.</p>
+  </div>
+
+  <div class="tiles">
+    <section class="opt">
+      <div class="opt-head"><p class="eyebrow">Option A</p><h2>The band carries its action</h2><span class="tag pick">my pick</span></div>
+      <div class="g"><div class="sq"><small>E3</small><i style="left:22px;top:30px"></i><i style="left:40px;top:44px"></i></div>
+        <div class="band flash"><span class="hz"></span><b>Alert</b><span>2 tango · E3</span><span class="act">Strike ▸</span></div>
+        <div class="edge">◀ ALERT · E3</div></div>
+      <ul class="moves"><li>A filled red <b>STRIKE ▸</b> button on the band: the one thing to press, in the word for what it does.</li><li>Off screen or covered: the edge marker at the map's edge, tap pans to it.</li></ul>
+      <ul class="plus"><li>Smallest change; reads as a button, not a label.</li></ul>
+      <ul class="minus"><li>Still one band among the map's marks if several alerts are up.</li></ul>
+    </section>
+
+    <section class="opt">
+      <div class="opt-head"><p class="eyebrow">Option B</p><h2>The square itself pulses</h2><span class="tag">loudest</span></div>
+      <div class="g"><div class="ring"></div><div class="sq"><small>E3</small><i style="left:22px;top:30px"></i><i style="left:40px;top:44px"></i></div>
+        <div class="band"><span class="hz"></span><b>Alert</b><span>2 tango · E3</span><span class="act">Strike ▸</span></div>
+        <div class="edge">◀ ALERT · E3</div></div>
+      <ul class="moves"><li>A red ring breathes out from the square while the alert waits; the band holds steady with its STRIKE ▸ button.</li></ul>
+      <ul class="plus"><li>The eye goes to the ground, not to a box: you see where the threat is.</li></ul>
+      <ul class="minus"><li>More motion on the map; two alerts at once means two rings.</li></ul>
+    </section>
+
+    <section class="opt">
+      <div class="opt-head"><p class="eyebrow">Option C</p><h2>What's happening, then a big tap target</h2><span class="tag">most words</span></div>
+      <div class="g"><div class="sq"><small>E3</small><i style="left:22px;top:30px"></i><i style="left:40px;top:44px"></i></div>
+        <div class="band two flash"><div class="l1"><span class="hz"></span><b>Contact</b><span>ALPHA engaged</span></div><div class="l2">2 hostile · E3</div></div>
+        <div class="tapchip">Tap to strike</div>
+        <div class="edge">◀ ALERT · E3</div></div>
+      <ul class="moves"><li>Two lines say what it is (ALPHA engaged, how many, where), and a separate chip says TAP TO STRIKE.</li></ul>
+      <ul class="plus"><li>Says the most: you know it's ALPHA's fight before you tap.</li></ul>
+      <ul class="minus"><li>Wider, more reading; "tap" is a UI word, not comms.</li></ul>
+    </section>
+  </div>
+</section>
 
 <section class="l59 l72" id="team-1472">
   <div class="sect-head">
