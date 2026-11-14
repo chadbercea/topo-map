@@ -64,10 +64,12 @@ export function StrikeAlerts() {
   }, [stale]);
   const area = getMapRect();
   if (!area || s.phase === 'exited') return null;
+  // One loud thing (ILI-1556): only the most urgent ALERT flashes, ALPHA's fight first.
+  const loudest = squares.find((sq) => s.team.fight?.square === sq) ?? squares[0];
   return (
     <>
       {squares.map((sq) => (
-        <Alert key={sq} s={s} square={sq} open={open === sq && !stale} area={area} />
+        <Alert key={sq} s={s} square={sq} open={open === sq && !stale} area={area} loud={sq === loudest} />
       ))}
     </>
   );
@@ -75,7 +77,7 @@ export function StrikeAlerts() {
 
 type Area = NonNullable<ReturnType<typeof getMapRect>>;
 
-function Alert({ s, square, open, area }: { s: GameState; square: string; open: boolean; area: Area }) {
+function Alert({ s, square, open, area, loud }: { s: GameState; square: string; open: boolean; area: Area; loud: boolean }) {
   const tier = useTier();
   const ref = useRef<HTMLElement>(null);
   const [h, setH] = useState(0);
@@ -152,6 +154,7 @@ function Alert({ s, square, open, area }: { s: GameState; square: string; open: 
       data-overlay={open ? 'strike' : 'alert'}
       data-square={square}
       data-open={open || undefined}
+      data-loud={loud || undefined}
       data-tier={tier}
       style={{ left, top, width, maxHeight, '--k': k } as CSSProperties}
       role="group"
