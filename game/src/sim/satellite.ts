@@ -161,7 +161,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
 // open imagery ask); otherwise ORION-3's panel says it (comms standard).
 function onStationLine(s: GameState, square: SquareId): GameState {
   const asked = !!s.satellite.callId || openImageryRequest(s)?.square === square;
-  return asked ? log(s, radio(s, satName(s), `station-${s.elapsedMs}`, `${satName(s)}, ON STATION ${square}.`)) : s;
+  return asked ? log(s, radio(s, satName(s), `station-${s.elapsedMs}`, `HQ, ${satName(s)}, ON STATION ${square}.`)) : s;
 }
 
 // Scan a square (ILI-1367), from its square menu: the photo, now. Only once ORION-3 is locked on

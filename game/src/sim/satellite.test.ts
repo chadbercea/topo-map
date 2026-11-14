@@ -32,7 +32,7 @@ describe('ORION-3 tasking', () => {
     const store = atStart();
     store.lookAt('F4');
     onStation(store);
-    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: 'ORION-3, ON STATION F4.' }); // ALPHA asked for imagery of F4
+    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: 'HQ, ORION-3, ON STATION F4.' }); // ALPHA asked for imagery of F4
     store.capture('photo');
     expect(blockers(store.get()).map((b) => b.text)).not.toContain('ORION-3 on station over F4: take the shot');
   });
