@@ -10,7 +10,8 @@ import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { countdown } from '../sim/gameTime';
 import type { GameState } from '../sim/state';
 import { shownEvents } from '../sim/events';
-import { alphaBox, overlaysNamed, pick, squareBox, type Box } from './overlays';
+import { alphaBox, coveredBy, gameUiBoxes, overlaysNamed, pick, squareBox, type Box } from './overlays';
+import { EdgeMarker } from './EdgeMarker';
 import { useTier } from './tier';
 
 const W = 280; // the prompt's width on a wide screen
@@ -65,9 +66,15 @@ function MainPrompt() {
     const sq = squareBox(p.square);
     const tw = w || 200;
     const th = h || 24;
-    const cx = sq ? sq.x + sq.w / 2 : area.x + area.width / 2;
-    const above = sq ? sq.y - 6 - th : area.y + 8;
-    const y = sq && above < area.y + 8 ? sq.y + sq.h + 6 : above; // under the square when there's no room above
+    // Never hidden (ILI-1533): above its square, else below, whichever the game UI leaves clear.
+    // With its square off the open map, or both spots covered, an edge marker points at it.
+    const off = !sq || sq.x + sq.w < area.x || sq.x > area.x + area.width || sq.y + sq.h < area.y || sq.y > area.y + area.height;
+    if (off || !sq) return <EdgeMarker square={p.square} target={sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : { x: area.x + area.width / 2, y: area.y }} area={area} label="Imagery" />;
+    const cx = sq.x + sq.w / 2;
+    const fit = (y: number): Box => ({ x: Math.max(area.x + 8, Math.min(cx - tw / 2, area.x + area.width - 8 - tw)), y: Math.max(area.y + 8, Math.min(y, area.y + area.height - 8 - th)), w: tw, h: th });
+    const ui = gameUiBoxes();
+    const spot = [fit(sq.y - 6 - th), fit(sq.y + sq.h + 6), fit(sq.y + sq.h / 2 - th / 2)].find((b) => coveredBy(b, ui) < 0.2);
+    if (!spot) return <EdgeMarker square={p.square} target={{ x: cx, y: sq.y + sq.h / 2 }} area={area} label="Imagery" />;
     return (
       <div
         ref={ref as React.RefObject<HTMLDivElement>}
@@ -78,7 +85,7 @@ function MainPrompt() {
         data-square={p.square}
         data-step={p.step}
         data-tier={tier}
-        style={{ left: Math.max(area.x + 8, Math.min(cx - tw / 2, area.x + area.width - 8 - tw)), top: Math.max(area.y + 8, Math.min(y, area.y + area.height - 8 - th)) }}
+        style={{ left: spot.x, top: spot.y }}
         role="status"
         aria-label={`${p.text}. ${p.hint}`}
       >
