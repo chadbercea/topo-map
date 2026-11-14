@@ -2033,6 +2033,15 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .team-drawer .op .gauge .bar { flex: 1; }
 .team-drawer .op .gauge .k { display: none; } /* the column says what it is */
 @media (prefers-reduced-motion: reduce) { .team-drawer, .team-bar .hb[data-blink] { animation: none !important; } }
+/* Fold and phone (ILI-1537): the row drops its role there (ILI-1248), so the header drops that column
+   too and both keep one grid; the name takes the room the role had. */
+@media (max-width: 1199px) {
+  .team-drawer :is(.op, .team-cols) { --cols: 12px minmax(0, 1fr) 48px 7ch minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.8fr); column-gap: 8px; }
+  .team-drawer[data-strip] :is(.op, .team-cols) { --cols: 12px minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.8fr) minmax(0, 0.8fr); }
+  .team-drawer .team-cols .c-who { grid-column: 1 / 3; }
+  .team-drawer .team-cols .c-vitals { grid-column: 3 / 5; }
+  .team-drawer .team-cols span { min-width: 0; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.08em; }
+}
 .hud[data-layout='fold'] .slot-bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .hud[data-layout='fold'] .team-drawer { max-height: min(260px, 40dvh); overflow: auto; }
 .team-bar > h2 { width: 116px; }
