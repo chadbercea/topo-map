@@ -2440,3 +2440,19 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 @keyframes sa-flash { 0%, 100% { background: rgba(60, 10, 12, 0.94); } 50% { background: #b3262b; box-shadow: 0 0 0 1px #e5484d, 0 0 18px rgba(229, 72, 77, 0.6); } }
 @keyframes sa-march { to { background-position: 11.3px 0; } }
 @media (prefers-reduced-motion: reduce) { .strike-alert .sa-band, .strike-alert .sa-hazard { animation: none !important; } }
+
+/* The strike's graphic is the unit (ILI-1530): the turning model takes about 80% of each strike
+   tile, the words a small line under it, about 20%. Same for the options and the strike under way. */
+.strike-alert .sc-strike .target-menu .options button { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto; justify-items: center; align-items: center; row-gap: 0; padding: 2px 3px 3px; text-align: center; }
+.strike-alert .sc-strike .target-menu .options button .w-icon { grid-row: 1; width: 100%; height: 56px; }
+.strike-alert .sc-strike .target-menu .options button > span { font-size: 9px; line-height: 1.1; letter-spacing: 0.08em; }
+.strike-alert .sc-strike .target-menu .options button small { font-size: 8px; line-height: 1.1; }
+.strike-alert .air { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'm' 'h' 'c'; row-gap: 1px; padding: 3px 6px 4px; }
+.strike-alert .air .d-model { height: 64px; }
+.strike-alert .air h2 { font-size: 9px; }
+.strike-alert .air .d-clock b { font-size: 10px; }
+.strike-alert .air .d-log { font-size: 9px; }
+.strike-alert .sniper { grid-template-columns: minmax(0, 1fr); row-gap: 1px; padding: 3px 6px 4px; }
+.strike-alert .sniper .s-model { order: -1; height: 64px; }
+.strike-alert .sniper h3 { font-size: 9px; margin: 0; }
+.strike-alert .sniper .s-read b { font-size: 9px; }
