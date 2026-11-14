@@ -2498,3 +2498,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 
 /* Edge markers on top of every game UI panel, under pause/AAR (ILI-1553). */
 .edge-marker { z-index: 9; }
+/* ALPHA's heartbeats keep the map's bottom-left on a phone too, picked square or not (ILI-1554). */
+@media (max-width: 699px) { .hud[data-tier='compact'] > .heartbeat-strip { display: flex; grid-area: map; align-self: end; justify-self: start; margin: 0 0 8px 8px; z-index: 5; position: relative; } }
+.hud[data-tier='compact'][data-picked] > .heartbeat-strip { display: flex; }

@@ -104,7 +104,7 @@ function MainPrompt({ which }: { which: 'intel' | 'call' }) {
   // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
   // on a phone a strip along the map's foot), the toolbox, the timer and the log.
   const strip = overlaysNamed(['asktag', 'traffic', 'actions', 'strike', 'alert', 'band', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']); // the square's menu, the toolbox, the timer (ILI-1392), the log (ILI-1393)
-  const at = team ? { x: team.left, y: team.top - 8 - (h || 96), w: width, h: h || 96 } : place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
+  const at = team ? { x: team.left, y: team.top - 8 - (h || 96), w: width, h: h || 96 } : place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip, ...gameUiBoxes()]); // the open drawer too (ILI-1554)
   const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
   const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 96))) };
 
@@ -183,7 +183,7 @@ function TrafficPrompt() {
   const sq = squareBox(p.square);
   const width = Math.min(W, area.width - 16);
   const strip = overlaysNamed(['prompt', 'asktag', 'actions', 'strike', 'alert', 'band', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']);
-  const at = place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
+  const at = place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip, ...gameUiBoxes()]);
   const going = s.listen?.eventId === p.id;
   const locked = lockedOn(s, p.square);
   return (

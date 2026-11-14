@@ -8,7 +8,7 @@ import { isImageryRequest } from '../sim/imageryRequest';
 import { countdown } from '../sim/gameTime';
 import { EVENT_LABEL } from '../sim/stream';
 import { useTier } from './tier';
-import { squareBox } from './overlays';
+import { coveredBy, gameUiBoxes, squareBox } from './overlays';
 import type { GameState } from '../sim/state';
 import { shownEvents } from '../sim/events';
 import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
@@ -153,8 +153,11 @@ function Leader({ square, area, anchor }: { square: string; area: Area; anchor: 
 // game may take the whole map (ILI-1367): it's the one thing going on.
 function strip(area: Area, height: number, whole = false): Placed {
   const maxHeight = whole ? area.height - 16 : Math.round(area.height * 0.5);
-  const h = Math.min(height || 200, maxHeight);
-  return { left: area.x + 8, top: area.y + area.height - 8 - h, width: area.width - 16, maxHeight, side: 'foot' };
+  // Above ALPHA's heartbeats, which keep the map's bottom-left on a phone too (ILI-1554).
+  const hb = document.querySelector('.hud > .heartbeat-strip')?.getBoundingClientRect();
+  const foot = hb && hb.height ? hb.top - 6 : area.y + area.height - 8;
+  const h = Math.min(height || 200, maxHeight, foot - area.y - 8);
+  return { left: area.x + 8, top: foot - h, width: area.width - 16, maxHeight: Math.min(maxHeight, foot - area.y - 8), side: 'foot' };
 }
 
 type Area = NonNullable<ReturnType<typeof getMapRect>>;
@@ -180,10 +183,16 @@ function attached(square: string, area: Area, height: number, width: number, kee
   const h = Math.min(height || 160, maxHeight);
   const roomRight = area.x + area.width - 8 - (sq.x + sq.w);
   const roomLeft = sq.x - (area.x + 8);
-  const side = keep ?? (roomRight >= width || roomRight >= roomLeft ? 'right' : 'left');
-  const left = side === 'right' ? sq.x + sq.w : sq.x - width;
-  const top = Math.max(area.y + 8, Math.min(sq.y, area.y + area.height - 8 - h));
-  return { left, top, width, maxHeight, side };
+  // Beside its square, never over it, and clear of the game UI (ILI-1554): right if it fits, else
+  // left; top-aligned with the square, else bottom-aligned, whichever the panels leave clearer. The
+  // side it opened on is kept while it's open.
+  const ui = gameUiBoxes();
+  const clampTop = (y: number) => Math.max(area.y + 8, Math.min(y, area.y + area.height - 8 - h));
+  const at = (side: 'right' | 'left', y: number) => ({ left: side === 'right' ? sq.x + sq.w : sq.x - width, top: clampTop(y), width, maxHeight, side });
+  const sides: ('right' | 'left')[] = keep ? [keep] : roomRight >= width ? ['right', 'left'] : roomLeft >= width ? ['left', 'right'] : roomRight >= roomLeft ? ['right'] : ['left'];
+  const spots = sides.flatMap((side) => [at(side, sq.y), at(side, sq.y + sq.h - h)]);
+  const cost = (p: Placed) => coveredBy({ x: p.left, y: p.top, w: width, h }, ui);
+  return spots.find((p) => cost(p) < 0.05) ?? spots.reduce((a, b) => (cost(b) < cost(a) ? b : a));
 }
 
 const SLACK = 32; // px a measured height may shrink by before the panel moves for it
