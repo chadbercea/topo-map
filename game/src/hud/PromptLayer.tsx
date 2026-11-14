@@ -250,10 +250,10 @@ export function BuildingTag({ id }: { id: string }) {
 // how it's going.
 export function strikeWork(s: GameState, square: string): string | null {
   const now = s.elapsedMs;
-  if (s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now)) return `${SNIPER_CALLSIGN} · ${s.sniper.done ? 'done' : 'firing'}`;
+  if (s.sniper && s.sniper.square === square && !sniperGone(s.sniper, now)) return `${SNIPER_CALLSIGN} · ${s.sniper.done ? 'clear' : 'firing'}`;
   for (const w of ['drone', 'heli'] as const) {
     const r = w === 'drone' ? s.drone : s.heli;
-    if (r && r.square === square && !airGone(r, now)) return `${AIR[w].callsign} · ${r.doneMs !== null ? 'done' : arrived(r, now) ? 'over target' : countdown(r.arriveMs - now)}`;
+    if (r && r.square === square && !airGone(r, now)) return `${AIR[w].callsign} · ${r.doneMs !== null ? 'clear' : arrived(r, now) ? 'over target' : countdown(r.arriveMs - now)}`;
   }
   return null;
 }
