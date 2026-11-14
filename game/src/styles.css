@@ -2474,3 +2474,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .edge-marker b { font-weight: 700; letter-spacing: 0.14em; }
 .edge-marker i { font-style: normal; color: #e5484d; display: inline-block; }
 .edge-marker:hover, .edge-marker:focus-visible { background: rgba(110, 16, 20, 0.96); outline: none; }
+/* The resupply and exfil cards' home (ILI-1547 call D): the open map's top-right, stacked down,
+   where no drawer or log reaches; on a phone a slim card under the mission bar. */
+.hud:not([data-tier='compact']) .slot-band { align-self: start; justify-self: end; width: min(320px, calc(100% - 20px)); margin: 10px 10px 0 0; }
+.hud:not([data-tier='compact']) .band-cards { justify-items: stretch; align-content: start; }
+.hud:not([data-tier='compact']) .band-cards > * { width: 100%; }
+.hud[data-tier='compact'] .band-cards { grid-area: map; align-self: start; position: relative; z-index: 5; margin: 6px 8px 0; }
