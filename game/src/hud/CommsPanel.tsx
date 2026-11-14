@@ -100,7 +100,7 @@ function EventCard({ c, newest, m, comms }: { c: Extract<Card, { type: 'event' }
   const tier = EVENT_TIER[c.kind];
   const head = c.kind === 'ask' ? `${m?.from ?? 'ALPHA'} asks` : EVENT_LABEL[c.kind as Exclude<EventCardKind, 'ask'>];
   const out = m ? sending(comms, m.id) : undefined;
-  const label = (id: string | null | undefined) => (id ? m?.responses?.find((r) => r.id === id)?.label : 'Copy');
+  const label = (id: string | null | undefined) => (id ? m?.responses?.find((r) => r.id === id)?.label : 'Roger');
   const answering = c.kind === 'ask' && c.open && !out && m;
   const body = (
     <>
@@ -142,7 +142,7 @@ function NoteLine({ n }: { n: GameState['stream']['items'][number] }) {
 function MessageLine({ m, callsign, comms }: { m: Message; callsign: string; comms: Comms }) {
   const team = m.from === callsign;
   const out = sending(comms, m.id); // HQ's answer on its way up the link (ILI-1209)
-  const label = (id: string | null | undefined) => (id ? m.responses?.find((r) => r.id === id)?.label : 'Copy');
+  const label = (id: string | null | undefined) => (id ? m.responses?.find((r) => r.id === id)?.label : 'Roger');
   const waiting = kindOf(m) === 'call' && m.status === 'new' && !out;
   const report = team || kindOf(m) === 'call' ? null : classify(m);
   const tier = tierOf(m, team, report);

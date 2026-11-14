@@ -76,7 +76,7 @@ export type GameState = {
   drone: AirRun | null; // REAPER-1's strike: in flight, over the square, or just done
   heli: AirRun | null; // HAMMER-2's gun run, the same way (ILI-1254)
   sniper: SniperRun | null; // OVERWATCH's last run: shooting, or done
-  exfil: ExfilRun | null; // RAVEN-6 coming for ALPHA, from the pilot's call on (ILI-1264)
+  exfil: ExfilRun | null; // SKYHOOK-1 coming for ALPHA, from the pilot's call on (ILI-1264)
   resources: { budget: number; ledger: Ledger }; // the balance now, and where the mission's money went (ILI-1316)
   bankrupt: boolean; // the PMC's credit ran out (ILI-1316)
   searching: string[]; // buildings HQ sent ALPHA to search (ILI-1316)

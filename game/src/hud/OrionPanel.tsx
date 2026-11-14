@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
-import { CAPTURE, describe, lockedOn, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
+import { lockedOn, resultLabel, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { AGE_LABEL, freshness } from '../sim/imagery';
 import { analyzable, reopened, settled, shelfState } from '../sim/intel';
 import { AIR, airGone, arrived } from '../sim/air';
@@ -45,12 +45,12 @@ export function OrionPanel() {
   const caption = tied
     ? 'Tied up by the intercept'
     : sat.state === 'slewing'
-      ? `On its way to ${sat.aim}`
+      ? `Slewing to ${sat.aim}`
       : picked
         ? `No coverage of ${picked} · Reposition`
         : blind
-          ? `Standing by over ${sat.aim} · no coverage of ${blind} ahead`
-          : `Standing by over ${sat.aim} · tap a square to task it`;
+          ? `On station ${sat.aim} · no coverage of ${blind} ahead`
+          : `On station ${sat.aim} · tap a square to task it`;
   const last = Object.values(s.imagery)
     .filter((x) => x.mode !== 'eyes')
     .sort((a, b) => b.atMs - a.atMs)[0];
@@ -81,12 +81,21 @@ export function OrionPanel() {
     return () => slot.removeEventListener('animationend', on);
   }, []);
 
-  const status = tied ? 'Tied up' : sat.state === 'idle' ? 'Standby' : sat.state === 'slewing' ? 'Repositioning' : sat.state === 'onStation' ? 'On station' : CAPTURE[sat.mode!].label;
+  // The comms standard's states (ILI-1541): SLEWING, ON STATION, COLLECTING, OFF STATION.
+  const status = tied
+    ? 'Tied up'
+    : sat.state === 'slewing'
+      ? 'Slewing'
+      : sat.state === 'capturing'
+        ? 'Collecting · imagery'
+        : sat.state === 'onStation' || lockedOn(s, sat.aim)
+          ? 'On station'
+          : 'Off station';
   const left = Math.max(0, sat.arriveMs - now);
   // The one state line (ILI-1400): status, square and the one countdown, in one row. The cloud
   // warning survives as its colour when everything under it has dropped off.
   const clock = sat.state === 'slewing' ? countdown(left) : sat.state === 'capturing' ? gameSpan(sat.captureUntilMs - now) : null;
-  const stateLine = tied ? 'Tied up · listening' : `${status} · ${sat.state === 'slewing' ? '→ ' : sat.state === 'idle' ? 'over ' : ''}${sat.aim}${clock ? ` · ${clock}` : ''}`;
+  const stateLine = tied ? 'Tied up · listening' : `${status} · ${sat.state === 'slewing' ? '→ ' : ''}${sat.aim}${clock ? ` · ${clock}` : ''}`;
   const wx = weather(s);
   const cloud = !imageryOk(wx) ? 'red' : wx.cloudPct >= CLOUD_WARN ? 'amber' : undefined;
   // Reposition, then shoot (ILI-1250): a scan *is* the photo or video, so there's no Scan
@@ -109,10 +118,10 @@ export function OrionPanel() {
   const ready = inPosition && !tied;
   // A strike under way on the square ORION-3 is over: its picture goes to targeting (ILI-1467).
   const hit = (() => {
-    if (s.sniper && s.sniper.square === sat.aim && !sniperGone(s.sniper, now)) return { who: SNIPER_CALLSIGN, what: 'Sniper', line: s.sniper.done ? 'Done' : 'Firing' };
+    if (s.sniper && s.sniper.square === sat.aim && !sniperGone(s.sniper, now)) return { who: SNIPER_CALLSIGN, what: 'Sniper', line: s.sniper.done ? 'Clear' : 'Firing' };
     for (const w of ['drone', 'heli'] as const) {
       const r = w === 'drone' ? s.drone : s.heli;
-      if (r && r.square === sat.aim && !airGone(r, now)) return { who: AIR[w].callsign, what: w === 'drone' ? 'Drone' : 'Heli', line: r.doneMs !== null ? 'Done' : arrived(r, now) ? 'Over target' : `Impact ${countdown(r.arriveMs - now)}` };
+      if (r && r.square === sat.aim && !airGone(r, now)) return { who: AIR[w].callsign, what: w === 'drone' ? 'Drone' : 'Heli', line: r.doneMs !== null ? 'Clear' : arrived(r, now) ? 'Over target' : `Impact ${countdown(r.arriveMs - now)}` };
     }
     return null;
   })();
@@ -132,7 +141,7 @@ export function OrionPanel() {
           <span className="o-name-text">{name}</span>
         </span>
         <button className="o-repo" disabled={!canMove} onClick={() => picked && game.lookAt(picked)} data-testid="look-here" title={`Reposition ${name} over the picked square`}>
-          {sat.state === 'slewing' && !tied ? 'Moving' : '⇄ Reposition'}
+          {sat.state === 'slewing' && !tied ? 'Slewing' : '⇄ Reposition'}
           {canMove && <small> to {picked} · {countdown(away)}</small>}
         </button>
         <span className="o-state" data-testid="orion-state" data-cloud={cloud}>
@@ -212,7 +221,7 @@ export function OrionPanel() {
           </div>
         ) : (
           <div className="o-placeholder" data-testid="orion-placeholder" data-state={tied ? 'tied' : sat.state}>
-            <span className="o-caption">{!tied && sat.state === 'slewing' ? `On its way to ${sat.aim}, then analyze it` : caption}</span>
+            <span className="o-caption">{!tied && sat.state === 'slewing' ? `Slewing to ${sat.aim}, then analyze it` : caption}</span>
           </div>
         )}
       </div>
@@ -222,7 +231,7 @@ export function OrionPanel() {
       {!tied && result && (
         <div className="o-saw" data-testid="orion-found">
           <p data-testid="satellite-result">
-            Saw {result.square} · {CAPTURE[result.mode].label}: {describe(result)}
+            {resultLabel(result, result.atMs !== undefined ? zulu(result.atMs) : undefined)}
           </p>
         </div>
       )}
@@ -232,16 +241,16 @@ export function OrionPanel() {
       {/* ORION-3's buttons (rank 1), pinned under the picture, never hidden: Analyze, then Video.
           Each is lit when it can be used, and the next thing to do pulses (ILI-1257, ILI-1432).
           Analyze images the square, settles it and posts its package on the shelf for ALPHA to
-          pull (ILI-1499: no Photo, no send); Video keeps the square live on the map for good. */}
+          pull (ILI-1499: no Photo, no send); Video keeps the square live while ORION-3 stays on station. */}
       <div className="o-buttons" data-testid="orion-buttons">
         <div className="modes" data-testid="capture-modes" data-step={done ? 'send' : 'scan'}>
           <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title={`Image the square: the analysts report what's there and post the package for ${s.team.callsign}`} data-cue={(ready && !busy && !done) || undefined}>
             Analyze {sat.aim}
             <small>{tied ? 'tied up by the intercept' : done ? (shelved === 'received' ? '✓ intel received' : shelved === 'pulling' ? `${s.team.callsign} downloading` : `intel posted for ${s.team.callsign}`) : ready ? (again ? `re-image, post for ${s.team.callsign}` : `image, report, post for ${s.team.callsign}`) : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
           </button>
-          <button disabled={!ready || busy || !analyzed || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title="Keep the square live on the map for good">
+          <button disabled={!ready || busy || !analyzed || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title={`Keep the square live on the map while ${name} stays on station`}>
             Video
-            <small>{onVideo ? 'live' : busy ? 'filming' : !analyzed ? 'after Analyze' : 'live for good'}</small>
+            <small>{onVideo ? 'live' : busy ? 'collecting' : !analyzed ? 'after Analyze' : 'live while on station'}</small>
           </button>
         </div>
       </div>

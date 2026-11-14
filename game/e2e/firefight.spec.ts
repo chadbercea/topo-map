@@ -13,7 +13,7 @@ test('walking blind into the hidden checkpoint is an ambush: their first volley 
   const panel = page.getByTestId('team-panel');
   await expect(panel).toContainText('Ambushed in E3');
   await expect(panel).toHaveAttribute('data-fight', 'true'); // the team panel goes red
-  await expect(page.getByTestId('comms-feed')).toContainText('Ambush in E3');
+  await expect(page.getByTestId('comms-feed')).toContainText('CONTACT, ambush, E3');
 
   // The opening seconds: their volley is aimed, on one man, and ALPHA is getting into cover.
   await page.evaluate(() => {

@@ -31,7 +31,7 @@ describe('mission A to B to C', () => {
     const s = until(walking(), (x) => x.phase === 'ended');
     expect(s.mission.phase).toBe('complete');
     expect(s.team.position).toEqual(squareCenter('B1'));
-    expect(s.comms.messages.at(-1)?.text).toMatch(/We're out/);
+    expect(s.comms.messages.at(-1)?.text).toMatch(/wheels up/);
   });
 
   it('the crash site cannot be detoured around: too strong to take, ALPHA goes in anyway (ILI-1315)', () => {
@@ -44,6 +44,6 @@ describe('mission A to B to C', () => {
     const t = until(s, (x) => x.team.decisions.D3 !== undefined);
     expect(t.team.route).toContain('D3');
     expect(t.team.decisions.D3).toBe('attack');
-    expect(t.comms.messages.some((m) => /crash site: we're going in/.test(m.text))).toBe(true);
+    expect(t.comms.messages.some((m) => /Crash site, no way around\. Moving to engage\./.test(m.text))).toBe(true);
   });
 });

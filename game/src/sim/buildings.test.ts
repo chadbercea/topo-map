@@ -176,7 +176,7 @@ describe('building intel on the shelf', () => {
     expect(s.searching).toEqual([]);
     const e = s.events.find((x) => x.id === buildingId('E5'))!;
     expect(e).toMatchObject({ reach: 'contact', status: 'new' });
-    expect(s.comms.messages.filter((m) => m.id.startsWith('unable-building-E5')).map((m) => m.text)).toEqual(['Unable to reach the building in E5: enemy in it.']);
+    expect(s.comms.messages.filter((m) => m.id.startsWith('unable-building-E5')).map((m) => m.text)).toEqual(['HQ, ALPHA, NEGATIVE, building in E5, enemy present.']);
   });
 
   it('HQ can post again once the ground has changed, and ALPHA goes', () => {

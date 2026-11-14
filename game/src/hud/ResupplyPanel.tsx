@@ -8,7 +8,7 @@ const LOAD = () => import('./resupplyScene');
 const LINGER_MS = 3_000; // "Bundle on the ground" stays up this long, then the panel goes
 const LEAVE_MS = 400; // its way out, at the end of the linger
 
-// The resupply drop (ILI-1520), built like the exfil's panel but in the HUD's green: DUSTOFF-2's
+// The resupply drop (ILI-1520), built like the exfil's panel but in the HUD's green: HAULER-2's
 // bundle coming down under its chute, in 3D, and the time until it lands counting down; then
 // "On the ground" and the reload, and the panel goes.
 export function ResupplyPanel() {
@@ -25,7 +25,7 @@ export function ResupplyPanel() {
   return (
     <section className="panel air resupply" data-testid="resupply-panel" data-state={state} data-leaving={(down && now >= at + LINGER_MS - LEAVE_MS) || undefined} role="status" aria-label="Resupply">
       <h2>
-        <span>DUSTOFF-2</span>
+        <span>HAULER-2</span>
         <span className="where">resupply · {down ? 'on the ground' : 'inbound'}</span>
       </h2>
       <WireAvatar state={state} fallback={<DropMark />} load={LOAD} className="d-model" />

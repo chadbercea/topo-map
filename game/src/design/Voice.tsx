@@ -8,35 +8,37 @@ const SAT = MISSION.satellite;
 // way over the game's history.
 const WHO: [string, string, string][] = [
   ['ALPHA', 'The team on the ground (Reyes, Okafor, Lind, Tanaka, Brandt)', 'Its decisions, and its one question: resupply.'],
-  [`${SAT}`, 'Castle House’s imaging satellite', 'Slewing, on station, analysis complete, and the intel it posted.'],
-  ['HQ', 'Castle House', 'News the map can’t show, the contract and its escrow.'],
-  ['SIGINT', 'The intercept desk', 'What a decoded signal said.'],
-  ['OVERWATCH', 'The sniper contract', 'On target, Tango down, racking; all down.'],
-  ['REAPER-1', 'The drone', 'Inbound, over target, Tango down, the result.'],
-  ['HAMMER-2', 'The attack helicopter', 'The gun run, rearmed and back on station.'],
-  ['RAVEN-6', 'The exfil bird', 'Inbound, on the ground, lifting.'],
-  ['DUSTOFF-2', 'The resupply bird', 'Up, inbound, delivered.'],
+  [`${SAT}`, 'Castle House’s imaging satellite', 'Status only, terse: slewing, ON STATION.'],
+  ['Analysts', 'The analyst cell', 'A result that needs attention, by grid and kind. Nothing significant gets no line.'],
+  ['HQ', 'Castle House', 'Echoes of what the player did; ALL STATIONS time calls.'],
+  ['OVERWATCH', 'The sniper contract', 'Set, NO JOY, down, clear.'],
+  ['REAPER-1', 'The drone', 'NO JOY, down, clear; rearmed, ON STATION.'],
+  ['HAMMER-2', 'The attack helicopter', 'NO JOY, down, clear; rearmed, ON STATION.'],
+  ['SKYHOOK-1', 'The exfil bird', 'Inbound LZ, wheels down.'],
+  ['HAULER-2', 'The resupply bird', 'Inbound, wheels down, RTB.'],
 ];
 const WORDS: [string, string][] = [
   ['Reposition', `Task ${SAT} to a square. Only in ${SAT}’s panel.`],
-  ['Analyze / Video', 'The ways to look. Analyze images and reports the square; video keeps it live.'],
-  ['On station', `${SAT} is over the square, ready for collection.`],
-  ['Analysis complete', 'A look is done; its intel is posted for ALPHA to pull.'],
-  ['Soften them up', 'ALPHA wants HQ to thin a contact out before it goes in.'],
-  ['All clear / CLEAR', 'Nothing there: the smallest unit of intel.'],
+  ['Analyze / Video', 'The ways to look. Analyze images and reports the square; video keeps it live while on station.'],
+  ['ON STATION / OFF STATION', `${SAT} is over the square, or not on any.`],
+  ['COLLECTING', `${SAT} is capturing. The button can say Analyze; the status says COLLECTING.`],
+  ['Nothing significant', 'An empty result: on the flyout, F4 · IMAGERY · NOTHING SIGNIFICANT · 1432Z. Never on the radio.'],
+  ['Intel received ✓', 'ALPHA has the package. On the instruments, never the radio.'],
+  ['ROGER / WILCO / AFFIRM', 'Received / will comply / yes. Never COPY; ROGER is not yes.'],
+  ['Clear', 'A strike or square is finished.'],
   ['Your decision', 'What HQ chooses. Never “call”: a call is the radio.'],
   ['Escrow', 'The contract’s money, released as the job gets done.'],
 ];
 const KINDS: [string, string, string][] = [
-  ['Call', 'ALPHA needs HQ: an orange flag at its marker and in its box, until answered.', 'ALPHA · Two down, the rest hurt. We need a resupply bird.'],
-  ['Alert', 'News that matters now: red, up for a few seconds, then a line in the log.', 'HQ · Enemy radio net just lit up: they know a PMC is in the area.'],
-  ['Log', 'Everything else: the record, quiet.', `${SAT} · E3 analysis complete: 5 fighters, unaware. Intel posted for ALPHA.`],
+  ['Call', 'ALPHA needs HQ: an orange flag at its marker and in its box, until answered.', 'ALPHA · HQ, ALPHA, request resupply at E3. Combat ineffective, 2 down.'],
+  ['Alert', 'News that matters now: red, up for a few seconds, then a line in the log.', 'HQ · ALL STATIONS, HQ, enemy net active after the strikes. Enemy alerted to the PMC.'],
+  ['Log', 'Everything else: the record, quiet.', 'Analysts · E3 imagery, 5 dismounts, unaware.'],
 ];
 const DOS: [string, string][] = [
-  ['ALPHA: “Contact in E3, a fortified checkpoint. Not taking that. Going around via E4.”', 'ALPHA: “Contact in E3. Attack, hold or go around?” (the team decides; HQ changes the odds)'],
-  ['The square flashes F4 · CLEAR', 'ALPHA radios “F4 is clear” (feedback goes on the instruments)'],
+  ['ALPHA: “HQ, ALPHA, CONTACT E3, an armed squad. Too strong to take. Moving around via E4.”', 'ALPHA: “Contact in E3. Attack, hold or go around?” (the team decides; HQ changes the odds)'],
+  ['The flyout reads F4 · IMAGERY · NOTHING SIGNIFICANT', '“F4 analysis complete: nothing there. Intel posted for ALPHA.” (feedback goes on the instruments)'],
   ['“ALPHA waiting on your decision”', '“ALPHA waiting on your call”'],
-  [`${SAT}: “On station over F4. Ready for collection.”`, `${SAT}: “Ready to shoot.” (the satellite looks; it isn’t the sniper)`],
+  [`${SAT}: “HQ, ${SAT}, ON STATION F4.”`, `${SAT}: “Ready to shoot.” (the satellite looks; it isn’t the sniper)`],
   ['Reposition, with where and how long', '“Task” or “Get eyes on” (jargon, and not where the satellite lives)'],
 ];
 

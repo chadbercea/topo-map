@@ -6,7 +6,7 @@ import { WireAvatar } from './OrionAvatar';
 const LOAD = () => import('./transportScene');
 
 // The exfil's panel (ILI-1264), built like an air strike's but orange: an exfil, not a strike.
-// RAVEN-6 and its time out counting down; on the ground, each operator as they board; then the
+// SKYHOOK-1 and its time out counting down; on the ground, each operator as they board; then the
 // extraction called good, until the After Action Report takes over (it notes the extraction itself).
 export function ExfilPanel() {
   const r = useGame((s) => s.exfil);

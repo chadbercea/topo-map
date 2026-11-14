@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mountWire, type WireSpec } from './wireScene';
 
-// RAVEN-6's Three.js scene (ILI-1264): a wireframe Black Hawk-style transport for the exfil
+// SKYHOOK-1's Three.js scene (ILI-1264): a wireframe Black Hawk-style transport for the exfil
 // panel, the counterpart to HAMMER-2's Little Bird (heliScene). Longer and fatter: a cabin with
 // its sliding doors, the engine deck on top, the tail pylon with its canted rotor and the
 // stabilator, wheels instead of skids. Orange, the exfil's colour. Loaded lazily.

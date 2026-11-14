@@ -48,7 +48,7 @@ describe('a group walking out of a live picture', () => {
 
 // Our aircraft are bracketed (ILI-1420): the exfil always, a strike's only where HQ can watch it.
 describe('aircraft', () => {
-  it('brackets RAVEN-6 once it is over the exfil square, not before', () => {
+  it('brackets SKYHOOK-1 once it is over the exfil square, not before', () => {
     const s0 = initialState();
     const exfil = { square: s0.mission.c, calledMs: 0, arriveMs: 10_000, boardMs: null, liftMs: null };
     const at = (ms: number) => ({ ...s0, exfil, elapsedMs: ms }) as GameState;

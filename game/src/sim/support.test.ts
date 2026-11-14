@@ -21,7 +21,7 @@ describe('resupply', () => {
   it('the team calls in when it runs low', () => {
     const s = run(lowOnAmmo(), 200);
     expect(ammoLevel(s)).toBeLessThan(LOW);
-    expect(lowCall(s)?.text).toBe('Running low on ammo. We need a resupply bird.');
+    expect(lowCall(s)?.text).toBe('HQ, ALPHA, request resupply at G5. Ammo low.');
     expect(s.team.holdFor).toBeNull(); // they keep moving while they ask
   });
 
@@ -34,7 +34,7 @@ describe('resupply', () => {
     expect(ammoLevel(store.get())).toBeLessThan(LOW);
     store.set(run(store.get(), 1_000));
     expect(ammoLevel(store.get())).toBe(1);
-    expect(store.get().comms.messages.some((m) => m.from === 'DUSTOFF-2' && /Full reload/.test(m.text))).toBe(true);
+    expect(store.get().comms.messages.some((m) => m.from === 'HAULER-2' && /wheels down [A-H]\d\. Supplies on the ground, RTB\./.test(m.text))).toBe(true);
   });
 
   it('asks once per shortage, even after HQ says to make it last', () => {
@@ -66,7 +66,7 @@ const ineffective = (s: GameState) => s.comms.messages.find((m) => m.node === 'r
 describe('combat ineffective', () => {
   it('two down: the team holds and asks for the same resupply bird', () => {
     const s = run(mauled(), 200);
-    expect(ineffective(s)?.text).toBe('Combat ineffective, 2 down. We need a resupply bird.');
+    expect(ineffective(s)?.text).toBe('HQ, ALPHA, request resupply at G5. Combat ineffective, 2 down.');
     expect(s.team.holdFor).toBe(ineffective(s)?.id);
   });
 
@@ -79,7 +79,7 @@ describe('combat ineffective', () => {
     expect(ops.every((o) => o.health > 0)).toBe(true);
     expect(ops.slice(0, 2).map((o) => o.name)).not.toEqual(['Reyes', 'Okafor']); // new people
     expect(ops.slice(0, 2).map((o) => o.role)).toEqual(['Squad lead', 'Gunner']); // same jobs
-    expect(store.get().comms.messages.some((m) => m.from === 'DUSTOFF-2' && /back to strength/.test(m.text))).toBe(true);
+    expect(store.get().comms.messages.some((m) => m.from === 'HAULER-2' && /Supplies and replacements on the ground/.test(m.text))).toBe(true);
     const s = store.get();
     expect(wrapUp({ ...s, mission: { ...s.mission, phase: 'complete', blackBox: true } }).reason).toMatch(/2 operators down/);
   });

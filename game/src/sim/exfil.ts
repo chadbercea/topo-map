@@ -7,11 +7,11 @@ import type { GameState } from './state';
 
 // The exfil (ILI-1264), played out instead of an instant end. Once ALPHA is in the exfil square
 // with the black box and the square is clear, the transport's pilot confirms on the radio and
-// RAVEN-6 flies in on a countdown. It comes into the square to the marker and waits; when ALPHA
+// SKYHOOK-1 flies in on a countdown. It comes into the square to the marker and waits; when ALPHA
 // is at the marker the five board one at a time, it lifts out of the square, the panel calls
 // the extraction good, and the After Action Report follows. The contract clock stops at the call.
 
-export const TRANSPORT = { callsign: 'RAVEN-6', label: 'exfil' } as const;
+export const TRANSPORT = { callsign: 'SKYHOOK-1', label: 'exfil' } as const;
 export const EXFIL_FLIGHT_MS = 10_000; // the call to the square's edge
 export const ENTER_MS = 2_500; // the edge to the marker
 export const BOARD_MS = 900; // one operator aboard
@@ -75,7 +75,7 @@ export function callExfil(s: GameState): GameState {
     exfil: { square: c, calledMs: s.elapsedMs, arriveMs: s.elapsedMs + EXFIL_FLIGHT_MS, boardMs: null, liftMs: null },
     team: { ...s.team, activity: `Exfil at ${c}: ${TRANSPORT.callsign} inbound` },
   };
-  return say(next, 'exfil-called', TRANSPORT.callsign, `${s.team.callsign}, ${TRANSPORT.callsign}. ${c} is clear, we're inbound for your exfil. Ten seconds out.`);
+  return say(next, 'exfil-called', TRANSPORT.callsign, `HQ, ${TRANSPORT.callsign}, inbound LZ ${c}, ${Math.round(EXFIL_FLIGHT_MS / 1000)} seconds. LZ clear.`);
 }
 
 // One tick of the sequence, from the call on.
@@ -88,10 +88,10 @@ export function flyExfil(s: GameState): GameState {
     if (now < landedMs(r) || !atMarker) return s;
     const ids = team.operators.map((o) => o.id);
     const next = { ...s, exfil: { ...r, boardMs: now, liftMs: now + ids.length * BOARD_MS }, team: { ...team, activity: `Boarding ${TRANSPORT.callsign}` } };
-    return say(next, 'exfil-down', TRANSPORT.callsign, `On the ground at ${r.square}. Get aboard.`);
+    return say(next, 'exfil-down', TRANSPORT.callsign, `HQ, ${TRANSPORT.callsign}, wheels down LZ ${r.square}.`);
   }
   if (r.liftMs !== null && now >= r.liftMs && !s.comms.messages.some((m) => m.id === 'exfil')) {
-    return say({ ...s, team: { ...team, activity: `Aboard ${TRANSPORT.callsign}` } }, 'exfil', team.callsign, `All aboard. ${TRANSPORT.callsign} lifting from ${r.square}. We're out.`);
+    return say({ ...s, team: { ...team, activity: `Aboard ${TRANSPORT.callsign}` } }, 'exfil', team.callsign, `HQ, ${team.callsign}, all aboard ${TRANSPORT.callsign}, wheels up ${r.square}.`);
   }
   // Out: the rest of the contract comes out of escrow (ILI-1316).
   if (outMs(r) !== null && now >= outMs(r)! + SIGNOFF_MS) return { ...earn(s, escrow(s, ESCROW_EXFIL), 'escrow'), phase: 'ended', mission: { ...s.mission, phase: 'complete' } };

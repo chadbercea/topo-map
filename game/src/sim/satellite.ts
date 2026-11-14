@@ -20,7 +20,7 @@ import type { System } from './systems';
 
 export const CAPTURE: Record<CaptureMode, { ms: number; label: string; what: string }> = {
   photo: { ms: 0, label: 'Analysis', what: 'Who is there and where, right now' }, // Analyze's still (ILI-1499: no Photo button)
-  video: { ms: 15_000, label: 'Video', what: 'Live: who is moving and where to, for good. Its feed goes on the shelf for ALPHA' },
+  video: { ms: 15_000, label: 'Video', what: 'Live: who is moving and where to, while on station. Its feed goes on the shelf for ALPHA' },
 };
 
 export const SLEW_MS_PER_SQUARE = 2_000;
@@ -28,7 +28,7 @@ export const SETTLE_MS = 2_000;
 
 export type Point = { col: number; row: number };
 export type SatelliteState = 'idle' | 'slewing' | 'onStation' | 'capturing';
-export type LookResult = { square: SquareId; mode: CaptureMode; fighters: number; moving: number; awareness: Awareness | null };
+export type LookResult = { square: SquareId; mode: CaptureMode; fighters: number; moving: number; awareness: Awareness | null; atMs?: number };
 
 export type Satellite = {
   state: SatelliteState;
@@ -151,7 +151,7 @@ export function lookAt(s: GameState, square: SquareId, callId?: string): GameSta
     satellite: sat, // the picked square stays picked: its anchor shows ORION-3 on its way (ILI-1302)
     team: callId ? { ...s.team, holdFor: callId, activity: 'Waiting on the look' } : s.team,
   };
-  return log(next, radio(s, satName(s), `slew-${s.elapsedMs}`, ms ? `Slewing to ${square}. On station in ${countdown(ms)}.` : `On station over ${square}. Ready for collection.`));
+  return log(next, radio(s, satName(s), `slew-${s.elapsedMs}`, ms ? `HQ, ${satName(s)}, slewing to ${square}. ON STATION in ${countdown(ms)}.` : `HQ, ${satName(s)}, ON STATION ${square}.`));
 }
 
 // Scan a square (ILI-1367), from its square menu: the photo, now. Only once ORION-3 is locked on
@@ -183,7 +183,7 @@ export function cancelLook(s: GameState): GameState {
     satellite: { ...sat, state: 'idle', from: here, aim: squareId(here.col, here.row), mode: null, callId: null },
     team: sat.callId && s.team.holdFor === sat.callId ? { ...s.team, holdFor: null } : s.team,
   };
-  return sat.callId ? log(next, radio(s, s.team.callsign, `look-cancel-${s.elapsedMs}`, 'No imagery. Moving anyway.')) : next;
+  return sat.callId ? log(next, radio(s, s.team.callsign, `look-cancel-${s.elapsedMs}`, `HQ, ${s.team.callsign}, moving without imagery.`)) : next;
 }
 
 export const closeLook = (s: GameState) => (s.satellite.result ? { ...s, satellite: { ...s.satellite, result: null } } : s);
@@ -199,7 +199,7 @@ function finishLook(s: GameState): GameState {
   const moving = snap.seen.filter((x) => x.to).reduce((n, x) => n + x.units.length, 0);
   const contacts = snap.seen.map((x) => s.contacts.find((c) => c.id === x.contactId)!);
   const awareness = contacts.length ? awarenessOf(s, contacts[0]) : null;
-  const result: LookResult = { square, mode, fighters, moving, awareness };
+  const result: LookResult = { square, mode, fighters, moving, awareness, atMs: s.elapsedMs };
   next = {
     ...next,
     satellite: { ...sat, state: 'idle', from: at(square), mode: null, callId: null, result, watching: square }, // it keeps watching what it's over (ILI-1430)
@@ -207,11 +207,9 @@ function finishLook(s: GameState): GameState {
   };
   // To the analysts, and what it was worth to ALPHA (ILI-1314): a photo's grade feeds its
   // record; video is the live feed while ORION-3 stays over it.
-  let pushed: string;
   if (mode === 'video') {
     next = pushVideo(next);
     if (heardTraffic(next.intel.pushes.at(-1)?.items)) next = hearTraffic(next, square);
-    pushed = `Live feed posted for ${s.team.callsign}`;
   } else {
     if (!fighters) next = maybeBuilding(next, square); // the hunt: empty ground can turn up a building (ILI-1316)
     // Analyze (ILI-1432, ILI-1499): the analysts post its package on the shelf for ALPHA to pull.
@@ -219,24 +217,34 @@ function finishLook(s: GameState): GameState {
     next = p.next;
     // Their radio traffic is one of a scan's rewards (ILI-1359): a SIGINT report that heard something.
     if (heardTraffic(next.intel.pushes.at(-1)?.items)) next = hearTraffic(next, square);
-    pushed = `Intel posted for ${s.team.callsign}`;
   }
-  // In the words the flyout and the map use (ILI-1508).
-  next = log(next, radio(s, satName(s), `look-${s.elapsedMs}`, `${square} ${CAPTURE[mode].label.toLowerCase()} complete: ${describe(result)}. ${pushed}.`));
-  return sat.callId ? log(next, radio(s, s.team.callsign, `look-${s.elapsedMs}-team`, 'Imagery received.')) : next;
+  // The result goes on the instruments (the flyout, ORION-3's readout): the comms standard
+  // (ILI-1541). Only a result that needs attention gets a log line, from the analysts; nothing
+  // significant gets none. The post to ALPHA is the package's check, not a radio line, and so is
+  // ALPHA's receipt.
+  if (fighters) next = log(next, radio(s, ANALYSTS, `look-${s.elapsedMs}`, `${square} imagery, ${describe(result)}.`));
+  return next;
 }
 
+// The sender label for the analyst cell's output (comms standard, game term).
+export const ANALYSTS = 'Analysts';
+
+// A look's result in report order (SALUTE: size, activity): "6 dismounts, 2 moving, unaware".
 export function describe(r: LookResult): string {
-  if (!r.fighters) return 'nothing there';
+  if (!r.fighters) return 'nothing significant';
   const moving = r.moving ? `, ${r.moving} moving` : '';
-  return `${r.fighters} fighter${r.fighters === 1 ? '' : 's'}${moving}${r.awareness ? `, ${r.awareness}` : ''}`;
+  return `${r.fighters} dismount${r.fighters === 1 ? '' : 's'}${moving}${r.awareness ? `, ${r.awareness}` : ''}`;
 }
+
+// The same result as a HUD label: "F4 · IMAGERY · NOTHING SIGNIFICANT · 1432Z".
+export const resultLabel = (r: LookResult, zuluTime?: string): string =>
+  [r.square, 'IMAGERY', ...describe(r).split(', '), ...(zuluTime ? [zuluTime] : [])].map((x) => x.toUpperCase()).join(' · ');
 
 export const satelliteSystem: System = (s) => {
   const sat = s.satellite;
   if (sat.state === 'slewing' && s.elapsedMs >= sat.arriveMs) {
     // It says what's next (ILI-1257): the shot is HQ's to take, always by hand (ILI-1451).
-    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, satName(s), `station-${s.elapsedMs}`, `On station over ${sat.aim}. Ready for collection.`));
+    return log({ ...s, satellite: { ...sat, state: 'onStation' } }, radio(s, satName(s), `station-${s.elapsedMs}`, `HQ, ${satName(s)}, ON STATION ${sat.aim}.`));
   }
   // Video is real time (ILI-1423): once it's run on a square, the picture stays live for as long
   // as ORION-3 stays over it. No rescan.
@@ -277,12 +285,12 @@ export function satelliteStatus(s: GameState): string {
   const secs = gameSpan;
   switch (sat.state) {
     case 'idle':
-      return `${satName(s)} over ${sat.aim}`;
+      return lockedOn(s, sat.aim) ? `${satName(s)} · ON STATION · ${sat.aim}` : `${satName(s)} · OFF STATION`;
     case 'slewing':
-      return `${satName(s)} to ${sat.aim} · ${countdown(sat.arriveMs - s.elapsedMs)}`;
+      return `${satName(s)} · SLEWING · ${sat.aim} · ${countdown(sat.arriveMs - s.elapsedMs)}`;
     case 'onStation':
-      return `${satName(s)} on station ${sat.aim}`;
+      return `${satName(s)} · ON STATION · ${sat.aim}`;
     case 'capturing':
-      return `${satName(s)} ${sat.mode} ${sat.aim} · ${secs(sat.captureUntilMs - s.elapsedMs)}`;
+      return `${satName(s)} · COLLECTING · IMAGERY · ${sat.aim} · ${secs(sat.captureUntilMs - s.elapsedMs)}`;
   }
 }

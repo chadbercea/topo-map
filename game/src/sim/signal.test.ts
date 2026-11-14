@@ -83,7 +83,7 @@ describe('signal intercept', () => {
     const patrol = s.contacts.find((c) => c.id === 'patrol')!;
     expect(patrol).toMatchObject({ status: 'revealed', planKnown: true, planTo: 'D3' });
     expect(s.events.find((e) => e.kind === 'signal')?.status).toBe('resolved');
-    expect(s.comms.messages.some((m) => m.from === 'SIGINT' && m.text === 'Decoded: "PATROL AT C2 MOVING TO D3 FOR THE DRONE". Posted for ALPHA.')).toBe(true);
+    expect(s.comms.messages.some((m) => m.from === 'SIGINT' && /^[A-H]\d audio, decoded: "PATROL AT C2 MOVING TO D3 FOR THE DRONE"\.$/.test(m.text))).toBe(true);
   });
 
   it('part of it gives where they are but not their plan; nothing gives nothing', () => {
@@ -95,13 +95,13 @@ describe('signal intercept', () => {
     expect(store.get().minigame).toBeNull();
     expect(patrol.status).toBe('revealed');
     expect(patrol.planKnown).toBeFalsy();
-    expect(store.get().comms.messages.at(-1)?.text).toMatch(/they're at C2, but not what they plan/);
+    expect(store.get().comms.messages.at(-1)?.text).toMatch(/Enemy at C2, intent unknown/);
 
     const deaf = atTraffic(false); // off unscanned ground: ORION-3 over a scanned C2 would see them itself (ILI-1493)
     deaf.intercept(trafficId(deaf.get()));
     deaf.abortMiniGame(); // nothing came through
     expect(deaf.get().minigame).toBeNull();
-    expect(deaf.get().comms.messages.at(-1)?.text).toBe('Lost the signal.');
+    expect(deaf.get().comms.messages.at(-1)?.text).toMatch(/audio, signal lost\.$/);
     expect(deaf.get().contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
   });
 
@@ -112,7 +112,7 @@ describe('signal intercept', () => {
     part.abortMiniGame();
     expect(part.get().contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
     expect(part.get().events.some((e) => e.id === 'contact-patrol')).toBe(false);
-    expect(part.get().comms.messages.at(-1)?.text).toBe('Got part of it: no fix on where they are, and not what they plan.');
+    expect(part.get().comms.messages.at(-1)?.text).toBe('B1 audio, partial intercept. No fix, intent unknown.');
 
     const store = atTraffic(false);
     store.intercept(trafficId(store.get()));

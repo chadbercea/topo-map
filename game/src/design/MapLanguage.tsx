@@ -83,7 +83,7 @@ export function MapLanguage() {
             {tri(100, 60, C.red, -1)}
             {label(100, 82, 'HAMMER-2', C.red)}
             {tri(160, 60, C.orange)}
-            {label(160, 82, 'RAVEN-6', C.orange)}
+            {label(160, 82, 'SKYHOOK-1', C.orange)}
           </Tile>
         </Spec>
         <Spec name="Strikes on the ground" rule="OVERWATCH's crosshair on the fighter it shoots next; a red X where a fighter fell, kept as the aftermath; a pale ring where a round missed.">

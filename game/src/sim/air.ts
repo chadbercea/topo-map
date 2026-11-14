@@ -146,12 +146,14 @@ function fly(s: GameState, r: AirRun): GameState {
   const confirmed = kills.filter((k) => k.seen).length;
   next = earn(next, confirmed * CASH_PER_STRIKE_KILL);
   const left = next.contacts.filter((c) => c.square === r.square && (c.status === 'hidden' || c.status === 'revealed')).reduce((n, c) => n + c.units.length, 0);
-  const pay = confirmed ? ` +$${(confirmed * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` : kills.length ? ' Unconfirmed: no eyes on it.' : '';
+  const pay = confirmed ? ` +$${(confirmed * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` : kills.length ? ' BDA unconfirmed.' : '';
+  // Comms standard (ILI-1541): called, then caller; a finished strike reads "clear".
+  const head = `HQ, ${AIR[r.weapon].callsign},`;
   const text = !kills.length
-    ? `${r.square}: nothing there. No targets.`
+    ? `${head} NO JOY ${r.square}.`
     : left
-      ? `${r.square}: ${kills.length} down, ${left} still in there.${pay}`
-      : `${r.square}: all targets neutralized. ${kills.length} down.${pay}`;
+      ? `${head} ${r.square}, ${kills.length} down, ${left} remain.${pay}`
+      : `${head} ${r.square} clear. ${kills.length} down.${pay}`;
   return {
     ...next,
     [r.weapon]: { ...run, doneMs: s.elapsedMs },

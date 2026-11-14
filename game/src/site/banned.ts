@@ -13,7 +13,7 @@ export const BANNED: RegExp[] = [
   /black box/i,
   /\bALPHA\b/,
   /ORION/i,
-  /REAPER|HAMMER-|RAVEN-/,
+  /REAPER|HAMMER-|RAVEN-|SKYHOOK-|HAULER-/,
   /escrow/i,
   /ten minutes/i,
   /the chair is/i,

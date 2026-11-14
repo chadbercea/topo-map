@@ -31,7 +31,7 @@ describe('sniper (ILI-1253)', () => {
     expect(s.contacts[0].units).toHaveLength(1);
     expect(s.sniper!.done).toBe(true);
     expect(s.resources.ledger.field).toBe(5 * CASH_PER_STRIKE_KILL);
-    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'OVERWATCH', text: `E3: 5 down, 1 still in there. +$${(5 * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` });
+    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'OVERWATCH', text: `HQ, OVERWATCH, E3, 5 down, 1 remain. +$${(5 * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` });
     expect(sniperGone(run(s, LEAVE_MS).sniper!, s.elapsedMs + LEAVE_MS)).toBe(true);
   });
 
@@ -51,7 +51,7 @@ describe('sniper (ILI-1253)', () => {
     const s = run(store.get(), RUN_MS + 200);
     expect(s.contacts[0].status).toBe('cleared');
     expect(s.events.find((e) => e.id === 'contact-t')?.status).toBe('resolved');
-    expect(s.comms.messages.at(-1)?.text).toMatch(/^E3: all targets down\. 2 down\./);
+    expect(s.comms.messages.at(-1)?.text).toMatch(/^HQ, OVERWATCH, E3 clear\. 2 down\./);
   });
 
   it('a fighter that has moved since the look is a miss', () => {

@@ -51,7 +51,7 @@ describe('drone strike (ILI-1252)', () => {
     expect(s.contacts.map((c) => c.status)).toEqual(['cleared', 'cleared']);
     expect(s.events.find((e) => e.id === 'contact-t')?.status).toBe('resolved');
     expect(s.events.some((e) => e.kind === 'site' && e.square === 'E3')).toBe(true);
-    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'REAPER-1', text: `E3: all targets neutralized. 6 down. +$${(4 * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` });
+    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'REAPER-1', text: `HQ, REAPER-1, E3 clear. 6 down. +$${(4 * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` });
     expect(s.resources.ledger.field).toBe(4 * CASH_PER_STRIKE_KILL); // the four HQ saw are confirmed
   });
 
@@ -61,7 +61,7 @@ describe('drone strike (ILI-1252)', () => {
     const s = run(store.get(), FLIGHT_MS + CROSS_MS + 200);
     expect(s.contacts.every((c) => c.status === 'cleared')).toBe(true);
     expect(s.resources.ledger.field).toBe(0);
-    expect(s.comms.messages.at(-1)?.text).toBe('E3: all targets neutralized. 6 down. Unconfirmed: no eyes on it.');
+    expect(s.comms.messages.at(-1)?.text).toBe('HQ, REAPER-1, E3 clear. 6 down. BDA unconfirmed.');
   });
 
   it('its panel stays up a moment after the last kill, then goes; the X marks stay', () => {
@@ -89,7 +89,7 @@ describe('helicopter gun run (ILI-1254)', () => {
     s = run(s, 2 * (CROSS_MS + TURN_MS));
     expect(s.contacts[0].status).toBe('cleared'); // all four technicals were in those rows
     expect(s.contacts[1].units).toEqual([3, 12]); // the pair it couldn't see is untouched
-    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'HAMMER-2', text: `E3: 4 down, 2 still in there. +$${(4 * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` });
+    expect(s.comms.messages.at(-1)).toMatchObject({ from: 'HAMMER-2', text: `HQ, HAMMER-2, E3, 4 down, 2 remain. +$${(4 * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` });
   });
 
   it(`at most ${HELI_PASSES} passes, the fullest rows first`, () => {

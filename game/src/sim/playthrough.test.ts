@@ -32,7 +32,7 @@ describe('playthrough', () => {
   // The map is rolled per seed (ILI-1544), so these hold across seeds, not on one fixed layout.
   const seeds = Array.from({ length: 12 }, (_, i) => i + 1);
   const tally = (strategy: 'sharp' | 'silent') =>
-    seeds.map((seed) => play(strategy, seed)).reduce((n, s) => ({ wins: n.wins + +(s.mission.phase === 'complete'), lost: n.lost + s.stats.lost.length, ambushes: n.ambushes + s.comms.messages.filter((m) => m.text.startsWith('Ambush')).length }), { wins: 0, lost: 0, ambushes: 0 });
+    seeds.map((seed) => play(strategy, seed)).reduce((n, s) => ({ wins: n.wins + +(s.mission.phase === 'complete'), lost: n.lost + s.stats.lost.length, ambushes: n.ambushes + s.comms.messages.filter((m) => m.text.includes('CONTACT, ambush')).length }), { wins: 0, lost: 0, ambushes: 0 });
 
   it('a sharp HQ scans ahead: ALPHA makes its own calls on what it was sent, and gets out on nearly every seed', () => {
     const s = play('sharp');
@@ -48,9 +48,9 @@ describe('playthrough', () => {
   // an ambush, and it pays for it in men; the mission can still be won.
   it('a silent HQ: every group ALPHA meets is an ambush, and across seeds it costs more men than a sharp HQ', () => {
     const s = play('silent', 5);
-    const fights = s.comms.messages.filter((m) => /^Ambush|^Contact! Engaging/.test(m.text));
+    const fights = s.comms.messages.filter((m) => /CONTACT, ambush|CONTACT, [A-H]\d\. Engaging/.test(m.text));
     expect(fights.length).toBeGreaterThan(0);
-    expect(fights.every((m) => m.text.startsWith('Ambush'))).toBe(true);
+    expect(fights.every((m) => m.text.includes('CONTACT, ambush'))).toBe(true);
     const sharp = tally('sharp');
     const silent = tally('silent');
     expect(silent.ambushes).toBeGreaterThan(sharp.ambushes);

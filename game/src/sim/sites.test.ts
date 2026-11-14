@@ -49,7 +49,7 @@ describe('kill sites', () => {
     expect(s.events.find((e) => e.kind === 'site')?.status).toBe('resolved');
     expect(s.resources.budget).toBe(budget + SEARCH_CASH);
     expect(s.stats.searched).toBe(1);
-    expect(s.comms.messages.find((m) => m.id === 'search-site-t')).toMatchObject({ from: 'ALPHA', holds: false, text: expect.stringMatching(/^Swept the kill site in E3/) });
+    expect(s.comms.messages.find((m) => m.id === 'search-site-t')).toMatchObject({ from: 'ALPHA', holds: false, text: expect.stringMatching(/^HQ, ALPHA, kill site E3 searched/) });
     expect(s.comms.messages.some((m) => m.id.startsWith('site-call'))).toBe(false);
   });
 });

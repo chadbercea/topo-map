@@ -51,7 +51,7 @@ export const missionSystem: System = (s, dt) => {
 
   // The whole team down: the mission is lost.
   if (team.operators.every((o) => o.health <= 0)) {
-    return { ...s, phase: 'ended', comms: { ...s.comms, messages: [...s.comms.messages, { ...radio(s, 'team-lost', `${team.callsign} is not responding.`), from: 'HQ' }] } };
+    return { ...s, phase: 'ended', comms: { ...s.comms, messages: [...s.comms.messages, { ...radio(s, 'team-lost', `ALL STATIONS, HQ, lost contact with ${team.callsign}.`), from: 'HQ' }] } };
   }
 
   // At the crash site, where its marker is, not just over the square's edge: pull the drive.
@@ -61,7 +61,7 @@ export const missionSystem: System = (s, dt) => {
       ...s,
       mission: { ...mission, phase: 'objective', recoverUntilMs: s.elapsedMs + RECOVER_MS },
       team: { ...team, holdUntilMs: s.elapsedMs + RECOVER_MS, activity: `Recovering the black box at ${mission.b}` },
-      comms: { ...s.comms, messages: [...s.comms.messages, radio(s, 'at-crash-site', `At the crash site in ${mission.b}. Pulling the drive.`)] },
+      comms: { ...s.comms, messages: [...s.comms.messages, radio(s, 'at-crash-site', `HQ, ${team.callsign}, at the crash site, ${mission.b}. Recovering the black box.`)] },
     };
   }
   // A fight or the medic at work stops the recovery; it picks up again after.
@@ -77,8 +77,8 @@ export const missionSystem: System = (s, dt) => {
         ...s.comms,
         messages: [
           ...s.comms.messages,
-          radio(s, 'got-black-box', `Got the black box, and some paperwork. Heading for exfil at ${mission.c}.`),
-          { ...radio(s, 'escrow-box', `Client confirms the black box. $${escrow(s, ESCROW_BOX).toLocaleString('en-US')} out of escrow.`), from: 'HQ' },
+          radio(s, 'got-black-box', `HQ, ${team.callsign}, black box secured. Moving to exfil at ${mission.c}.`),
+          { ...radio(s, 'escrow-box', `${team.callsign}, HQ, client confirms the black box. $${escrow(s, ESCROW_BOX).toLocaleString('en-US')} out of escrow.`), from: 'HQ' },
         ],
       },
     };

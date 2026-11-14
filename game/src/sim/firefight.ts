@@ -65,7 +65,7 @@ const alive = (o: Operator) => o.health > 0;
 const radio = (s: GameState, id: string, text: string): Message => ({
   id,
   from: s.team.callsign,
-  text,
+  text: `HQ, ${s.team.callsign}, ${text}`, // called, then caller (comms standard, ILI-1541)
   atMs: s.elapsedMs,
   status: 'new',
   holds: false,
@@ -87,7 +87,7 @@ export const firefightSystem: System = (s, dt) => {
       const initiative = known && team.decisions[contact.square] === 'attack' ? INITIATIVE[intelAge(s, contact.square, known.atMs)] : 1;
       const edge = ambush ? AMBUSH_EDGE * (s.alerted ? ALERT_AMBUSH : 1) : initiative;
       const enemy = ENEMY_STRENGTH * effectiveStrength(contact) * edge;
-      const text = ambush ? `Ambush in ${contact.square}! Returning fire.` : `Contact! Engaging in ${contact.square}.`;
+      const text = ambush ? `CONTACT, ambush, ${contact.square}. TIC.` : `CONTACT, ${contact.square}. Engaging.`;
       // ALPHA in contact always puts the fight on the map as a contact (ILI-1524): its square raises
       // an ALERT, scanned or not, so HQ has something to press.
       const eid = `contact-${contact.id}`;
@@ -152,8 +152,8 @@ export const firefightSystem: System = (s, dt) => {
     const pay = cleared ? fight.units * CASH_PER_TEAM_KILL : 0;
     const after: GameState = cleared ? markSite(earn(s, pay), cleared) : s;
     const text = outOfAmmo && enemy > 0
-      ? `Out of ammo, breaking contact in ${fight.square}.`
-      : `${fight.square} clear. ${wounded ? `${wounded} wounded` : 'No wounded'}${down ? `, ${down} down` : ''}.${pay ? ` +$${pay.toLocaleString('en-US')}.` : ''}`;
+      ? `out of ammo, breaking contact, ${fight.square}.`
+      : `${fight.square} clear. ${wounded || down ? [wounded ? `${wounded} WIA` : '', down ? `${down} down` : ''].filter(Boolean).join(', ') : 'No casualties'}.${pay ? ` +$${pay.toLocaleString('en-US')}.` : ''}`;
     return {
       ...after,
       rng,
@@ -197,7 +197,7 @@ function treat(s: GameState): GameState {
     });
     const after = { ...s, team: { ...team, operators, treating: null } };
     // Last patient done (or out of kits): say so; next tick the team walks on.
-    return needsTreatment(after) ? after : { ...after, comms: { ...s.comms, messages: [...s.comms.messages, radio(s, `treated-${s.elapsedMs}`, 'Patched up. Moving.')] } };
+    return needsTreatment(after) ? after : { ...after, comms: { ...s.comms, messages: [...s.comms.messages, radio(s, `treated-${s.elapsedMs}`, 'wounded treated, moving.')] } };
   }
 
   if (!needsTreatment(s)) return s;

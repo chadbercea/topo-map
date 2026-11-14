@@ -109,10 +109,12 @@ export const sniperSystem: System = (s) => {
   next = earn(next, kills.length * CASH_PER_STRIKE_KILL);
   const left = next.contacts.filter((c) => c.square === r.square && c.status === 'revealed').reduce((n, c) => n + c.units.length, 0);
   const pay = kills.length ? ` +$${(kills.length * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` : '';
+  // Comms standard (ILI-1541): called, then caller; a finished strike reads "clear".
+  const head = `HQ, ${SNIPER_CALLSIGN},`;
   const text = !fired.length
-    ? `${r.square}: no shot.`
+    ? `${head} NO JOY ${r.square}.`
     : left
-      ? `${r.square}: ${kills.length} down, ${left} still in there.${pay}`
-      : `${r.square}: all targets down. ${kills.length} down.${pay}`;
+      ? `${head} ${r.square}, ${kills.length} down, ${left} remain.${pay}`
+      : `${head} ${r.square} clear. ${kills.length} down.${pay}`;
   return { ...next, sniper: { ...run, done: true }, comms: { ...next.comms, messages: [...next.comms.messages, report(next, r, text)] } };
 };

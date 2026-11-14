@@ -13,7 +13,7 @@ const until = (s: GameState, done: (x: GameState) => boolean, maxMs = 120_000) =
   for (let t = 0; t < maxMs && !done(s); t += 100) s = run(s, 100);
   return s;
 };
-const weighed = (s: GameState) => s.comms.messages.some((m) => m.from === 'ALPHA' && /Contact in E3/.test(m.text));
+const weighed = (s: GameState) => s.comms.messages.some((m) => m.from === 'ALPHA' && /CONTACT E3/.test(m.text));
 // HQ analyzes E3 (ORION-3 locked on it): its package goes on the shelf. pull: and ALPHA pulls it
 // down to its SATCOM devices (ILI-1499).
 const scanned = (s: GameState, pull: boolean) => {
@@ -44,7 +44,7 @@ describe('ALPHA routes on its own picture (ILI-1495)', () => {
     const s0 = scanned(ahead(), true);
     expect(s0.team.known.checkpoint).toMatchObject({ square: 'E3', units: 5 });
     const s = until(s0, (x) => weighed(x));
-    expect(s.comms.messages.some((m) => /Contact in E3, a fortified checkpoint\. Not taking that\. Going around via [A-H]\d\./.test(m.text))).toBe(true);
+    expect(s.comms.messages.some((m) => /CONTACT E3, a fortified checkpoint\. Too strong to take\. Moving around via [A-H]\d\./.test(m.text))).toBe(true);
     expect(s.team.route).not.toContain('E3');
   });
 
