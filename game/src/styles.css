@@ -2484,3 +2484,14 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .prompt.prompt-traffic { animation: prompt-in 180ms ease-out; border-color: #ff8a2a; box-shadow: none; }
 .prompt.prompt-traffic .note { margin: 0; font-size: 11px; color: var(--dim); }
 .band-cards > .minigame { width: 100%; }
+/* Fold (ILI-1547 call C): the team and comms bar sits between the map and ORION-3's dock, so the
+   drawer and the log open up over the map and nothing opens over ORION-3. */
+@media (min-width: 700px) and (max-width: 1199px) and (orientation: portrait) {
+  .hud[data-layout='fold'] { grid-template-rows: minmax(0, 1fr) 48px min(340px, 34dvh); grid-template-areas: 'map' 'bottom' 'orion'; }
+}
+
+/* One loud thing at a time (ILI-1547 call F): an unopened ALERT is the only thing that animates
+   without end; with none, the prompt is. Everything else holds steady until those are handled. */
+.hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work])) .prompt { animation: prompt-in 180ms ease-out; }
+.hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) :is(.orion .o-buttons .modes button[data-cue], .dock-tabs button[data-alert='true'], .target-menu .options button[data-cue], .square-card .sc-scan button[data-cue]) { animation: none; }
+.hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) .log-toggle .tab-dot::after { animation: none; }
