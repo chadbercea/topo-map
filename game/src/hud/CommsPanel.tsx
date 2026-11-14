@@ -5,7 +5,7 @@ import { cards, type Card, type EventCardKind } from '../sim/cards';
 import type { GameState } from '../sim/state';
 import { shownEvents } from '../sim/events';
 import { classify, EVENT_LABEL } from '../sim/stream';
-import { gameClock } from '../sim/gameTime';
+import { zulu } from '../sim/gameTime';
 import { kindLabel } from '../sim/intel';
 import { FeedIcon, type Tier } from './feedIcons';
 
@@ -163,7 +163,7 @@ function MessageLine({ m, callsign, comms }: { m: Message; callsign: string; com
       data-waiting={waiting}
       data-testid={report?.kind === 'alert' ? 'banner' : undefined}
     >
-      <span className="t">{gameClock(m.atMs, Math.floor)}</span>
+      <span className="t">{zulu(m.atMs)}</span>
       <FeedIcon tier={tier} />
       <span className="body">
         <b>{kindLabel(m.from)}</b> {text}

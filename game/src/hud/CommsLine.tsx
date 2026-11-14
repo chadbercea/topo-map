@@ -1,4 +1,5 @@
 import { useGame } from '../sim/store';
+import { kindLabel } from '../sim/intel';
 
 // The comms strip's one line (ILI-1470): the latest thing said on the radio, who said it first.
 export function CommsLine() {
@@ -7,7 +8,7 @@ export function CommsLine() {
     <span className="comms-line" data-testid="comms-line">
       {last ? (
         <>
-          <b>{last.from}</b> {last.text}
+          <b>{kindLabel(last.from)}</b> {last.text}
         </>
       ) : (
         <span className="dim">Quiet on the net</span>

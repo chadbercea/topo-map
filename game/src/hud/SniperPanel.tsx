@@ -12,12 +12,13 @@ const FLASH_MS = 400; // "Tango down" after a hit, before it reads "Racking"
 export function SniperPanel({ square }: { square: string }) {
   const r = useGame((s) => s.sniper);
   const now = useGame((s) => s.elapsedMs);
+  const left0 = useGame((s) => s.contacts.some((c) => c.square === square && (c.status === 'hidden' || c.status === 'revealed') && c.units.length));
   if (!r || r.square !== square || sniperGone(r, now)) return null;
   const fired = r.shots.filter((x) => x.atMs <= now);
   const last = fired.at(-1);
   const left = Math.max(0, r.endMs - now);
   const line = r.done
-    ? fired.length ? `${fired.filter((x) => x.hit).length} down` : 'No shot'
+    ? !left0 ? 'Clear' : fired.some((x) => x.hit) ? `${fired.filter((x) => x.hit).length} down` : 'NO JOY'
     : last && now - last.atMs < FLASH_MS
       ? last.hit ? 'Tango down' : 'Miss'
       : fired.length < r.shots.length

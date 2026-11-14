@@ -26,7 +26,7 @@ export const BLACK_BOX: MissionDef = registerMission({
     {
       id: 'first-contact-hint',
       when: (s) => s.events.some((e) => e.kind === 'contact' && e.id.startsWith('contact-')) && !s.team.fight,
-      then: (s) => say(s, 'HQ', 'hint-first-contact', 'CONTACT ON THE MAP · TAP IT TO STRIKE, OR LET ALPHA DECIDE', true),
+      then: (s) => say(s, 'HQ', 'hint-first-contact', 'CONTACT ON THE MAP · STRIKE ▸ ON ITS ALERT, OR LET ALPHA DECIDE', true),
     },
     // A fight at the crash site while ALPHA recovers the drive.
     {

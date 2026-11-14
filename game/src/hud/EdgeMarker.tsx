@@ -19,7 +19,9 @@ export function EdgeMarker({ square, target, area, label }: { square: string; ta
   const t = Math.min(dx ? hw / Math.abs(dx) : Infinity, dy ? hh / Math.abs(dy) : Infinity, 1);
   const at = (x: number, y: number): Box => ({ x: x - W / 2, y: y - H / 2, w: W, h: H });
   const spots = [at(cx + dx * t, cy + dy * t), at(cx, area.y + PAD + H / 2), at(area.x + area.width - PAD - W / 2, cy), at(cx, area.y + area.height - PAD - H / 2), at(area.x + PAD + W / 2, cy)];
-  const box = pick(spots, gameUiBoxes());
+  // Clear of the game UI and of the other markers, so two never stack (ILI-1553).
+  const others = [...document.querySelectorAll<HTMLElement>('.edge-marker')].filter((el) => el.dataset.square !== square).map((el) => el.getBoundingClientRect()).map((r) => ({ x: r.x, y: r.y, w: r.width, h: r.height }));
+  const box = pick(spots, [...gameUiBoxes(), ...others]);
   const angle = Math.round((Math.atan2(target.y - (box.y + H / 2), target.x - (box.x + W / 2)) * 180) / Math.PI);
   return (
     <button className="edge-marker" data-testid="edge-marker" data-square={square} style={{ left: box.x, top: box.y, width: W, height: H }} onClick={() => bus.emit(EV.panTo, square)} aria-label={`${label} ${square}: show on the map`}>
