@@ -4,7 +4,7 @@
 // people, agencies or programmes. Each section's picture is a shot: one of the line-drawn models,
 // framed tight and moved by the scroll (studio.ts).
 
-export type SceneKey = 'satellite' | 'uav' | 'rotary' | 'airlift' | 'rifle' | 'marksman' | 'medical' | 'comms' | 'nav' | 'drop';
+export type SceneKey = 'satellite' | 'uav' | 'rotary' | 'airlift' | 'rifle' | 'marksman' | 'medical' | 'comms' | 'nav' | 'drop' | 'constellation';
 
 // How a model is framed as its stage scrolls up the screen, from entering (first value) to
 // leaving (second). zoom: 1 fits the whole model, 2 is twice as close (cropped by the frame).
@@ -47,7 +47,7 @@ export const ABOUT = {
     ['2,400+', 'Contractors'],
     ['0', 'Clients left behind'],
   ] as [string, string][],
-  shot: { scene: 'rotary', color: '--accent', opacity: 0.9, zoom: [1.9, 3.4], yaw: [-1.1, 0.9], pitch: [0.25, -0.1], pan: [0.55, -0.15, 0.1, -0.05], spin: 0.06 } as Shot,
+  shot: { scene: 'constellation', color: '--accent', opacity: 0.9, zoom: [1.25, 2.2], yaw: [-1.1, 0.9], pitch: [0.25, -0.1], pan: [0.55, -0.15, 0.1, -0.05], spin: 0.06 } as Shot,
 };
 
 export type Capability = { code: string; title: string; name: string; text: string; read: [string, string][]; shot: Shot };

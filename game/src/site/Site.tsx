@@ -186,7 +186,7 @@ export function Site() {
           <Apply className="ch-enlist ch-small">Apply</Apply>
         </header>
 
-        {/* Who we are: the rotary-wing sweeping through the frame, the statement and three numbers under it. */}
+        {/* Who we are: the globe and its three satellites sweeping through the frame, the statement and three numbers under it. */}
         <section className="ch-sec ch-about" id="about">
           <Stage shot={ABOUT.shot} className="ch-about-art" />
           <div className="ch-about-text">
