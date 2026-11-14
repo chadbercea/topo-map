@@ -28,7 +28,7 @@ export function SniperPanel({ square }: { square: string }) {
     <section className="sniper" data-testid="sniper-panel" data-state={state} data-leaving={r.done || undefined} role="status" aria-label="Sniper">
       <h3>
         <span>{SNIPER_CALLSIGN}</span>
-        <span className="where">sniper · {r.square}</span>
+        <span className="where">{r.square}</span>
       </h3>
       <WireAvatar state={state} fallback={<RifleMark />} load={loadRifle} className="s-model" />
       <div className="s-read">

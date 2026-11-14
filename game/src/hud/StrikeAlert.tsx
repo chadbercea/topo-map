@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
-import { satName } from '../sim/satellite';
 import { AGE_LABEL, freshness } from '../sim/imagery';
 import { zulu } from '../sim/gameTime';
 import { alertSquares, strikeState } from '../sim/strike';
@@ -96,7 +95,7 @@ function Alert({ s, square, open, area }: { s: GameState; square: string; open: 
   const st = strikeState(s, square);
   const work = strikeWork(s, square);
   const n = st.marked.length;
-  const line = work ?? (n ? `${n} ${n === 1 ? 'fighter' : 'fighters'}` : square);
+  const line = work ?? (n ? `${n} tango` : square);
   const toggle = () => {
     if (open) return closeStrike();
     // Focus the square too: its flyout comes up to the right, the strike panel below.
@@ -152,7 +151,7 @@ function Alert({ s, square, open, area }: { s: GameState; square: string; open: 
       {open && (
         <div className="sa-body" data-testid="strike-panel">
           <Stages stage={st.running ? 'asset' : 'options'} order={STAGES}>
-            {st.running ? <StrikeAsset s={s} square={square} /> : <StrikeOptions s={s} square={square} />}
+            {st.running ? <StrikeAsset square={square} /> : <StrikeOptions s={s} square={square} />}
           </Stages>
         </div>
       )}
@@ -177,29 +176,36 @@ export function contactLine(s: GameState, square: string) {
     .join(' · ');
 }
 
-// The first stage: who's there, the budget, and every way to hit them. A weapon that can't fire
-// says why on its button (ORION-3 not over the square, no eyes on target, rearming), so the panel
-// never clicks dead.
+// The first stage (ILI-1525: a HUD unit, read at a glance). The band above already says how many
+// fighters; under it one line, the square, how fresh HQ's look is, what's known of the target (say
+// FORTIFIED) and the budget on the right; then a row of every way to hit it. A weapon that can't
+// fire says why on its button (no lock, no eyes, rearming), so the panel never clicks dead. Two
+// contacts on one square get the square and budget on a line of their own, and a line each.
 function StrikeOptions({ s, square }: { s: GameState; square: string }) {
   const st = strikeState(s, square);
+  const one = st.strikes.length === 1;
+  const head = (
+    <b className="sf-sq" data-testid="strike-contact">
+      {square}
+    </b>
+  );
+  const budget = (
+    <span className="sf-cash" title="Budget" aria-label={`Budget ${cash(s.resources.budget)}`}>
+      {cash(s.resources.budget)}
+    </span>
+  );
   return (
     <section className="sc-strike" data-testid="strike-flyout" data-square={square} aria-label={`Strike ${square}`}>
-      <header className="sf-head">
-        <b>Strike · {square}</b>
-        <span>{st.locked ? `${satName(s)} watching` : `${satName(s)} not over ${square}`}</span>
-      </header>
-      <p className="sf-contact" data-testid="strike-contact">
-        {contactLine(s, square)}
-      </p>
-      <p className="sf-budget">
-        <small>Budget</small>
-        <b>{cash(s.resources.budget)}</b>
-      </p>
+      {!one && (
+        <header className="sf-head">
+          {head}
+          {budget}
+        </header>
+      )}
       <section className="sc-strikes" data-testid="strike-menu">
         {st.strikes.map((e) => (
           <div key={e.id} className="sc-target" data-testid="strike-target">
-            {st.strikes.length > 1 && <p className="title">{e.title}</p>}
-            <TargetMenu contactId={e.id.slice('contact-'.length)} />
+            <TargetMenu contactId={e.id.slice('contact-'.length)} title={one ? undefined : shortTitle(e.title)} lead={one ? head : undefined} trail={one ? budget : undefined} />
           </div>
         ))}
       </section>
@@ -207,15 +213,14 @@ function StrikeOptions({ s, square }: { s: GameState; square: string }) {
   );
 }
 
-// The second stage (ILI-1514): the asset HQ picked, its callsign and its wireframe, with its time
-// to target counting down, then what it hit. ORION-3 watches it from its own panel.
-function StrikeAsset({ s, square }: { s: GameState; square: string }) {
+// "A fortified checkpoint" reads "fortified checkpoint" as a tag.
+const shortTitle = (t: string) => t.replace(/^(a|an|the) /i, '');
+
+// The second stage (ILI-1514): the asset HQ picked, its callsign and wireframe, its time to target
+// counting down as a bar, then what it hit. The band above already names it; ORION-3 watches.
+function StrikeAsset({ square }: { square: string }) {
   return (
     <section className="sc-strike sc-asset" data-testid="strike-asset" aria-label={`Strike ${square}`}>
-      <header className="sf-head">
-        <b>Strike · {square}</b>
-        <span>{satName(s)} watching</span>
-      </header>
       <div className="sc-running" data-testid="strike-running">
         <SniperPanel square={square} />
         <AirPanel weapon="drone" square={square} />

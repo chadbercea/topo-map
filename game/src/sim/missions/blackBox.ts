@@ -59,7 +59,7 @@ export const BLACK_BOX: MissionDef = registerMission({
       then: (s) => ({
         ...s,
         contacts: s.contacts.map((c) =>
-          c.id === 'checkpoint' ? { ...c, note: 'Fortified: too strong for ALPHA to walk through. Soften it with ordnance first, or go around.' } : c,
+          c.id === 'checkpoint' ? { ...c, note: 'Fortified' } : c,
         ),
       }),
     },
@@ -82,7 +82,7 @@ export const BLACK_BOX: MissionDef = registerMission({
       id: 'convoy-on-exfil',
       when: (s) => s.mission.blackBox && s.mission.phase === 'exfil' && !s.team.fight && convoyComes(s.seed),
       then: (s) => {
-        const convoy = { ...makeContact('convoy', s.mission.c, 'a salvage convoy hauling loot', 0.8, [2, 3, 6]), note: `Hauling salvage off the wreck: worth ${LOOT_TEXT} to the client if ALPHA takes it.` };
+        const convoy = { ...makeContact('convoy', s.mission.c, 'a salvage convoy hauling loot', 0.8, [2, 3, 6]), note: `Loot ${LOOT_TEXT}` };
         return { ...s, contacts: [...s.contacts, convoy] };
       },
     },

@@ -22,10 +22,11 @@ export function eyesLine(e: Eyes | null, now: number) {
   return `Stale imagery, ${age(now - e.atMs)} old. Analyze again.`;
 }
 
-// The strike options (ILI-1513): one line on what HQ can see of the target, since that decides
-// which weapons can aim (ILI-1168), then one button a weapon: its aircraft or rifle turning in the
-// HUD's wireframe, a one-word name, and the price of a call, or why it can't fire now. The buttons
-// slide in one after another (styles.css).
+// The strike options (ILI-1513, tightened in ILI-1525): a row of tags on what HQ can see of the
+// target, since that decides which weapons can aim (ILI-1168), and anything else known of it (say
+// FORTIFIED); then one button a weapon: its aircraft or rifle turning in the HUD's wireframe, a
+// one-word name, and the price of a call, or why it can't fire now. The buttons slide in one after
+// another (styles.css).
 const SHORT: Record<Weapon, string> = { drone: 'Drone', sniper: 'Sniper', heli: 'Heli' };
 type Mount = (host: HTMLElement, stateRef: { current: string }, repaint: { current: (() => void) | null }) => (() => void) | null;
 const LOAD: Record<Weapon, () => Promise<{ mount: Mount }>> = {
@@ -41,31 +42,60 @@ function WeaponIcon({ w, ready }: { w: Weapon; ready: boolean }) {
   return <WireAvatar state={state} fallback={MARK[w]} load={LOAD[w]} className="w-icon" />;
 }
 
-export function TargetMenu({ contactId }: { contactId: string }) {
+// The same, as a HUD tag (ILI-1525): a word and an age, coloured by how far a strike can trust it.
+const ago = (ms: number) => age(ms).replace(' min', 'm').replace(' h ', 'h ').replace(' h', 'h');
+export function eyesTag(e: Eyes | null, now: number): { text: string; level: Eyes['level'] | 'none' } {
+  if (!e) return { text: 'No cov', level: 'none' };
+  if (e.level === 'live') return { text: 'Live', level: 'live' };
+  const word = e.level === 'fresh' ? 'Cur' : e.level === 'ghost' ? 'Aging' : 'Stale';
+  return { text: `${word} ${ago(now - e.atMs)}`, level: e.level };
+}
+
+// Why a weapon can't fire, cut to a button's worth (ILI-1525). The full reason stays on its title.
+export function shortBlock(why: string) {
+  if (why === 'No eyes on target') return 'No eyes';
+  if (why === 'Strike under way') return 'Busy';
+  if (why.includes(' not over ')) return 'No lock';
+  return why.replace('Ready in ', 'Rdy ');
+}
+
+export function TargetMenu({ contactId, title, lead, trail }: { contactId: string; title?: string; lead?: ReactNode; trail?: ReactNode }) {
   const state = useGame((s) => s);
   const c = state.contacts.find((x) => x.id === contactId);
   if (!c) return null;
+  const eyes = eyesOn(state, c);
+  const tag =
+    c.status === 'cleared'
+      ? { text: 'Destroyed', level: 'none', full: 'Destroyed.' }
+      : c.status === 'avoided'
+        ? { text: 'Avoided', level: 'none', full: 'Avoided.' }
+        : c.painted
+          ? { text: 'Painted', level: 'live', full: 'Painted by ALPHA: every fighter marked.' }
+          : { ...eyesTag(eyes, state.elapsedMs), full: eyesLine(eyes, state.elapsedMs) };
   return (
     <div className="target-menu" data-testid="target-menu">
-      <p className="note" data-testid="eyes">
-        {c.status === 'cleared'
-          ? 'Destroyed.'
-          : c.status === 'avoided'
-            ? 'Avoided.'
-            : c.painted
-              ? 'Painted by ALPHA: every fighter marked.'
-              : eyesLine(eyesOn(state, c), state.elapsedMs)}
+      <p className="tm-tags">
+        {lead}
+        {title && <span className="tm-title">{title}</span>}
+        <span className="tm-tag" data-level={tag.level} data-testid="eyes" title={tag.full}>
+          {tag.text}
+        </span>
+        {c.note && c.status === 'revealed' && (
+          <span className="tm-tag" data-level="note" data-testid="target-note">
+            {c.note}
+          </span>
+        )}
+        {trail}
       </p>
-      {c.note && c.status === 'revealed' && <p className="note" data-testid="target-note">{c.note}</p>}
       {c.status === 'revealed' && (
         <div className="options" aria-label="Strike">
           {WEAPONS.map((w) => {
             const blocked = strikeBlocked(state, w, c); // why it can't fire, on the button: never a dead click (ILI-1524)
             return (
-              <button key={w} disabled={!!blocked} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`} aria-label={WEAPON[w].name} data-cue={(state.team.waitFor?.square === c.square && !blocked) || undefined /* ALPHA asked for this (ILI-1318) */}>
+              <button key={w} disabled={!!blocked} title={blocked ?? undefined} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`} aria-label={WEAPON[w].name} data-cue={(state.team.waitFor?.square === c.square && !blocked) || undefined /* ALPHA asked for this (ILI-1318) */}>
                 <WeaponIcon w={w} ready={!blocked} />
                 <span>{SHORT[w]}</span>
-                <small>{blocked ?? cash(perCall(state, w))}</small>
+                <small>{blocked ? shortBlock(blocked) : cash(perCall(state, w))}</small>
               </button>
             );
           })}

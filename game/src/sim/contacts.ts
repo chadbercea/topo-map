@@ -29,7 +29,7 @@ export type Contact = {
   total: number;
   intent?: string; // what an intercept of its radio reveals it's doing
   painted?: boolean; // ALPHA has a laser on it: strikes see every fighter
-  note?: string; // what HQ knows about it, shown in its target menu
+  note?: string; // what HQ knows about it, a one- or two-word tag in its target menu (ILI-1525)
   move?: { from: SquareId; to: SquareId; fromMs: number; arriveMs: number }; // on its way to another square
   planTo?: SquareId; // where its plan takes it (what an intercept reveals)
   planKnown?: boolean; // HQ decoded its plan: its route shows on the map

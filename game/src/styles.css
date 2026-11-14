@@ -1179,22 +1179,22 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    shoots, and its panel under the picture. */
 @keyframes sniper-in { from { opacity: 0; transform: translateY(6px); } }
 @keyframes sniper-out { to { opacity: 0; transform: translateY(6px); } }
-.square-card .sniper { display: grid; grid-template-columns: 120px 1fr; column-gap: 12px; padding: 8px 10px; background: var(--bg); border-bottom: 1px solid #e5484d; animation: sniper-in 200ms ease-out; }
-.square-card .sniper[data-leaving] { animation: sniper-out 600ms ease-in forwards; }
-.square-card .sniper h3 { grid-column: 1 / -1; display: flex; justify-content: space-between; margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: #e5484d; }
-.square-card .sniper h3 .where { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; }
-.square-card .sniper .s-model { position: relative; display: grid; place-items: center; height: 56px; }
-.square-card .sniper .s-model > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.square-card .sniper .s-mark { width: 90%; fill: none; stroke: var(--accent); stroke-width: 1.5; }
-.square-card .sniper .s-read { display: grid; align-content: center; gap: 4px; }
-.square-card .sniper .s-read b { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
-.square-card .sniper[data-state='firing'] .s-read b { color: #e5484d; }
-.square-card .sniper .s-rounds { display: flex; gap: 3px; }
-.square-card .sniper .s-rounds i { width: 6px; height: 14px; background: #e5484d; }
-.square-card .sniper .s-rounds i[data-spent] { background: none; outline: 1px solid rgba(229, 72, 77, 0.4); outline-offset: -1px; }
-.square-card .sniper .decay { height: 6px; background: rgba(229, 72, 77, 0.12); border-color: rgba(229, 72, 77, 0.4); }
-.square-card .sniper .decay > span { background: #e5484d; }
-@media (prefers-reduced-motion: reduce) { .square-card .sniper, .square-card .sniper[data-leaving] { animation: none; } }
+:is(.square-card, .strike-alert) .sniper { display: grid; grid-template-columns: 120px 1fr; column-gap: 12px; padding: 8px 10px; background: var(--bg); border-bottom: 1px solid #e5484d; animation: sniper-in 200ms ease-out; }
+:is(.square-card, .strike-alert) .sniper[data-leaving] { animation: sniper-out 600ms ease-in forwards; }
+:is(.square-card, .strike-alert) .sniper h3 { grid-column: 1 / -1; display: flex; justify-content: space-between; margin: 0 0 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: #e5484d; }
+:is(.square-card, .strike-alert) .sniper h3 .where { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; }
+:is(.square-card, .strike-alert) .sniper .s-model { position: relative; display: grid; place-items: center; height: 56px; }
+:is(.square-card, .strike-alert) .sniper .s-model > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+:is(.square-card, .strike-alert) .sniper .s-mark { width: 90%; fill: none; stroke: var(--accent); stroke-width: 1.5; }
+:is(.square-card, .strike-alert) .sniper .s-read { display: grid; align-content: center; gap: 4px; }
+:is(.square-card, .strike-alert) .sniper .s-read b { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
+:is(.square-card, .strike-alert) .sniper[data-state='firing'] .s-read b { color: #e5484d; }
+:is(.square-card, .strike-alert) .sniper .s-rounds { display: flex; gap: 3px; }
+:is(.square-card, .strike-alert) .sniper .s-rounds i { width: 6px; height: 14px; background: #e5484d; }
+:is(.square-card, .strike-alert) .sniper .s-rounds i[data-spent] { background: none; outline: 1px solid rgba(229, 72, 77, 0.4); outline-offset: -1px; }
+:is(.square-card, .strike-alert) .sniper .decay { height: 6px; background: rgba(229, 72, 77, 0.12); border-color: rgba(229, 72, 77, 0.4); }
+:is(.square-card, .strike-alert) .sniper .decay > span { background: #e5484d; }
+@media (prefers-reduced-motion: reduce) { :is(.square-card, .strike-alert) .sniper, :is(.square-card, .strike-alert) .sniper[data-leaving] { animation: none; } }
 
 /* ALPHA's box (ILI-1255, ILI-1256): on TEAM's right end, always up; on a fold or phone over
    TEAM in its tab. On a call the whole box opens the ask. */
@@ -1884,8 +1884,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .sc-strike .sf-head b { color: #f08a8d; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px; }
 .sc-strike .sf-head span { color: var(--dim); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
 .sc-strike .sf-head .x { margin-left: auto; font: inherit; color: var(--dim); background: none; border: 0; cursor: pointer; min-height: 0; padding: 0 4px; }
-.sc-strike .sf-budget { display: flex; justify-content: space-between; align-items: baseline; margin: 0; padding: 8px 10px 0; color: var(--ink); }
-.sc-strike .sf-budget small { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
 .sc-strike .sc-marked { margin: 6px 10px 0; font-size: 11px; color: #f08a8d; }
 .sc-strike :is(button) { font: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); background: none; border: 1px solid var(--accent); cursor: pointer; }
 .sc-strike .sc-event { padding: 6px 10px 10px; border-top: 1px solid var(--line); border-left: 3px solid #e5484d; margin-top: 6px; }
@@ -2313,8 +2311,51 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .strike-alert .sa-band small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #f08a8d; }
 .strike-alert .sa-body { display: grid; grid-template-columns: minmax(0, 1fr); animation: alert-open 200ms cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: top; }
 @keyframes alert-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
-.strike-alert .sc-strike .sf-contact { margin: 0; padding: 6px 10px 0; font-size: 10px; color: #f08a8d; }
-.strike-alert .sc-strike .sf-head b { font-size: 11px; }
 @media (prefers-reduced-motion: reduce) { .strike-alert .sa-body { animation: none; } }
+/* The strike panel as a HUD unit (ILI-1525): all Fira Mono at HUD sizes, tight rows, no empty
+   bands, a few words. Band: ALERT and its line. Header: the square, the fighters marked, the
+   budget on the right. Tags: how fresh the look is, and what's known of the target (FORTIFIED).
+   Then one compact row of weapons: icon, name, price or why not. Under way: callsign, square,
+   the countdown and its bar. */
+.strike-alert { font-family: 'Fira Mono', 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.strike-alert .sa-band { min-height: 20px; gap: 6px; }
+.strike-alert .sa-band b { font-size: 10px; letter-spacing: 0.14em; }
+.strike-alert .sa-band small { font-size: 10px; letter-spacing: 0.04em; }
+.strike-alert[data-open] .sa-hazard { flex-basis: 24px; }
+.strike-alert .sc-strike .sf-head { display: flex; align-items: baseline; gap: 6px; padding: 4px 6px; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; border-bottom: 1px solid rgba(229, 72, 77, 0.35); }
+.strike-alert .sc-strike .sf-sq { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; color: #f08a8d; }
+.strike-alert .sc-strike .sf-cash { margin-left: auto; font-size: 10px; letter-spacing: 0.04em; color: var(--accent); }
+.strike-alert .sc-target { padding: 4px 6px 6px; }
+.strike-alert .sc-target + .sc-target { border-top: 1px solid var(--line); }
+.strike-alert .target-menu { gap: 4px; }
+.strike-alert .target-menu .tm-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; }
+.strike-alert .target-menu .tm-title { color: var(--ink); }
+.strike-alert .target-menu .tm-tag { padding: 0 4px; line-height: 14px; border: 1px solid currentColor; color: var(--ink); }
+.strike-alert .target-menu .tm-tag[data-level='live'] { color: var(--accent); }
+.strike-alert .target-menu .tm-tag[data-level='ghost'], .strike-alert .target-menu .tm-tag[data-level='note'] { color: #f2c14e; }
+.strike-alert .target-menu .tm-tag:is([data-level='stale'], [data-level='none']) { color: #f08a8d; }
+.strike-alert .sc-strike .target-menu .options { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; margin: 0; }
+.strike-alert .sc-strike .target-menu .options button { display: grid; grid-template-columns: 26px minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 4px; row-gap: 0; justify-items: start; align-items: center; min-height: 0; padding: 3px 4px; font-size: 10px; line-height: 1.15; letter-spacing: 0.04em; text-transform: uppercase; text-align: left; }
+.strike-alert .sc-strike .target-menu .options button .w-icon { grid-row: 1 / 3; width: 26px; height: 20px; }
+.strike-alert .sc-strike .target-menu .options button > span { font-weight: 700; color: var(--ink); }
+.strike-alert .sc-strike .target-menu .options button small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; color: var(--accent); }
+.strike-alert .sc-strike .target-menu .options button:disabled small { color: #f08a8d; }
+.strike-alert .air { display: grid; grid-template-columns: 44px minmax(0, 1fr); grid-template-areas: 'm h' 'm c'; column-gap: 6px; row-gap: 2px; align-items: center; padding: 4px 6px; border-bottom: 1px solid rgba(229, 72, 77, 0.35); }
+.strike-alert .air h2 { grid-area: h; display: flex; justify-content: space-between; margin: 0; font-size: 10px; letter-spacing: 0.06em; }
+.strike-alert .air .d-model { grid-area: m; height: 26px; }
+.strike-alert .air :is(.d-clock, .d-log) { grid-area: c; }
+.strike-alert .air .d-clock { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 6px; }
+.strike-alert .air .d-clock small { font-size: 9px; letter-spacing: 0.06em; }
+.strike-alert .air .d-clock b { font-size: 12px; line-height: 1.1; }
+.strike-alert .air .d-clock .decay { grid-column: 1 / -1; height: 3px; }
+.strike-alert .air .d-log { font-size: 10px; letter-spacing: 0.04em; }
+.strike-alert .air .d-log .d-all { margin-top: 1px; }
+.strike-alert .sniper { grid-template-columns: 44px minmax(0, 1fr); column-gap: 6px; padding: 4px 6px; border-bottom: 1px solid rgba(229, 72, 77, 0.35); }
+.strike-alert .sniper h3 { margin: 0 0 2px; font-size: 10px; letter-spacing: 0.06em; }
+.strike-alert .sniper .s-model { height: 26px; }
+.strike-alert .sniper .s-read { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; }
+.strike-alert .sniper .s-read b { font-size: 10px; letter-spacing: 0.06em; }
+.strike-alert .sniper .s-rounds i { width: 4px; height: 9px; }
+.strike-alert .sniper .decay { flex: 1 0 100%; height: 3px; }
 /* The intel list's contact is a plain line now (ILI-1524): no button look. */
 .square-card .sc-contact { grid-template-columns: minmax(0, 1fr); cursor: default; }

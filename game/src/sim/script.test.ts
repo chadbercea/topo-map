@@ -61,9 +61,9 @@ describe('the checkpoint', () => {
     expect(BLACK_BOX.route).toContain('E3');
   });
 
-  it('once found, its target menu says to soften it with ordnance first (no radio card)', () => {
+  it('once found, its target menu tags it fortified (no radio card)', () => {
     const s = step(reveal({ ...walking(), contacts: BLACK_BOX.contacts() }, ['E3'], 'ORION-3'), 100);
-    expect(s.contacts.find((c) => c.id === 'checkpoint')?.note).toMatch(/Soften it with ordnance first/);
+    expect(s.contacts.find((c) => c.id === 'checkpoint')?.note).toBe('Fortified');
     expect(s.comms.messages.some((m) => m.id === 'checkpoint-brief')).toBe(false);
   });
 
