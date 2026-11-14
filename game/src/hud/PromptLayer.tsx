@@ -3,6 +3,7 @@ import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { promptQueue } from '../sim/prompts';
 import { searchingIn } from '../sim/buildings';
+import { exfilLocked } from '../sim/mission';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { countdown } from '../sim/gameTime';
@@ -237,9 +238,9 @@ export function BuildingTag({ id }: { id: string }) {
       ) : (
         <>
           {unable && <em data-testid="building-status">{unable}</em>}
-          <button onClick={() => game.postBuilding(e.square)} title={`Post what HQ knows of the building for ${who} to pull`} data-testid="post-building">
+          {exfilLocked(s) ? <em data-testid="building-status">Exfil · no search</em> : <button onClick={() => game.postBuilding(e.square)} title={`Post what HQ knows of the building for ${who} to pull`} data-testid="post-building">
             Post intel
-          </button>
+          </button>}
         </>
       )}
     </div>

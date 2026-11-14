@@ -7,6 +7,7 @@ import { LOADOUT } from './team';
 import type { System } from './systems';
 import { neighbours, odds, TAKE_AT } from './contacts';
 import { knownTo } from './picture';
+import { exfilLocked } from './mission';
 
 // Buildings (ILI-1316): the hunt. A photo of empty ground sometimes turns up a building worth a
 // search: RNG by square, seeded, so a mission replays. It pings on the map; HQ decides whether
@@ -122,6 +123,7 @@ export function sendToSearch(s: GameState, square: SquareId): GameState {
 // Analyze's package. Once ALPHA has pulled it, ALPHA says whether it can get there, and goes if it
 // can. HQ can post again after ALPHA couldn't, once the ground has changed.
 export function postBuilding(s: GameState, square: SquareId): GameState {
+  if (exfilLocked(s)) return s; // ILI-1545
   const e = s.events.find((x) => x.id === buildingId(square) && x.status !== 'resolved');
   if (!e || s.searching.includes(square)) return s;
   if (e.tasked && !e.reach) return s; // on the shelf, or ALPHA's still weighing it
