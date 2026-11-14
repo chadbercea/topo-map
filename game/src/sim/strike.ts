@@ -35,9 +35,10 @@ export function strikeState(s: GameState, square: string) {
 // ALPHA and hasn't dealt with them yet, and every square a strike is still working. The ALERT is a
 // button on the square's bottom edge; it never opens on its own.
 export function alertSquares(s: GameState): string[] {
+  const fight = s.team.fight?.square; // ALPHA in contact raises one on its fight, scanned or not (ILI-1524, ILI-1535)
   const found = shownEvents(s).filter((e) => strikeable(e) && e.status !== 'resolved').map((e) => e.square);
   const hit = [s.sniper, s.drone, s.heli].filter((r) => !!r).map((r) => r!.square).filter((sq) => strikeRunning(s, sq));
-  return [...new Set([...found, ...hit])];
+  return [...new Set([...(fight ? [fight] : []), ...found, ...hit])];
 }
 
 // Why a weapon can't hit this contact now, in a few words for its button, or null if it can
@@ -50,6 +51,11 @@ export function strikeBlocked(s: GameState, w: Weapon, c: Contact): string | nul
   if (own) return own;
   const square = s.events.find((e) => e.id === `contact-${c.id}`)?.square ?? c.square;
   if (strikeRunning(s, square)) return 'Strike under way';
-  if (!lockedOn(s, square)) return `${satName(s)} not over ${square}`;
+  if (!lockedOn(s, square) && !painting(s, w, c)) return `${satName(s)} not over ${square}`;
   return weaponBlocked(s, w, c);
 }
+
+// ALPHA in contact paints its target (ILI-1524, Chad 11-14): the drone can go in on that alone,
+// without ORION-3 over the square or imagery of it. Only the drone, at its normal one use; the
+// other weapons still need ORION-3.
+export const painting = (s: GameState, w: Weapon, c: Contact) => w === 'drone' && s.team.fight?.contactId === c.id;

@@ -6,6 +6,7 @@ import { allPrompts } from './prompts';
 import { cancelLook, capture, closeLook, lockedOn, lookAt, lookSquare, scan, slewMs, type CaptureMode } from './satellite';
 import { abortMiniGame } from './minigame';
 import { launch } from './air';
+import { painting } from './strike';
 import { callSniper } from './sniper';
 import { unlock, unlockedWeapons, weaponBlocked, type Weapon } from './ordnance';
 import { perCall } from './upgrades';
@@ -115,7 +116,7 @@ export function createStore(initial: GameState = initialState()) {
       const c = state.contacts.find((x) => x.id === contactId);
       if (!c || weaponBlocked(state, weapon, c)) return;
       const at = eventSquare(state, `contact-${contactId}`) ?? c.square;
-      if (!lockedOn(state, at)) return; // the satellite is locked on its square first (ILI-1397)
+      if (!lockedOn(state, at) && !painting(state, weapon, c)) return; // the satellite is locked on its square first (ILI-1397), unless ALPHA paints it for the drone (ILI-1524)
       // No mini games: the support does it itself (ILI-1252, ILI-1253, ILI-1254).
       // Every call that goes out costs (ILI-1316), into the red if need be.
       const called = weapon === 'sniper' ? callSniper(state, contactId) : launch(state, weapon, contactId);
