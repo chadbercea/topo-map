@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { BANNED } from './banned';
 import { Site } from './Site';
-import { DIVISIONS } from './content';
+import { ABOUT, CAPABILITIES, DIVISIONS } from './content';
 import head from '../../castle-house/index.html?raw';
 
 // Castle House's site stays in its own world (ILI-1336, ILI-1480): the page as rendered, its
@@ -26,6 +26,20 @@ describe("Castle House's site", () => {
     for (const id of ['about', 'capabilities', 'divisions', 'selection', 'compensation', 'apply']) expect(markup).toContain(`id="${id}"`);
     const roles = DIVISIONS.items.reduce((n, d) => n + d.roles.length, 0);
     expect(markup.match(/data-testid="posting"/g)).toHaveLength(roles);
+  });
+
+  // A brochure (ILI-1526): mostly pictures. Every section is carried by a framed model, and the
+  // words stay short: a headline and a line or two each.
+  it('is mostly pictures, with a headline and a line per section', () => {
+    expect(markup.match(/data-testid="stage"/g)!.length).toBeGreaterThanOrEqual(12);
+    for (const id of ['about', 'capabilities', 'divisions', 'selection', 'compensation', 'apply']) {
+      const section = markup.slice(markup.indexOf(`id="${id}"`));
+      expect(section.slice(0, section.indexOf('</section>')), id).toContain('data-testid="stage"');
+    }
+    const words = text.split(/\s+/).filter(Boolean).length;
+    expect(words).toBeLessThan(450);
+    for (const c of CAPABILITIES.items) expect(c.text.length, c.code).toBeLessThanOrEqual(90);
+    expect(ABOUT.lede.length).toBeLessThanOrEqual(110);
   });
 
   it('every apply link begins selection at the terminal', () => {

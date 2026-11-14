@@ -1,45 +1,41 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { WireAvatar } from '../hud/OrionAvatar';
-import { ABOUT, APPLY, CAPABILITIES, DIVISIONS, FOOTER, HERO, NAV, PAY, SELECTION, STANDARDS, type SceneKey } from './content';
+import { useEffect, useRef, useState } from 'react';
+import { ABOUT, APPLY, CAPABILITIES, DIVISIONS, FOOTER, HERO, NAV, PAY, SELECTION, STANDARDS, type Shot } from './content';
 
-// Castle House's recruitment site, rebuilt (ILI-1480). Castle House's own website, written as if
+// Castle House's recruitment site (ILI-1480), rebuilt as a mobile-first brochure (ILI-1526):
+// mostly pictures, a headline and a line per section. Castle House's own website, written as if
 // it were real: it recruits the visitor as a contractor. The hero is the war room's title screen
-// (the sharp rook, the globe and satellites blurred behind, the name and a row of terminal
-// options at the foot). Below it, six sections, each its own layout: a dossier, a capability
-// console, a division board, a selection funnel, a pay ledger with the issued kit, and a terminal
-// close. The copy is all in content.ts. Every wireframe mounts only once it's near the screen.
+// (the rook, the globe behind), and the page slides up over it. Every section below is carried
+// by one of the line-drawn models, framed tight and cinematic, that turns and dollies as you
+// scroll (studio.ts: one shared renderer, only on-screen stages drawn). Text rises into place as
+// it scrolls in. Nothing depends on hover. The copy is all in content.ts.
 
 const APPLY_HREF = '../'; // selection starts at Castle House's secure terminal
 
-type Load = () => Promise<{ mount: (...a: never[]) => unknown }>;
-const SCENES: Record<SceneKey, Load> = {
-  satellite: () => import('../hud/orionScene'),
-  uav: () => import('../hud/droneScene'),
-  rotary: () => import('../hud/heliScene'),
-  airlift: () => import('../hud/transportScene'),
-  rifle: () => import('../hud/m4Scene'),
-  medical: () => import('../hud/ifakScene'),
-  comms: () => import('../hud/terminalScene'),
-  nav: () => import('../hud/mapScene'),
-};
-
-// The rook and the globe, live: the title screen's two canvases (castleScene).
+// The rook and the globe, live: the title screen's two canvases (castleScene). Parked once the
+// page has covered it.
 function Hero3D() {
   const back = useRef<HTMLDivElement>(null);
   const front = useRef<HTMLDivElement>(null);
   const [flat, setFlat] = useState(false);
   useEffect(() => {
-    let stop: (() => void) | undefined;
+    let castle: { stop(): void; hold(on: boolean): void } | null = null;
     let dead = false;
+    let held = false;
+    const watch = () => {
+      const on = scrollY >= innerHeight;
+      if (castle && on !== held) castle.hold((held = on));
+    };
     import('../hud/castleScene').then(({ mountCastle }) => {
       if (dead || !back.current || !front.current) return;
-      const castle = mountCastle(back.current, front.current, () => {}, navigator.webdriver === true);
+      castle = mountCastle(back.current, front.current, () => {}, navigator.webdriver === true);
       if (!castle) setFlat(true);
-      stop = castle?.stop;
+      watch();
     });
+    addEventListener('scroll', watch, { passive: true });
     return () => {
       dead = true;
-      stop?.();
+      removeEventListener('scroll', watch);
+      castle?.stop();
     };
   }, []);
   return (
@@ -78,71 +74,54 @@ function Brackets() {
   );
 }
 
-// Mounts its children once it's near the screen: a page of WebGL at once is heavy.
-function useSeen<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [seen, setSeen] = useState(false);
+// A framed model: a box the studio draws its shot into, moved by the scroll. Three.js loads with
+// the first stage near the screen.
+function Stage({ shot, label, className = '' }: { shot: Shot; label?: string; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && setSeen(true), { rootMargin: '200px' });
-    io.observe(el);
+    const host = ref.current;
+    if (!host) return;
+    let dead = false;
+    let stop = () => {};
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (!e.isIntersecting) return;
+        io.disconnect();
+        import('./studio')
+          .then(({ stage }) => {
+            if (!dead) stop = stage(host, shot);
+          })
+          .catch(() => {});
+      },
+      { rootMargin: '50% 0px' },
+    );
+    io.observe(host);
+    return () => {
+      dead = true;
+      io.disconnect();
+      stop();
+    };
+  }, [shot]);
+  return <div ref={ref} className={`ch-stage ${className}`} data-testid="stage" {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true })} />;
+}
+
+// Text rises into place as it scrolls in (a class, set once; the browser animates it).
+function useReveal(root: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const els = root.current?.querySelectorAll<HTMLElement>('[data-reveal]');
+    if (!els?.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) (e.target.classList.add('is-in'), io.unobserve(e.target));
+      },
+      { rootMargin: '0px 0px -12% 0px' },
+    );
+    els.forEach((el) => io.observe(el));
     return () => io.disconnect();
-  }, []);
-  return [ref, seen] as const;
+  }, [root]);
 }
 
-// A live wireframe from the design system, in its bracketed frame.
-function Wire({ scene, state, label, className = '' }: { scene: SceneKey; state: string; label: string; className?: string }) {
-  const [ref, seen] = useSeen<HTMLDivElement>();
-  return (
-    <div ref={ref} className={`ch-wire ${className}`} data-testid="wire" role="img" aria-label={label}>
-      {seen && <WireAvatar key={scene} state={state} fallback={<span className="ch-wire-wait" />} load={SCENES[scene] as never} className="ch-wire-3d" />}
-      <Brackets />
-    </div>
-  );
-}
-
-function Stamp({ children }: { children: ReactNode }) {
-  return <p className="ch-stamp">{children}</p>;
-}
-
-// HUD readouts: a small label over a value.
-function Readouts({ items, className = 'ch-read' }: { items: [string, string][]; className?: string }) {
-  return (
-    <dl className={className}>
-      {items.map(([k, v]) => (
-        <div key={k}>
-          <dt>{k}</dt>
-          <dd>{v}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-// The ground the map draws, as a backdrop: faint contours and the grid.
-function Contours() {
-  const rings = [
-    [22, 40, 1], [24, 42, 0.8], [62, 58, 1.2], [64, 60, 1], [80, 30, 0.9], [44, 72, 0.7],
-  ];
-  return (
-    <svg className="ch-bg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-      <defs>
-        <pattern id="ch-grid" width="10" height="10" patternUnits="userSpaceOnUse">
-          <path d="M10 0H0V10" fill="none" stroke="rgba(53,208,165,0.14)" strokeWidth="0.15" />
-        </pattern>
-      </defs>
-      <rect width="100" height="100" fill="url(#ch-grid)" />
-      {rings.map(([x, y, s], i) =>
-        [0, 1, 2, 3].map((k) => <ellipse key={`${i}-${k}`} cx={x} cy={y} rx={(5 + k * 4) * s} ry={(3 + k * 2.6) * s} fill="none" stroke="rgba(53,208,165,0.12)" strokeWidth="0.15" />),
-      )}
-    </svg>
-  );
-}
-
-// The hero: the title screen. The rook sharp, the globe blurred behind, the name and a row of
-// terminal options at the foot. Fixed; the page slides up over it.
+// The hero: the title screen. Fixed; the page slides up over it.
 function Hero() {
   return (
     <div className="ch-intro" data-testid="intro-hero">
@@ -153,7 +132,7 @@ function Hero() {
         <nav className="ch-menu" aria-label="Castle House">
           <Apply className="ch-menu-go" />
           <a href="#divisions">Divisions</a>
-          <a href="#compensation">Compensation</a>
+          <a href="#compensation">Pay</a>
         </nav>
         <p className="ch-status">
           {HERO.status}
@@ -167,54 +146,22 @@ function Hero() {
   );
 }
 
-// What we do: a console. Pick a capability on the left; its wireframe and spec sheet fill the
-// screen on the right. One scene at a time.
-function Capabilities() {
-  const [at, setAt] = useState(0);
-  const c = CAPABILITIES.items[at];
-  return (
-    <section className="ch-sec ch-caps" id="capabilities">
-      <Stamp>{CAPABILITIES.stamp}</Stamp>
-      <h2>{CAPABILITIES.title}</h2>
-      <div className="ch-console">
-        <div className="ch-tabs" role="tablist" aria-label={CAPABILITIES.stamp}>
-          {CAPABILITIES.items.map((x, i) => (
-            <button key={x.code} role="tab" aria-selected={i === at} onClick={() => setAt(i)} data-testid="capability">
-              <span className="ch-code">{x.code}</span>
-              <b>{x.title}</b>
-            </button>
-          ))}
-        </div>
-        <article className="ch-spec" role="tabpanel" aria-label={c.title}>
-          <Wire scene={c.scene} state={c.state} label={c.title} className="ch-spec-wire" />
-          <div className="ch-spec-body">
-            <span className="ch-code">
-              {c.code} · {String(at + 1).padStart(2, '0')} / {String(CAPABILITIES.items.length).padStart(2, '0')}
-            </span>
-            <h3>{c.title}</h3>
-            <p>{c.text}</p>
-            <ul>
-              {c.points.map((p) => (
-                <li key={p}>{p}</li>
-              ))}
-            </ul>
-            <Readouts items={c.read} />
-          </div>
-        </article>
-      </div>
-    </section>
-  );
-}
-
 export function Site() {
-  // How far the page has covered the hero, 0 to 1.
   const root = useRef<HTMLDivElement>(null);
+  useReveal(root);
+  // How far the page has covered the hero, 0 to 1: written once a frame at most.
   useEffect(() => {
-    const on = () => root.current?.style.setProperty('--cover', String(Math.min(1, scrollY / Math.max(1, innerHeight))));
-    on();
+    let raf = 0;
+    const set = () => {
+      raf = 0;
+      root.current?.style.setProperty('--cover', String(Math.min(1, scrollY / Math.max(1, innerHeight))));
+    };
+    const on = () => void (raf ||= requestAnimationFrame(set));
+    set();
     addEventListener('scroll', on, { passive: true });
     addEventListener('resize', on);
     return () => {
+      cancelAnimationFrame(raf);
       removeEventListener('scroll', on);
       removeEventListener('resize', on);
     };
@@ -239,40 +186,71 @@ export function Site() {
           <Apply className="ch-enlist ch-small">Apply</Apply>
         </header>
 
-        {/* Who we are: the statement beside the company file. */}
+        {/* Who we are: the rotary-wing sweeping through the frame, the statement and three numbers under it. */}
         <section className="ch-sec ch-about" id="about">
-          <Contours />
+          <Stage shot={ABOUT.shot} className="ch-about-art" />
           <div className="ch-about-text">
-            <Stamp>{ABOUT.stamp}</Stamp>
-            <h2 className="ch-shout">
-              {ABOUT.title[0]}
-              <br />
-              <em>{ABOUT.title[1]}</em>
+            <p className="ch-stamp" data-reveal>
+              {ABOUT.stamp}
+            </p>
+            <h2 className="ch-shout" data-reveal>
+              {ABOUT.title[0]} <em>{ABOUT.title[1]}</em>
             </h2>
-            <p className="ch-lede">{ABOUT.lede}</p>
-            <p className="ch-lede ch-lede-ink">{ABOUT.body}</p>
+            <p className="ch-lede" data-reveal>
+              {ABOUT.lede}
+            </p>
+            <dl className="ch-stats" aria-label="Company file">
+              {ABOUT.file.map(([v, k]) => (
+                <div key={k} data-reveal>
+                  <dd>{v}</dd>
+                  <dt>{k}</dt>
+                </div>
+              ))}
+            </dl>
           </div>
-          <aside className="ch-file" aria-label="Company file">
-            <Brackets />
-            <header>
-              <Rook />
-              <span>Company file</span>
-            </header>
-            <Readouts items={ABOUT.file} className="ch-file-list" />
-          </aside>
         </section>
 
-        <Capabilities />
+        {/* What we do: four full-screen plates, each a model framed tight, a headline and a line. */}
+        <section className="ch-caps" id="capabilities">
+          <header className="ch-sec-head">
+            <p className="ch-stamp" data-reveal>
+              {CAPABILITIES.stamp}
+            </p>
+            <h2 data-reveal>{CAPABILITIES.title}</h2>
+          </header>
+          {CAPABILITIES.items.map((c, i) => (
+            <article key={c.code} className="ch-plate" data-testid="capability">
+              <Stage shot={c.shot} label={c.name} className="ch-plate-art" />
+              <div className="ch-plate-text">
+                <span className="ch-code" data-reveal>
+                  {c.code} · {String(i + 1).padStart(2, '0')} / {String(CAPABILITIES.items.length).padStart(2, '0')} · {c.name}
+                </span>
+                <h3 data-reveal>{c.title}</h3>
+                <p data-reveal>{c.text}</p>
+                <dl className="ch-read" data-reveal>
+                  {c.read.map(([k, v]) => (
+                    <div key={k}>
+                      <dt>{k}</dt>
+                      <dd>{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </article>
+          ))}
+        </section>
 
-        {/* Divisions and roles: four columns, each a division's board. */}
+        {/* Divisions: a card each, its model on top, its postings under. Swipe on a phone. */}
         <section className="ch-sec ch-divs" id="divisions">
-          <Stamp>
+          <p className="ch-stamp" data-reveal>
             {DIVISIONS.stamp} · {roles} open postings
-          </Stamp>
-          <h2>{DIVISIONS.title}</h2>
-          <div className="ch-div-grid">
+          </p>
+          <h2 data-reveal>{DIVISIONS.title}</h2>
+          <div className="ch-rail">
             {DIVISIONS.items.map((d) => (
               <article key={d.code} className="ch-div">
+                <Stage shot={d.shot} label={d.name} className="ch-div-art" />
+                <Brackets />
                 <header>
                   <span className="ch-code">{d.code}</span>
                   <h3>{d.name}</h3>
@@ -282,10 +260,8 @@ export function Site() {
                   {d.roles.map((r) => (
                     <li key={r.code}>
                       <a href={APPLY_HREF} data-testid="posting">
-                        <span className="ch-code">{r.code}</span>
                         <b>{r.title}</b>
-                        <span className="ch-post-meta">{r.posting}</span>
-                        <span className="ch-post-need">{r.need}</span>
+                        <span>{r.posting}</span>
                       </a>
                     </li>
                   ))}
@@ -295,106 +271,88 @@ export function Site() {
           </div>
         </section>
 
-        {/* Standards and selection: the code, then the funnel with how many are left at each stage. */}
+        {/* Selection: the compass huge behind, the one number, and the funnel's bars filling in. */}
         <section className="ch-sec ch-selection" id="selection">
-          <Stamp>{SELECTION.stamp}</Stamp>
-          <div className="ch-sel">
-            <div className="ch-std">
-              <h3>{SELECTION.standardsTitle}</h3>
-              <ol>
-                {STANDARDS.map(([t, d], i) => (
-                  <li key={t}>
-                    <i>{String(i + 1).padStart(2, '0')}</i>
-                    <div>
-                      <b>{t}</b>
-                      <p>{d}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-            <div className="ch-funnel">
-              <h2>{SELECTION.title}</h2>
-              <ol>
-                {SELECTION.stages.map((s, i) => (
-                  <li key={s.title}>
-                    <i>{String(i + 1).padStart(2, '0')}</i>
-                    <div>
-                      <b>{s.title}</b>
-                      <p>{s.text}</p>
-                    </div>
-                    <span className="ch-bar" aria-label={`${s.left} in 100 remain`}>
-                      <s style={{ width: `${s.left}%` }} />
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
+          <Stage shot={SELECTION.shot} className="ch-bg-art" />
+          <p className="ch-stamp" data-reveal>
+            {SELECTION.stamp}
+          </p>
+          <h2 className="ch-big" data-reveal>
+            <b>{SELECTION.big}</b>
+            <span>{SELECTION.title}</span>
+          </h2>
+          <ol className="ch-funnel" data-reveal>
+            {SELECTION.stages.map((s, i) => (
+              <li key={s.title} style={{ '--i': i } as React.CSSProperties}>
+                <span>{s.title}</span>
+                <span className="ch-bar" aria-label={`${s.left} in 100 remain`}>
+                  <s style={{ width: `${s.left}%` }} />
+                </span>
+              </li>
+            ))}
+          </ol>
+          <ul className="ch-chips" aria-label="Our standards" data-reveal>
+            {STANDARDS.map((s) => (
+              <li key={s}>{s}</li>
+            ))}
+          </ul>
         </section>
 
-        {/* Compensation: the pay ledger, then the kit every contractor is issued. */}
+        {/* Compensation: the day rates big, four terms, and the kit issued on day one. */}
         <section className="ch-sec ch-pay" id="compensation">
-          <Stamp>{PAY.stamp}</Stamp>
-          <h2>{PAY.title}</h2>
-          <div className="ch-pay-split">
-            <div>
-              <h3 className="ch-sub">{PAY.ratesTitle}</h3>
-              <dl className="ch-rates">
-                {DIVISIONS.items.map((d) => (
-                  <div key={d.code}>
-                    <dt>{d.name}</dt>
-                    <dd>{d.rate}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-            <dl className="ch-ledger">
-              {PAY.terms.map(([k, v]) => (
-                <div key={k}>
-                  <dt>{k}</dt>
-                  <i aria-hidden />
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+          <p className="ch-stamp" data-reveal>
+            {PAY.stamp}
+          </p>
+          <h2 data-reveal>{PAY.title}</h2>
+          <h3 className="ch-sub">{PAY.ratesTitle}</h3>
+          <dl className="ch-rates">
+            {DIVISIONS.items.map((d) => (
+              <div key={d.code} data-reveal>
+                <dt>{d.name}</dt>
+                <dd>{d.rate}</dd>
+              </div>
+            ))}
+          </dl>
+          <dl className="ch-ledger" data-reveal>
+            {PAY.terms.map(([k, v]) => (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
           <h3 className="ch-sub">{PAY.kitTitle}</h3>
           <div className="ch-kit">
             {PAY.kit.map((k) => (
               <figure key={k.label}>
-                <Wire scene={k.scene} state={k.state} label={k.label} />
+                <Stage shot={k.shot} label={k.label} />
+                <Brackets />
                 <figcaption>{k.label}</figcaption>
               </figure>
             ))}
           </div>
         </section>
 
-        {/* Apply: the selection terminal, the way in. */}
+        {/* Apply: the satellite overhead, the line, the terminal, the way in. */}
         <section className="ch-sec ch-close" id="apply">
-          <Contours />
-          <div className="ch-close-text">
-            <Stamp>{APPLY.stamp}</Stamp>
-            <h2 className="ch-shout">
-              {APPLY.title[0]}
-              <br />
-              <em>{APPLY.title[1]}</em>
-            </h2>
-            <p className="ch-lede">{APPLY.lede}</p>
-          </div>
-          <div className="ch-term">
+          <Stage shot={APPLY.shot} className="ch-bg-art ch-close-art" />
+          <p className="ch-stamp" data-reveal>
+            {APPLY.stamp}
+          </p>
+          <h2 className="ch-shout" data-reveal>
+            {APPLY.title[0]} <em>{APPLY.title[1]}</em>
+          </h2>
+          <p className="ch-lede" data-reveal>
+            {APPLY.lede}
+          </p>
+          <div className="ch-term" data-reveal>
             <Brackets />
-            <Rook />
             <ol>
               {APPLY.terminal.map(([k, v]) => (
                 <li key={k}>
                   <span>{k}</span>
-                  {v && (
-                    <>
-                      <i aria-hidden />
-                      <b>{v}</b>
-                    </>
-                  )}
+                  <i aria-hidden />
+                  <b>{v}</b>
                 </li>
               ))}
             </ol>

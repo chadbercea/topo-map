@@ -15,7 +15,7 @@ const curve = (f: (t: number) => [number, number, number], n = 12) => {
   return pts;
 };
 
-const TERMINAL: WireSpec<LinkState> = {
+export const TERMINAL: WireSpec<LinkState> = {
   looks: {
     idle: { color: '--accent', opacity: 0.8, spin: 0.2 },
     incoming: { color: '#ff8a2a', opacity: 1, spin: 0.55 }, // a call waiting: the flag's orange (ILI-1255), quicker

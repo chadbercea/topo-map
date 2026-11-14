@@ -35,29 +35,14 @@ const FPS = 24; // a low frame rate: the map's WebGL canvas is the one that matt
 // their time limits. Players never see this.
 const AUTOMATED = typeof navigator !== 'undefined' && navigator.webdriver === true;
 
-// Builds the scene into `host` and runs it; returns the teardown, or null without WebGL.
-export function mountWire<S extends string>(host: HTMLElement, spec: WireSpec<S>, stateRef: { current: S }, repaint: { current: (() => void) | null }) {
-  let renderer: THREE.WebGLRenderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
-  } catch {
-    return null;
-  }
-  renderer.setClearColor(0x000000, 0); // transparent: the panel's own background shows through
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-  const canvas = renderer.domElement;
-  host.appendChild(canvas);
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(spec.fov, 1.5, 0.1, 50);
-  camera.position.set(...spec.eye);
-  camera.lookAt(...spec.target);
-
+// Builds a spec's model without a renderer: its root group (turned by the spec's roll), the one
+// line material every part shares, and its teardown. mountWire runs one in its own canvas; the
+// Castle House site (ILI-1526) frames several through one shared renderer.
+export function buildWire<S extends string>(spec: WireSpec<S>) {
   const material = new THREE.LineBasicMaterial({ transparent: true });
   const geometries: { dispose(): void }[] = [];
   const root = new THREE.Group();
   root.rotation.z = spec.roll;
-  scene.add(root);
 
   // Every part is edge lines in one material, the HUD's line language.
   const edges: WireKit['edges'] = (g, x = 0, y = 0, z = 0, threshold = 1, parent = root) => {
@@ -76,6 +61,36 @@ export function mountWire<S extends string>(host: HTMLElement, spec: WireSpec<S>
     parent.add(new THREE.LineSegments(g, material));
   };
   spec.build({ root, edges, lines });
+  return {
+    root,
+    material,
+    dispose: () => {
+      for (const g of geometries) g.dispose();
+      material.dispose();
+    },
+  };
+}
+
+// Builds the scene into `host` and runs it; returns the teardown, or null without WebGL.
+export function mountWire<S extends string>(host: HTMLElement, spec: WireSpec<S>, stateRef: { current: S }, repaint: { current: (() => void) | null }) {
+  let renderer: THREE.WebGLRenderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
+  } catch {
+    return null;
+  }
+  renderer.setClearColor(0x000000, 0); // transparent: the panel's own background shows through
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  const canvas = renderer.domElement;
+  host.appendChild(canvas);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(spec.fov, 1.5, 0.1, 50);
+  camera.position.set(...spec.eye);
+  camera.lookAt(...spec.target);
+
+  const { root, material, dispose } = buildWire(spec);
+  scene.add(root);
 
   // Colours come from the HUD's tokens where there's one.
   const css = getComputedStyle(document.documentElement);
@@ -147,8 +162,7 @@ export function mountWire<S extends string>(host: HTMLElement, spec: WireSpec<S>
     seen.disconnect();
     document.removeEventListener('visibilitychange', update);
     still.removeEventListener('change', update);
-    for (const g of geometries) g.dispose();
-    material.dispose();
+    dispose();
     renderer.dispose();
     renderer.forceContextLoss(); // give the context back: the map's canvas needs WebGL more
     canvas.remove();

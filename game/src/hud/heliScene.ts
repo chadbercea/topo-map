@@ -4,7 +4,7 @@ import type { DroneState } from './droneScene';
 
 // HAMMER-2's Three.js scene (ILI-1254): a wireframe attack helicopter for its panel, in the
 // HUD's line language (wireScene), with the same states as the drone's. Loaded lazily.
-const HELI: WireSpec<DroneState> = {
+export const HELI: WireSpec<DroneState> = {
   looks: {
     inbound: { color: '--accent', opacity: 0.9, spin: 0.35 },
     strike: { color: '#e5484d', opacity: 1, spin: 0.9 },

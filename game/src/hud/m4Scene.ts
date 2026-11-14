@@ -30,7 +30,7 @@ const along = (r0: number, r1: number, x0: number, x1: number, sides: number) =>
   return g;
 };
 
-const M4: WireSpec<GearState> = {
+export const M4: WireSpec<GearState> = {
   looks: { on: { color: '--accent', opacity: 0.85, spin: 0.25 } },
   fov: 22,
   eye: [0, 2.2, 9],

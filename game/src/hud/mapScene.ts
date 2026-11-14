@@ -37,7 +37,7 @@ const slab = (pts: number[], w: number, holes: number[][] = []) => {
 const R = 0.6; // the body's radius
 const H = 0.16; // its height
 
-const COMPASS: WireSpec<GearState> = {
+export const COMPASS: WireSpec<GearState> = {
   looks: { on: { color: '--accent', opacity: 0.85, spin: 0.25 } },
   fov: 30,
   eye: [0, 1.6, 3.0],

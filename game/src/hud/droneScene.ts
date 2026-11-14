@@ -5,7 +5,7 @@ import { mountWire, type WireSpec } from './wireScene';
 // line language as ORION-3 and COMMS's backpack (wireScene). Loaded lazily with the panel.
 export type DroneState = 'inbound' | 'strike' | 'done';
 
-const DRONE: WireSpec<DroneState> = {
+export const DRONE: WireSpec<DroneState> = {
   looks: {
     inbound: { color: '--accent', opacity: 0.9, spin: 0.35 },
     strike: { color: '#e5484d', opacity: 1, spin: 0.9 },

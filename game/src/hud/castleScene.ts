@@ -20,7 +20,8 @@ const FOCUS_MS = 900;
 const ROOK_OUT_MS = 320;
 const ease = (k: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, k)), 3);
 
-export type Castle = { stop(): void; focus(): void; lean(x: number, y: number): void };
+// hold(true) parks the loop (the Castle House site, ILI-1526, once its page covers the hero); hold(false) resumes it.
+export type Castle = { stop(): void; focus(): void; lean(x: number, y: number): void; hold(on: boolean): void };
 
 export function mountCastle(back: HTMLElement, front: HTMLElement, onSpots: (p: Spots) => void, still: boolean): Castle | null {
   const renderers: THREE.WebGLRenderer[] = [];
@@ -226,6 +227,9 @@ export function mountCastle(back: HTMLElement, front: HTMLElement, onSpots: (p: 
 
   return {
     focus: () => void (focusAt ??= performance.now()),
+    hold(on) {
+      if (on) { cancelAnimationFrame(raf); raf = 0; } else if (!raf) raf = requestAnimationFrame(frame);
+    },
     lean: (x, y) => void leanTo.set(x, y),
     stop() {
       cancelAnimationFrame(raf);
