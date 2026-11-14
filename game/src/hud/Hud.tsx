@@ -5,6 +5,7 @@ import { MapArea } from './MapArea';
 import { ExfilPanel } from './ExfilPanel';
 import { ResupplyPanel } from './ResupplyPanel';
 import { SquareCard } from './SquareCard';
+import { StrikeAlerts } from './StrikeAlert';
 import { lookSquare } from '../sim/satellite';
 import { useTier, useFold } from './tier';
 import { MissionBar } from './MissionBar';
@@ -161,6 +162,7 @@ export function Hud() {
       </div>
       <MapArea />
       <SquareCard />
+      <StrikeAlerts />
       <PromptLayer />
       <SightingPanels />
       <div className="slot-band">

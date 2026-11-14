@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { WEAPON, WEAPONS, weaponBlocked, type Weapon } from '../sim/ordnance';
+import { WEAPON, WEAPONS, type Weapon } from '../sim/ordnance';
+import { strikeBlocked } from '../sim/strike';
 import { game, useGame } from '../sim/store';
 import { eyesOn, type Eyes } from '../sim/imagery';
 import { gameSpan } from '../sim/gameTime';
@@ -59,7 +60,7 @@ export function TargetMenu({ contactId }: { contactId: string }) {
       {c.status === 'revealed' && (
         <div className="options" aria-label="Strike">
           {WEAPONS.map((w) => {
-            const blocked = weaponBlocked(state, w, c);
+            const blocked = strikeBlocked(state, w, c); // why it can't fire, on the button: never a dead click (ILI-1524)
             return (
               <button key={w} disabled={!!blocked} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`} aria-label={WEAPON[w].name} data-cue={(state.team.waitFor?.square === c.square && !blocked) || undefined /* ALPHA asked for this (ILI-1318) */}>
                 <WeaponIcon w={w} ready={!blocked} />

@@ -1,0 +1,226 @@
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import { bus, EV, getMapRect } from '../game/events';
+import { game, useGame } from '../sim/store';
+import { satName } from '../sim/satellite';
+import { AGE_LABEL, freshness } from '../sim/imagery';
+import { zulu } from '../sim/gameTime';
+import { alertSquares, strikeState } from '../sim/strike';
+import type { GameState } from '../sim/state';
+import { squareBox } from './overlays';
+import { uiScale } from './scale';
+import { useTier } from './tier';
+import { Stages } from './Stages';
+import { TargetMenu } from './TargetMenu';
+import { SniperPanel } from './SniperPanel';
+import { AirPanel } from './AirPanel';
+import { cash } from './MissionBar';
+import { strikeWork } from './PromptLayer';
+
+const STRIKE_W = 264; // the strike panel's width at scale 1
+const MIN_H = 200; // the least room below its square the open panel needs before it rides up
+
+// Strikes aren't intel and they aren't ORION-3 (ILI-1524): a square with fighters that threaten
+// ALPHA gets its own ALERT, a red hazard band on the square's bottom edge. A click focuses the
+// square and opens the band downward into the strike panel: the options, then the asset under way
+// and its time to target. The panel's home is always below its square, right-aligned with it, so
+// it and the square's flyout (always to the right) never cover each other; both float above
+// everything else on the map. Nothing opens on its own: the ALERT is a button the player clicks.
+
+// Which square's strike panel is open: the HUD's own state, not the sim's. A strike clears the
+// open event when it launches, and the panel has to stay up to show the asset.
+let openSquare: string | null = null;
+const subs = new Set<() => void>();
+const setOpen = (sq: string | null) => {
+  if (openSquare === sq) return;
+  openSquare = sq;
+  subs.forEach((f) => f());
+};
+export const closeStrike = () => setOpen(null);
+export const useStrikeOpen = () =>
+  useSyncExternalStore(
+    (f) => (subs.add(f), () => void subs.delete(f)),
+    () => openSquare,
+  );
+
+export function StrikeAlerts() {
+  const s = useGame((x) => x);
+  const open = useStrikeOpen();
+  const [, redraw] = useState(0);
+  useEffect(() => {
+    const again = () => redraw((n) => n + 1);
+    bus.on(EV.camera, again);
+    bus.on(EV.mapRect, again);
+    return () => {
+      bus.off(EV.camera, again);
+      bus.off(EV.mapRect, again);
+    };
+  }, []);
+  const squares = alertSquares(s);
+  // The panel belongs to the focused square: it closes when HQ focuses another one, closes the
+  // square, or the threat there is dealt with.
+  const stale = !!open && (s.map.selected !== open || !squares.includes(open));
+  useEffect(() => {
+    if (stale) closeStrike();
+  }, [stale]);
+  const area = getMapRect();
+  if (!area || s.phase === 'exited') return null;
+  return (
+    <>
+      {squares.map((sq) => (
+        <Alert key={sq} s={s} square={sq} open={open === sq && !stale} area={area} />
+      ))}
+    </>
+  );
+}
+
+type Area = NonNullable<ReturnType<typeof getMapRect>>;
+
+function Alert({ s, square, open, area }: { s: GameState; square: string; open: boolean; area: Area }) {
+  const tier = useTier();
+  const ref = useRef<HTMLElement>(null);
+  const [h, setH] = useState(0);
+  const placed = useRef('');
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const now = el?.offsetHeight ?? 0;
+    if (now && Math.abs(now - h) > 1) setH(now);
+    // Where it ended up, for the prompt to keep clear of.
+    const key = el ? [el.offsetLeft, el.offsetTop, el.offsetWidth, el.offsetHeight].join() : '';
+    if (key !== placed.current) bus.emit(EV.overlays);
+    placed.current = key;
+  });
+  useEffect(() => () => void bus.emit(EV.overlays), []);
+  const sq = squareBox(square);
+  if (!sq) return null;
+  const k = tier === 'wide' ? uiScale() : 1;
+  const st = strikeState(s, square);
+  const work = strikeWork(s, square);
+  const n = st.marked.length;
+  const line = work ?? (n ? `${n} ${n === 1 ? 'fighter' : 'fighters'}` : square);
+  const toggle = () => {
+    if (open) return closeStrike();
+    // Focus the square too: its flyout comes up to the right, the strike panel below.
+    if (st.strikes[0]) game.openEvent(st.strikes[0].id);
+    else if (game.get().map.selected !== square) game.selectSquare(square);
+    setOpen(square);
+  };
+
+  // Its home (ILI-1524): hanging off the square's bottom edge, right-aligned with the square, so the
+  // flyout to the square's right never meets it. Closed, the square's width; open, the panel's.
+  // Near the map's edge it stays below its square and slides along the edge to stay inside the map.
+  // On a phone the open panel is the strip along the map's foot, where the square's flyout goes.
+  const compact = tier === 'compact';
+  const width = open ? (compact ? area.width - 16 : Math.max(sq.w, STRIKE_W * k)) : Math.max(sq.w, 96 * k);
+  const ht = h || (open ? 240 : 28);
+  let left = sq.x + sq.w - width;
+  let top = sq.y + sq.h;
+  let maxHeight: number | undefined;
+  if (open && compact) {
+    maxHeight = Math.round(area.height * 0.6);
+    left = area.x + 8;
+    top = area.y + area.height - 8 - Math.min(ht, maxHeight);
+  } else {
+    left = Math.max(area.x + 8, Math.min(left, area.x + area.width - 8 - width));
+    if (open) {
+      // It floats above everything, so it may run past the map onto the panels below it, to the
+      // window's foot. Only when even that leaves too little room does it ride up over its square.
+      const foot = window.innerHeight - 8;
+      maxHeight = Math.max(MIN_H, foot - top);
+      top = Math.max(area.y + 8, Math.min(top, foot - maxHeight));
+    } else if (top < area.y || top > area.y + area.height - ht || sq.x + sq.w < area.x || sq.x > area.x + area.width) return null; // its square is off the open map
+  }
+
+  return (
+    <section
+      ref={ref}
+      className="strike-alert"
+      data-testid="strike-alert"
+      data-overlay={open ? 'strike' : 'alert'}
+      data-square={square}
+      data-open={open || undefined}
+      data-tier={tier}
+      style={{ left, top, width, maxHeight, '--k': k } as CSSProperties}
+      role="group"
+      aria-label={`Alert ${square}`}
+    >
+      <button className="sa-band" onClick={toggle} aria-expanded={open} data-testid="alert-button" data-work={work ? true : undefined}>
+        <i className="sa-hazard" aria-hidden />
+        <b>Alert</b>
+        <small data-testid="alert-line">{line}</small>
+        <i className="sa-hazard" aria-hidden />
+      </button>
+      {open && (
+        <div className="sa-body" data-testid="strike-panel">
+          <Stages stage={st.running ? 'asset' : 'options'} order={STAGES}>
+            {st.running ? <StrikeAsset s={s} square={square} /> : <StrikeOptions s={s} square={square} />}
+          </Stages>
+        </div>
+      )}
+    </section>
+  );
+}
+
+const STAGES = ['options', 'asset'] as const;
+
+// The contact the strike is on, in a line: who, how many fighters marked, how fresh the look.
+export function contactLine(s: GameState, square: string) {
+  const st = strikeState(s, square);
+  const look = s.imagery[square];
+  const fresh = look ? freshness(look, s.elapsedMs) : null;
+  const n = st.marked.length;
+  return [
+    [...new Set(st.strikes.map((e) => e.title))].join(', '),
+    n > 0 ? `${n} ${n === 1 ? 'fighter' : 'fighters'} marked` : '',
+    look && fresh ? `${look.mode === 'eyes' ? 'eyes on' : look.mode} ${zulu(look.atMs)} · ${AGE_LABEL[fresh]}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+// The first stage: who's there, the budget, and every way to hit them. A weapon that can't fire
+// says why on its button (ORION-3 not over the square, no eyes on target, rearming), so the panel
+// never clicks dead.
+function StrikeOptions({ s, square }: { s: GameState; square: string }) {
+  const st = strikeState(s, square);
+  return (
+    <section className="sc-strike" data-testid="strike-flyout" data-square={square} aria-label={`Strike ${square}`}>
+      <header className="sf-head">
+        <b>Strike · {square}</b>
+        <span>{st.locked ? `${satName(s)} watching` : `${satName(s)} not over ${square}`}</span>
+      </header>
+      <p className="sf-contact" data-testid="strike-contact">
+        {contactLine(s, square)}
+      </p>
+      <p className="sf-budget">
+        <small>Budget</small>
+        <b>{cash(s.resources.budget)}</b>
+      </p>
+      <section className="sc-strikes" data-testid="strike-menu">
+        {st.strikes.map((e) => (
+          <div key={e.id} className="sc-target" data-testid="strike-target">
+            {st.strikes.length > 1 && <p className="title">{e.title}</p>}
+            <TargetMenu contactId={e.id.slice('contact-'.length)} />
+          </div>
+        ))}
+      </section>
+    </section>
+  );
+}
+
+// The second stage (ILI-1514): the asset HQ picked, its callsign and its wireframe, with its time
+// to target counting down, then what it hit. ORION-3 watches it from its own panel.
+function StrikeAsset({ s, square }: { s: GameState; square: string }) {
+  return (
+    <section className="sc-strike sc-asset" data-testid="strike-asset" aria-label={`Strike ${square}`}>
+      <header className="sf-head">
+        <b>Strike · {square}</b>
+        <span>{satName(s)} watching</span>
+      </header>
+      <div className="sc-running" data-testid="strike-running">
+        <SniperPanel square={square} />
+        <AirPanel weapon="drone" square={square} />
+        <AirPanel weapon="heli" square={square} />
+      </div>
+    </section>
+  );
+}

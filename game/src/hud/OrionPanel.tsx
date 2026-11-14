@@ -20,8 +20,9 @@ const CLOUD_WARN = 70; // cloud cover where ORION-3 could soon be blind (as EnvW
 // looking at a square (ILI-1308). A square HQ picks shows here, its details and Reposition;
 // Reposition tasks ORION-3 (ILI-1250), and it moves with a countdown that runs down to nothing,
 // then, on station, the ways to look (photo, video) take its place; a capture runs its
-// time, and what it saw stays in the picture. What HQ can *do* to the square (its strikes, the
-// sniper, a signal) is in the square's anchor on the map (ILI-1302). The
+// time, and what it saw stays in the picture. What HQ can *do* to the square (a signal, a
+// request) is in the square's anchor on the map (ILI-1302); its strikes are the square's ALERT
+// (ILI-1524). ORION-3 only watches a strike. The
 // picture has a fixed place at the panel's top (ILI-1229): with no square to show it holds a
 // placeholder, where the Three.js satellite goes (ILI-1196). A strike ties it up. Phaser
 // draws the picture into the frame.
@@ -165,18 +166,28 @@ export function OrionPanel() {
               </div>
             )}
             {!hit && square && <PictureOverlay square={square} wx={wx} cloud={cloud} />}
-            {/* The fighters it shows, each a tap away from its strikes (ILI-1250). Phaser draws the
-                dots; these sit on them, in the square's width at the picture's middle. */}
+            {/* What it shows (ILI-1250). Phaser draws the dots; these sit on them, in the square's
+                width at the picture's middle. */}
             <div className="o-targets">
               {/* The square's pings, named on hover like on the map (ILI-1297). The marker sits a
                   quarter in from the square's top right (MapScene.markerPos). */}
-              {pings.map((e) => (
-                <button key={e.id} className="o-ping" data-kind={e.kind} style={{ left: '75%', top: '25%' }} onClick={() => game.openEvent(e.id)} data-testid="orion-ping">
-                  <span>
-                    {e.square} · {e.title}
+              {/* A contact's ping is a mark, not a button (ILI-1524): ORION-3 observes a strike, it
+                  doesn't start one. Strikes are the square's ALERT on the map. */}
+              {pings.map((e) =>
+                e.kind === 'contact' ? (
+                  <span key={e.id} className="o-ping" data-kind={e.kind} style={{ left: '75%', top: '25%' }} data-testid="orion-ping">
+                    <span>
+                      {e.square} · {e.title}
+                    </span>
                   </span>
-                </button>
-              ))}
+                ) : (
+                  <button key={e.id} className="o-ping" data-kind={e.kind} style={{ left: '75%', top: '25%' }} onClick={() => game.openEvent(e.id)} data-testid="orion-ping">
+                    <span>
+                      {e.square} · {e.title}
+                    </span>
+                  </button>
+                ),
+              )}
               {/* Everything bracketed in the square, hoverable and pinnable right here (ILI-1444):
                   ORION-3's picture is where the detail lives. */}
               {square &&
