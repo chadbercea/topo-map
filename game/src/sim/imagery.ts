@@ -123,7 +123,8 @@ export type Eyes = { level: Freshness; units: number[]; atMs: number };
 export function eyesOn(s: GameState, c: Contact): Eyes | null {
   const here = squareAt(s.team.position.x, s.team.position.y);
   const video = s.satellite.state === 'capturing' && s.satellite.mode === 'video' && s.satellite.aim === c.square;
-  if (c.painted || here === c.square || video) return { level: 'live', units: c.units, atMs: s.elapsedMs };
+  // ALPHA in contact with them paints them for HQ (ILI-1524): every fighter, live.
+  if (c.painted || here === c.square || video || s.team.fight?.contactId === c.id) return { level: 'live', units: c.units, atMs: s.elapsedMs };
   let best: { snap: Snapshot; seen: Seen } | null = null;
   for (const snap of Object.values(s.imagery)) {
     const seen = snap.seen.find((x) => x.contactId === c.id);

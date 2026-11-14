@@ -88,8 +88,16 @@ export const firefightSystem: System = (s, dt) => {
       const edge = ambush ? AMBUSH_EDGE * (s.alerted ? ALERT_AMBUSH : 1) : initiative;
       const enemy = ENEMY_STRENGTH * effectiveStrength(contact) * edge;
       const text = ambush ? `Ambush in ${contact.square}! Returning fire.` : `Contact! Engaging in ${contact.square}.`;
+      // ALPHA in contact always puts the fight on the map as a contact (ILI-1524): its square raises
+      // an ALERT, scanned or not, so HQ has something to press.
+      const eid = `contact-${contact.id}`;
+      const live = s.events.find((e) => e.id === eid);
+      const events = !live
+        ? [...s.events, { id: eid, kind: 'contact' as const, square: contact.square, title: contact.label.charAt(0).toUpperCase() + contact.label.slice(1), atMs: s.elapsedMs, status: 'new' as const }]
+        : live.status === 'resolved' || live.square !== contact.square ? s.events.map((e) => (e === live ? { ...e, square: contact.square, status: 'new' as const } : e)) : s.events;
       return {
         ...makeNoise(s, NOISE.firefight),
+        events,
         contacts: ambush || contact.status === 'avoided' ? s.contacts.map((c) => (c === contact ? { ...c, status: 'revealed' as const } : c)) : s.contacts,
         team: {
           ...team,
