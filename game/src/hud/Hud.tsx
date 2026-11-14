@@ -3,6 +3,7 @@ import { DebugPanel } from './DebugPanel';
 import { game, useGame } from '../sim/store';
 import { MapArea } from './MapArea';
 import { ExfilPanel } from './ExfilPanel';
+import { MiniGamePanel } from './MiniGamePanel';
 import { ResupplyPanel } from './ResupplyPanel';
 import { SquareCard } from './SquareCard';
 import { StrikeAlerts } from './StrikeAlert';
@@ -146,6 +147,8 @@ export function Hud() {
       <SightingPanels />
       <div className="slot-band">
         <div className="band-cards" data-overlay="band">
+          {/* The mini game has its own panel here, not in the square's flyout (ILI-1547 call A). */}
+          <MiniGamePanel />
           <ResupplyPanel />
           <ExfilPanel />
         </div>

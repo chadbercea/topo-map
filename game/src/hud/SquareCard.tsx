@@ -2,11 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { uiScale } from './scale';
 import { bus, EV, getMapRect } from '../game/events';
 import { BuildingTag, tagSquares } from './PromptLayer';
-import { game, useGame } from '../sim/store';
+import { useGame } from '../sim/store';
 import { lockedOn, satName } from '../sim/satellite';
-import { trafficPrompts } from '../sim/prompts';
 import { isImageryRequest } from '../sim/imageryRequest';
-import { MiniGamePanel } from './MiniGamePanel';
 import { countdown } from '../sim/gameTime';
 import { EVENT_LABEL } from '../sim/stream';
 import { useTier } from './tier';
@@ -94,13 +92,12 @@ export function SquareCard() {
         data-overlay="actions"
         data-square={square}
         data-side={at.side}
-        data-minigame={playing ? playing.kind : undefined}
         data-locked={locked}
         style={{ left: at.left, top: at.top, width: at.width, maxHeight: at.maxHeight, '--k': k } as CSSProperties}
         role="group"
         aria-label={`Act on ${square}`}
       >
-        {playing ? <MiniGamePanel /> : <AnchorBody s={s} square={square} />}
+        <AnchorBody s={s} square={square} />
       </section>
     </>
   );
@@ -209,9 +206,6 @@ function AnchorBody({ s, square }: { s: GameState; square: string }) {
         <span className="sc-status" data-testid="lock-status">
           {locked ? `${satName(s)} locked on` : coming ? `${satName(s)} on its way · ${countdown(sat.arriveMs - s.elapsedMs)}` : `${satName(s)} over ${sat.aim}`}
         </span>
-        <button className="x" onClick={() => game.closeSquare()} aria-label="Close">
-          ×
-        </button>
       </header>
       {asked && (
         <p className="sc-asked" data-testid="square-asked">
@@ -250,7 +244,7 @@ function Report({ s, square }: { s: GameState; square: string }) {
           <div className="sc-tags" data-testid="docked-tags">
             {buildings.map((e) => (
               <div key={e.id} className="place-tag docked" data-testid="place-tag" data-kind="building" data-square={square}>
-                <BuildingTag id={e.id} />
+                <BuildingTag id={e.id} still />
               </div>
             ))}
           </div>
@@ -355,43 +349,16 @@ function Reports({ s, square }: { s: GameState; square: string }) {
   );
 }
 
-// Radio traffic heard on the square (ILI-1491): a line of its intel list, not a card or a tag of its
-// own. A click on it opens the choice, inline: Listen (an asset gets in range, then the intercept
-// plays here) or Jam. While an asset is on its way, the line says so.
+// Radio traffic heard on the square (ILI-1491): a line of its intel list, status only (ILI-1543).
+// Listen and Jam are the traffic's own prompt on the map (PromptLayer, ILI-1547 call A).
 function TrafficItem({ s, id, square }: { s: GameState; id: string; square: string }) {
-  const listen = trafficPrompts(s).find((p) => p.id === id);
   const going = s.listen?.eventId === id;
-  const open = s.openEvent === id || going;
-  const locked = lockedOn(s, square);
   return (
-    <div className="sc-item sc-traffic" data-kind="signal" data-testid="intel-item" data-event={id} data-focus={s.openEvent === id || undefined}>
-      <button className="sc-item-head" onClick={() => (s.openEvent === id ? game.dropEvent() : game.openEvent(id))} aria-expanded={open} data-testid="traffic-item">
+    <div className="sc-item sc-traffic" data-kind="signal" data-testid="intel-item" data-event={id}>
+      <span className="sc-item-head" data-testid="traffic-item">
         Enemy radio traffic near {square}
-      </button>
-      {open && listen && (
-        <div className="sc-choice" data-testid="traffic-choice">
-          <p className="note" data-testid="traffic-hint">
-            {listen.hint}
-          </p>
-          <div className="options">
-            {listen.responses.map((r) => (
-              <button key={r.id} onClick={() => game.answerPrompt(id, r.id)} disabled={r.disabled} data-response={r.id} data-testid="traffic-listen">
-                {r.label}
-              </button>
-            ))}
-            {!going && (
-              <button
-                onClick={() => game.jam(id)}
-                disabled={!locked}
-                title={locked ? "Slows the enemy, but you won't learn what they're planning" : `${satName(s)} has to be over ${square}`}
-                data-testid="traffic-jam"
-              >
-                Jam
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+        {going && <em> · {satName(s)} on its way to listen</em>}
+      </span>
     </div>
   );
 }

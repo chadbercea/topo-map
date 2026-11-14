@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
-import { promptQueue } from '../sim/prompts';
+import { promptQueue, trafficPrompts } from '../sim/prompts';
+import { lockedOn, satName } from '../sim/satellite';
 import { searchingIn } from '../sim/buildings';
 import { exfilLocked } from '../sim/mission';
 import { AIR, airGone, arrived } from '../sim/air';
@@ -23,6 +24,7 @@ export function PromptLayer() {
   return (
     <>
       <MainPrompt />
+      <TrafficPrompt />
       <PlaceTags />
     </>
   );
@@ -142,6 +144,61 @@ function MainPrompt() {
   );
 }
 
+// Enemy radio traffic's own prompt lane (ILI-1547 call A): out of the one-prompt queue, so nothing
+// knocks it off mid-read (ILI-1452), and out of the square's flyout, which is status only. Pinned
+// to its square: what's heard, Listen (ORION-3 goes; the intercept starts on the lock) and Jam.
+function TrafficPrompt() {
+  const s = useGame((x) => x);
+  const p = trafficPrompts(s)[0];
+  const tier = useTier();
+  const ref = useRef<HTMLElement>(null);
+  const [h, setH] = useState(0);
+  const [, redraw] = useState(0);
+  useEffect(() => {
+    const again = () => redraw((n) => n + 1);
+    bus.on(EV.camera, again);
+    bus.on(EV.mapRect, again);
+    bus.on(EV.overlays, again);
+    return () => {
+      bus.off(EV.camera, again);
+      bus.off(EV.mapRect, again);
+      bus.off(EV.overlays, again);
+    };
+  }, []);
+  useLayoutEffect(() => {
+    const now = ref.current?.offsetHeight ?? 0;
+    if (now && Math.abs(now - h) > 1) setH(now);
+  });
+  const area = getMapRect();
+  if (!p || !area || s.minigame?.status === 'active') return null;
+  const sq = squareBox(p.square);
+  const width = Math.min(W, area.width - 16);
+  const strip = overlaysNamed(['prompt', 'actions', 'strike', 'alert', 'band', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']);
+  const at = place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip]);
+  const going = s.listen?.eventId === p.id;
+  const locked = lockedOn(s, p.square);
+  return (
+    <section ref={ref} className="prompt prompt-traffic" data-testid="traffic-prompt" data-overlay="traffic" data-kind={p.kind} data-square={p.square} data-tier={tier} style={{ left: at.x, top: at.y, width }} role="group" aria-label={p.text}>
+      <p className="prompt-text">
+        <b>{p.square}</b> {p.text}
+      </p>
+      <p className="note" data-testid="traffic-hint">{p.hint}</p>
+      <div className="prompt-responses">
+        {p.responses.map((r) => (
+          <button key={r.id} onClick={() => game.answerPrompt(p.id, r.id)} disabled={r.disabled} data-response={r.id} data-testid="traffic-listen">
+            {r.label}
+          </button>
+        ))}
+        {!going && (
+          <button onClick={() => game.jam(p.id)} disabled={!locked} title={locked ? "Slows the enemy, but you won't learn what they're planning" : `${satName(s)} has to be over ${p.square}`} data-testid="traffic-jam">
+            Jam
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // Above its square, else below, else either side; kept inside the open map and off ALPHA.
 function place(sq: Box | null, area: { x: number; y: number; width: number; height: number }, w: number, h: number, avoid: (Box | null)[]): Box {
   const clampX = (x: number) => Math.max(area.x + 8, Math.min(x, area.x + area.width - 8 - w));
@@ -178,10 +235,9 @@ function PlaceTags() {
   }, []);
   const area = getMapRect();
   if (!area) return null;
-  const docked = s.map.selected;
   const at = (square: string, fy: number) => {
     const sq = squareBox(square);
-    if (!sq || square === docked) return null;
+    if (!sq) return null;
     const p = { left: sq.x + sq.w / 2, top: sq.y + sq.h * fy };
     return p.left < area.x || p.left > area.x + area.width || p.top < area.y || p.top > area.y + area.height ? null : p;
   };
@@ -214,7 +270,7 @@ export function tagSquares(s: GameState) {
 // to pull; then the tag is ALPHA's status on it: waiting on the shelf, downloading, on its way,
 // or unable (ILI-1518), when HQ can post again.
 const UNABLE_TAG = { contact: 'enemy in it', 'cut-off': 'no way round' } as const;
-export function BuildingTag({ id }: { id: string }) {
+export function BuildingTag({ id, still }: { id: string; still?: boolean }) {
   const s = useGame((x) => x);
   const e = s.events.find((x) => x.id === id);
   if (!e) return null;
@@ -238,7 +294,7 @@ export function BuildingTag({ id }: { id: string }) {
       ) : (
         <>
           {unable && <em data-testid="building-status">{unable}</em>}
-          {exfilLocked(s) ? <em data-testid="building-status">Exfil · no search</em> : <button onClick={() => game.postBuilding(e.square)} title={`Post what HQ knows of the building for ${who} to pull`} data-testid="post-building">
+          {still ? null : exfilLocked(s) ? <em data-testid="building-status">Exfil · no search</em> : <button onClick={() => game.postBuilding(e.square)} title={`Post what HQ knows of the building for ${who} to pull`} data-testid="post-building">
             Post intel
           </button>}
         </>
