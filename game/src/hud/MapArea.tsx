@@ -27,7 +27,7 @@ export function MapArea() {
       // The open map ends at the dock (phone), the small widgets' line (fold, tablet) or the
       // bottom row (wide, ILI-1226).
       const fold = document.querySelector('.hud')?.getAttribute('data-layout') === 'fold';
-      const foot = (fold ? orion : t === 'compact' ? tabs : t === 'medium' ? small : bottom)?.getBoundingClientRect().top;
+      const foot = (fold ? bottom : t === 'compact' ? tabs : t === 'medium' ? small : bottom)?.getBoundingClientRect().top;
       // On a phone the small widgets are a row of their own above the map. On a wide screen the
       // mission bar runs across the map's top (ILI-1464): the grid fits below it, so it never
       // covers a marker. On a fold the deadline floats in the map's corner and the grid runs under it.

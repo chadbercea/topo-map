@@ -204,6 +204,7 @@ function TrafficPrompt() {
           </button>
         )}
       </div>
+      {!going && !locked && <small className="note" data-testid="jam-why">Jam needs {satName(s)} over {p.square}</small>}{/* said on screen, not only on hover: touch has no hover (ILI-1556) */}
     </section>
   );
 }

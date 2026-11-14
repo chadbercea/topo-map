@@ -2501,3 +2501,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* ALPHA's heartbeats keep the map's bottom-left on a phone too, picked square or not (ILI-1554). */
 @media (max-width: 699px) { .hud[data-tier='compact'] > .heartbeat-strip { display: flex; grid-area: map; align-self: end; justify-self: start; margin: 0 0 8px 8px; z-index: 5; position: relative; } }
 .hud[data-tier='compact'][data-picked] > .heartbeat-strip { display: flex; }
+
+/* One-pulse holes (ILI-1556): the newest comms card and the sending blink hold steady too while an
+   ALERT or a prompt is up. */
+.hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) :is(.satcom .thread .c-event[data-newest] .c-open, .satcom .thread .sending) { animation: none; }
+/* Only the loudest ALERT flashes (ILI-1556): the others hold steady red. */
+.strike-alert:not([data-open]):not([data-loud]) .sa-band:not([data-work]), .strike-alert:not([data-open]):not([data-loud]) .sa-band:not([data-work]) .sa-hazard { animation: none; }
