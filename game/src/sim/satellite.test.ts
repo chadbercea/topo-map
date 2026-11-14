@@ -32,7 +32,7 @@ describe('ORION-3 tasking', () => {
     const store = atStart();
     store.lookAt('F4');
     onStation(store);
-    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: 'HQ, ORION-3, ON STATION F4.' });
+    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ORION-3', text: 'ORION-3, ON STATION F4.' }); // ALPHA asked for imagery of F4
     store.capture('photo');
     expect(blockers(store.get()).map((b) => b.text)).not.toContain('ORION-3 on station over F4: take the shot');
   });
@@ -217,7 +217,7 @@ describe("the satellite's name", () => {
     expect(satelliteStatus(atlas)).toMatch(/^ATLAS-1 · ON STATION · /);
     const store = createStore(atlas);
     store.lookAt('E3');
-    expect(store.get().comms.messages.at(-1)).toMatchObject({ from: 'ATLAS-1', text: expect.stringMatching(/^HQ, ATLAS-1, slewing to E3/) });
+    expect(store.get().satellite).toMatchObject({ state: 'slewing', aim: 'E3' }); // no slew line: the panel says SLEWING
     const traffic = trafficPrompts(untilTraffic(atlas)).find((p) => p.kind === 'enemy-traffic');
     expect(traffic?.responses[0].label).toMatch(/^Send ATLAS-1 to /);
     expect(JSON.stringify(store.get()).includes('ORION-3')).toBe(false);

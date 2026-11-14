@@ -291,7 +291,7 @@ export function BuildingTag({ id, still }: { id: string; still?: boolean }) {
     : s.searching.includes(e.square)
       ? `${who} on its way`
     : pkg?.state === 'posted'
-      ? `Intel posted · waiting for ${who}`
+      ? 'POSTED'
       : pkg?.state === 'pulling'
         ? `${who} downloading intel`
         : null;

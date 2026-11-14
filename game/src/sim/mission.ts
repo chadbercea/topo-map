@@ -69,7 +69,8 @@ export const missionSystem: System = (s, dt) => {
     return { ...s, mission: { ...mission, recoverUntilMs: mission.recoverUntilMs + dt } };
   }
   if (mission.phase === 'objective' && mission.recoverUntilMs !== null && s.elapsedMs >= mission.recoverUntilMs) {
-    // Half the contract comes out of escrow with the black box (ILI-1316).
+    // Half the contract comes out of escrow with the black box (ILI-1316). The budget shows it:
+    // HQ speaks only to echo a player action (comms standard).
     return {
       ...earn(s, escrow(s, ESCROW_BOX), 'escrow'),
       mission: { ...mission, phase: 'exfil', blackBox: true, recoverUntilMs: null },
@@ -78,7 +79,6 @@ export const missionSystem: System = (s, dt) => {
         messages: [
           ...s.comms.messages,
           radio(s, 'got-black-box', `HQ, ${team.callsign}, black box secured. Moving to exfil at ${mission.c}.`),
-          { ...radio(s, 'escrow-box', `${team.callsign}, HQ, client confirms the black box. $${escrow(s, ESCROW_BOX).toLocaleString('en-US')} out of escrow.`), from: 'HQ' },
         ],
       },
     };

@@ -159,7 +159,7 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
   let next: GameState = { ...s, minigame: { ...m, status: plan ? 'won' : 'lost' } };
   const c = g.contactId ? next.contacts.find((x) => x.id === g.contactId) : undefined;
   const fix = !!c && orionScanned(s, c.square); // a fix on them only on scanned ground (ILI-1493)
-  if (where && fix && c.status === 'hidden') next = reveal(next, [c.square], 'SIGINT');
+  if (where && fix && c.status === 'hidden') next = reveal(next, [c.square]);
   if (plan) {
     // What gets decoded goes on the shelf for ALPHA to pull (ILI-1499); HQ never pushes it.
     next = postDecoded({ ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } }, fix ? c.square : m.square, c?.id, SIGNAL_INTEL);

@@ -42,7 +42,7 @@ describe('firefight', () => {
     const s = step(inContact(), 100);
     expect(s.team.fight).toMatchObject({ contactId: 'c', square: 'E3' });
     expect(s.team.activity).toBe('Engaged in E3');
-    expect(s.comms.messages.at(-1)?.text).toBe('HQ, ALPHA, CONTACT, E3. Engaging.');
+    expect(s.comms.messages.at(-1)?.text).toMatch(/^HQ, ALPHA, CONTACT( [a-z-]+)?, E3\. 2 dismounts\.$/);
   });
 
   it('an attack on a found contact has surprise: the enemy starts at half strength', () => {
@@ -123,7 +123,7 @@ describe('firefight', () => {
     expect(seen).toBe(1);
     const end = run(s, 30_000);
     expect(end.contacts[0].status).toBe('cleared');
-    expect(end.comms.messages.some((m) => /^HQ, ALPHA, E3 clear\..*\+\$20,000\.$/.test(m.text))).toBe(true); // both fighters paid
+    expect(end.comms.messages.some((m) => /^HQ, ALPHA, E3 clear\./.test(m.text) && !m.text.includes('$'))).toBe(true); // paid on the budget, not the radio
   });
 
   it('ends with the contact cleared and a report on the radio', () => {

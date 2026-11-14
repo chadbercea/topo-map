@@ -10,16 +10,17 @@ describe('message kinds (ILI-1171)', () => {
     const s = asking();
     const call = s.comms.messages.find((m) => m.node === 'resupply')!;
     expect(kindOf(call)).toBe('call');
-    const alerted = step({ ...initialState(), noise: 70 }, 100);
-    expect(kindOf(alerted.comms.messages.find((m) => m.id === 'enemy-alerted')!)).toBe('alert');
+    expect(kindOf({ id: 'ambush', from: 'ALPHA', text: 'HQ, ALPHA, CONTACT, ambush, E3. TIC.', atMs: 0, status: 'new', holds: false, alert: true })).toBe('alert');
     expect(kindOf({ id: 'x', from: 'ALPHA', text: 'Moving in hard.', atMs: 0, status: 'read', holds: false })).toBe('log');
   });
 
   it('alerts stay up for a few seconds of mission time, then leave the screen', () => {
-    const s = step({ ...initialState(), noise: 70 }, 100);
-    expect(liveAlerts(s.comms, s.elapsedMs).map((m) => m.id)).toContain('enemy-alerted');
+    const s0 = step(initialState(), 100);
+    const ambush = { id: 'ambush', from: 'ALPHA', text: 'HQ, ALPHA, CONTACT, ambush, E3. TIC.', atMs: s0.elapsedMs, status: 'new' as const, holds: false, alert: true };
+    const s = { ...s0, comms: { ...s0.comms, messages: [...s0.comms.messages, ambush] } };
+    expect(liveAlerts(s.comms, s.elapsedMs).map((m) => m.id)).toContain('ambush');
     const later = run(s, ALERT_MS + 100);
-    expect(liveAlerts(later.comms, later.elapsedMs).map((m) => m.id)).not.toContain('enemy-alerted');
+    expect(liveAlerts(later.comms, later.elapsedMs).map((m) => m.id)).not.toContain('ambush');
   });
 
   it('a whole sharp playthrough opens far fewer cards than it sends messages', () => {

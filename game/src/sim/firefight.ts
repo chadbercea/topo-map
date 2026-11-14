@@ -7,6 +7,19 @@ import { inContact } from './sight';
 import { confirmKills, FRESH_MS, GHOST_MS, type Freshness } from './imagery';
 import { CASH_PER_TEAM_KILL, earn, markSite } from './sites';
 import { ALERT_AMBUSH, makeNoise, NOISE, NOISE_PER_ROUND } from './noise';
+import { squareCenter } from '../map/grid';
+
+// Which way the contact is from ALPHA, for its contact report (" north"): north up, clockwise.
+const POINTS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'];
+function towards(from: { x: number; y: number }, square: string): string {
+  const c = squareCenter(square);
+  if (!c) return '';
+  const dx = c.x - from.x;
+  const dy = c.y - from.y; // world y runs south
+  if (Math.hypot(dx, dy) < 1) return '';
+  const bearing = (Math.atan2(dx, -dy) * 180) / Math.PI;
+  return ` ${POINTS[Math.round((((bearing % 360) + 360) % 360) / 45) % 8]}`;
+}
 
 // Contact resolves on its own (GDD: the player doesn't control the team). Either side seeing the
 // other, or the two meeting, starts a firefight (sight.ts inContact, ILI-1544). What decides it is what ALPHA knew going in
@@ -87,7 +100,7 @@ export const firefightSystem: System = (s, dt) => {
       const initiative = known && team.decisions[contact.square] === 'attack' ? INITIATIVE[intelAge(s, contact.square, known.atMs)] : 1;
       const edge = ambush ? AMBUSH_EDGE * (s.alerted ? ALERT_AMBUSH : 1) : initiative;
       const enemy = ENEMY_STRENGTH * effectiveStrength(contact) * edge;
-      const text = ambush ? `CONTACT, ambush, ${contact.square}. TIC.` : `CONTACT, ${contact.square}. Engaging.`;
+      const text = ambush ? `CONTACT, ambush, ${contact.square}. TIC.` : `CONTACT${towards(team.position, contact.square)}, ${contact.square}. ${contact.units.length} dismount${contact.units.length === 1 ? '' : 's'}.`;
       // ALPHA in contact always puts the fight on the map as a contact (ILI-1524): its square raises
       // an ALERT, scanned or not, so HQ has something to press.
       const eid = `contact-${contact.id}`;
@@ -153,7 +166,7 @@ export const firefightSystem: System = (s, dt) => {
     const after: GameState = cleared ? markSite(earn(s, pay), cleared) : s;
     const text = outOfAmmo && enemy > 0
       ? `out of ammo, breaking contact, ${fight.square}.`
-      : `${fight.square} clear. ${wounded || down ? [wounded ? `${wounded} WIA` : '', down ? `${down} down` : ''].filter(Boolean).join(', ') : 'No casualties'}.${pay ? ` +$${pay.toLocaleString('en-US')}.` : ''}`;
+      : `${fight.square} clear. ${wounded || down ? [wounded ? `${wounded} WIA` : '', down ? `${down} KIA` : ''].filter(Boolean).join(', ') : 'No casualties'}.`; // cash on the budget chip, not the radio
     return {
       ...after,
       rng,

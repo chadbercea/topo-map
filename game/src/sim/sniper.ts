@@ -5,7 +5,7 @@ import type { System } from './systems';
 import { confirmKills, eyesOn, groupOrigin, unitSpot } from './imagery';
 import { makeNoise, NOISE } from './noise';
 import { weaponBlocked } from './ordnance';
-import { CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
+import { addBda, CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
 
 // The sniper (ILI-1253): OVERWATCH, an elite marksman, works on its own. HQ calls it on a
 // square it can see, and for five seconds its crosshairs move from red dot to red dot in
@@ -106,15 +106,11 @@ export const sniperSystem: System = (s) => {
     contacts: next.contacts.map((c) => (gone.has(c.id) ? { ...c, status: 'cleared' as const } : c)),
     events: next.events.map((e) => (e.kind === 'contact' && gone.has(e.id.replace('contact-', '')) ? { ...e, status: 'resolved' as const } : e)),
   };
-  next = earn(next, kills.length * CASH_PER_STRIKE_KILL);
+  next = addBda(earn(next, kills.length * CASH_PER_STRIKE_KILL), r.square, kills.length);
   const left = next.contacts.filter((c) => c.square === r.square && c.status === 'revealed').reduce((n, c) => n + c.units.length, 0);
-  const pay = kills.length ? ` +$${(kills.length * CASH_PER_STRIKE_KILL).toLocaleString('en-US')}.` : '';
-  // Comms standard (ILI-1541): called, then caller; a finished strike reads "clear".
+  // Comms standard (ILI-1541): called, then caller; a finished strike reads "clear". Counts go on
+  // the flyout's BDA line and cash on the budget chip, not the radio.
   const head = `HQ, ${SNIPER_CALLSIGN},`;
-  const text = !fired.length
-    ? `${head} NO JOY ${r.square}.`
-    : left
-      ? `${head} ${r.square}, ${kills.length} down, ${left} remain.${pay}`
-      : `${head} ${r.square} clear. ${kills.length} down.${pay}`;
+  const text = !fired.length ? `${head} NO JOY ${r.square}.` : left ? `${head} ${r.square}, hostiles remain.` : `${head} ${r.square} clear.`;
   return { ...next, sniper: { ...run, done: true }, comms: { ...next.comms, messages: [...next.comms.messages, report(next, r, text)] } };
 };

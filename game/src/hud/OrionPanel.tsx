@@ -45,12 +45,12 @@ export function OrionPanel() {
   const caption = tied
     ? 'Tied up by the intercept'
     : sat.state === 'slewing'
-      ? `Slewing to ${sat.aim}`
+      ? `SLEWING · ${sat.aim}`
       : picked
         ? `No coverage of ${picked} · Reposition`
         : blind
-          ? `On station ${sat.aim} · no coverage of ${blind} ahead`
-          : `On station ${sat.aim} · tap a square to task it`;
+          ? `ON STATION · ${sat.aim} · no coverage of ${blind} ahead`
+          : `ON STATION · ${sat.aim} · tap a square, then Reposition`; // a tap picks, Reposition tasks
   const last = Object.values(s.imagery)
     .filter((x) => x.mode !== 'eyes')
     .sort((a, b) => b.atMs - a.atMs)[0];
@@ -85,12 +85,12 @@ export function OrionPanel() {
   const status = tied
     ? 'Tied up'
     : sat.state === 'slewing'
-      ? 'Slewing'
+      ? 'SLEWING'
       : sat.state === 'capturing'
-        ? 'Collecting · imagery'
+        ? `COLLECTING · ${sat.mode === 'video' ? 'VIDEO' : 'IMAGERY'}`
         : sat.state === 'onStation' || lockedOn(s, sat.aim)
-          ? 'On station'
-          : 'Off station';
+          ? 'ON STATION'
+          : 'OFF STATION';
   const left = Math.max(0, sat.arriveMs - now);
   // The one state line (ILI-1400): status, square and the one countdown, in one row. The cloud
   // warning survives as its colour when everything under it has dropped off.
@@ -246,7 +246,7 @@ export function OrionPanel() {
         <div className="modes" data-testid="capture-modes" data-step={done ? 'send' : 'scan'}>
           <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title={`Image the square: the analysts report what's there and post the package for ${s.team.callsign}`} data-cue={(ready && !busy && !done) || undefined}>
             Analyze {sat.aim}
-            <small>{tied ? 'tied up by the intercept' : done ? (shelved === 'received' ? '✓ intel received' : shelved === 'pulling' ? `${s.team.callsign} downloading` : `intel posted for ${s.team.callsign}`) : ready ? (again ? `re-image, post for ${s.team.callsign}` : `image, report, post for ${s.team.callsign}`) : sat.state === 'slewing' ? 'on its way' : 'lock on first'}</small>
+            <small>{tied ? 'tied up by the intercept' : done ? (shelved === 'received' ? 'Intel received ✓' : shelved === 'pulling' ? `${s.team.callsign} downloading` : `intel posted for ${s.team.callsign}`) : ready ? (again ? `re-image, post for ${s.team.callsign}` : `image, report, post for ${s.team.callsign}`) : sat.state === 'slewing' ? `SLEWING · ${sat.aim} · ${countdown(left)}` : 'lock on first'}</small>
           </button>
           <button disabled={!ready || busy || !analyzed || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title={`Keep the square live on the map while ${name} stays on station`}>
             Video

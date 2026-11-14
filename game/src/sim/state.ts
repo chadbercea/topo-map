@@ -91,6 +91,7 @@ export type GameState = {
   script: { mission: string; fired: string[] }; // the mission script and which triggers have run
   flags: Record<string, boolean>; // choices the mission script reacts to (jammed, ...)
   intel: Intel; // what HQ has analyzed, and how fresh it is: what lets ALPHA move (ILI-1532)
+  bda?: Record<string, number>; // hostiles strikes put down, by square: the flyout's BDA line (comms standard: counts off the radio)
   stats: { searched: number; decoded: number; lost: string[] }; // for the wrap-up; lost: ids of operators who went down
   inbound: Inbound[]; // support on its way
   alerted: boolean; // the enemy knows a PMC is in the area

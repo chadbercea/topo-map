@@ -76,7 +76,7 @@ export function wrapUp(s: GameState): WrapUp {
     ],
     teamWork: [
       { label: 'Contacts found before contact', value: `${found - ambushes} of ${s.contacts.length}` },
-      { label: 'Contacts cleared', value: String(cleared) },
+      { label: 'Contacts destroyed', value: String(cleared) },
       { label: 'Contacts avoided', value: String(avoided) },
       { label: 'Ambushes walked into', value: String(ambushes) },
     ],

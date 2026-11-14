@@ -202,6 +202,6 @@ export const buildingSystem: System = (s0) => {
     searching: paid.searching.filter((sq) => sq !== here),
     stats: { ...paid.stats, searched: paid.stats.searched + 1 },
     events: paid.events.map((e) => (e.id === id ? { ...e, status: 'resolved' as const } : e)),
-    comms: { ...paid.comms, messages: [...paid.comms.messages, radio(s, `found-building-${here}`, `HQ, ${s.team.callsign}, building in ${here} searched: ${find.what}, plus ammo and medical supplies. +$${find.cash.toLocaleString('en-US')}.`)] },
+    comms: { ...paid.comms, messages: [...paid.comms.messages, radio(s, `found-building-${here}`, `HQ, ${s.team.callsign}, building in ${here} searched: ${find.what}, plus ammo and medical supplies.`)] },
   };
 };

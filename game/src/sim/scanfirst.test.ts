@@ -36,7 +36,7 @@ describe('enemies show only once ORION-3 has scanned their square (ILI-1493)', (
   });
 
   it('a found group that walks off into unscanned ground stays where it was last seen on every instrument', () => {
-    let s = reveal(fed(initialState()), ['C2'], 'ORION-3');
+    let s = reveal(fed(initialState()), ['C2']);
     s = moveContact(s, 'patrol', 'D3'); // the truth: it's in D3 now
     const patrol = s.contacts.find((c) => c.id === 'patrol')!;
     expect(knownSquare(s, patrol)).toBe('C2');
