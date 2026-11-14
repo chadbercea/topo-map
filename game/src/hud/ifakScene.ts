@@ -24,7 +24,7 @@ const rounded = (w: number, h: number, r: number) => {
   return s;
 };
 
-const IFAK: WireSpec<GearState> = {
+export const IFAK: WireSpec<GearState> = {
   looks: { on: { color: '--accent', opacity: 0.85, spin: 0.25 } },
   fov: 30,
   eye: [0, 1.1, 4.4],

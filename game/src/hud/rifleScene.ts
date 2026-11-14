@@ -5,7 +5,7 @@ import { mountWire, type WireSpec } from './wireScene';
 // HUD's line language (wireScene). Loaded lazily with the panel.
 export type RifleState = 'aiming' | 'firing' | 'done';
 
-const RIFLE: WireSpec<RifleState> = {
+export const RIFLE: WireSpec<RifleState> = {
   looks: {
     aiming: { color: '--accent', opacity: 0.9, spin: 0.3 },
     firing: { color: '#e5484d', opacity: 1, spin: 0.3 },

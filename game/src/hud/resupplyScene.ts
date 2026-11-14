@@ -13,7 +13,7 @@ const RIM_Y = CANOPY_R * Math.cos(SKIRT);
 const RIM_R = CANOPY_R * Math.sin(SKIRT);
 const BAG = { w: 0.8, h: 0.62, d: 0.8, y: -1.55 };
 
-const DROP: WireSpec<DropState> = {
+export const DROP: WireSpec<DropState> = {
   looks: {
     inbound: { color: '--accent', opacity: 0.9, spin: 0.3 },
     down: { color: '--accent', opacity: 0.65, spin: 0.08 },

@@ -7,7 +7,7 @@ import { mountWire, type WireSpec } from './wireScene';
 // stabilator, wheels instead of skids. Orange, the exfil's colour. Loaded lazily.
 export type TransportState = 'enroute' | 'down' | 'done';
 
-const TRANSPORT: WireSpec<TransportState> = {
+export const TRANSPORT: WireSpec<TransportState> = {
   looks: {
     enroute: { color: '#ff8a2a', opacity: 0.9, spin: 0.35 },
     down: { color: '#ff8a2a', opacity: 1, spin: 0.15 },

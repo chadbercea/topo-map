@@ -6,7 +6,7 @@ import { mountWire, type WireSpec } from './wireScene';
 // The loop, the material and the teardown are shared with COMMS's terminal (wireScene, ILI-1236).
 export type AvatarState = 'idle' | 'slewing' | 'tied';
 
-const ORION: WireSpec<AvatarState> = {
+export const ORION: WireSpec<AvatarState> = {
   // How each state looks and moves: colour token, line opacity, turn speed (radians a second).
   looks: {
     idle: { color: '--accent', opacity: 0.85, spin: 0.22 },
