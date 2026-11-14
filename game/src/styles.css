@@ -1594,7 +1594,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
   .slot-team { position: relative; justify-self: start; }
   .slot-team > .team { background: #0b0f0d; width: max-content; max-width: calc(100vw - 460px); max-height: 40vh; } /* one panel at the bottom left, its own room: the map gives way (ILI-1439) */
 }
-.hud:not([data-tier='wide']) > .heartbeat-strip { grid-area: map; align-self: start; justify-self: start; margin: 86px 0 0 10px; z-index: 5; } /* under the timer; Recentre has the bottom right */
+.hud:not([data-tier='wide']) > .heartbeat-strip { grid-area: map; align-self: end; justify-self: start; margin: 0 0 10px 10px; z-index: 5; } /* the team micro panel is always bottom left (ILI-1538); Recentre has the bottom right */
 .hud[data-tier='compact'][data-picked] > .heartbeat-strip { display: none; } /* the square's menu has the map's foot */
 .op[data-highlight] { outline: 2px solid #f2c14e; outline-offset: -2px; background: rgba(242, 193, 78, 0.08); }
 

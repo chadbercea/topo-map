@@ -136,7 +136,7 @@ export function Hud() {
   };
   // The comms log closes with Esc (which also pauses, ILI-1503) or a click on the map (ILI-1472).
   // ALPHA's table is open by default and stays open while HQ works the map (ILI-1501): only its
-  // own handle folds it.
+  // own handle folds it. Opening the comms log never folds it (ILI-1538).
   useEffect(() => {
     if (tabbed) return;
     const closeLog = () => setLog(false);
@@ -188,7 +188,7 @@ export function Hud() {
           <div className="comms-strip" data-testid="comms-strip">
             <small>Comms</small>
             <CommsLine />
-            <button className="log-toggle" data-overlay="logtoggle" onClick={() => (setLog((o) => !o), setTeamOpen(false))} aria-expanded={log} data-testid="log-toggle" data-update={unseen.satcom || undefined}>
+            <button className="log-toggle" data-overlay="logtoggle" onClick={() => setLog((o) => !o)} aria-expanded={log} data-testid="log-toggle" data-update={unseen.satcom || undefined}>
               Log
               {newComms > 0 && (
                 <>
