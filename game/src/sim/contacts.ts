@@ -8,6 +8,7 @@ import { sendResupply } from './support';
 import { missionDef } from './script';
 import { LOADOUT } from './team';
 import { knownTo } from './picture';
+import { nextRandom } from './firefight';
 import { stale } from './intel';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
@@ -285,3 +286,60 @@ export function neighbours(sq: SquareId): SquareId[] {
   return out;
 }
 
+
+// No dead air (ILI-1565): the ground moves. Every BEAT_MIN_MS to BEAT_MAX_MS of mission time (the
+// mission's dice), one group not in a fight sets off for a square next to it, arriving MOVE_MS later.
+// The square it leaves goes stale for HQ (moveContact); ALPHA still goes by what it was told, so HQ
+// has a reason to look again. If HQ had found the group, the analysts call the movement.
+export const BEAT_MIN_MS = 30_000;
+export const BEAT_MAX_MS = 45_000;
+export const MOVE_MS = 20_000;
+
+export const moveSystem: System = (s) => {
+  let next = s;
+  // Arrivals.
+  for (const c of s.contacts) if (c.move && s.elapsedMs >= c.move.arriveMs) next = moveContact(next, c.id, c.move.to);
+  // The next beat.
+  if (next.beatAtMs === undefined) {
+    const [r, rng] = nextRandom(next.rng);
+    return { ...next, rng, beatAtMs: next.elapsedMs + BEAT_MIN_MS + Math.round(r * (BEAT_MAX_MS - BEAT_MIN_MS)) };
+  }
+  if (next.elapsedMs < next.beatAtMs || next.phase !== 'running') return next;
+  const [r1, rng1] = nextRandom(next.rng);
+  const [r2, rng2] = nextRandom(rng1);
+  const [r3, rng3] = nextRandom(rng2);
+  const beatAtMs = next.elapsedMs + BEAT_MIN_MS + Math.round(r3 * (BEAT_MAX_MS - BEAT_MIN_MS));
+  const here = squareAt(next.team.position.x, next.team.position.y);
+  const taken = new Set(next.contacts.filter(live).map((c) => c.square));
+  const movers = next.contacts.filter((c) => live(c) && !c.move && c.units.length && next.team.fight?.contactId !== c.id && c.square !== here && !isMissionPoint(next, c.square));
+  const options = (c: Contact) =>
+    nextSquares(c.square).filter((sq) => sq !== here && !taken.has(sq) && !isMissionPoint(next, sq));
+  const able = movers.filter((c) => options(c).length);
+  if (!able.length) return { ...next, rng: rng3, beatAtMs };
+  const c = able[Math.floor(r1 * able.length)];
+  const to = options(c)[Math.floor(r2 * options(c).length)];
+  let moved = startMove({ ...next, rng: rng3, beatAtMs }, c.id, to, next.elapsedMs + MOVE_MS);
+  if (c.status === 'revealed') {
+    const line: Message = { id: `move-${c.id}-${next.elapsedMs}`, from: 'Analysts', text: `${c.square} imagery, movement: ${c.units.length} dismounts heading ${heading(c.square, to)}.`, atMs: next.elapsedMs, status: 'new', holds: false };
+    moved = { ...moved, comms: { ...moved.comms, messages: [...moved.comms.messages, line] } };
+  }
+  return moved;
+};
+
+const nextSquares = (sq: SquareId) => {
+  const p = parseSquare(sq);
+  if (!p) return [];
+  const out: SquareId[] = [];
+  for (const [dc, dr] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+    const col = p.col + dc;
+    const row = p.row + dr;
+    if (col >= 0 && col < COLS && row >= 0 && row < ROWS) out.push(squareId(col, row));
+  }
+  return out;
+};
+
+const heading = (from: SquareId, to: SquareId) => {
+  const a = parseSquare(from)!;
+  const b = parseSquare(to)!;
+  return b.row < a.row ? 'north' : b.row > a.row ? 'south' : b.col > a.col ? 'east' : 'west';
+};

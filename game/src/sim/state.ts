@@ -97,6 +97,7 @@ export type GameState = {
   alerted: boolean; // the enemy knows a PMC is in the area
   seed: number; // the mission's seed: its dice (enemy.ts) and where the fight dice start, so a mission replays exactly (ILI-1454)
   rng: number; // chance in fights, kept in state so a mission replays exactly; starts at the seed
+  beatAtMs?: number; // when the next group sets off (ILI-1565)
   settings: Settings; // survives restart
 };
 
