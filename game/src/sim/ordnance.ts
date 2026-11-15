@@ -52,6 +52,10 @@ export function unlockBlocked(s: GameState, w: Weapon): string | null {
   return null;
 }
 
+// Can HQ still put fires on anything this mission: a weapon it has with a use left (rearming
+// counts: it comes back), or one it can buy now. False only when every option is spent or out of reach.
+export const firesLeft = (s: GameState) => WEAPONS.some((w) => (s.ordnance[w].unlocked ? s.ordnance[w].uses !== 0 : !unlockBlocked(s, w)));
+
 export function unlock(s: GameState, w: Weapon): GameState {
   if (unlockBlocked(s, w)) return s;
   const paid = spend(s, UNLOCK[w]);
