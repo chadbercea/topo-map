@@ -64,7 +64,6 @@ export function SightingPanels() {
           className="sighting-panel"
           data-kind={t.kind}
           data-pinned={pin || undefined}
-          data-ghost={t.age === 'ghost' || undefined}
           data-testid={`panel-${t.id}`}
           data-tag={(!pin && from === 'map') || undefined}
           style={{ left: at.x + OFFSET.x, top: at.y + OFFSET.y }}

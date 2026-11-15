@@ -17,9 +17,7 @@ const age = gameSpan;
 export function eyesLine(e: Eyes | null, now: number) {
   if (!e) return 'No coverage. Only the drone can fire blind.';
   if (e.level === 'live') return 'Live feed.';
-  if (e.level === 'fresh') return `Current imagery, ${age(now - e.atMs)} old.`;
-  if (e.level === 'ghost') return `Aging imagery, ${age(now - e.atMs)} old. Shots can miss.`;
-  return `Stale imagery, ${age(now - e.atMs)} old. Analyze again.`;
+  return `Current imagery, ${age(now - e.atMs)} old.`;
 }
 
 // The strike options (ILI-1513, tightened in ILI-1525): a row of tags on what HQ can see of the
@@ -47,8 +45,7 @@ const ago = (ms: number) => age(ms).replace(' min', 'm').replace(' h ', 'h ').re
 export function eyesTag(e: Eyes | null, now: number): { text: string; level: Eyes['level'] | 'none' } {
   if (!e) return { text: 'No cov', level: 'none' };
   if (e.level === 'live') return { text: 'Live', level: 'live' };
-  const word = e.level === 'fresh' ? 'Cur' : e.level === 'ghost' ? 'Aging' : 'Stale';
-  return { text: `${word} ${ago(now - e.atMs)}`, level: e.level };
+  return { text: `Cur ${ago(now - e.atMs)}`, level: e.level };
 }
 
 // Why a weapon can't fire, cut to a button's worth (ILI-1525). The full reason stays on its title.

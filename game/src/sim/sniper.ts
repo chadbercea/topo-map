@@ -40,7 +40,7 @@ function plan(s: GameState, square: SquareId, startMs: number, rounds: number): 
   for (const c of s.contacts) {
     if (c.square !== square || c.status !== 'revealed') continue;
     const eyes = eyesOn(s, c);
-    if (!eyes || eyes.level === 'stale') continue;
+    if (!eyes) continue;
     const o = groupOrigin(c, s.elapsedMs);
     for (const unit of eyes.units) seen.push({ contactId: c.id, unit, ...unitSpot(o, unit), hit: c.units.includes(unit) });
   }

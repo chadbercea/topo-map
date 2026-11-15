@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { initialState, type GameState } from './state';
-import { GHOST_MS } from './imagery';
 import { sightings } from './sightings';
 import { initialSatellite } from './satellite';
 
@@ -21,12 +20,11 @@ describe('sightings', () => {
     expect(ops).toHaveLength(s.team.operators.length);
   });
 
-  it('brackets each fighter on a picture that is not stale, and drops them once it is', () => {
+  it('brackets each fighter on a picture, however old (ILI-1559)', () => {
     const s = pictured(initialState(), 0);
     const fighters = s.contacts[0].units.length;
-    expect(sightings(s, spots(s)).filter((t) => t.kind === 'hostile')).toHaveLength(fighters);
-    const old = { ...s, elapsedMs: GHOST_MS + 1 };
-    expect(sightings(old, spots(old)).filter((t) => t.kind === 'hostile')).toHaveLength(0);
+    const old = { ...s, elapsedMs: 600_000 };
+    expect(sightings(old, spots(old)).filter((t) => t.kind === 'hostile')).toHaveLength(fighters);
   });
 });
 

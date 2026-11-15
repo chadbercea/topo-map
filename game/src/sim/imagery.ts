@@ -30,18 +30,13 @@ export type Snapshot = {
   live: boolean;
 };
 
-export const FRESH_MS = 33_000;
-// A look decays to nothing in DECAY_MS (ILI-1544, Chad: 60 s per ILI-1532): its enemy marks stay
-// frozen where they were seen, fade, and are gone at zero.
-export const DECAY_MS = 60_000;
-export const GHOST_MS = DECAY_MS;
-export type Freshness = 'live' | 'fresh' | 'ghost' | 'stale';
-// What the player reads for a look's age (ILI-1488): ISR terms. A live feed; imagery still current;
-// aging; stale (too old to act on).
-export const AGE_LABEL: Record<Freshness, string> = { live: 'live', fresh: 'current', ghost: 'aging', stale: 'stale' };
+// A look stays good until the group in it moves (ILI-1559): no clock. Live while a feed is on it.
+export type Freshness = 'live' | 'fresh';
+// What the player reads for a look (ILI-1488): ISR terms.
+export const AGE_LABEL: Record<Freshness, string> = { live: 'live', fresh: 'current' };
 
-export const freshness = (snap: Snapshot, now: number): Freshness =>
-  snap.live ? 'live' : now - snap.atMs < FRESH_MS ? 'fresh' : now - snap.atMs < GHOST_MS ? 'ghost' : 'stale';
+export const freshness = (snap: Snapshot, _now?: number): Freshness =>
+  snap.live ? 'live' : 'fresh';
 
 // The enemy's picture of ALPHA: they know once they've been hit or the net is alerted, and
 // they're uneasy once the PMC has been loud.

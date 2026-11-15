@@ -5,10 +5,10 @@ import type { System } from './systems';
 import { pass } from './sites';
 import { isMissionPoint } from './mission';
 import { sendResupply } from './support';
-import { nextRandom } from './firefight';
 import { missionDef } from './script';
 import { LOADOUT } from './team';
 import { knownTo } from './picture';
+import { stale } from './intel';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -58,9 +58,12 @@ export function startMove(s: GameState, id: string, to: SquareId, arriveMs: numb
 }
 
 // A contact arrives in a new square. Its map marker stays where it was last seen: the map
-// only moves it when someone looks (imagery.record).
+// only moves it when someone looks (imagery.record). HQ's intel on the square it left goes stale
+// (ILI-1559: intel is good until the group moves); ALPHA still goes by what it was told.
 export function moveContact(s: GameState, id: string, square: SquareId): GameState {
-  return { ...s, contacts: s.contacts.map((c) => (c.id === id ? { ...c, square, move: undefined } : c)) };
+  const from = s.contacts.find((c) => c.id === id)?.square;
+  const next = { ...s, contacts: s.contacts.map((c) => (c.id === id ? { ...c, square, move: undefined } : c)) };
+  return from && from !== square && next.intel.graded.includes(from) ? stale(next, from) : next;
 }
 
 // How hard it fights: its strength, scaled by the fighters it has left.
@@ -282,34 +285,3 @@ export function neighbours(sq: SquareId): SquareId[] {
   return out;
 }
 
-// Fighters don't stand still (ILI-1168): every DRIFT_MS one fighter in each group moves to
-// a cell next to it, so an old look slowly stops matching. Chance comes from the tick, not
-// the mission's dice, so fights replay the same.
-export const DRIFT_MS = 33_000;
-const CELLS = 4;
-const roll = (seed: number) => nextRandom(seed >>> 0)[0];
-
-const nextTo = (cell: number) => {
-  const r = Math.floor(cell / CELLS);
-  const c = cell % CELLS;
-  const out: number[] = [];
-  for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-    if (r + dr >= 0 && r + dr < CELLS && c + dc >= 0 && c + dc < CELLS) out.push((r + dr) * CELLS + c + dc);
-  }
-  return out;
-};
-
-export const driftSystem: System = (s) => {
-  if (s.tick % (DRIFT_MS / 100) !== 0) return s;
-  let moved = false;
-  const contacts = s.contacts.map((c, i) => {
-    if (!live(c) || !c.units.length || c.move || s.team.fight?.square === c.square) return c;
-    const from = c.units[Math.floor(roll(s.tick * 7919 + i) * c.units.length)];
-    const options = nextTo(from).filter((x) => !c.units.includes(x));
-    if (!options.length) return c;
-    moved = true;
-    const to = options[Math.floor(roll(s.tick * 104729 + i) * options.length)];
-    return { ...c, units: c.units.map((u) => (u === from ? to : u)) };
-  });
-  return moved ? { ...s, contacts } : s;
-};

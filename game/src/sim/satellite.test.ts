@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { moveContact, startMove } from './contacts';
-import { FRESH_MS, GHOST_MS, freshness } from './imagery';
+import { freshness } from './imagery';
 import { lockedOn, SETTLE_MS, SLEW_MS_PER_SQUARE, slewMs } from './satellite';
 import { blockers } from './progress';
 import { initialState as rolledState, type GameState } from './state';
@@ -124,13 +124,11 @@ describe('fog of war', () => {
     expect(store.get().intel.live).not.toContain('C2');
   });
 
-  it('a look ages: fresh, then a ghost, then stale', () => {
+  it('a look stays current: it does not age (ILI-1559)', () => {
     const store = createStore(walking());
     look(store, 'E3');
     const snap = store.get().imagery.E3;
-    expect(freshness(snap, snap.atMs + 1_000)).toBe('fresh');
-    expect(freshness(snap, snap.atMs + FRESH_MS + 1)).toBe('ghost');
-    expect(freshness(snap, snap.atMs + GHOST_MS + 1)).toBe('stale');
+    expect(freshness(snap, snap.atMs + 600_000)).toBe('fresh');
   });
 
   it('a contact that moves unseen keeps its marker where it was last seen, until someone looks', () => {
@@ -227,7 +225,7 @@ describe("the satellite's name", () => {
 // Video is real time (ILI-1423): its square stays live while ORION-3 stays over it, and no longer
 // (ILI-1544, overriding ILI-1432's live for good).
 describe('video ends when ORION-3 leaves', () => {
-  it('tasked away, the feed stops and the look decays to nothing', () => {
+  it('tasked away, the feed stops and the look stays, current (ILI-1559)', () => {
     const store = atStart();
     look(store, 'G4', 'video');
     for (let i = 0; i < 200 && store.get().satellite.state === 'capturing'; i++) store.set(run(store.get(), 100));
@@ -235,8 +233,8 @@ describe('video ends when ORION-3 leaves', () => {
     expect(store.get().imagery.G4).toMatchObject({ mode: 'video', live: true });
     store.lookAt('F4');
     expect(store.get().satellite.aim).toBe('F4');
-    store.set(run(store.get(), GHOST_MS + 5_000));
+    store.set(run(store.get(), 65_000));
     const s = store.get();
-    expect(s.imagery.G4).toBeUndefined(); // decayed: the square is unknown again (ILI-1532)
+    expect(s.imagery.G4).toMatchObject({ live: false }); // no decay: good until a group moves
   });
 });

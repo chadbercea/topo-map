@@ -5,9 +5,10 @@ import { fixed } from './testkit';
 // A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
 const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { createStore } from './store';
-import { analyzable, DECAY_MS, grade, INT_KINDS, pushPhoto, pushVideo, reports, sent, settled, VIDEO_INTEL } from './intel';
+import { analyzable, grade, INT_KINDS, pushPhoto, pushVideo, reports, sent, settled, VIDEO_INTEL } from './intel';
 import { answerIntel, lockOn, run } from './testkit';
 import { initialSatellite } from './satellite';
+import { moveContact } from './contacts';
 
 // Fresh intel (ILI-1532): ALPHA moves only into squares HQ has analyzed in the last DECAY_MS.
 const blindAhead = (): GameState => {
@@ -34,33 +35,18 @@ describe('fresh intel', () => {
     expect(s.team.position).not.toEqual(s0.team.position);
   });
 
-  it('an analyzed square decays back to unknown in DECAY_MS once ORION-3 is off it', () => {
-    const s0 = away(pushPhoto(blindAhead(), 'C4', 0).next);
-    expect(settled(s0, 'C4')).toBe(true);
-    expect(analyzable(s0, 'C4')).toBe(false);
-    const mid = run(s0, DECAY_MS - 1_000);
-    expect(settled(mid, 'C4')).toBe(true);
-    const gone = run(mid, 1_100);
-    expect(settled(gone, 'C4')).toBe(false);
-    expect(gone.intel.fresh.C4).toBeUndefined();
-    expect(analyzable(gone, 'C4')).toBe(true); // as if never visited: Analyze is open again
-  });
-
-  it('its clock holds while ORION-3 is over the square, and runs again once it leaves', () => {
-    const s0 = lockOn(pushPhoto(blindAhead(), 'C4', 0).next, 'C4');
-    const held = run(s0, DECAY_MS * 2);
-    expect(held.intel.fresh.C4).toBe(DECAY_MS);
-    const s = run(away(held), DECAY_MS + 100);
-    expect(settled(s, 'C4')).toBe(false);
-  });
-
-  it('decayed, the square loses its picture, its stamp, and what ALPHA learned from it', () => {
+  it('an analyzed square stays good until a group moves out of it (ILI-1559)', () => {
     const base = pushPhoto(blindAhead(), 'C4', 0).next;
-    const s0 = away({ ...base, map: { ...base.map, scanned: ['C4'] }, imagery: { C4: { square: 'C4', atMs: 0, mode: 'photo', seen: [], live: false } }, team: { ...base.team, known: { x: { square: 'C4', units: 2, atMs: 0 } } } });
-    const s = run(s0, DECAY_MS + 100);
-    expect(s.imagery.C4).toBeUndefined();
-    expect(s.map.scanned).not.toContain('C4');
-    expect(s.team.known.x).toBeUndefined();
+    const s0 = away({ ...base, contacts: [{ id: 'x', square: 'C4', label: 'test', strength: 1, status: 'revealed', observed: false, units: [0, 5], total: 2 }], map: { ...base.map, scanned: ['C4'] }, imagery: { C4: { square: 'C4', atMs: 0, mode: 'photo', seen: [], live: false } }, team: { ...base.team, known: { x: { square: 'C4', units: 2, atMs: 0 } } } });
+    const later = run(s0, 300_000);
+    expect(settled(later, 'C4')).toBe(true); // no clock
+    expect(analyzable(later, 'C4')).toBe(false);
+    const moved = moveContact(s0, 'x', 'D4');
+    expect(settled(moved, 'C4')).toBe(false);
+    expect(analyzable(moved, 'C4')).toBe(true); // Analyze is open again
+    expect(moved.imagery.C4).toBeUndefined();
+    expect(moved.map.scanned).not.toContain('C4');
+    expect(moved.team.known.x).toMatchObject({ square: 'C4' }); // ALPHA still goes by what it was told
   });
 
   it('the stretch after the opening: answering where the prompt points keeps ALPHA going (ILI-1391)', () => {
@@ -77,7 +63,7 @@ describe('fresh intel', () => {
   it('decayed under ALPHA mid-crossing: it finishes the crossing, then holds before the next square', () => {
     const s0 = run(pushPhoto(blindAhead(), 'F4', 0).next, 3_000);
     expect(s0.team.activity).toBe('Moving to F4');
-    const lost = { ...s0, intel: { ...s0.intel, graded: [], fresh: {} } }; // F4's intel gone while ALPHA is on its way
+    const lost = { ...s0, intel: { ...s0.intel, graded: [] } }; // F4's intel gone while ALPHA is on its way
     const s = run(lost, 60_000);
     expect(s.team.waypoint).toBe(s0.team.waypoint + 1); // it got to F4
     expect(s.team.activity).toBe('Holding · needs intel'); // and holds short of E3
@@ -155,7 +141,7 @@ describe('settled squares', () => {
   it('ALPHA moves into a square with fresh intel, without asking', () => {
     const s0 = blindAhead();
     const next = s0.team.route[s0.team.waypoint];
-    const known = { ...s0, intel: { ...s0.intel, graded: [next], fresh: { [next]: DECAY_MS } } };
+    const known = { ...s0, intel: { ...s0.intel, graded: [next] } };
     const s = run(known, 5_000);
     expect(s.team.position).not.toEqual(s0.team.position);
     expect(s.team.activity).toMatch(/^Moving/);

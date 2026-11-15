@@ -4,7 +4,7 @@ import type { Operator, Role } from './team';
 import type { Message } from './comms';
 import { effectiveStrength } from './contacts';
 import { inContact } from './sight';
-import { confirmKills, FRESH_MS, GHOST_MS, type Freshness } from './imagery';
+import { confirmKills, type Freshness } from './imagery';
 import { CASH_PER_TEAM_KILL, earn, markSite } from './sites';
 import { ALERT_AMBUSH, makeNoise, NOISE, NOISE_PER_ROUND } from './noise';
 import { squareCenter } from '../map/grid';
@@ -46,8 +46,8 @@ const TREAT_HP = 35;
 const WOUNDED_BELOW = 90; // the medic only bothers below this
 
 // What ALPHA's intel is worth in the fight (ILI-1496), as the enemy's strength over its own.
-// Going in on them with intel, by how old it is (the map's freshness bands, imagery.ts):
-export const INITIATIVE: Record<Freshness, number> = { live: 0.5, fresh: 0.5, ghost: 0.65, stale: 0.8 };
+// Going in on them with intel (ILI-1559: intel doesn't age, it's good until they move):
+export const INITIATIVE: Record<Freshness, number> = { live: 0.5, fresh: 0.5 };
 // Walked into them blind: they fight harder, and for the first seconds ALPHA is getting into
 // cover, returning a fraction of its fire. An alerted enemy is readier still (ALERT_AMBUSH).
 export const AMBUSH_EDGE = 1.15;
@@ -55,13 +55,10 @@ export const AMBUSH_COVER_MS = 3_000;
 export const COVER_FIRE = 0.25;
 export const VOLLEY_DPS = 28; // their aimed first volley, per their full strength
 
-// How fresh ALPHA's intel on a square is: live while a video feed or ORION-3's watch is on it,
-// else the age of what it was sent.
-export function intelAge(s: GameState, square: string, atMs: number): Freshness {
+// ALPHA's intel on a square: live while a video feed or ORION-3's watch is on it, else current.
+export function intelAge(s: GameState, square: string, _atMs?: number): Freshness {
   const sat = s.satellite;
-  if ((s.intel.live ?? []).includes(square) || (sat.watching === square && sat.aim === square && sat.state !== 'slewing')) return 'live';
-  const age = s.elapsedMs - atMs;
-  return age < FRESH_MS ? 'fresh' : age < GHOST_MS ? 'ghost' : 'stale';
+  return (s.intel.live ?? []).includes(square) || (sat.watching === square && sat.aim === square && sat.state !== 'slewing') ? 'live' : 'fresh';
 }
 
 // Small seeded generator kept in state so fights replay the same way.

@@ -12,14 +12,12 @@ import { hillshade } from '../map/relief';
 import type { Settings } from '../sim/state';
 import { shownEvents } from '../sim/events';
 import { DPR } from './dpr';
-import { BOARD } from '../sim/minigame';
 import { lockedOn, observed, orionSquare, satellitePoint } from '../sim/satellite';
 import { teamStatus } from '../sim/team';
 import { searchingIn } from '../sim/buildings';
 import { squareFindings } from '../sim/intel';
 import { knownIn, knownSquare, orionScanned } from '../sim/contacts';
-import { follows, freshness, GHOST_MS, groupOrigin, shownAt, unitSpot } from '../sim/imagery';
-import { freshLeft } from '../sim/intel';
+import { follows, groupOrigin, shownAt, unitSpot } from '../sim/imagery';
 import { AIR, aircraftAt } from '../sim/air';
 import { aboard, transportAt, TRANSPORT } from '../sim/exfil';
 import { sightings, type Sighting } from '../sim/sightings';
@@ -400,7 +398,7 @@ export class MapScene extends Phaser.Scene {
     const cross = (x: number, y: number, atMs: number) => {
       const sq = squareAt(x, y);
       const look = sq ? s.imagery[sq] : undefined;
-      if (!sq || !(watching(sq) || (look && look.atMs >= atMs && freshness(look, now) !== 'stale'))) return;
+      if (!sq || !(watching(sq) || (look && look.atMs >= atMs))) return;
       g.lineStyle(px, 0xe5484d, 1).lineBetween(x - r, y - r, x + r, y + r).lineBetween(x - r, y + r, x + r, y - r);
     };
     // OVERWATCH's crosshairs on the map, on the fighter it shoots next (ILI-1303).
@@ -531,11 +529,8 @@ export class MapScene extends Phaser.Scene {
       }
     }
     for (const snap of Object.values(imagery)) {
-      const age = freshness(snap, now);
-      // Old looks fade as they age (ILI-1430), frozen where they were seen, and are gone once the
-      // look has decayed (ILI-1544): no faint last-known mark left behind.
-      if (age === 'stale') continue;
-      const alpha = age === 'live' ? 1 : Math.max(0.12, 1 - (now - snap.atMs) / GHOST_MS);
+      // A look holds where it was seen until the group moves (ILI-1559): no fade.
+      const alpha = 1;
       for (const seen of snap.seen) {
         const c = contacts.find((x) => x.id === seen.contactId);
         if (!c || c.status === 'cleared' || drawn.has(c.id)) continue;
@@ -551,7 +546,6 @@ export class MapScene extends Phaser.Scene {
           cy += y / units.length;
           // A red outline ring over a dark halo, not a filled dot (ILI-1442).
           g.lineStyle(px, 0xe5484d, alpha).strokeCircle(x, y, 5 * px);
-          if (age === 'ghost') g.lineStyle(px, 0xe5484d, 0.35).strokeCircle(x, y, (CELL / BOARD) * 0.45);
         }
         const to = seen.to && squareCenter(seen.to);
         if (to && units.length) {
@@ -570,35 +564,14 @@ export class MapScene extends Phaser.Scene {
     }
   }
 
-  // How up to date each square's look is (ILI-1468). A photo square: a bar along its foot that
-  // drains as the photo ages, to empty when it goes stale, and a PHOTO · m:ss tag counting up. A
-  // square on video: corner brackets, ORION-3's frame, and FEED · LIVE with a blinking dot, for as
+  // Which squares are live (ILI-1468). Photos don't age any more (ILI-1559). A square on video: corner brackets, ORION-3's frame, and FEED · LIVE with a blinking dot, for as
   // long as the feed runs. The satellite's picture doesn't show these: they're map notes.
   private drawSeen(time: number) {
     const st = game.get();
     const g = this.seenGfx.clear();
     const px = DPR / this.zoom;
-    const now = st.elapsedMs;
     const feeds = new Set(st.intel.live ?? []);
     const want = new Map<string, { text: string; color: string; bg: string; x: number; y: number }>();
-    for (const snap of Object.values(st.imagery)) {
-      if (snap.mode !== 'photo' || snap.live || feeds.has(snap.square)) continue;
-      const p = parseSquare(snap.square);
-      if (!p) continue;
-      const x = p.col * CELL;
-      const y = p.row * CELL;
-      // The square's fresh time (ILI-1532): it holds while ORION-3 is over it, and drains to empty.
-      const left = freshLeft(st, snap.square);
-      const stale = left <= 0;
-      const inset = 6 * px;
-      const w = CELL - inset * 2;
-      const h = 3 * px;
-      const by = y + CELL - inset - h;
-      g.fillStyle(0xf2c14e, 0.18).fillRect(x + inset, by, w, h);
-      if (left > 0) g.fillStyle(0xf2c14e, 0.95).fillRect(x + inset, by, w * left, h);
-      const secs = Math.floor((now - snap.atMs) / 1000);
-      want.set(`p:${snap.square}`, { text: stale ? 'IMAGED · STALE' : `IMAGED · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, color: stale ? '#6f8a7d' : '#f2c14e', bg: '#0b0f0dd9', x: x + CELL - 8 * px, y: y + 8 * px }); // top right: the INTEL / CLEAR stamp has the foot's left
-    }
     for (const sq of feeds) {
       const p = parseSquare(sq);
       if (!p) continue;
@@ -882,7 +855,7 @@ export class MapScene extends Phaser.Scene {
       const h = half * size;
       const k = Math.max(3, half * 0.4) * size; // each corner's arms
       const { x, y } = t;
-      g.lineStyle(line, color, t.age === 'ghost' ? 0.45 : 0.9);
+      g.lineStyle(line, color, 0.9);
       for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]] as const) {
         const cx = x + sx * h;
         const cy = y + sy * h;

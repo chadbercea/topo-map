@@ -64,7 +64,7 @@ export function weaponBlocked(s: GameState, w: Weapon, c?: Contact): string | nu
   if (s.sniper && !s.sniper.done) return 'Busy';
   if (c && NEEDS_EYES[w]) {
     const eyes = eyesOn(s, c);
-    if (!eyes || eyes.level === 'stale') return 'No eyes on target';
+    if (!eyes) return 'No eyes on target';
   }
   return null;
 }

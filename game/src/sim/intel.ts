@@ -3,15 +3,12 @@ import { photoFactor } from './upgrades';
 import { knownIn, knownSquare } from './contacts';
 import { learn, tell } from './picture';
 
-// Intel decays (ILI-1532). Every square starts unknown. An Analyze settles it: the analysts post a
-// snapshot of what was there at that moment, and the square stays fresh for DECAY_MS. While
-// ORION-3 is over it, its clock holds. When the clock runs out, the square is unknown again, as if
-// nobody had ever looked: the snapshot is gone, and it needs a new Analyze. ALPHA moves into a
-// square only on fresh intel it has pulled (movement.ts); short of one, it holds and asks for
-// imagery, and the mission clock keeps running. This replaces the intel gauge (ILI-1314/1341):
-// no fuel to burn, no fill, no bank.
+// Intel (ILI-1532, ILI-1558, ILI-1559). Every square starts unknown. An Analyze settles it: the
+// analysts make a snapshot of what was there, and ALPHA has it at once. It stays good until a group
+// moves in or out of the square (contacts.moveContact); then the square is unknown again and needs
+// a new Analyze. ALPHA moves into a square only on intel (movement.ts); short of it, it holds and
+// asks for imagery, and the mission clock keeps running.
 
-export const DECAY_MS = 60_000; // how long an Analyze stays fresh once ORION-3 is off the square (Chad, 11-14)
 export const VIDEO_INTEL = 60; // what a package was worth to the analysts: kept on the record, moves nothing
 export const SIGNAL_INTEL = 35;
 
@@ -22,7 +19,7 @@ export const GRADE_LABEL: Record<Grade, string> = { clear: 'nothing significant'
 
 // graded: squares with fresh intel (analyzed, not yet decayed); fresh: each one's time left.
 // walkFree: tests and tuning only, ALPHA moves without fresh intel (the old pinned-full gauge).
-export type Intel = { walkFree?: boolean; videoUsed: boolean; videosShot: number; graded: string[]; fresh: Record<string, number>; pushes: Push[]; live: string[]; reopened?: string[] }; // live: the square on video while ORION-3 stays over it (ILI-1544); reopened: settled squares HQ has acted on since, open to Analyze again (ILI-1516); download: ALPHA pulling packages off the shelf; syncedAt: the square it last synced in (ILI-1499)
+export type Intel = { walkFree?: boolean; videoUsed: boolean; videosShot: number; graded: string[]; pushes: Push[]; live: string[]; reopened?: string[] }; // live: the square on video while ORION-3 stays over it (ILI-1544); reopened: settled squares HQ has acted on since, open to Analyze again (ILI-1516); download: ALPHA pulling packages off the shelf; syncedAt: the square it last synced in (ILI-1499)
 
 // Every push of intel to ALPHA, in order (ILI-1346). A banked push turns fed when it pays out.
 // source: who produced it (IMINT for ORION-3's looks, SIGINT for a decode, ALPHA for what the
@@ -73,7 +70,7 @@ export function reports(s: GameState, square: string, grade: Grade | 'video', fi
   return out;
 }
 
-export const initialIntel = (): Intel => ({ videoUsed: false, videosShot: 0, graded: [], fresh: {}, pushes: [], live: [], reopened: [] });
+export const initialIntel = (): Intel => ({ videoUsed: false, videosShot: 0, graded: [], pushes: [], live: [], reopened: [] });
 
 const record = (s: GameState, from: PushFrom, amount: number): GameState => ({
   ...s,
@@ -120,10 +117,10 @@ export const squareReports = (s: GameState, square: string): IntelItem[] => s.in
 export const squareFindings = (s: GameState, square: string): 'clear' | 'found' =>
   squareReports(s, square).some((r) => r.heat !== 'quiet') || knownIn(s, square).length > 0 ? 'found' : 'clear';
 
-// A square just analyzed: fresh, with its full clock (ILI-1532).
+// A square just analyzed: settled until a group moves in or out (ILI-1559).
 const settle = (s: GameState, square: string): GameState => ({
   ...s,
-  intel: { ...s.intel, graded: [...new Set([...s.intel.graded, square])], fresh: { ...s.intel.fresh, [square]: DECAY_MS } },
+  intel: { ...s.intel, graded: [...new Set([...s.intel.graded, square])] },
 });
 
 // A photo graded and pushed; the square is marked as gone through.
@@ -182,44 +179,17 @@ export function postBuildingIntel(s: GameState, square: string): { next: GameSta
   return { next: send(s, { source: 'IMINT', square, building: true, items: [{ kind: 'GEOINT', heat: 'quiet', text: 'a building worth a search' }] }, 0), id };
 }
 
-// The decay clock (ILI-1532): every fresh square counts down, except the one ORION-3 is over. At
-// zero the square is unknown again: no snapshot, no stamp, nothing in ALPHA's picture from it, and
-// Analyze is open on it.
-const over = (s: GameState, square: string) => s.satellite.state !== 'slewing' && s.satellite.aim === square;
-
-export function forget(s: GameState, square: string): GameState {
-  const { [square]: _gone, ...fresh } = s.intel.fresh;
+// A square HQ's intel no longer describes (ILI-1559: a group moved in or out of it): unknown
+// again. No snapshot, no stamp, nothing in ALPHA's picture from it, and Analyze is open on it.
+export function stale(s: GameState, square: string): GameState {
   const { [square]: _snap, ...imagery } = s.imagery;
-  const known = Object.fromEntries(Object.entries(s.team.known).filter(([, k]) => k.square !== square));
   return {
     ...s,
     imagery,
-    intel: { ...s.intel, fresh, graded: s.intel.graded.filter((x) => x !== square), reopened: (s.intel.reopened ?? []).filter((x) => x !== square), live: (s.intel.live ?? []).filter((x) => x !== square) },
+    intel: { ...s.intel, graded: s.intel.graded.filter((x) => x !== square), reopened: (s.intel.reopened ?? []).filter((x) => x !== square), live: (s.intel.live ?? []).filter((x) => x !== square) },
     map: { ...s.map, scanned: s.map.scanned.filter((x) => x !== square), blind: s.map.blind.filter((b) => b.square !== square) },
-    team: { ...s.team, known },
   };
 }
-
-export const decaySystem = (s: GameState, dt: number): GameState => {
-  const squares = Object.keys(s.intel.fresh);
-  if (!squares.length) return s;
-  let fresh: Record<string, number> | null = null;
-  const gone: string[] = [];
-  for (const sq of squares) {
-    if (over(s, sq)) continue;
-    const left = s.intel.fresh[sq] - dt;
-    fresh ??= { ...s.intel.fresh };
-    if (left > 0) fresh[sq] = left;
-    else gone.push(sq);
-  }
-  if (!fresh) return s;
-  let next: GameState = { ...s, intel: { ...s.intel, fresh } };
-  for (const sq of gone) next = forget(next, sq);
-  return next;
-};
-
-// How much of a square's fresh time is left, 0 to 1 (its bar on the map).
-export const freshLeft = (s: GameState, square: string) => Math.max(0, Math.min(1, (s.intel.fresh[square] ?? 0) / DECAY_MS));
 
 // Video (ILI-1432): no limit, and its square is live while ORION-3 stays over it (ILI-1544). Its
 // feed goes on the shelf like an Analyze's package (ILI-1499): ALPHA gets the live feed when it

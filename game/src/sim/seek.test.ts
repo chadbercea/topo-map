@@ -5,7 +5,6 @@ import { PER_CALL } from './prices';
 import type { GameState } from './state';
 import { lockedStore as createStore } from './testkit';
 import { run, walking } from './testkit';
-import { DRIFT_MS } from './contacts';
 
 // The technicals in E3, found: four fighters in cells 5, 6, 9 and 10 of the 4x4 over the
 // square. `look` is how old ORION-3's photo of them is (null: nobody has looked).
@@ -54,17 +53,15 @@ describe('ordnance', () => {
 });
 
 describe('eyes on the target', () => {
-  it('no look, or a stale one: the sniper can’t aim, the drone can still guess', () => {
-    for (const s of [found(null), found(110_000)]) {
-      expect(weaponBlocked(s, 'sniper', s.contacts[0])).toBe('No eyes on target');
-      expect(weaponBlocked(s, 'drone', s.contacts[0])).toBeNull();
-    }
+  it('no look: the sniper can’t aim, the drone can still guess', () => {
+    const s = found(null);
+    expect(weaponBlocked(s, 'sniper', s.contacts[0])).toBe('No eyes on target');
+    expect(weaponBlocked(s, 'drone', s.contacts[0])).toBeNull();
   });
 
-  it('how good the eyes are: fresh, ghost, stale, and live while painted', () => {
+  it('how good the eyes are: current however old (ILI-1559), and live while painted', () => {
     expect(eyesOn(found(5_000), found().contacts[0])?.level).toBe('fresh');
-    expect(eyesOn(found(50_000), found().contacts[0])?.level).toBe('ghost');
-    expect(eyesOn(found(110_000), found().contacts[0])?.level).toBe('stale');
+    expect(eyesOn(found(110_000), found().contacts[0])?.level).toBe('fresh');
     const painted = found(null, { painted: true });
     expect(eyesOn(painted, painted.contacts[0])).toMatchObject({ level: 'live', units: [5, 6, 9, 10] });
     expect(eyesOn(found(null), found(null).contacts[0])).toBeNull();
@@ -72,10 +69,8 @@ describe('eyes on the target', () => {
 });
 
 describe('targets', () => {
-  it('fighters drift: one moves a cell every 33 s, so an old look stops matching', () => {
-    const s = run(found(null), DRIFT_MS);
-    const units = s.contacts[0].units;
-    expect(units).toHaveLength(4);
-    expect(units.filter((u) => [5, 6, 9, 10].includes(u))).toHaveLength(3);
+  it('fighters hold their cells: a look stays good until the group moves (ILI-1559)', () => {
+    const s = run(found(null), 40_000); // past the old 33 s drift step
+    expect(s.contacts[0].units).toEqual([5, 6, 9, 10]);
   });
 });

@@ -15,11 +15,10 @@ import { transportAt } from './exfil';
 export type SightingKind = 'team' | 'operator' | 'hostile' | 'site' | 'wreck' | 'event' | 'signal' | 'aircraft';
 export type Sighting = { id: string; kind: SightingKind; x: number; y: number; age: Freshness | 'tracked'; square: string };
 
-// The age of the newest picture of a square, or null if there is none or it has gone stale.
+// The age of the newest picture of a square, or null if there is none.
 const seenAt = (s: GameState, square: string | null) => {
   const snap = square ? s.imagery[square] : undefined;
-  const age = snap && freshness(snap, s.elapsedMs);
-  return age && age !== 'stale' ? age : null;
+  return snap ? freshness(snap) : null;
 };
 
 // Where a square's ping sits (MapScene.markerPos): its upper-right quarter.
@@ -45,8 +44,7 @@ export function sightings(s: GameState, operators: ReadonlyMap<string, { x: numb
     out.push({ id: 'team', kind: 'team', x, y, age: 'tracked', square: squareAt(x, y) ?? '' });
   }
   for (const snap of Object.values(s.imagery)) {
-    const age = freshness(snap, s.elapsedMs);
-    if (age === 'stale') continue;
+    const age = freshness(snap);
     for (const seen of snap.seen) {
       const c = s.contacts.find((x) => x.id === seen.contactId);
       if (!c || c.status === 'cleared') continue;
