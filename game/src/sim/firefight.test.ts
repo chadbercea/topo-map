@@ -7,7 +7,6 @@ import { LOADOUT } from './team';
 import { lockedStore, playUntil, run, walking } from './testkit';
 import { wrapUp } from './wrapup';
 import { AMBUSH_COVER_MS, AMBUSH_EDGE, COVER_FIRE, INITIATIVE } from './firefight';
-import { FRESH_MS, GHOST_MS } from './imagery';
 
 // The team standing in E3 with a contact there: found, sent to ALPHA (ILI-1495) and attacked, or
 // never found. toldAtMs: when ALPHA got its intel (fresh by default).
@@ -59,14 +58,9 @@ describe('firefight', () => {
     expect(step(inContact('revealed', false), 100).team.fight!.full).toBe(100);
   });
 
-  it('an attack on intel ALPHA got has the initiative, and the fresher the intel the bigger the edge (ILI-1496)', () => {
+  it('an attack on intel ALPHA got has the initiative, however old the intel (ILI-1496, ILI-1559)', () => {
     expect(step(inContact('revealed', true), 100).team.fight!.full).toBe(INITIATIVE.fresh * 100);
-    expect(step(inContact('revealed', true, 20_000 - FRESH_MS - 1), 100).team.fight!.full).toBeCloseTo(INITIATIVE.ghost * 100);
-    expect(step(inContact('revealed', true, 20_000 - GHOST_MS - 1), 100).team.fight!.full).toBeCloseTo(INITIATIVE.stale * 100);
-    // And it pays out on the team: the same fight on stale intel costs more health.
-    const end = (s: GameState) => run(s, 60_000);
-    const health = (s: GameState) => end(s).stats.lost.length * 1000 + (500 - totalHealth(run(s, 15_000)));
-    expect(health(step(inContact('revealed', true, 20_000 - GHOST_MS - 1), 100))).toBeGreaterThan(health(step(inContact('revealed', true), 100)));
+    expect(step(inContact('revealed', true, 0), 100).team.fight!.full).toBe(INITIATIVE.fresh * 100);
   });
 
   it('HQ found it but never sent it: ALPHA walks in blind, and it\u2019s an ambush all the same (ILI-1496)', () => {

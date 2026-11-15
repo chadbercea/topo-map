@@ -1,6 +1,6 @@
 import type { GameState } from './state';
 import type { Contact } from './contacts';
-import { freshness, targets } from './imagery';
+import { targets } from './imagery';
 import { squareAt } from '../map/grid';
 import { airGone } from './air';
 import { sniperGone } from './sniper';
@@ -25,7 +25,7 @@ export function strikeState(s: GameState, square: string) {
   const marked = targets(s).filter((t) => squareAt(t.x, t.y) === square);
   const look = s.imagery[square];
   const running = strikeRunning(s, square);
-  const seenHere = !!look && freshness(look, s.elapsedMs) !== 'stale' && marked.length > 0;
+  const seenHere = !!look && marked.length > 0;
   const strikes = s.events.filter((e) => e.square === square && strikeable(e) && e.status !== 'resolved');
   const locked = lockedOn(s, square);
   return { marked, running, strikes, seen: seenHere && strikes.length > 0, locked, can: locked && seenHere && strikes.length > 0 && !running };

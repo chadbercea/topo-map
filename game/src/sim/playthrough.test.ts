@@ -3,6 +3,8 @@ import { DEFAULT_SETTINGS, initialState, MISSION_MS, MISSION_SEED } from './stat
 import { createStore } from './store';
 import { answerIntel, fed } from './testkit';
 import { activePrompt } from './prompts';
+import { strikeBlocked } from './strike';
+import { analyzable } from './intel';
 
 // Whole missions under simple HQ strategies, to catch the team getting stuck anywhere. ALPHA
 // decides for itself (ILI-1315): HQ only analyzes, and answers its one question (resupply).
@@ -15,6 +17,22 @@ function play(strategy: 'sharp' | 'silent', seed = MISSION_SEED) {
     if (call?.responses) store.respond(call.id, call.responses[0].id);
     if (strategy === 'silent') continue;
     if (s.minigame?.status === 'active') continue;
+    // ALPHA holding short of a group it can't take (ILI-1551): HQ strikes it, then images it again
+    // so ALPHA sees what's left (intel holds until HQ looks again, ILI-1559).
+    const wait = s.team.waitFor?.square;
+    if (wait) {
+      const target = s.contacts.find((c) => c.square === wait && c.status === 'revealed');
+      if (s.satellite.aim !== wait) {
+        if (s.satellite.state === 'idle' || s.satellite.state === 'onStation') store.lookAt(wait); // strikes need ORION-3 over the square
+      } else if (analyzable(s, wait)) {
+        if (s.satellite.state === 'onStation') store.capture('photo');
+      } else if (target) {
+        const w = (['drone', 'sniper', 'heli'] as const).find((x) => !strikeBlocked(s, x, target));
+        if (w) store.fire(target.id, w);
+      }
+      if (s.satellite.result) store.closeLook();
+      continue;
+    }
     // No send step (ILI-1499): each Analyze posts its package on the shelf, and ALPHA pulls them
     // itself as it reaches each square or holds. It only acts on what it has pulled (ILI-1495).
     // Scan the route ahead of ALPHA, one square at a time.

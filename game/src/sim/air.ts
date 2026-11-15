@@ -77,7 +77,7 @@ function fighters(s: GameState, square: SquareId) {
   for (const c of s.contacts) {
     if (c.square !== square || (c.status !== 'hidden' && c.status !== 'revealed')) continue;
     const eyes = eyesOn(s, c);
-    const seen = c.status === 'revealed' && !!eyes && eyes.level !== 'stale';
+    const seen = c.status === 'revealed' && !!eyes;
     const o = groupOrigin(c, s.elapsedMs);
     for (const unit of c.units) out.push({ contactId: c.id, unit, ...unitSpot(o, unit), seen, row: Math.floor(unit / BOARD) });
   }
