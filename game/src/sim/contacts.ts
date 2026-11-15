@@ -320,9 +320,13 @@ export const moveSystem: System = (s) => {
   const beatAtMs = next.elapsedMs + BEAT_MIN_MS + Math.round(r3 * (BEAT_MAX_MS - BEAT_MIN_MS));
   const here = squareAt(next.team.position.x, next.team.position.y);
   const taken = new Set(next.contacts.filter(live).map((c) => c.square));
+  // Never into ALPHA's way in the next MOVE_MS (ILI-1583): the square it's walking into, or the one
+  // after (it can reach it before the group arrives). ALPHA only checks for fresh intel before it
+  // sets off on a leg, so a group arriving there mid-leg is an ambush nobody could see coming.
+  const ahead = new Set(next.team.route.slice(next.team.waypoint, next.team.waypoint + 2));
   const movers = next.contacts.filter((c) => live(c) && !c.move && c.units.length && next.team.fight?.contactId !== c.id && c.square !== here && !isMissionPoint(next, c.square));
   const options = (c: Contact) =>
-    nextSquares(c.square).filter((sq) => sq !== here && !taken.has(sq) && !isMissionPoint(next, sq));
+    nextSquares(c.square).filter((sq) => sq !== here && !ahead.has(sq) && !taken.has(sq) && !isMissionPoint(next, sq));
   const able = movers.filter((c) => options(c).length);
   if (!able.length) return { ...next, rng: rng3, beatAtMs };
   const c = able[Math.floor(r1 * able.length)];
