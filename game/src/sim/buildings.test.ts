@@ -29,19 +29,18 @@ describe('buildings', () => {
     expect(store.get().events.find((e) => e.id === buildingId(sq))).toMatchObject({ kind: 'building', square: sq, status: 'new' });
   });
 
-  it('HQ posts its intel on the building; ALPHA pulls it, detours there, searches, and what it finds pays on the spot (ILI-1517)', () => {
+  it('HQ sends its intel on the building; ALPHA has it at once, detours there, searches, and what it finds pays on the spot (ILI-1517)', () => {
     const s0 = walking();
     // A building just off ALPHA's way: G4, next to G5 where it starts.
     const s1 = { ...s0, events: [...s0.events, { id: buildingId('G4'), kind: 'building' as const, square: 'G4', title: 'A building worth a search', atMs: 0, status: 'new' as const }] };
     const store = createStore(s1);
     store.postBuilding('G4');
-    // On the shelf: HQ can't send ALPHA in, and ALPHA isn't going yet.
-    expect(store.get().intel.pushes.at(-1)).toMatchObject({ square: 'G4', building: true, state: 'posted' });
-    expect(store.get().searching).toEqual([]);
+    // On ALPHA's devices at once (ILI-1558); ALPHA weighs it on its next step.
+    expect(store.get().intel.pushes.at(-1)).toMatchObject({ square: 'G4', building: true, state: 'fed' });
     const before = store.get().resources.budget;
     let s = store.get();
     for (let t = 0; t < 30_000 && !s.searching.length; t += 100) s = run(s, 100);
-    expect(s.searching).toEqual(['G4']); // pulled it: it can get there, so it goes
+    expect(s.searching).toEqual(['G4']); // it can get there, so it goes
     expect(s.team.route.slice(s.team.waypoint)).toContain('G4');
     expect(s.events.find((e) => e.id === buildingId('G4'))?.reach).toBe('going');
     for (let t = 0; t < 120_000 && !s.comms.messages.some((m) => m.id === 'found-building-G4'); t += 100) s = run(s, 100);

@@ -84,7 +84,7 @@ test('a salvage convoy cuts the exfil; spent, ALPHA swings wide to A2 on its own
     const operators = s.team.operators.map((o) => ({ ...o, ammo: Math.round(o.ammo * 0.4) }));
     window.game.set({ ...s, contacts: [], schedule: [], map: { ...s.map, scanned: [...s.team.route, 'B2', 'A2'] }, intel: { ...s.intel, graded: [...s.intel.graded, 'B1'] }, comms: { ...s.comms, messages: [] }, team: { ...s.team, operators } });
     window.game.lookAt('B1');
-    // Seen, its package goes on the shelf and ALPHA pulls it: ALPHA only weighs what it has (ILI-1495, ILI-1499).
+    // Seen, ALPHA has its package at once (ILI-1558) and weighs it (ILI-1495).
     for (let i = 0; i < 6000 && window.game.get().mission.c === 'B1'; i++) window.game.tick(100);
   });
   await expect(page.getByTestId('comms-feed')).toContainText('alternate exfil at A2');

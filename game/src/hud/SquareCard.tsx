@@ -15,7 +15,7 @@ import { buildingId, findIn, searchingIn, SEARCH_MS } from '../sim/buildings';
 import { RECOVER_MS } from '../sim/mission';
 import { knownIn } from '../sim/contacts';
 import { ESCROW_BOX } from '../sim/prices';
-import { downloadProgress, kindLabel, shelfState, squareReports } from '../sim/intel';
+import { kindLabel, sent, squareReports } from '../sim/intel';
 import { alertSquares, strikeable, strikeState } from '../sim/strike';
 import { contactLine, useStrikeOpen } from './StrikeAlert';
 
@@ -282,7 +282,7 @@ function Report({ s, square }: { s: GameState; square: string }) {
             <small className="note">{e.title}</small>
           </div>
         ))}
-        {!shelfState(s, square) && !squareReports(s, square).length && !contact && !known.length && !s.bda?.[square] && !buildings.length && !traffic.length && !others.length && (
+        {!sent(s, square) && !squareReports(s, square).length && !contact && !known.length && !s.bda?.[square] && !buildings.length && !traffic.length && !others.length && (
           <p className="sc-none" data-testid="intel-none">
             No intel on this square yet
           </p>
@@ -294,18 +294,15 @@ function Report({ s, square }: { s: GameState; square: string }) {
 }
 
 // What happens next on this square (ILI-1508), so the flyout, ORION-3 and the comms log read as
-// one story: move ORION-3 here, then Analyze, then ALPHA pulls the intel. Nothing while ORION-3 is
+// one story: move ORION-3 here, then Analyze; ALPHA has it at once (ILI-1558). Nothing while ORION-3 is
 // on its way (the head counts it down) or once ALPHA has the intel.
 export function nextStep(s: GameState, square: string): string | null {
   const sat = s.satellite;
   const name = satName(s);
   if (lockedOn(s, square)) {
-    const st = shelfState(s, square);
-    if (!st) return s.intel.graded.includes(square) ? null : `Analyze ${square} in ${name}`;
-    return st === 'posted' ? `${s.team.callsign} pulls it when holding or at ${square}` : null;
+    return sent(s, square) || s.intel.graded.includes(square) ? null : `Analyze ${square} in ${name}`;
   }
   if (sat.state === 'slewing' && sat.aim === square) return null;
-  if (shelfState(s, square) === 'posted') return `${s.team.callsign} pulls it when holding or at ${square}`;
   return sat.state === 'idle' && !s.intel.graded.includes(square) ? `Reposition ${name} here` : null;
 }
 
@@ -319,30 +316,17 @@ function NextStep({ s, square }: { s: GameState; square: string }) {
   );
 }
 
-// The square's intel package (ILI-1499): HQ posts it on the shelf; ALPHA pulls it down. One line
-// says which, as a plain status (ILI-1509): posted and waiting, downloading (a short bar), or a
-// green check and "Intel received" once ALPHA has it.
+// ALPHA has HQ's intel on the square (ILI-1558: it lands the moment Analyze is done).
 function PackageLine({ s, square }: { s: GameState; square: string }) {
-  const st = shelfState(s, square);
-  if (!st) return null;
-  const who = s.team.callsign;
+  if (!sent(s, square)) return null;
   return (
-    <div className="sc-item sc-package" data-kind="package" data-state={st} data-testid="square-package">
-      {st === 'received' ? (
-        <span data-testid="intel-received">
-          Intel received{' '}
-          <b className="check" aria-hidden>
-            ✓
-          </b>
-        </span>
-      ) : (
-        <span>{st === 'posted' ? 'POSTED' : `${who} downloading intel`}</span>
-      )}
-      {st === 'pulling' && (
-        <span className="decay fill" role="progressbar" aria-valuenow={Math.round(downloadProgress(s) * 100)}>
-          <span style={{ width: `${downloadProgress(s) * 100}%` }} />
-        </span>
-      )}
+    <div className="sc-item sc-package" data-kind="package" data-state="received" data-testid="square-package">
+      <span data-testid="intel-received">
+        Intel received{' '}
+        <b className="check" aria-hidden>
+          ✓
+        </b>
+      </span>
     </div>
   );
 }

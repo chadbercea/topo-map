@@ -39,7 +39,7 @@ test('ALPHA needing intel points at the grid square, not a big button; the playe
   await expect(tag.getByTestId('prompt-text')).toHaveText('Analyze F4 in ORION-3');
   expect(await page.evaluate(() => !!window.game.get().imagery.F4)).toBe(false);
 
-  // Step 3: Analyze in ORION-3, pulsing. Its package goes on the shelf and ALPHA pulls it (ILI-1499):
+  // Step 3: Analyze in ORION-3, pulsing. ALPHA has its package at once (ILI-1558):
   // no send step. F4's ask is answered and the tag goes.
   if (isMobile) await page.getByTestId('tab-orion').click(); // a picked square folds the sheet on a phone (ILI-1397)
   const sat = page.getByTestId('satellite');

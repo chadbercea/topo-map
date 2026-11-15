@@ -285,16 +285,11 @@ export function BuildingTag({ id, still }: { id: string; still?: boolean }) {
   const e = s.events.find((x) => x.id === id);
   if (!e) return null;
   const who = s.team.callsign;
-  const pkg = e.tasked ? s.intel.pushes.find((p) => p.id === e.tasked) : undefined;
   const status = searchingIn(s) === e.square
     ? `${who} searching`
     : s.searching.includes(e.square)
       ? `${who} on its way`
-    : pkg?.state === 'posted'
-      ? 'POSTED'
-      : pkg?.state === 'pulling'
-        ? `${who} downloading intel`
-        : null;
+      : null;
   const unable = !status && e.reach && e.reach !== 'going' ? `${who} unable · ${UNABLE_TAG[e.reach]}` : null;
   return (
     <div className="pt-tag" role="group" aria-label={`${e.title} · ${e.square}`}>

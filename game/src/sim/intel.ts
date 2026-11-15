@@ -1,9 +1,7 @@
 import type { GameState } from './state';
 import { photoFactor } from './upgrades';
-import { squareAt } from '../map/grid';
 import { knownIn, knownSquare } from './contacts';
 import { learn, tell } from './picture';
-import { teamStatus } from './team';
 
 // Intel decays (ILI-1532). Every square starts unknown. An Analyze settles it: the analysts post a
 // snapshot of what was there at that moment, and the square stays fresh for DECAY_MS. While
@@ -24,16 +22,14 @@ export const GRADE_LABEL: Record<Grade, string> = { clear: 'nothing significant'
 
 // graded: squares with fresh intel (analyzed, not yet decayed); fresh: each one's time left.
 // walkFree: tests and tuning only, ALPHA moves without fresh intel (the old pinned-full gauge).
-export type Intel = { walkFree?: boolean; videoUsed: boolean; videosShot: number; graded: string[]; fresh: Record<string, number>; pushes: Push[]; live: string[]; download?: Download | null; syncedAt?: string | null; reopened?: string[] }; // live: the square on video while ORION-3 stays over it (ILI-1544); reopened: settled squares HQ has acted on since, open to Analyze again (ILI-1516); download: ALPHA pulling packages off the shelf; syncedAt: the square it last synced in (ILI-1499)
-export type Download = { startMs: number; untilMs: number; ids: string[] };
+export type Intel = { walkFree?: boolean; videoUsed: boolean; videosShot: number; graded: string[]; fresh: Record<string, number>; pushes: Push[]; live: string[]; reopened?: string[] }; // live: the square on video while ORION-3 stays over it (ILI-1544); reopened: settled squares HQ has acted on since, open to Analyze again (ILI-1516); download: ALPHA pulling packages off the shelf; syncedAt: the square it last synced in (ILI-1499)
 
 // Every push of intel to ALPHA, in order (ILI-1346). A banked push turns fed when it pays out.
 // source: who produced it (IMINT for ORION-3's looks, SIGINT for a decode, ALPHA for what the
 // team found itself). items: what the push says, as intel reports (ILI-1362).
 export type PushSource = 'IMINT' | 'SIGINT' | 'ALPHA';
-// posted: on the shelf for its square, waiting for ALPHA to pull it; pulling: coming down to the
-// team's SATCOM devices (ILI-1499). pulledMs: when ALPHA had it.
-export type Push = { id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; amount: number; state: 'fed' | 'posted' | 'pulling'; fedMs?: number; pulledMs?: number; items?: IntelItem[]; contactId?: string; building?: boolean };
+// A package HQ sent: on ALPHA's devices the moment it's made (ILI-1558).
+export type Push = { id: string; atMs: number; source: PushSource; square?: string; grade?: Grade | 'video'; amount: number; state: 'fed'; fedMs?: number; items?: IntelItem[]; contactId?: string; building?: boolean };
 export type PushFrom = { source: PushSource; square?: string; grade?: Grade | 'video'; items?: IntelItem[]; contactId?: string; building?: boolean }; // building: HQ's intel on a building to search (ILI-1517)
 
 // The five types of intel (ILI-1362): the five real intelligence disciplines. Every ORION-3
@@ -77,15 +73,21 @@ export function reports(s: GameState, square: string, grade: Grade | 'video', fi
   return out;
 }
 
-export const initialIntel = (): Intel => ({ videoUsed: false, videosShot: 0, graded: [], fresh: {}, pushes: [], live: [], download: null, syncedAt: null, reopened: [] });
+export const initialIntel = (): Intel => ({ videoUsed: false, videosShot: 0, graded: [], fresh: {}, pushes: [], live: [], reopened: [] });
 
-const record = (s: GameState, from: PushFrom, amount: number, state: Push['state']): GameState => ({
+const record = (s: GameState, from: PushFrom, amount: number): GameState => ({
   ...s,
-  intel: { ...s.intel, pushes: [...s.intel.pushes, { id: `push-${s.intel.pushes.length}`, atMs: s.elapsedMs, ...from, amount, state, ...(state === 'fed' ? { fedMs: s.elapsedMs } : {}) }] },
+  intel: { ...s.intel, pushes: [...s.intel.pushes, { id: `push-${s.intel.pushes.length}`, atMs: s.elapsedMs, ...from, amount, state: 'fed', fedMs: s.elapsedMs }] },
 });
 
+// A package from HQ lands on ALPHA's devices the moment it's made (ILI-1558: no shelf, no pull).
+const send = (s: GameState, from: PushFrom, amount: number): GameState => {
+  const next = record(s, from, amount);
+  return deliver(next, next.intel.pushes[next.intel.pushes.length - 1]);
+};
+
 // A push on the record, landed at once (a card in COMMS). Nothing to fill since ILI-1532.
-export const feed = (s: GameState, amount: number, from?: PushFrom): GameState => (from ? record(s, from, amount, 'fed') : s);
+export const feed = (s: GameState, amount: number, from?: PushFrom): GameState => (from ? record(s, from, amount) : s);
 
 // The square's worth (RNG, by square): mostly nothing or a lot at low quality, now and then
 // more. Seeded by the mission's seed so a mission replays exactly. Fighters in the picture are
@@ -137,7 +139,7 @@ export function pushPhoto(s: GameState, square: string, fighters: number): { nex
 export function postScan(s: GameState, square: string, fighters: number): { next: GameState; grade: Grade } {
   const g = grade(s, square, fighters);
   const amount = GRADE_INTEL[g] * photoFactor(s);
-  const next = record(s, { source: 'IMINT', square, grade: g, items: reports(s, square, g, fighters) }, amount, 'posted');
+  const next = send(s, { source: 'IMINT', square, grade: g, items: reports(s, square, g, fighters) }, amount);
   const reopenedLeft = (next.intel.reopened ?? []).filter((x) => x !== square); // analyzed again: settled again
   const settled_ = settle(next, square);
   return { next: { ...settled_, intel: { ...settled_.intel, reopened: reopenedLeft } }, grade: g };
@@ -146,46 +148,19 @@ export function postScan(s: GameState, square: string, fighters: number): { next
 // ORION-3 watching an analyzed square sees a group walk in (ILI-1493): the analysts post a fresh
 // package on it, like an Analyze's (ILI-1495, ILI-1499). ALPHA doesn't know until it pulls it.
 export function postSighting(s: GameState, square: string, fighters: number): GameState {
-  if (postedIntel(s, square)) return s;
-  return record(s, { source: 'IMINT', square, grade: 'high', items: reports(s, square, 'high', fighters) }, GRADE_INTEL.high * photoFactor(s), 'posted');
+  return send(s, { source: 'IMINT', square, grade: 'high', items: reports(s, square, 'high', fighters) }, GRADE_INTEL.high * photoFactor(s));
 }
 
-// The shelf (ILI-1499). HQ is the upload: it can't force data onto the team's SATCOM devices, so
-// the best it can do is post each package for its square and leave it there. ALPHA pulls them.
-// The rule (doctrine: the team syncs its devices on a halt, and as it reaches each square of its
-// route): ALPHA syncs whenever it's holding, and each time it reaches a new square. A sync takes
-// every package on the shelf down in one download of DOWNLOAD_MS of game time, on the move or
-// not. Only a finished download tells ALPHA what's in the square (team.known, ILI-1495), and only
-// then does the square count as fresh intel for ALPHA (ILI-1532).
-export const DOWNLOAD_MS = 3_000;
-const imintOn = (s: GameState, square: string) => s.intel.pushes.filter((p) => p.square === square && p.source === 'IMINT');
-export const postedIntel = (s: GameState, square: string) => s.intel.pushes.find((p) => p.square === square && p.state === 'posted' && !p.building);
-export const shelf = (s: GameState) => s.intel.pushes.filter((p) => p.state === 'posted');
-// A package for the square still on the shelf, or coming down: ALPHA doesn't have it yet.
-export const waiting = (s: GameState, square: string) => s.intel.pushes.some((p) => p.square === square && (p.state === 'posted' || p.state === 'pulling'));
-// Where a square's package is, for its mark on the map and its line in the square's panel.
-export type ShelfState = 'posted' | 'pulling' | 'received';
-export function shelfState(s: GameState, square: string): ShelfState | null {
-  const ps = imintOn(s, square);
-  if (!ps.length) return null;
-  if (ps.some((p) => p.state === 'posted')) return 'posted';
-  if (ps.some((p) => p.state === 'pulling')) return 'pulling';
-  return 'received';
-}
-// How far the download is, 0 to 1.
-export const downloadProgress = (s: GameState) => {
-  const d = s.intel.download;
-  return d ? Math.min(1, Math.max(0, (s.elapsedMs - d.startMs) / (d.untilMs - d.startMs))) : 0;
-};
+// Whether HQ has sent ALPHA anything on the square: the flyout's "Intel received ✓" (ILI-1558).
+export const sent = (s: GameState, square: string) => s.intel.pushes.some((p) => p.square === square && p.source === 'IMINT');
 
 // One package down on ALPHA's devices: ALPHA knows what the analysts saw there (ILI-1495). A video package is
 // the feed itself: it lands at once, and from then ALPHA's picture of that square stays live.
 function deliver(s: GameState, p: Push): GameState {
   // HQ's intel on a building (ILI-1517): on ALPHA's devices. ALPHA weighs
   // whether it can get there (buildings.ts).
-  if (p.building) return { ...s, intel: { ...s.intel, pushes: s.intel.pushes.map((x) => (x.id === p.id ? { ...x, state: 'fed' as const, pulledMs: s.elapsedMs, fedMs: s.elapsedMs } : x)) } };
-  const pushes = s.intel.pushes.map((x) => (x.id === p.id ? { ...x, state: 'fed' as const, pulledMs: s.elapsedMs, fedMs: s.elapsedMs } : x));
-  let next: GameState = { ...s, intel: { ...s.intel, pushes } };
+  if (p.building) return s;
+  let next: GameState = s;
   // A decoded intercept (ILI-1499): ALPHA learns their plan, and with a fix, where they are (ILI-1495).
   if (p.source === 'SIGINT' && p.contactId) {
     next = { ...next, contacts: next.contacts.map((x) => (x.id === p.contactId ? { ...x, planKnown: true } : x)) };
@@ -198,35 +173,14 @@ function deliver(s: GameState, p: Push): GameState {
 
 // Decoded traffic goes on the shelf like any package (ILI-1499): HQ can't push it to ALPHA.
 export const postDecoded = (s: GameState, square: string, contactId: string | undefined, amount: number): GameState =>
-  record(s, { source: 'SIGINT', square, contactId, items: [{ kind: 'SIGINT', heat: 'hot', text: 'decoded: what they plan' }] }, amount, 'posted');
+  send(s, { source: 'SIGINT', square, contactId, items: [{ kind: 'SIGINT', heat: 'hot', text: 'decoded: what they plan' }] }, amount);
 
 // HQ's intel on a building goes on the shelf too (ILI-1517): HQ can't send ALPHA in, only post what
 // it knows of the place. The new package's id, for the building to keep.
 export function postBuildingIntel(s: GameState, square: string): { next: GameState; id: string } {
   const id = `push-${s.intel.pushes.length}`;
-  return { next: record(s, { source: 'IMINT', square, building: true, items: [{ kind: 'GEOINT', heat: 'quiet', text: 'a building worth a search' }] }, 0, 'posted'), id };
+  return { next: send(s, { source: 'IMINT', square, building: true, items: [{ kind: 'GEOINT', heat: 'quiet', text: 'a building worth a search' }] }, 0), id };
 }
-
-export const pullSystem = (s: GameState): GameState => {
-  let next = s;
-  const d = s.intel.download;
-  if (d && s.elapsedMs >= d.untilMs) {
-    for (const id of d.ids) {
-      const p = next.intel.pushes.find((x) => x.id === id);
-      if (p?.state === 'pulling') next = deliver(next, p);
-    }
-    next = { ...next, intel: { ...next.intel, download: null } };
-  }
-  const here = squareAt(next.team.position.x, next.team.position.y);
-  const reached = !!here && here !== next.intel.syncedAt;
-  if (reached) next = { ...next, intel: { ...next.intel, syncedAt: here } };
-  if (next.intel.download) return next;
-  const posted = shelf(next);
-  if (!posted.length || !(reached || teamStatus(next) === 'Holding')) return next;
-  const ids = posted.map((p) => p.id);
-  const pushes = next.intel.pushes.map((p) => (ids.includes(p.id) ? { ...p, state: 'pulling' as const } : p));
-  return { ...next, intel: { ...next.intel, pushes, download: { startMs: next.elapsedMs, untilMs: next.elapsedMs + DOWNLOAD_MS, ids } } };
-};
 
 // The decay clock (ILI-1532): every fresh square counts down, except the one ORION-3 is over. At
 // zero the square is unknown again: no snapshot, no stamp, nothing in ALPHA's picture from it, and
@@ -272,6 +226,6 @@ export const freshLeft = (s: GameState, square: string) => Math.max(0, Math.min(
 // pulls it.
 export const pushVideo = (s: GameState): GameState => {
   const square = s.satellite.aim;
-  const posted = record(s, { source: 'IMINT', square, grade: 'video', items: reports(s, square ?? '', 'video') }, VIDEO_INTEL, 'posted');
+  const posted = send(s, { source: 'IMINT', square, grade: 'video', items: reports(s, square ?? '', 'video') }, VIDEO_INTEL);
   return { ...posted, intel: { ...posted.intel, videosShot: s.intel.videosShot + 1, live: [...new Set([...(posted.intel.live ?? []), square])] } };
 };

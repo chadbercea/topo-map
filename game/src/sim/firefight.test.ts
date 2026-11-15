@@ -4,7 +4,7 @@ import type { Contact } from './contacts';
 import type { GameState } from './state';
 import { step } from './systems';
 import { LOADOUT } from './team';
-import { playUntil, run, walking } from './testkit';
+import { lockedStore, playUntil, run, walking } from './testkit';
 import { wrapUp } from './wrapup';
 import { AMBUSH_COVER_MS, AMBUSH_EDGE, COVER_FIRE, INITIATIVE } from './firefight';
 import { FRESH_MS, GHOST_MS } from './imagery';
@@ -32,6 +32,15 @@ const totalAmmo = (s: GameState) => s.team.operators.reduce((n, o) => n + o.ammo
 const totalHealth = (s: GameState) => s.team.operators.reduce((n, o) => n + o.health, 0);
 
 describe('firefight', () => {
+  it('a square HQ analyzed is never an ambush: ALPHA has the intel the moment Analyze is done (ILI-1558)', () => {
+    const store = lockedStore(blindInto({ ...walking(), elapsedMs: 0 }));
+    const s0 = store.get();
+    store.set({ ...s0, team: { ...s0.team, position: walking().team.position, waypoint: 1 } });
+    store.scan('E3');
+    expect(store.get().team.known.checkpoint).toMatchObject({ square: 'E3' });
+    const s = run(store.get(), 120_000);
+    expect(s.comms.messages.some((m) => m.text.includes('CONTACT, ambush, E3'))).toBe(false);
+  });
   it("doesn't drop a call ALPHA is holding on (ILI-1552)", () => {
     const s0 = inContact();
     const s = step({ ...s0, team: { ...s0.team, holdFor: 'call-1' } }, 100);

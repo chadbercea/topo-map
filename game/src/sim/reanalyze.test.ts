@@ -36,8 +36,8 @@ describe('Analyze again after an action (ILI-1516)', () => {
     const before = store.get().intel.pushes.length;
     store.scan('E3');
     const s = store.get();
-    expect(s.intel.pushes.length).toBeGreaterThan(before); // a fresh package on the shelf
-    expect(s.intel.pushes.at(-1)).toMatchObject({ square: 'E3', state: 'posted' });
+    expect(s.intel.pushes.length).toBeGreaterThan(before); // a fresh package, on ALPHA's devices (ILI-1558)
+    expect(s.intel.pushes.at(-1)).toMatchObject({ square: 'E3', state: 'fed' });
     expect(analyzable(s, 'E3')).toBe(false);
   });
 });

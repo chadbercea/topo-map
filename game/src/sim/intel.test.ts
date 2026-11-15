@@ -5,9 +5,8 @@ import { fixed } from './testkit';
 // A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
 const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { createStore } from './store';
-import { analyzable, DECAY_MS, DOWNLOAD_MS, grade, INT_KINDS, pushPhoto, pushVideo, reports, settled, shelfState, VIDEO_INTEL } from './intel';
-import { squareAt, squareCenter } from '../map/grid';
-import { answerIntel, fed as walkFree, lockOn, pulled, run } from './testkit';
+import { analyzable, DECAY_MS, grade, INT_KINDS, pushPhoto, pushVideo, reports, sent, settled, VIDEO_INTEL } from './intel';
+import { answerIntel, lockOn, run } from './testkit';
 import { initialSatellite } from './satellite';
 
 // Fresh intel (ILI-1532): ALPHA moves only into squares HQ has analyzed in the last DECAY_MS.
@@ -93,9 +92,7 @@ describe('fresh intel', () => {
     store.capture('video');
     store.set(run(store.get(), 16_000));
     expect(store.get().intel.live).toContain('G5');
-    expect(store.get().intel.pushes.find((p) => p.grade === 'video')).toMatchObject({ amount: VIDEO_INTEL }); // its feed, on the shelf till ALPHA pulls it (ILI-1499)
-    store.set(pulled(store.get()));
-    expect(store.get().intel.pushes.find((p) => p.grade === 'video')?.state).toBe('fed');
+    expect(store.get().intel.pushes.find((p) => p.grade === 'video')).toMatchObject({ amount: VIDEO_INTEL, state: 'fed' }); // its feed, on ALPHA's devices at once (ILI-1558)
     store.lookAt('F4');
     store.set(run(store.get(), 20_000));
     store.scan('F4');
@@ -111,46 +108,18 @@ describe('fresh intel', () => {
     expect(grade(s, 'F2', 0)).toBe(first); // the same square grades the same in a replay
   });
 
-  it('Analyze posts the package on the shelf; ALPHA, holding at the infil, pulls it down, and only then moves (ILI-1499, ILI-1532)', () => {
+  it('Analyze lands on ALPHA at once: no shelf, no pull; ALPHA, holding at the infil, moves (ILI-1558)', () => {
     const store = createStore(lockOn(initialState(), 'F4'));
     store.scan('F4');
-    expect(shelfState(store.get(), 'F4')).toBe('posted'); // on the shelf: HQ can't push it to the team
-    expect(store.get().comms.messages.some((m) => /Intel posted/.test(m.text))).toBe(false); // the post shows on the instruments, not the radio (ILI-1541)
-    store.tick(100);
-    expect(shelfState(store.get(), 'F4')).toBe('pulling'); // holding: it syncs at once
-    expect(store.get().intel.download).toBeTruthy();
-    for (let t = 100; t < DOWNLOAD_MS - 100; t += 100) store.tick(100);
-    expect(store.get().team.position).toEqual(squareCenter('G5')); // still coming down
-    store.tick(200);
-    expect(shelfState(store.get(), 'F4')).toBe('received');
+    expect(sent(store.get(), 'F4')).toBe(true);
+    expect(store.get().comms.messages.some((m) => /Intel posted/.test(m.text))).toBe(false); // on the instruments, not the radio (ILI-1541)
     for (let i = 0; i < 20; i++) store.tick(100);
-    expect(store.get().team.activity).toMatch(/^Moving/); // the opening (ILI-1485): released by its first pull
+    expect(store.get().team.activity).toMatch(/^Moving/);
   });
 
-  it('on the move, ALPHA pulls at the next square it reaches, not before (ILI-1499)', () => {
-    const s0 = walkFree(initialState());
-    const mid = run(s0, 3_000); // on its way out of the infil
-    expect(mid.team.activity).toMatch(/^Moving/);
-    const far = mid.team.route[mid.team.waypoint + 2];
-    const posted = lockOn(mid, far);
-    const store = createStore(posted);
-    store.scan(far);
-    let s = store.get();
-    expect(shelfState(s, far)).toBe('posted');
-    const from = squareAt(s.team.position.x, s.team.position.y);
-    for (let t = 0; t < 120_000 && squareAt(s.team.position.x, s.team.position.y) === from; t += 100) {
-      expect(shelfState(s, far)).toBe('posted'); // waits on the shelf while ALPHA is mid-square
-      s = run(s, 100);
-    }
-    expect(shelfState(s, far)).toBe('pulling'); // the square it reached: it syncs
-    s = run(s, DOWNLOAD_MS);
-    expect(shelfState(s, far)).toBe('received');
-  });
-
-  it('a video feed goes on the shelf too, and lands once pulled (ILI-1499)', () => {
+  it('a video feed lands on ALPHA at once (ILI-1558)', () => {
     const s = pushVideo(lockOn(initialState(), 'G5'));
-    expect(shelfState(s, 'G5')).toBe('posted');
-    expect(run(s, DOWNLOAD_MS + 100).intel.pushes.find((p) => p.grade === 'video')).toMatchObject({ state: 'fed', amount: VIDEO_INTEL });
+    expect(s.intel.pushes.find((p) => p.grade === 'video')).toMatchObject({ state: 'fed', amount: VIDEO_INTEL });
   });
 });
 
@@ -183,7 +152,7 @@ describe('intel reports', () => {
 
 // An Analyze settles a square while it's fresh (ILI-1399, ILI-1532).
 describe('settled squares', () => {
-  it('ALPHA moves into a square with fresh intel it has pulled, without asking', () => {
+  it('ALPHA moves into a square with fresh intel, without asking', () => {
     const s0 = blindAhead();
     const next = s0.team.route[s0.team.waypoint];
     const known = { ...s0, intel: { ...s0.intel, graded: [next], fresh: { [next]: DECAY_MS } } };
