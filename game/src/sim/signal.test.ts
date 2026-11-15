@@ -104,14 +104,16 @@ describe('signal intercept', () => {
     expect(deaf.get().contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
   });
 
-  it('heard off ground ORION-3 hasn\u2019t scanned, it gives their words but never where they are (ILI-1493)', () => {
+  it('heard off ground ORION-3 hasn\u2019t scanned, it still fixes them: the group is found, and ALPHA knows where (ILI-1560)', () => {
     const part = atTraffic(false);
     part.intercept(trafficId(part.get()));
     part.set({ ...part.get(), minigame: { ...part.get().minigame!, signal: { ...part.get().minigame!.signal!, progress: 0.5 } } });
     part.abortMiniGame();
-    expect(part.get().contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
-    expect(part.get().events.some((e) => e.id === 'contact-patrol')).toBe(false);
-    expect(part.get().comms.messages.at(-1)?.text).toBe('B1 audio, partial intercept. No fix, intent unknown.');
+    const p = part.get();
+    expect(p.contacts.find((c) => c.id === 'patrol')?.status).toBe('revealed');
+    expect(p.contacts.find((c) => c.id === 'patrol')?.planKnown).toBeFalsy(); // where, not what they plan
+    expect(p.team.known.patrol).toMatchObject({ square: 'C2' });
+    expect(p.comms.messages.at(-1)?.text).toBe('B1 audio, partial intercept. Enemy at C2, intent unknown.');
 
     const store = atTraffic(false);
     store.intercept(trafficId(store.get()));
@@ -120,9 +122,7 @@ describe('signal intercept', () => {
       store.tick(100);
     }
     const s = store.get();
-    expect(s.contacts.find((c) => c.id === 'patrol')?.status).toBe('hidden');
-    expect(s.comms.messages.some((m) => m.text.includes('PATROL MOVING TO D3 FOR THE DRONE'))).toBe(true);
-    expect(s.intel.pushes.find((p) => p.source === 'SIGINT')?.square).toBe('B1'); // posted on the square it was heard from
-    expect(s.comms.messages.some((m) => /\bAT C2\b/.test(m.text))).toBe(false);
+    expect(s.contacts.find((c) => c.id === 'patrol')).toMatchObject({ status: 'revealed', planKnown: true });
+    expect(s.comms.messages.some((m) => m.text.includes('PATROL AT C2 MOVING TO D3 FOR THE DRONE'))).toBe(true);
   });
 });
