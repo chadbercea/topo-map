@@ -10,6 +10,7 @@ import { painting } from './strike';
 import { callSniper } from './sniper';
 import { unlock, unlockedWeapons, weaponBlocked, type Weapon } from './ordnance';
 import { perCall } from './upgrades';
+import { nextContract } from './campaign';
 import { postBuilding } from './buildings';
 import { spend } from './sites';
 import { sendResupply } from './support';
@@ -69,6 +70,10 @@ export function createStore(initial: GameState = initialState()) {
     // No saves in the MVP: retry and restart both start the mission over, live.
     // A new mission opens on the balance HQ carries in (ILI-1316): the last one's, unless given.
     restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state), upgrades: readonly string[] = state.upgrades) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
+    // The campaign (ILI-1566). A job done: the next contract, on the next map, with the closing
+    // balance and whoever came home. A failed one: the same contract again, as it opened.
+    nextContract: () => set(keepBase(nextContract(state))),
+    retryContract: () => set(keepBase(initialState(state.settings, state.timer.totalMs, state.resources.ledger.opening, unlockedWeapons(state), state.upgrades, state.seed, state.campaign))),
     // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
     setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
     // Post intel on a building a scan turned up for ALPHA to pull (ILI-1316, ILI-1517).

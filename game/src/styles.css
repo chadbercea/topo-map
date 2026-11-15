@@ -2511,3 +2511,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .wrapup .aar-card dt { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
 .wrapup .aar-card dd { margin: 2px 0 0; font-size: 16px; font-variant-numeric: tabular-nums; color: var(--ink); }
 @media (max-width: 520px) { .wrapup .aar-card { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wrapup .aar-card > div:nth-child(2) { border-right: 0; } }
+
+/* ILI-1566: which contract of the campaign, beside the operation's name. */
+.mission-bar .mb-contract { margin-left: 6px; font-size: 0.7em; font-weight: 400; letter-spacing: 0.08em; color: var(--dim); }

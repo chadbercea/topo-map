@@ -3,6 +3,7 @@ import { game, useGame } from '../sim/store';
 import { exfilStage, TRANSPORT } from '../sim/exfil';
 import { intro, introOn } from './intro';
 import { wrapUp, type Outcome } from '../sim/wrapup';
+import { CONTRACTS } from '../sim/state';
 import { gameClock } from '../sim/gameTime';
 import { RaceBar, RookGlyph } from './MissionBar';
 import type { Shot } from '../site/content'; // a type only
@@ -130,6 +131,8 @@ export function WrapUp() {
   if (!ended) return null;
   const w = wrapUp(state);
   const good = w.outcome === 'win' || w.outcome === 'casualties';
+  const survivors = state.team.operators.some((o) => o.health > 0);
+  const next = w.outcome === 'bankrupt' ? 'new' : w.outcome === 'failed' ? 'retry' : state.campaign.contract < CONTRACTS && survivors ? 'next' : 'new';
   const copy = w.grade === 'F' ? COPY[w.outcome] : { ...COPY[w.outcome], ...GRADED[w.grade] };
   const done = w.objectives.filter((o) => o.done).length;
   const extracted = !!state.exfil && exfilStage(state.exfil, state.elapsedMs) === 'done';
@@ -151,7 +154,7 @@ export function WrapUp() {
             </div>
             <div className="aar-hero-text">
               <p className="aar-stamp" data-testid="outcome">
-                {HEADLINE[w.outcome]} · GRADE {w.grade}
+                {HEADLINE[w.outcome]} · GRADE {w.grade} · CONTRACT {state.campaign.contract} OF {CONTRACTS}
                 {/* A job done can still lose money (ILI-1316). */}
                 {good && w.pnl < 0 && ' · AT A LOSS'}
               </p>
@@ -287,8 +290,9 @@ export function WrapUp() {
           </section>
         </div>
         <footer className="aar-actions">
-          <button className="aar-primary" onClick={intro.reboot}>
-            {w.outcome === 'bankrupt' ? 'Start a new PMC' : w.outcome === 'failed' ? 'Retry mission' : 'Play again'}
+          {/* The campaign (ILI-1566): a job done offers the next contract; the last one, a new campaign. */}
+          <button className="aar-primary" onClick={next === 'next' ? intro.next : next === 'retry' ? intro.retry : intro.reboot} data-testid="aar-next">
+            {next === 'next' ? `Next contract (${state.campaign.contract + 1} of ${CONTRACTS})` : next === 'retry' ? 'Retry contract' : w.outcome === 'bankrupt' ? 'Start a new PMC' : 'New campaign'}
           </button>
           <button onClick={introOn ? intro.home : game.exit}>Exit</button>
         </footer>

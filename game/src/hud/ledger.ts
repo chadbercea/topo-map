@@ -1,8 +1,8 @@
 import { WEAPONS, type Weapon } from '../sim/ordnance';
 import { OPENING_BUDGET } from '../sim/prices';
 
-// Every mission opens fresh (ILI-1405): $10M in the bank, the sniper, drone and heli all on
-// call (each call still costs), no upgrades. Nothing carries from mission to mission.
+// Every campaign opens fresh (ILI-1405, ILI-1566): $10M in the bank, the sniper, drone and heli all on
+// call (each call still costs), no upgrades. Within a campaign the balance and team carry (sim/campaign.ts).
 export const opening = (): [number, Weapon[], string[]] => [OPENING_BUDGET, [...WEAPONS], []];
 
 // The balance, unlocks and upgrades an older build saved on this device (ILI-1316, ILI-1317):
