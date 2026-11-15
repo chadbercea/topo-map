@@ -4,6 +4,7 @@ import type { GameState } from './state';
 // mission. It measures how much the team got done and what HQ learned, and shows the payout and the budget it makes for the next mission.
 
 export type Outcome = 'win' | 'casualties' | 'failed' | 'bankrupt';
+export type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
 
 export { CASUALTY_PENALTY } from './prices';
 import { CASUALTY_PENALTY } from './prices';
@@ -18,7 +19,24 @@ export type WrapUp = {
   pnl: number; // what the mission made or lost
   budget: number; // the closing balance, carried to the next mission
   timeUsedMs: number;
+  // The grade (ILI-1563): how well the job was done, not just whether. Four things, each shown.
+  grade: Grade;
+  card: { label: string; value: string }[];
 };
+
+// Points off 100 (ILI-1563): each operator down 20, each ambush walked into 10, a point per $100K of
+// support (up to 30), and up to 15 for the clock past its halfway mark. A done job grades A to D;
+// a failed one is F.
+export function gradeOf(s: GameState): { grade: Grade; score: number } {
+  const o = outcomeOf(s);
+  if (o === 'failed' || o === 'bankrupt') return { grade: 'F', score: 0 };
+  const used = s.elapsedMs / Math.max(1, s.timer.totalMs);
+  const score = 100 - 20 * casualties(s) - 10 * ambushesOf(s) - Math.min(30, -s.resources.ledger.spent / 100_000) - 15 * Math.max(0, (used - 0.5) / 0.5);
+  return { grade: score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 55 ? 'C' : 'D', score };
+}
+
+// Fights ALPHA walked into blind: its "CONTACT, ambush" calls.
+const ambushesOf = (s: GameState) => s.comms.messages.filter((m) => m.text.includes('CONTACT, ambush')).length;
 
 // Casualties: everyone who went down, even if a replacement took their place.
 const casualties = (s: GameState) => new Set([...s.stats.lost, ...s.team.operators.filter((o) => o.health <= 0).map((o) => o.id)]).size;
@@ -52,7 +70,7 @@ export function wrapUp(s: GameState): WrapUp {
   const found = s.contacts.filter((c) => c.status !== 'hidden').length;
   const cleared = s.contacts.filter((c) => c.status === 'cleared').length;
   const avoided = s.contacts.filter((c) => c.status === 'avoided').length;
-  const ambushes = s.comms.messages.filter((m) => m.text.startsWith('Ambush')).length;
+  const ambushes = ambushesOf(s);
 
   // The P&L (ILI-1316): up front, out of escrow, the field, support, and the casualties.
   const { ledger } = s.resources;
@@ -90,5 +108,12 @@ export function wrapUp(s: GameState): WrapUp {
     pnl: closing - ledger.opening,
     budget: closing,
     timeUsedMs: s.elapsedMs,
+    grade: gradeOf(s).grade,
+    card: [
+      { label: 'Time used', value: `${Math.floor(s.elapsedMs / 60_000)}:${String(Math.floor((s.elapsedMs % 60_000) / 1000)).padStart(2, '0')}` },
+      { label: 'Men lost', value: String(down) },
+      { label: 'Spent on support', value: `$${Math.round(-ledger.spent / 1000).toLocaleString('en-US')}K` },
+      { label: 'Ambushes', value: String(ambushes) },
+    ],
   };
 }

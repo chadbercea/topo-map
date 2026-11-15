@@ -78,6 +78,24 @@ describe('wrap-up and the P&L (ILI-1316)', () => {
   });
 });
 
+describe('the grade (ILI-1563)', () => {
+  const done = finished();
+  const down = (n: number) => ({ ...done, team: { ...done.team, operators: done.team.operators.map((o, i) => (i < n ? { ...o, health: 0 } : o)) } });
+  it('a clean, quick, cheap job is an A; the card shows what it was made of', () => {
+    const w = wrapUp({ ...done, elapsedMs: 240_000 });
+    expect(w.grade).toBe('A');
+    expect(w.card.map((c) => c.label)).toEqual(['Time used', 'Men lost', 'Spent on support', 'Ambushes']);
+    expect(w.card[0].value).toBe('4:00');
+  });
+  it('men lost pull the grade down: three down is a D, not "what it takes"', () => {
+    expect(wrapUp({ ...down(1), elapsedMs: 240_000 }).grade).toBe('B');
+    expect(wrapUp({ ...down(3), elapsedMs: 240_000 }).grade).toBe('D');
+  });
+  it('a failed job is an F', () => {
+    expect(wrapUp({ ...done, mission: { ...done.mission, phase: 'exfil' } }).grade).toBe('F');
+  });
+});
+
 describe('mission length', () => {
   it('can be tuned, and Retry keeps the tuned length', () => {
     const store = createStore();
