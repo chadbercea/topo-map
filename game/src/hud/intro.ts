@@ -94,9 +94,9 @@ export const intro = {
     run([['map', MAP_MS], ['panels', PANELS_MS], ['live', 0]]);
   },
   // The next contract, or the same one again (ILI-1566): the map boot, without the login.
-  next() {
+  next(hire = false) {
     pins.clear();
-    game.nextContract();
+    game.nextContract(hire);
     boot();
   },
   retry() {
