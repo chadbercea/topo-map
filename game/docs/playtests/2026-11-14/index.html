@@ -122,7 +122,7 @@ code { font-family: var(--mono); font-size: .9em; color: var(--accent); }
       <p>Every action is one or two clicks: Analyze, ALERT then Drone, Send resupply. The ability side of Fogg's model is excellent.</p>
       <ul>
         <li>One dominant strategy: Drone on every ALERT. It never failed, cost nothing in net terms and finished in under half the clock. Sniper and Heli were never needed.</li>
-        <li>Strikes make money. Bounties outpay the $150K drone, so the budget rose from $9.6M to $10.23M. With no cost to a strike, it isn't a decision.</li>
+        <li>Correction (15 Nov): strikes don't make money. A $150K drone strike earns back about $75K in kills; the budget rise to $10.23M came from the black box's $750K escrow. The problem is that the drone never ran out and never failed.</li>
         <li>Listen is the only skill action, and its result never changes the mission (see below).</li>
       </ul>
       <p class="fix"><b>Fix:</b> make every strike a real trade (cost above bounty, collateral risk, a cooldown, or a ROE call on an alerted group). Give each weapon a target type only it handles.</p>
@@ -238,7 +238,7 @@ code { font-family: var(--mono); font-size: .9em; color: var(--accent); }
   <span class="eyebrow">Bugs and rough edges</span>
   <ol class="bugs">
     <li><span class="sev bad">High</span>Posted intel isn't pulled before contact, so a scanned square can still be an ambush (above).</li>
-    <li><span class="sev bad">High</span>Strikes net a profit: budget rose $630K over three drone strikes. No trade-off.</li>
+    <li><span class="sev bad">High</span>The drone had unlimited uses and killed every fighter in the square, so it was always the answer. (Corrected: strikes never netted a profit; the budget rise was escrow.)</li>
     <li><span class="sev warn">Med</span>Wrap-up is the same for a flawless run and for three KIA; no stats.</li>
     <li><span class="sev warn">Med</span>Rewards repeat verbatim: every intercept is “HOLD POSITION”, every kill site “documents, maps, a phone”.</li>
     <li><span class="sev warn">Med</span>The HQ hint “CONTACT ON THE MAP · STRIKE ▸ ON ITS ALERT, OR LET ALPHA DECIDE” is logged as an HQ radio line in COMMS. Coaching on the radio breaks the comms standard.</li>
