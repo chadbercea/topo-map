@@ -322,27 +322,13 @@ export const moveSystem: System = (s) => {
   const able = movers.filter((c) => options(c).length);
   if (!able.length) return { ...next, rng: rng3, beatAtMs };
   const c = able[Math.floor(r1 * able.length)];
-  // Three times in four it closes on ALPHA's way ahead (ILI-1571), so a cleared route doesn't stay safe;
-  // otherwise any square next to it.
-  const ahead = next.team.route.slice(next.team.waypoint);
-  const toRoute = (sq: SquareId) => Math.min(Infinity, ...ahead.map((r) => gap(sq, r)));
-  const opts = options(c);
-  const to = r2 < 0.75 && ahead.length
-    ? opts.reduce((a, b) => (toRoute(b) < toRoute(a) ? b : a))
-    : opts[Math.min(opts.length - 1, Math.floor((ahead.length ? (r2 - 0.75) * 4 : r2) * opts.length))];
+  const to = options(c)[Math.floor(r2 * options(c).length)];
   let moved = startMove({ ...next, rng: rng3, beatAtMs }, c.id, to, next.elapsedMs + MOVE_MS);
   if (c.status === 'revealed') {
     const line: Message = { id: `move-${c.id}-${next.elapsedMs}`, from: 'Analysts', text: `${c.square} imagery, movement: ${c.units.length} dismounts heading ${heading(c.square, to)}.`, atMs: next.elapsedMs, status: 'new', holds: false };
     moved = { ...moved, comms: { ...moved.comms, messages: [...moved.comms.messages, line] } };
   }
   return moved;
-};
-
-// Squares between two squares, king's moves.
-const gap = (a: SquareId, b: SquareId) => {
-  const p = parseSquare(a);
-  const q = parseSquare(b);
-  return p && q ? Math.max(Math.abs(p.col - q.col), Math.abs(p.row - q.row)) : Infinity;
 };
 
 const nextSquares = (sq: SquareId) => {
