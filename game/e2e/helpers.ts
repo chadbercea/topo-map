@@ -44,7 +44,7 @@ export const photo = (page: Page, square: string) =>
     const g = window.game;
     g.lookAt(sq);
     for (let i = 0; i < 300 && g.get().satellite.state === 'slewing'; i++) g.tick(100);
-    g.capture('photo'); // Analyze: its package goes on the shelf, and ALPHA pulls it (ILI-1499)
+    g.capture('photo'); // Analyze: ALPHA has its package at once (ILI-1558)
     g.closeLook();
   }, square);
 

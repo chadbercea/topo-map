@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { game, useGame } from '../sim/store';
 import { lockedOn, resultLabel, lookSquare, orionSquare, satelliteBusy, satelliteStatus, satName, slewMs } from '../sim/satellite';
 import { AGE_LABEL, freshness } from '../sim/imagery';
-import { analyzable, reopened, settled, shelfState } from '../sim/intel';
+import { analyzable, reopened, settled } from '../sim/intel';
 import { AIR, airGone, arrived } from '../sim/air';
 import { SNIPER_CALLSIGN, sniperGone } from '../sim/sniper';
 import { pins, useSeenVersion } from './pins';
@@ -108,7 +108,6 @@ export function OrionPanel() {
   // Analyze is spent on a square until HQ acts on it; then it's lit again (ILI-1516).
   const again = reopened(s, sat.aim);
   const done = !analyzable(s, sat.aim);
-  const shelved = shelfState(s, sat.aim);
   const onVideo = (s.intel.live ?? []).includes(sat.aim);
   // Nothing picked: the square it's over is the one it works, so locked on there it's in position
   // (ILI-1485: at the open it's over ALPHA at the infil, and Analyze is lit).
@@ -246,7 +245,7 @@ export function OrionPanel() {
         <div className="modes" data-testid="capture-modes" data-step={done ? 'send' : 'scan'}>
           <button className="o-scan" disabled={!ready || busy || done} onClick={() => game.scan(sat.aim)} data-testid="capture-scan" title={`Image the square: the analysts report what's there and post the package for ${s.team.callsign}`} data-cue={(ready && !busy && !done) || undefined}>
             Analyze {sat.aim}
-            <small>{tied ? 'tied up by the intercept' : done ? (shelved === 'received' ? 'Intel received ✓' : shelved === 'pulling' ? `${s.team.callsign} downloading` : `intel posted for ${s.team.callsign}`) : ready ? (again ? `re-image, post for ${s.team.callsign}` : `image, report, post for ${s.team.callsign}`) : sat.state === 'slewing' ? `SLEWING · ${sat.aim} · ${countdown(left)}` : 'lock on first'}</small>
+            <small>{tied ? 'tied up by the intercept' : done ? 'Intel received ✓' : ready ? (again ? `re-image, send to ${s.team.callsign}` : `image, report, send to ${s.team.callsign}`) : sat.state === 'slewing' ? `SLEWING · ${sat.aim} · ${countdown(left)}` : 'lock on first'}</small>
           </button>
           <button disabled={!ready || busy || !analyzed || onVideo} onClick={() => game.capture('video')} data-testid="capture-video" title={`Keep the square live on the map while ${name} stays on station`}>
             Video

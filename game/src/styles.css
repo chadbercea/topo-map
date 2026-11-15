@@ -526,15 +526,6 @@ html, body {
 .op .status { font-size: 9px; letter-spacing: 0.1em; white-space: nowrap; }
 .team h2 .alerted { color: #e5484d; letter-spacing: 0.1em; }
 /* ALPHA's SATCOM (ILI-1499): the shelf, as one small instrument on the team bar. */
-.team .tsat-row { display: inline-flex; align-items: center; gap: 5px; min-width: 0; max-width: 100%; }
-.team .tsat-v { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.team .tsat { display: inline-flex; align-items: center; gap: 5px; flex: none; font-size: 10px; font-weight: 400; letter-spacing: 0.04em; color: var(--dim); white-space: nowrap; }
-.team .tsat-k { font-size: 9px; letter-spacing: 0.1em; padding: 0 4px; border: 1px solid currentColor; }
-.team .tsat[data-state='posted'] { color: #f2c14e; }
-.team .tsat[data-state='pulling'], .team .tsat[data-state='received'] { color: var(--accent); }
-.team .tsat-bar { display: block; width: 28px; height: 4px; background: rgba(53, 208, 165, 0.15); align-self: center; }
-.team .tsat-bar > span { display: block; height: 100%; background: var(--accent); transition: width 200ms linear; }
-@media (prefers-reduced-motion: reduce) { .team .tsat-bar > span { transition: none; } }
 /* Ammo and meds as short bars (ILI-1248), amber when low and red when out; noise, how loud
    they've been moving (ILI-1222), as an orange one that rises and falls with it. */
 .op .gauge { display: flex; align-items: center; gap: 3px; white-space: nowrap; font-size: 9px; color: var(--dim); }
@@ -2004,7 +1995,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .team-bar > h2 .callsign { font-size: 11px; letter-spacing: 0.16em; }
 .team-bar > h2 .activity { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .team-bar > h2 .alerted { font-size: 9px; }
-.team-bar > .tsat { flex: none; display: grid; align-content: center; justify-items: start; gap: 3px; width: 112px; padding: 0 10px; border-right: 1px solid rgba(53, 208, 165, 0.18); }
 .team-bar .heartbeat-strip { flex: 1; min-width: 0; height: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; padding: 0; margin: 0; background: none; border: 0; cursor: pointer; }
 .team-bar .hb { display: grid; align-content: center; justify-items: center; gap: 1px; min-width: 0; border-right: 1px solid rgba(53, 208, 165, 0.1); cursor: pointer; }
 .team-bar .hb:hover, .team-bar .hb[data-hover] { background: rgba(53, 208, 165, 0.08); }

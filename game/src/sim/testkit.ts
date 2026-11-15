@@ -84,14 +84,6 @@ export function asking(s: GameState = walking()): GameState {
   return run({ ...s, team: { ...s.team, operators: ops } }, 200);
 }
 
-// ALPHA pulls what's on the shelf (ILI-1499): run until no package is waiting for it (posted or
-// coming down), so what HQ posted is in ALPHA's picture.
-export function pulled(s: GameState, maxMs = 60_000) {
-  const pending = (x: GameState) => x.intel.pushes.some((p) => p.state === 'posted' || p.state === 'pulling');
-  for (let t = 0; t < maxMs && pending(s); t += 100) s = step(s, 100);
-  return s;
-}
-
 // ORION-3 locked on a square (ILI-1397): nothing runs on a square it isn't over.
 export const lockOn = (s: GameState, square: string): GameState => ({ ...s, satellite: initialSatellite(square) });
 

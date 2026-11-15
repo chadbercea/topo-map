@@ -6,7 +6,7 @@ import { fixed } from './testkit';
 // A fixed enemy layout, not the rolled map (testkit FIXTURE, ILI-1544).
 const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { lockedStore as createStore } from './testkit';
-import { pulled, run, trafficId, untilTraffic } from './testkit';
+import { run, trafficId, untilTraffic } from './testkit';
 
 // Enemy traffic comes up near C2, where the patrol is hiding: on the default seed it talks first,
 // before a minute is up (ILI-1454). C2 is ground ORION-3 has scanned, as a scan's SIGINT report
@@ -70,16 +70,15 @@ describe('signal intercept', () => {
     return store;
   };
 
-  it('following them all the way decodes their plan: it goes on the shelf, and once ALPHA pulls it the route is known (ILI-1394, ILI-1499)', () => {
+  it('following them all the way decodes their plan: ALPHA has it at once and the route is known (ILI-1394, ILI-1558)', () => {
     const store = follow(TRANSMISSION_MS);
     const before = store.get();
     expect(before.minigame).toBeNull();
     expect(promptQueue(before).some((x) => (x.kind as string) === 'intel-ready')).toBe(false); // no send step: HQ can't push it
     const pkg = before.intel.pushes.find((p) => p.source === 'SIGINT')!;
     expect(pkg).toMatchObject({ square: 'C2', contactId: 'patrol' });
-    expect(['posted', 'pulling']).toContain(pkg.state);
-    expect(before.contacts.find((c) => c.id === 'patrol')!.planKnown).toBeFalsy(); // not until ALPHA pulls it
-    const s: GameState = pulled(before);
+    expect(pkg.state).toBe('fed'); // on ALPHA's devices at once (ILI-1558)
+    const s: GameState = before;
     const patrol = s.contacts.find((c) => c.id === 'patrol')!;
     expect(patrol).toMatchObject({ status: 'revealed', planKnown: true, planTo: 'D3' });
     expect(s.events.find((e) => e.kind === 'signal')?.status).toBe('resolved');

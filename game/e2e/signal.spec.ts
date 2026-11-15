@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, lockOn, start, untilTraffic, openEvent, hasEvent } from './helpers';
 
-test('intercept: get ORION-3 in range through the prompt, follow their wave, and what is decoded goes on the shelf for ALPHA (ILI-1394, ILI-1499)', async ({ page }) => {
+test('intercept: get ORION-3 in range through the prompt, follow their wave, and what is decoded reaches ALPHA at once (ILI-1394, ILI-1558)', async ({ page }) => {
   test.setTimeout(60_000); // a long flow, and CI's software renderer draws the satellite inset too
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
@@ -44,8 +44,8 @@ test('intercept: get ORION-3 in range through the prompt, follow their wave, and
       g.tick(100);
     }
   });
-  // Over: no after-action panel, and no send step: what came through goes on the shelf for ALPHA
-  // to pull (ILI-1499); pulled, the patrol's plan is known.
+  // Over: no after-action panel, and no send step: what came through reaches ALPHA at once
+  // (ILI-1558): the patrol's plan is known.
   await expect(panel).toHaveCount(0);
   await expect(item).toHaveCount(0); // the intercept ran: the traffic's resolved
   expect(await page.evaluate(() => window.game.get().intel.pushes.some((p) => p.source === 'SIGINT'))).toBe(true);

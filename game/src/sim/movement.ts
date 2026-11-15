@@ -3,7 +3,7 @@ import { heightAt, theater } from '../map/terrain';
 import { findPath, legSquares } from '../map/paths';
 import type { System } from './systems';
 import type { Message } from './comms';
-import { settled, waiting } from './intel';
+import { settled } from './intel';
 import { speedFactor } from './upgrades';
 import { footfall } from './noise';
 
@@ -33,10 +33,10 @@ export const movementSystem: System = (s, dt) => {
     return team.activity === activity ? s : { ...s, team: { ...team, activity } };
   }
   // Fresh intel or nothing (ILI-1532): before it sets off into a square, ALPHA needs a fresh Analyze
-  // of it that it has pulled. Short of that it holds and asks for imagery (imageryRequest.ts), and
+  // of it. Short of that it holds and asks for imagery (imageryRequest.ts), and
   // the mission clock keeps running. A leg already under way it finishes, fresh or not: the check is
   // only ever before it enters the next square.
-  const ready = (settled(s, target) && !waiting(s, target)) || !!s.intel.walkFree;
+  const ready = settled(s, target) || !!s.intel.walkFree;
   if (!ready && team.pathTo !== target) {
     if (team.activity === STARVED) return s;
     const held = { ...s, team: { ...team, activity: STARVED } };
