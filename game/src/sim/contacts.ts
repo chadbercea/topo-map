@@ -59,12 +59,17 @@ export function startMove(s: GameState, id: string, to: SquareId, arriveMs: numb
 }
 
 // A contact arrives in a new square. Its map marker stays where it was last seen: the map
-// only moves it when someone looks (imagery.record). HQ's intel on the square it left goes stale
-// (ILI-1559: intel is good until the group moves); ALPHA still goes by what it was told.
+// only moves it when someone looks (imagery.record). HQ's intel on both squares goes stale, the
+// one it left and the one it walked into (ILI-1559: intel is good until the group moves), so ALPHA
+// holds short of a square HQ had cleared and asks for a fresh look; ALPHA still goes by what it was told.
+// A square someone is watching (ORION-3 over it, or a live feed) sees them walk in instead.
 export function moveContact(s: GameState, id: string, square: SquareId): GameState {
   const from = s.contacts.find((c) => c.id === id)?.square;
-  const next = { ...s, contacts: s.contacts.map((c) => (c.id === id ? { ...c, square, move: undefined } : c)) };
-  return from && from !== square && next.intel.graded.includes(from) ? stale(next, from) : next;
+  let next: GameState = { ...s, contacts: s.contacts.map((c) => (c.id === id ? { ...c, square, move: undefined } : c)) };
+  if (!from || from === square) return next;
+  const watched = (!s.minigame && s.satellite.aim === square) || (s.intel.live ?? []).includes(square);
+  for (const sq of watched ? [from] : [from, square]) if (next.intel.graded.includes(sq)) next = stale(next, sq);
+  return next;
 }
 
 // How hard it fights: its strength, scaled by the fighters it has left.

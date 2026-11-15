@@ -49,6 +49,16 @@ describe('fresh intel', () => {
     expect(moved.team.known.x).toMatchObject({ square: 'C4' }); // ALPHA still goes by what it was told
   });
 
+  it('a group walking into a cleared square makes it unknown again, so ALPHA holds short of it', () => {
+    const base = pushPhoto(pushPhoto(blindAhead(), 'C4', 0).next, 'C3', 0).next;
+    const s0 = { ...base, contacts: [{ id: 'x', square: 'C4', label: 'test', strength: 1, status: 'revealed' as const, observed: false, units: [0, 5], total: 2 }] };
+    expect(settled(s0, 'C3')).toBe(true);
+    const moved = moveContact(s0, 'x', 'C3');
+    expect(settled(moved, 'C3')).toBe(false); // the square it walked into
+    expect(settled(moved, 'C4')).toBe(false); // and the one it left
+    expect(analyzable(moved, 'C3')).toBe(true);
+  });
+
   it('the stretch after the opening: answering where the prompt points keeps ALPHA going (ILI-1391)', () => {
     const store = createStore(blindAhead());
     const start = store.get().team.waypoint;
