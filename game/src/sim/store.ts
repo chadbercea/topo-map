@@ -72,7 +72,7 @@ export function createStore(initial: GameState = initialState()) {
     restart: (opening = state.resources.ledger.opening, unlocked: readonly Weapon[] = unlockedWeapons(state), upgrades: readonly string[] = state.upgrades) => set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),
     // The campaign (ILI-1566). A job done: the next contract, on the next map, with the closing
     // balance and whoever came home. A failed one: the same contract again, as it opened.
-    nextContract: () => set(keepBase(nextContract(state))),
+    nextContract: (hire = false) => set(keepBase(nextContract(state, hire))),
     retryContract: () => set(keepBase(initialState(state.settings, state.timer.totalMs, state.resources.ledger.opening, unlockedWeapons(state), state.upgrades, state.seed, state.campaign))),
     // Set the carried balance before the clock starts (the device's saved one, ILI-1316).
     setOpening: (opening: number, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = []) => state.elapsedMs === 0 && set(keepBase(initialState(state.settings, state.timer.totalMs, opening, unlocked, upgrades, state.seed))),

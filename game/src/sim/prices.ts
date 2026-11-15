@@ -14,6 +14,7 @@ export const CASH_PER_TEAM_KILL = 10_000;
 export const SEARCH_CASH = 25_000; // a swept kill site's documents
 export const CACHE_CASH = 75_000; // a weapons cache found at a kill site, sold on (ILI-1564)
 export const RESUPPLY_COST = 40_000;
+export const HIRE_COST = 500_000; // a replacement operator between contracts, recruited and flown in (ILI-1568)
 export const CASUALTY_PENALTY = 100_000; // per operator down, at the end
 export const BANKRUPT_AT = -4_000_000; // the PMC's credit line: below this it's shut down
 

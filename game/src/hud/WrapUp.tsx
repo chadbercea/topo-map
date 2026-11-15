@@ -4,6 +4,7 @@ import { exfilStage, TRANSPORT } from '../sim/exfil';
 import { intro, introOn } from './intro';
 import { wrapUp, type Outcome } from '../sim/wrapup';
 import { CONTRACTS } from '../sim/state';
+import { canHire, hireCost, missing } from '../sim/campaign';
 import { gameClock } from '../sim/gameTime';
 import { RaceBar, RookGlyph } from './MissionBar';
 import type { Shot } from '../site/content'; // a type only
@@ -291,7 +292,13 @@ export function WrapUp() {
         </div>
         <footer className="aar-actions">
           {/* The campaign (ILI-1566): a job done offers the next contract; the last one, a new campaign. */}
-          <button className="aar-primary" onClick={next === 'next' ? intro.next : next === 'retry' ? intro.retry : intro.reboot} data-testid="aar-next">
+          {/* Hire replacements (ILI-1568): back to a full team for the next contract, paid from the balance. */}
+          {next === 'next' && canHire(state) && (
+            <button className="aar-primary" onClick={() => intro.next(true)} data-testid="aar-hire">
+              {`Hire ${missing(state)} · $${(hireCost(state) / 1000).toLocaleString('en-US')}K · next contract`}
+            </button>
+          )}
+          <button className={next === 'next' && canHire(state) ? undefined : 'aar-primary'} onClick={next === 'next' ? () => intro.next() : next === 'retry' ? intro.retry : intro.reboot} data-testid="aar-next">
             {next === 'next' ? `Next contract (${state.campaign.contract + 1} of ${CONTRACTS})` : next === 'retry' ? 'Retry contract' : w.outcome === 'bankrupt' ? 'Start a new PMC' : 'New campaign'}
           </button>
           <button onClick={introOn ? intro.home : game.exit}>Exit</button>

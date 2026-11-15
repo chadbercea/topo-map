@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { nextContract } from './campaign';
+import { canHire, hireCost, nextContract } from './campaign';
+import { HIRE_COST, OPENING_BUDGET } from './prices';
 import { CONTRACTS, initialState } from './state';
 import { createStore } from './store';
 import { wrapUp } from './wrapup';
@@ -30,6 +31,17 @@ describe('campaign', () => {
     expect(s.resources.ledger.opening).toBe(wrapUp(lost).budget);
     expect(s.team.operators.map((o) => o.role)).toEqual(done.team.operators.filter((_, i) => i !== 1).map((o) => o.role)); // the dead stay dead
     expect(s.team.operators.every((o) => o.health === 100)).toBe(true); // the living, healed
+  });
+
+  it('hiring replacements: a full team again, paid from the closing balance (ILI-1568)', () => {
+    const done = finished();
+    const lost = { ...done, resources: { ...done.resources, budget: OPENING_BUDGET }, team: { ...done.team, operators: done.team.operators.map((o, i) => (i < 2 ? { ...o, health: 0 } : o)) } };
+    expect(canHire(lost)).toBe(true);
+    expect(hireCost(lost)).toBe(2 * HIRE_COST);
+    const s = nextContract(lost, true);
+    expect(s.team.operators).toHaveLength(5);
+    expect(s.resources.ledger.opening).toBe(wrapUp(lost).budget - 2 * HIRE_COST);
+    expect(canHire(done)).toBe(false); // nobody missing, nothing to hire
   });
 
   it('retrying a failed contract keeps it as it opened: same contract, same team, same map', () => {
