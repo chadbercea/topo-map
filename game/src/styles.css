@@ -231,8 +231,6 @@ html, body {
 .square-card .sc-scan button[data-cue] { animation: cue 1.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .square-card .sc-scan button[data-cue] { animation: none; box-shadow: 0 0 0 1px var(--accent); } }
 /* The mini game plays in its square's menu (ILI-1367): no second frame inside the anchor. */
-.square-card .minigame { border: 0; animation: none; }
-.square-card[data-minigame] { z-index: 2; background: var(--bg); }
 :is(.strike-alert, .sq-threat) .sc-strikes { --kind: #e5484d; }
 .square-card .sc-marked { margin: 0; padding: 6px 10px 0; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #e5484d; border-top: 1px solid var(--line); }
 .square-card .sc-actions .ap-head { display: none; } /* the anchor's header already names the square */
@@ -2220,18 +2218,13 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
    Its home is always below the square, the flyout's always to its right; both float above
    everything else on the map, the strike panel highest. */
 .strike-alert { position: fixed; z-index: 3; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; pointer-events: auto; }
-.strike-alert[data-open] { z-index: 3; overflow-y: auto; background: var(--bg); border: 1px solid #e5484d; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55); }
 .strike-alert .sa-band { zoom: var(--k, 1); display: flex; align-items: center; gap: 6px; width: 100%; min-height: 24px; margin: 0; padding: 0; font: inherit; color: #fff; text-align: left; cursor: pointer; background: rgba(60, 10, 12, 0.94); border: 1px solid #e5484d; }
-.strike-alert[data-open] .sa-band { border-width: 0 0 1px; }
 .strike-alert .sa-band:hover, .strike-alert .sa-band:focus-visible { background: rgba(110, 16, 20, 0.96); outline: none; }
 .strike-alert .sa-hazard { align-self: stretch; flex: 0 0 18px; background: repeating-linear-gradient(-45deg, #e5484d 0 4px, transparent 4px 8px); }
 .strike-alert .sa-hazard:last-child { margin-left: auto; }
-.strike-alert[data-open] .sa-hazard { flex-basis: 36px; }
 .strike-alert .sa-band b { font-size: 11px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: #fff; }
 .strike-alert .sa-band small { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: #f08a8d; }
-.strike-alert .sa-body { display: grid; grid-template-columns: minmax(0, 1fr); animation: alert-open 200ms cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: top; }
 @keyframes alert-open { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
-@media (prefers-reduced-motion: reduce) { .strike-alert .sa-body { animation: none; } }
 /* The strike panel as a HUD unit (ILI-1525): all Fira Mono at HUD sizes, tight rows, no empty
    bands, a few words. Band: ALERT and its line. Header: the square, the fighters marked, the
    budget on the right. Tags: how fresh the look is, and what's known of the target (FORTIFIED).
@@ -2241,7 +2234,6 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .strike-alert .sa-band { min-height: 20px; gap: 6px; }
 .strike-alert .sa-band b { font-size: 10px; letter-spacing: 0.14em; }
 .strike-alert .sa-band small { font-size: 10px; letter-spacing: 0.04em; }
-.strike-alert[data-open] .sa-hazard { flex-basis: 24px; }
 /* ILI-1534 A: a filled red STRIKE ▸ button on the band. */
 .strike-alert .sa-go { flex: none; margin-left: auto; padding: 2px 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; background: #e5484d; }
 .strike-alert .sa-go + .sa-hazard { margin-left: 0; }
@@ -2430,8 +2422,8 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .strike-alert .sa-band b { font-size: 13px; letter-spacing: 0.18em; }
 .strike-alert .sa-band small { font-size: 11px; }
 .strike-alert .sa-hazard { flex-basis: 24px; background-size: 11.3px 11.3px; }
-.strike-alert:not([data-open]) .sa-band:not([data-work]) { animation: sa-flash 0.9s steps(1, end) infinite; }
-.strike-alert:not([data-open]) .sa-band:not([data-work]) .sa-hazard { animation: sa-march 0.6s linear infinite; }
+.strike-alert .sa-band:not([data-work]) { animation: sa-flash 0.9s steps(1, end) infinite; }
+.strike-alert .sa-band:not([data-work]) .sa-hazard { animation: sa-march 0.6s linear infinite; }
 @keyframes sa-flash { 0%, 100% { background: rgba(60, 10, 12, 0.94); } 50% { background: #b3262b; box-shadow: 0 0 0 1px #e5484d, 0 0 18px rgba(229, 72, 77, 0.6); } }
 @keyframes sa-march { to { background-position: 11.3px 0; } }
 @media (prefers-reduced-motion: reduce) { .strike-alert .sa-band, .strike-alert .sa-hazard { animation: none !important; } }
@@ -2482,9 +2474,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 
 /* One loud thing at a time (ILI-1547 call F): an unopened ALERT is the only thing that animates
    without end; with none, the prompt is. Everything else holds steady until those are handled. */
-.hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work])) .prompt { animation: prompt-in 180ms ease-out; }
-.hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) :is(.orion .o-buttons .modes button[data-cue], .dock-tabs button[data-alert='true'], .target-menu .options button[data-cue], .square-card .sc-scan button[data-cue]) { animation: none; }
-.hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) .log-toggle .tab-dot::after { animation: none; }
+.hud:has(.strike-alert .sa-band:not([data-work])) .prompt { animation: prompt-in 180ms ease-out; }
+.hud:has(.strike-alert .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) :is(.orion .o-buttons .modes button[data-cue], .dock-tabs button[data-alert='true'], .target-menu .options button[data-cue], .square-card .sc-scan button[data-cue]) { animation: none; }
+.hud:has(.strike-alert .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) .log-toggle .tab-dot::after { animation: none; }
 
 /* Edge markers on top of every game UI panel, under pause/AAR (ILI-1553). */
 .edge-marker { z-index: 9; }
@@ -2494,15 +2486,15 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 
 /* One-pulse holes (ILI-1556): the newest comms card and the sending blink hold steady too while an
    ALERT or a prompt is up. */
-.hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) :is(.satcom .thread .c-event[data-newest] .c-open, .satcom .thread .sending) { animation: none; }
+.hud:has(.strike-alert .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) :is(.satcom .thread .c-event[data-newest] .c-open, .satcom .thread .sending) { animation: none; }
 /* Only the loudest ALERT flashes (ILI-1556): the others hold steady red. */
-.strike-alert:not([data-open]):not([data-loud]) .sa-band:not([data-work]), .strike-alert:not([data-open]):not([data-loud]) .sa-band:not([data-work]) .sa-hazard { animation: none; }
+.strike-alert:not([data-loud]) .sa-band:not([data-work]), .strike-alert:not([data-loud]) .sa-band:not([data-work]) .sa-hazard { animation: none; }
 
 /* ILI-1561: the closed ALERT band is its square's width. ALERT and Strike ▸ on the first row, what's
    happening on its own row under them, so nothing truncates; the hazard stripes are for the open panel. */
-.strike-alert:not([data-open]) .sa-band { flex-wrap: wrap; row-gap: 2px; padding: 4px 6px; }
-.strike-alert:not([data-open]) .sa-hazard { display: none; }
-.strike-alert:not([data-open]) .sa-band small { order: 3; flex: 1 0 100%; }
+.strike-alert .sa-band { flex-wrap: wrap; row-gap: 2px; padding: 4px 6px; }
+.strike-alert .sa-hazard { display: none; }
+.strike-alert .sa-band small { order: 3; flex: 1 0 100%; }
 
 /* ILI-1563: the grade card in the AAR's hero, four readouts in a row. */
 .wrapup .aar-card { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 18px 0 0; max-width: 560px; border: 1px solid var(--line); }
