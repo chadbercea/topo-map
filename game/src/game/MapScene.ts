@@ -238,6 +238,11 @@ export class MapScene extends Phaser.Scene {
       this.input.manager.canvas.style.cursor = '';
     });
     this.unsubscribe = game.subscribe(() => {
+      // A new contract or a retry (ILI-1577): the HUD resets at once, the canvas only on its next
+      // frame, so for that frame the last contract's marks showed. Hide the canvas until update() redraws.
+      const tick = game.get().tick;
+      if (tick < this.lastTick) (this.game.canvas.style.visibility = 'hidden'), (this.redrawn = false);
+      this.lastTick = tick;
       this.drawSelection();
       this.applyView();
       this.placeInset();
@@ -323,7 +328,10 @@ export class MapScene extends Phaser.Scene {
       this.drawBlind();
     });
     this.reveal();
+    if (!this.redrawn) (this.redrawn = true), requestAnimationFrame(() => (this.game.canvas.style.visibility = ''));
   }
+  private lastTick = 0;
+  private redrawn = true;
 
   // The map boot (ILI-1462): the system coming up for the first time. The ground fades up as the
   // camera settles in on ALPHA, the grid lines draw, then what's known pops in: the team, the
