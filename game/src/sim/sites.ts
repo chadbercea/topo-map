@@ -3,7 +3,10 @@ import type { Message } from './comms';
 import type { Contact } from './contacts';
 import type { GameState } from './state';
 import type { System } from './systems';
-import { feed } from './intel';
+import { feed, postDecoded } from './intel';
+import { reveal } from './contacts';
+import { nextRandom } from './firefight';
+import { CACHE_CASH } from './prices';
 
 // Confirmed kills earn cash (GDD), and a destroyed contact leaves a kill site. ALPHA sweeps
 // it for documents worth cash as it passes through.
@@ -44,11 +47,12 @@ export const siteSystem: System = (s) => {
   const here = squareAt(team.position.x, team.position.y);
   const site = s.events.find((e) => e.kind === 'site' && e.square === here && e.status !== 'resolved');
   if (!site) return s;
-  const next = feed(earn(s, SEARCH_CASH), SITE_INTEL, { source: 'ALPHA', square: site.square, items: [{ kind: 'HUMINT', heat: 'some', text: `${s.team.callsign} swept the site` }] }); // what it found feeds its own gauge (ILI-1315)
+  const [find, after] = searchFind(s, site.square);
+  const next = feed(after, SITE_INTEL, { source: 'ALPHA', square: site.square, items: [{ kind: 'HUMINT', heat: 'some', text: `${s.team.callsign} swept the site` }] }); // what it found feeds its own gauge (ILI-1315)
   const found: Message = {
     id: `search-${site.id}`,
     from: team.callsign,
-    text: `HQ, ${s.team.callsign}, kill site ${site.square} searched: documents, maps, a phone.`, // the budget chip shows the cash
+    text: `HQ, ${s.team.callsign}, kill site ${site.square} searched: ${find}.`, // the budget chip shows the cash
     atMs: s.elapsedMs,
     status: 'new',
     holds: false,
@@ -60,6 +64,24 @@ export const siteSystem: System = (s) => {
     comms: { ...next.comms, messages: [...next.comms.messages, found] },
   };
 };
+
+// What a search turns up (ILI-1564), on the mission's dice so a mission replays the same: a map
+// marking a group nobody has found (revealed, and ALPHA knows where), a cache worth selling, the
+// usual documents, or nothing of value.
+function searchFind(s: GameState, square: string): [string, GameState] {
+  const [r, rng] = nextRandom(s.rng);
+  const next = { ...s, rng };
+  const hidden = next.contacts.filter((c) => c.status === 'hidden');
+  if (r < 0.3 && hidden.length) {
+    // The hidden group nearest the site.
+    const dist = (sq: string) => Math.abs(sq.charCodeAt(0) - square.charCodeAt(0)) + Math.abs(Number(sq.slice(1)) - Number(square.slice(1)));
+    const c = [...hidden].sort((a, b) => dist(a.square) - dist(b.square))[0];
+    return [`a map marking enemy at ${c.square}`, postDecoded(reveal(next, [c.square]), c.square, c.id, 0, false)];
+  }
+  if (r < 0.55) return ['a weapons cache, sold on', earn(next, CACHE_CASH)];
+  if (r < 0.85) return ['documents, maps, a phone', earn(next, SEARCH_CASH)];
+  return ['nothing of value', next];
+}
 
 export function pass(s: GameState, square: string): GameState {
   return { ...s, events: s.events.map((e) => (e.kind === 'site' && e.square === square ? { ...e, status: 'resolved' as const } : e)) };

@@ -2,6 +2,7 @@ import { CROSS_MS, FLIGHT_MS } from './air';
 import { describe, expect, it } from 'vitest';
 import { squareCenter } from '../map/grid';
 import { CASH_PER_STRIKE_KILL, CASH_PER_TEAM_KILL, SEARCH_CASH } from './sites';
+import { CACHE_CASH } from './prices';
 import type { GameState } from './state';
 import { lockedStore as createStore } from './testkit';
 import { run, walking } from './testkit';
@@ -47,9 +48,23 @@ describe('kill sites', () => {
     const budget = s.resources.budget;
     for (let i = 0; i < 3000 && s.events.find((e) => e.kind === 'site')?.status !== 'resolved'; i++) s = run(s, 100);
     expect(s.events.find((e) => e.kind === 'site')?.status).toBe('resolved');
-    expect(s.resources.budget).toBe(budget + SEARCH_CASH);
+    expect([0, SEARCH_CASH, CACHE_CASH]).toContain(s.resources.budget - budget); // what it found is rolled (ILI-1564)
     expect(s.stats.searched).toBe(1);
     expect(s.comms.messages.find((m) => m.id === 'search-site-t')).toMatchObject({ from: 'ALPHA', holds: false, text: expect.stringMatching(/^HQ, ALPHA, kill site E3 searched/) });
     expect(s.comms.messages.some((m) => m.id.startsWith('site-call'))).toBe(false);
+  });
+
+  it('what a search turns up is rolled: across missions, more than one kind of find (ILI-1564)', () => {
+    const finds = new Set<string>();
+    for (let seed = 1; seed <= 24; seed++) {
+      const store = createStore({ ...withContact(), rng: seed * 7919 });
+      store.fire('t', 'drone');
+      store.set(run(store.get(), FLIGHT_MS + CROSS_MS + 200));
+      let s = store.get();
+      for (let i = 0; i < 3000 && s.events.find((e) => e.kind === 'site')?.status !== 'resolved'; i++) s = run(s, 100);
+      const text = s.comms.messages.find((m) => m.id === 'search-site-t')?.text ?? '';
+      finds.add(text.replace(/^.*searched: /, '').replace(/ at [A-H]\d/, ''));
+    }
+    expect(finds.size).toBeGreaterThan(1);
   });
 });
