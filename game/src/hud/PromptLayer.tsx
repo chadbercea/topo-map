@@ -153,44 +153,57 @@ function MainPrompt({ which }: { which: 'intel' | 'call' }) {
   );
 }
 
-// Enemy radio traffic's own prompt lane (ILI-1547 call A): out of the one-prompt queue, so nothing
-// knocks it off mid-read (ILI-1452), and out of the square's flyout, which is status only. Pinned
-// to its square: what's heard, Listen (ORION-3 goes; the intercept starts on the lock) and Jam.
+// Enemy radio traffic (ILI-1580, one square, one panel): a badge across the top of its square; a
+// click opens the square's card, where Listen and Jam are (TrafficActions).
 function TrafficPrompt() {
   const s = useGame((x) => x);
   const p = trafficPrompts(s)[0];
-  const tier = useTier();
-  const ref = useRef<HTMLElement>(null);
-  const [h, setH] = useState(0);
   const [, redraw] = useState(0);
   useEffect(() => {
     const again = () => redraw((n) => n + 1);
     bus.on(EV.camera, again);
     bus.on(EV.mapRect, again);
-    bus.on(EV.overlays, again);
     return () => {
       bus.off(EV.camera, again);
       bus.off(EV.mapRect, again);
-      bus.off(EV.overlays, again);
     };
   }, []);
-  useLayoutEffect(() => {
-    const now = ref.current?.offsetHeight ?? 0;
-    if (now && Math.abs(now - h) > 1) setH(now);
-  });
   const area = getMapRect();
   if (!p || !area || s.minigame?.status === 'active') return null;
   const sq = squareBox(p.square);
-  const width = Math.min(W, area.width - 16);
-  const strip = overlaysNamed(['prompt', 'asktag', 'actions', 'strike', 'alert', 'band', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']);
-  const at = place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip, ...gameUiBoxes()]);
+  if (!sq) return null;
+  const off = sq.y < area.y || sq.y > area.y + area.height - 24 || sq.x + sq.w < area.x || sq.x > area.x + area.width;
+  if (off || coveredBy({ x: sq.x, y: sq.y, w: sq.w, h: 24 }) > 0.5)
+    return <EdgeMarker square={p.square} target={{ x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 }} area={area} label="Traffic" />;
+  const going = s.listen?.eventId === p.id;
+  return (
+    <button
+      className="traffic-badge"
+      data-testid="traffic-prompt"
+      data-overlay="traffic"
+      data-square={p.square}
+      data-focus={s.map.selected === p.square || undefined}
+      style={{ left: Math.max(area.x + 8, sq.x), top: sq.y, width: sq.w }}
+      onClick={() => game.selectSquare(p.square)}
+      aria-label={`${p.square} ${p.text}`}
+    >
+      <b>Traffic</b>
+      <small>{going ? `${satName(s)} on its way` : p.square}</small>
+      {!going && <span className="tb-go">Listen ▸</span>}
+    </button>
+  );
+}
+
+// Listen and Jam, in the square's card (ILI-1580): what's heard, Listen (ORION-3 goes; the
+// intercept starts on the lock) and Jam, with why Jam is off said on screen (touch has no hover).
+export function TrafficActions({ id }: { id: string }) {
+  const s = useGame((x) => x);
+  const p = trafficPrompts(s).find((x) => x.id === id);
+  if (!p || s.minigame?.status === 'active') return null;
   const going = s.listen?.eventId === p.id;
   const locked = lockedOn(s, p.square);
   return (
-    <section ref={ref} className="prompt prompt-traffic" data-testid="traffic-prompt" data-overlay="traffic" data-kind={p.kind} data-square={p.square} data-tier={tier} style={{ left: at.x, top: at.y, width }} role="group" aria-label={p.text}>
-      <p className="prompt-text">
-        <b>{p.square}</b> {p.text}
-      </p>
+    <div className="sc-traffic-acts" data-testid="traffic-actions">
       <p className="note" data-testid="traffic-hint">{p.hint}</p>
       <div className="prompt-responses">
         {p.responses.map((r) => (
@@ -204,8 +217,8 @@ function TrafficPrompt() {
           </button>
         )}
       </div>
-      {!going && !locked && <small className="note" data-testid="jam-why">Jam needs {satName(s)} over {p.square}</small>}{/* said on screen, not only on hover: touch has no hover (ILI-1556) */}
-    </section>
+      {!going && !locked && <small className="note" data-testid="jam-why">Jam needs {satName(s)} over {p.square}</small>}
+    </div>
   );
 }
 
@@ -229,8 +242,7 @@ function place(sq: Box | null, area: { x: number; y: number; width: number; heig
 
 // Callout tags (ILI-1469, the ILI-1459 design, after the red-map reference): a thing on the map HQ can
 // act on gets a tag at its square: a dot on the square, a short leader, and the tag with its own
-// button. A picked square's tags dock on its flyout's top edge instead (ILI-1475), so a tag never
-// covers the square's report.
+// button. One square, one panel (ILI-1580): the tag opens the square's card, where Post intel is.
 function PlaceTags() {
   const s = useGame((x) => x);
   const [, redraw] = useState(0);
@@ -260,7 +272,10 @@ function PlaceTags() {
             <div key={e.id} className="place-tag" data-testid="place-tag" data-kind={e.kind} data-square={e.square} style={p}>
               <i className="pt-dot" aria-hidden />
               <i className="pt-lead" aria-hidden />
-              <BuildingTag id={e.id} />
+              <button className="pt-tag pt-open-card" onClick={() => game.selectSquare(e.square)} data-testid="building-open">
+                <span>Building · {e.square}</span>
+                <em>Post ▸</em>
+              </button>
             </div>
           )
         );
