@@ -7,6 +7,8 @@ import type { GameState } from './state';
 import type { System } from './systems';
 import { lockedOn, lookAt, satelliteBusy } from './satellite';
 import { parseSquare } from '../map/grid';
+import { dugIn } from './ordnance';
+import type { Contact } from './contacts';
 
 // Signal intercept (GDD, reworked in ILI-1169): one action with a clear goal. Their
 // transmission is a wave on a frequency; HQ lays its own wave over it with one control.
@@ -92,6 +94,16 @@ function nearest(s: GameState, square: string) {
   return s.contacts.filter((x) => x.status === 'hidden' || x.status === 'revealed').sort((a, b) => far(a.square) - far(b.square))[0];
 }
 
+// What the decoded traffic says they're doing (ILI-1570): the truth on the ground, so it's worth
+// hearing. On the move, where to; sat on ALPHA's way ahead, an ambush; dug in, holding.
+export function intentOf(s: GameState, c: Contact): string {
+  if (c.intent) return c.intent;
+  if (c.move) return `MOVING TO ${c.move.to}`;
+  if (s.team.route.slice(s.team.waypoint).includes(c.square)) return `SET AMBUSH AT ${c.square}`;
+  if (dugIn(c)) return 'DUG IN, HOLDING';
+  return 'HOLD POSITION';
+}
+
 export function startIntercept(s: GameState, eventId: string, via?: ListenVia): GameState {
   const e = s.events.find((x) => x.id === eventId && x.status !== 'resolved'); // jammed or gone quiet: nothing to hear
   if (!e || s.minigame?.status === 'active') return s;
@@ -103,7 +115,7 @@ export function startIntercept(s: GameState, eventId: string, via?: ListenVia): 
   // The intercept fixes the transmitter (ILI-1560): where they are comes through on any ground. That's
   // its payoff: it finds a group the map hasn't shown, without an Analyze.
   const fix = c ? ` AT ${c.square}` : '';
-  const plain = c ? `${WORD[c.id] ?? 'UNIT'}${fix} ${c.intent ?? 'HOLD POSITION'}` : `NOTHING AT ${e.square}`;
+  const plain = c ? `${WORD[c.id] ?? 'UNIT'}${fix} ${intentOf(s, c)}` : `NOTHING AT ${e.square}`;
   const signal: Signal = { target, dial: round1((BAND.min + BAND.max) / 2), nextHopMs: s.elapsedMs + HOP_MS, progress: 0, plain, contactId: c?.id };
   const game: MiniGame = {
     kind: 'signal',
