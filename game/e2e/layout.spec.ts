@@ -34,7 +34,8 @@ test('the team panel shows what the team is doing', async ({ page, isMobile }) =
   await page.getByTestId('team-expand').click();
   await expect(panel).toHaveAttribute('data-state', 'full');
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
-  await expect.poll(() => page.getByTestId('heartbeat-strip').boundingBox()).toEqual(bar); // once the drawer has settled
+  const round = (b: { x: number; y: number; width: number; height: number } | null) => b && { x: Math.round(b.x), y: Math.round(b.y), width: Math.round(b.width), height: Math.round(b.height) };
+  await expect.poll(async () => round(await page.getByTestId('heartbeat-strip').boundingBox())).toEqual(round(bar)); // once the drawer has settled; sub-pixel drift from its fold animation doesn't count
   await page.getByTestId('team-minimize').click(); // Escape pauses now (ILI-1503)
   await expect(panel).toHaveAttribute('data-state', 'min');
 });
