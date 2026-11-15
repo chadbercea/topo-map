@@ -38,8 +38,11 @@ export function untilTraffic(s: GameState, square = 'C2') {
 export const trafficId = (s: GameState, open = true) => s.events.find((e) => e.kind === 'signal' && (!open || e.status !== 'resolved'))!.id;
 
 // The team just walks: every square imaged and no contacts, so nothing stops it.
+// Still ground (ILI-1565): no group sets off. For tests about one thing, not the moving map.
+export const still = (s: GameState): GameState => ({ ...s, beatAtMs: Infinity });
+
 export const walking = (): GameState => {
-  const s = fed(initialState());
+  const s = still(fed(initialState()));
   return { ...s, contacts: [], map: { ...s.map, scanned: [...ROUTE] } };
 };
 

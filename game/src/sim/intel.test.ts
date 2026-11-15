@@ -6,13 +6,13 @@ import { fixed } from './testkit';
 const initialState = (...a: Parameters<typeof rolledState>) => fixed(rolledState(...a));
 import { createStore } from './store';
 import { analyzable, grade, INT_KINDS, pushPhoto, pushVideo, reports, sent, settled, VIDEO_INTEL } from './intel';
-import { answerIntel, lockOn, run } from './testkit';
+import { answerIntel, lockOn, run, still } from './testkit';
 import { initialSatellite } from './satellite';
 import { moveContact } from './contacts';
 
 // Fresh intel (ILI-1532): ALPHA moves only into squares HQ has analyzed in the last DECAY_MS.
 const blindAhead = (): GameState => {
-  const s = initialState();
+  const s = still(initialState());
   return { ...s, team: { ...s.team, decisions: Object.fromEntries(s.team.route.map((sq) => [sq, 'blind' as const])) } };
 };
 // ORION-3 parked far off, so no square's clock is held.
