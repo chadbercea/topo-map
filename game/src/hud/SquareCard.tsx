@@ -17,14 +17,14 @@ import { knownIn } from '../sim/contacts';
 import { ESCROW_BOX } from '../sim/prices';
 import { kindLabel, sent, squareReports } from '../sim/intel';
 import { alertSquares, strikeable, strikeState } from '../sim/strike';
-import { contactLine, useStrikeOpen } from './StrikeAlert';
+import { contactLine, STRIKE_W, Threat } from './StrikeAlert';
 
 const ANCHOR_W = 240; // the flyout's width off its square's edge: compact, so it doesn't bury the map (ILI-1505)
 
 // The square's anchor (ILI-1278, ILI-1302, ILI-1308): the contextual menu for the square HQ
 // picked, pinned beside it on the map, so what's done there stays tied to its ground however
 // many things are going on: its intel, ALPHA's work there, anything else going on (a signal, a
-// request). Strikes aren't here (ILI-1524): they're the square's ALERT (StrikeAlert). Reposition is
+// request). A threat's strike options lead the card (ILI-1579, StrikeAlert's Threat). Reposition is
 // ORION-3's (OrionPanel). Always to the right of its square (ILI-1524); on a phone, a strip along
 // the foot of the map.
 // What happens on a square stays with the square (ILI-1367): every picked square opens it, and
@@ -39,7 +39,6 @@ export function SquareCard() {
   const actRef = useRef<HTMLElement>(null);
   const [actHeight, setActHeight] = useState(0);
   const tier = useTier();
-  const strikeOpen = useStrikeOpen();
   const placedKey = useRef('');
   const sideOf = useRef<{ square: string; side: 'right' | 'left' } | null>(null); // the side it opened on, kept while open (ILI-1543)
   const [, redraw] = useState(0);
@@ -74,10 +73,9 @@ export function SquareCard() {
     return null;
   }
   const k = tier === 'wide' ? uiScale() : 1; // it grows with the map's squares (ILI-1498)
-  // On a phone the open strike panel takes the strip along the map's foot (ILI-1524): one sheet at a time.
-  if (tier === 'compact' && !playing && strikeOpen === square) return null;
   const kept = sideOf.current?.square === square ? sideOf.current.side : undefined;
-  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, ANCHOR_W * k, kept);
+  const threat = threatened(s, square);
+  const at: Placed = tier === 'compact' ? strip(area, actHeight, !!playing) : attached(square, area, actHeight, (threat ? Math.max(ANCHOR_W, STRIKE_W) : ANCHOR_W) * k, kept);
   if (at.side === 'right' || at.side === 'left') sideOf.current = { square, side: at.side };
   const locked = lockedOn(s, square);
   // Any square HQ clicks opens its flyout (ILI-1475): its intel is stored on the square, not in the
@@ -97,6 +95,7 @@ export function SquareCard() {
         role="group"
         aria-label={`Act on ${square}`}
       >
+        {threat && <Threat s={s} square={square} />}
         <AnchorBody s={s} square={square} />
       </section>
     </>
@@ -104,6 +103,9 @@ export function SquareCard() {
 }
 
 // A strike under way on another square shows on that square's CONTACT tag now (ILI-1474).
+
+// The square has a threat HQ can hit, or a strike under way (ILI-1579): the card leads with it.
+const threatened = (s: GameState, square: string) => alertSquares(s).includes(square) && (strikeState(s, square).strikes.length > 0 || strikeState(s, square).running);
 
 // The anchor's leader (ILI-1305): a line from the anchor to its square, so the two read as one
 // however far apart they sit. When the square is off the open map, the line stops at the map's
@@ -188,9 +190,12 @@ function attached(square: string, area: Area, height: number, width: number, kee
   // side it opened on is kept while it's open.
   const ui = gameUiBoxes();
   const clampTop = (y: number) => Math.max(area.y + 8, Math.min(y, area.y + area.height - 8 - h));
-  const at = (side: 'right' | 'left', y: number) => ({ left: side === 'right' ? sq.x + sq.w : sq.x - width, top: clampTop(y), width, maxHeight, side });
+  // Inside the open map, always (ILI-1579): a square off its edge still gets a card you can use; the leader points the way.
+  const clampLeft = (x: number) => Math.max(area.x + 8, Math.min(x, area.x + area.width - 8 - width));
+  const at = (side: 'right' | 'left', y: number) => ({ left: clampLeft(side === 'right' ? sq.x + sq.w : sq.x - width), top: clampTop(y), width, maxHeight, side });
   const sides: ('right' | 'left')[] = keep ? [keep] : roomRight >= width ? ['right', 'left'] : roomLeft >= width ? ['left', 'right'] : roomRight >= roomLeft ? ['right'] : ['left'];
-  const spots = sides.flatMap((side) => [at(side, sq.y), at(side, sq.y + sq.h - h)]);
+  // Then, should those be under the game UI (a square off the map's top, say), just below each panel.
+  const spots = [...sides.flatMap((side) => [at(side, sq.y), at(side, sq.y + sq.h - h)]), ...sides.flatMap((side) => ui.map((b) => at(side, b.y + b.h + 8)))];
   const cost = (p: Placed) => coveredBy({ x: p.left, y: p.top, w: width, h }, ui);
   return spots.find((p) => cost(p) < 0.05) ?? spots.reduce((a, b) => (cost(b) < cost(a) ? b : a));
 }
