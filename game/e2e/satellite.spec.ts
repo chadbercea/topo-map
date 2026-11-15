@@ -96,12 +96,15 @@ test('a square with fighters in view leads its card with the strike options; a f
   await expect(panel.getByTestId('panel-tango')).toHaveText(/^HOSTILE · TANGO-\d+$/);
   await expect(panel.getByRole('button', { name: /strike/i })).toHaveCount(0);
   // Firing: the threat section is the drone's countdown; ORION-3's picture goes to targeting.
+  if (isMobile) await page.getByTestId('sheet-close').click(); // one sheet at a time on a phone (ILI-1461): the card is under ORION-3's
   await anchor.getByTestId('fire-drone').click();
   await expect(anchor.getByTestId('strike-flyout')).toHaveCount(0);
   await expect(anchor.getByTestId('strike-running').getByTestId('drone-eta')).toHaveText(/^0:\d\d$/);
+  if (isMobile) await page.getByTestId('tab-orion').click();
   await expect(sat.getByTestId('targeting')).toContainText(/Targeting · Drone · REAPER-1/i);
   await expect(sat.getByTestId('targeting-line')).toHaveText(/^Impact 0:\d\d$/);
   await page.evaluate(() => window.game.closeSquare());
+  if (isMobile) await page.getByTestId('sheet-close').click(); // back to the map
   await expect(page.locator('[data-testid=strike-alert][data-square=E3]').getByTestId('alert-line')).toHaveText(/^REAPER-1 · 0:\d\d$/); // on the map, the ALERT says how it's going
 });
 

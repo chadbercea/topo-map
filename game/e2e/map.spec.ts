@@ -10,9 +10,8 @@ test('tapping a grid square selects it and opens its zoomed view; tapping again 
   await tap(6, 3);
   await expect(selected).toHaveText('G4');
   if (isMobile) {
-    // On a phone the square's zoomed view and card take most of the map: Close clears it.
-    // The sheet folds for it (ILI-1397): the square's menu on the map is what's up.
-    await page.getByTestId('square-anchor').getByRole('button', { name: 'Close' }).click();
+    // On a phone the card is a strip along the map's foot (ILI-1524); tapping the square again clears it.
+    await tap(6, 3);
     await expect(selected).toHaveText('—');
     return;
   }
