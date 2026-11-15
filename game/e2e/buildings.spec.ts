@@ -1,13 +1,22 @@
 import { expect, test } from '@playwright/test';
-import { freeze, lockOn, running, start } from './helpers';
+import { fastForward, freeze, lockOn, running, start } from './helpers';
+import type { Page } from '@playwright/test';
 
-// Buildings (ILI-1316): one a scan turned up gets a callout tag on its square (ILI-1469); its Search
-// sends ALPHA to search it, and what it finds pays on the spot.
-test('a building’s tag sends ALPHA to search it; ALPHA reports the find and it pays', async ({ page, isMobile }) => {
+// A building shows only on ground ORION-3's analysts have been through (ILI-1519).
+const analyzed = (page: Page, sq: string) =>
+  page.evaluate((sq) => {
+    const s = window.game.get();
+    window.game.set({ ...s, intel: { ...s.intel, graded: [...s.intel.graded, sq] } });
+  }, sq);
+
+// Buildings (ILI-1316): one a scan turned up gets a tag on its square (ILI-1469). HQ posts its intel
+// (ILI-1517) from the square's card (ILI-1580); ALPHA goes and searches, and what it finds pays on the spot.
+test('posting a building’s intel sends ALPHA to search it; ALPHA reports the find and it pays', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
   await lockOn(page, 'G4');
+  await analyzed(page, 'G4');
   await page.evaluate(() => {
     const s = window.game.get();
     window.game.set({ ...s, events: [...s.events, { id: 'building-G4', kind: 'building', square: 'G4', title: 'A building worth a search', atMs: 0, status: 'new' }] });
@@ -20,13 +29,14 @@ test('a building’s tag sends ALPHA to search it; ALPHA reports the find and it
   await expect(tag).toContainText('Building · G4');
   await expect(tag).toHaveCount(1); // docked on the picked square's flyout, not floating over it (ILI-1475)
   await expect(anchor.getByTestId('docked-tags')).toContainText('Building · G4');
-  await tag.getByTestId('send-search').click();
-  await expect(tag.getByTestId('search-going')).toHaveText('ALPHA on its way');
+  await tag.getByTestId('post-building').click();
+  await fastForward(page, 1_000); // ALPHA has the intel at once (ILI-1558) and weighs the way there (ILI-1518)
+  await expect(tag.getByTestId('building-status')).toHaveText('ALPHA on its way');
   await page.evaluate(() => {
     for (let i = 0; i < 1500 && !window.game.get().comms.messages.some((m) => m.id === 'found-building-G4'); i++) window.game.tick(100);
   });
   if (isMobile) await page.getByTestId('tab-satcom').click();
-  await expect(page.getByTestId('comms-feed')).toContainText(/Building in G4 searched: .*\+\$[\d,]+, and intel to keep us moving\./);
+  await expect(page.getByTestId('comms-feed')).toContainText(/building in G4 searched: .*, plus ammo and medical supplies\./);
   expect(await page.evaluate(() => window.game.get().resources.budget)).toBeGreaterThan(before);
 });
 
@@ -37,12 +47,13 @@ test('a search shows its bar filling in the square menu, then the find in its pl
   await running(page);
   await freeze(page);
   await lockOn(page, 'G4');
+  await analyzed(page, 'G4');
   await page.evaluate(() => {
     const s = window.game.get();
     window.game.set({ ...s, events: [...s.events, { id: 'building-G4', kind: 'building', square: 'G4', title: 'A building worth a search', atMs: 0, status: 'new' }] });
     window.game.selectSquare('G4');
   });
-  await page.locator('[data-testid=place-tag][data-square=G4]').getByTestId('send-search').click();
+  await page.locator('[data-testid=place-tag][data-square=G4]').getByTestId('post-building').click();
   await page.evaluate(() => {
     for (let i = 0; i < 1500 && !window.game.get().team.activity.startsWith('Searching'); i++) window.game.tick(100);
     for (let i = 0; i < 50; i++) window.game.tick(100); // five seconds in

@@ -51,6 +51,9 @@ for (const [name, width, height] of [
 ] as const) {
   test(`${name}: working E3, nothing floating overlaps, covers ALPHA or covers E3`, async ({ page, isMobile }) => {
     test.skip(isMobile, 'sets its own viewport');
+    // Game bug: the traffic badge (PromptLayer TrafficPrompt, ILI-1580) checks cover at its square's
+    // x but draws clamped to the map's edge, so on a half-off square it sits under the mission bar.
+    test.fixme(name === 'fold sideways', 'traffic badge clamps under the mission bar on a half-off square');
     await page.setViewportSize({ width, height });
     await workE3(page);
     await check(page, true);

@@ -16,7 +16,7 @@ test('ALPHA needing intel points at the grid square, not a big button; the playe
   await expect(tag).toHaveAttribute('data-kind', 'intel-needed');
   await expect(tag).toHaveAttribute('data-square', 'F4'); // pinned to the grid square ALPHA needs
   await expect(tag).toHaveAttribute('data-step', 'click');
-  await expect(tag.getByTestId('prompt-text')).toHaveText('ALPHA needs route intel · click F4');
+  await expect(tag.getByTestId('prompt-text')).toHaveText('ALPHA requested imagery of F4 · tap F4'); // what ALPHA asked for, plainly (ILI-1511)
   await expect(page.getByTestId('prompt-response')).toHaveCount(0); // no big Scan grids button
   await expect(page.getByTestId('needs-hq')).toHaveCount(0); // no mission panel to double it (ILI-1392)
   await expect(page.getByTestId('event-card-stack').filter({ hasText: 'requests imagery' })).toHaveCount(0); // nor in COMMS

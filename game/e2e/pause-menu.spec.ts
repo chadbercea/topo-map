@@ -4,6 +4,7 @@ import { fastForward, start, openTeam } from './helpers';
 const tick = async (page: Page) => Number(await page.getByTestId('tick').textContent());
 const menu = (page: Page) => page.getByTestId('pause-menu');
 const press = async (page: Page, name: string, isMobile: boolean) => {
+  if (name === 'Pause') return page.keyboard.press('Escape'); // no pause button: Escape pauses (ILI-1503)
   const button = page.getByRole('button', { name, exact: true });
   if (isMobile) await button.tap();
   else await button.click();

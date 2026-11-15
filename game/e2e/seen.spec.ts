@@ -1,20 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { fastForward, freeze, photo, running, start, untilOnStation } from './helpers';
 
-// The map only shows what's been seen (ILI-1468): a photo square says how old its look is, with a
-// draining bar and a PHOTO · m:ss tag; a square on video gets ORION-3's brackets and FEED · LIVE.
-test('a photo square shows its age; a video square shows its feed', async ({ page }) => {
+// The map only shows what's been seen (ILI-1468): a square on video gets ORION-3's brackets and
+// FEED · LIVE. Photos don't age any more (ILI-1559), so a photo square has no age tag.
+test('a video square shows its feed; a photo square has no age tag', async ({ page }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
   await photo(page, 'E3');
-  // While ORION-3 stays over E3 its look is live; once it moves off, the photo starts to age.
   await page.evaluate(() => window.game.lookAt('H5'));
-  await expect.poll(() => page.evaluate(() => window.mapSeenTags()['p:E3'])).toMatch(/^PHOTO · 0:0\d$/);
   await fastForward(page, 30_000);
-  await expect.poll(() => page.evaluate(() => window.mapSeenTags()['p:E3'])).toMatch(/^PHOTO · 0:3\d$/);
-  await fastForward(page, 80_000);
-  await expect.poll(() => page.evaluate(() => window.mapSeenTags()['p:E3'])).toBe('PHOTO · STALE');
+  expect(await page.evaluate(() => window.mapSeenTags()['p:E3'])).toBeUndefined();
 
   await page.evaluate(() => {
     window.game.selectSquare('F4');
@@ -52,5 +48,5 @@ test('ORION-3 over an unscanned square shows no enemy until it scans it', async 
   await fastForward(page, 200);
   await expect.poll(() => page.evaluate(() => window.mapLiveCount())).toBeGreaterThan(0);
   await expect.poll(() => page.evaluate(() => window.mapSightings().filter((x) => x.kind === 'hostile').length)).toBeGreaterThan(0);
-  expect(await page.evaluate(() => window.game.get().events.some((e) => e.id === 'contact-checkpoint' && e.square === 'E3'))).toBe(true);
+  expect(await page.evaluate(() => window.game.get().events.some((e) => e.kind === 'contact' && e.square === 'E3'))).toBe(true);
 });

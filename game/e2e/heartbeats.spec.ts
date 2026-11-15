@@ -18,9 +18,7 @@ test('the team panel is a bar at rest; a slot opens its table with them highligh
   // One panel: a bar at rest, the table a drawer out of it (ILI-1472). A slot opens it with that
   // operator highlighted; opening it closes the comms log, one drawer at a time.
   const panel = page.getByTestId('team-panel');
-  await expect(panel).toHaveAttribute('data-state', 'full'); // open by default (ILI-1501)
-  await page.getByTestId('team-minimize').click();
-  await expect(panel).toHaveAttribute('data-state', 'min');
+  await expect(panel).toHaveAttribute('data-state', 'min'); // folded to its bar at start (ILI-1547 call E)
   await expect(panel.getByTestId('heartbeat-strip').locator('svg.ecg')).toHaveCount(5);
   await expect(page.getByTestId('readout')).toHaveCount(0);
   await page.getByTestId('log-toggle').click();

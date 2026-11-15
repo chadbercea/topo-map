@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { start } from './helpers';
 
-test('walking blind into the hidden checkpoint is an ambush: their first volley drops a man, and it costs the team, but ALPHA comes out of it (ILI-1496)', async ({ page }) => {
+test('walking blind into a hidden group is an ambush: their first volley drops a man, and it costs the team, but ALPHA comes out of it (ILI-1496)', async ({ page }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
 
@@ -10,10 +10,12 @@ test('walking blind into the hidden checkpoint is an ambush: their first volley 
     const g = window.game;
     for (let i = 0; i < 3000 && !g.get().team.fight; i++) g.tick(100);
   });
+  // The map is rolled per seed (ILI-1544): wherever the fight is.
+  const sq = await page.evaluate(() => window.game.get().team.fight!.square);
   const panel = page.getByTestId('team-panel');
-  await expect(panel).toContainText('Ambushed in E3');
+  await expect(panel).toContainText(`Ambushed in ${sq}`);
   await expect(panel).toHaveAttribute('data-fight', 'true'); // the team panel goes red
-  await expect(page.getByTestId('comms-feed')).toContainText('CONTACT, ambush, E3');
+  await expect(page.getByTestId('comms-feed')).toContainText(`CONTACT, ambush, ${sq}`);
 
   // The opening seconds: their volley is aimed, on one man, and ALPHA is getting into cover.
   await page.evaluate(() => {
