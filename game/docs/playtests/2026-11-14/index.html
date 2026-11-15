@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Black Box Playtest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column of an after-action report; screenshots run full column width, captions in mono like the game's own labels. Single dark look, matching the war room. */
+:root {
+  color-scheme: dark;
+  --bg: #0c1311;
+  --panel: #121c19;
+  --line: #22332e;
+  --fg: #d9e6e1;
+  --muted: #8ea39b;
+  --accent: #3fd0a6;
+  --ok: #3fd0a6;
+  --warn: #f2a23a;
+  --bad: #ef5a4c;
+  --display: "IBM Plex Sans", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 40px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 56px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; font-weight: 600; }
+h2 { font-size: 24px; font-weight: 600; }
+h3 { font-size: 17px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+.eyebrow { font: 600 12px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.mono { font-family: var(--mono); font-size: 13px; }
+.muted { color: var(--muted); }
+section { display: grid; gap: 20px; }
+header { display: grid; gap: 16px; }
+.verdict { border-left: 3px solid var(--warn); padding: 4px 0 4px 16px; font-size: 18px; max-width: 68ch; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 11px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--panel); }
+td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 13px; }
+tr:last-child td { border-bottom: 0; }
+.hook { display: grid; gap: 14px; }
+.stage { display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 18px; background: var(--panel); border: 1px solid var(--line); }
+.stage > div { min-width: 0; display: grid; gap: 8px; }
+.stage .name { display: grid; gap: 8px; align-content: start; }
+.pill { display: inline-block; justify-self: start; font: 600 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border: 1px solid currentColor; }
+.pill.ok { color: var(--ok); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 68ch; }
+.fix { color: var(--muted); }
+.fix b { color: var(--fg); font-weight: 600; }
+figure { margin: 0; display: grid; gap: 10px; }
+figure img { width: 100%; height: auto; display: block; border: 1px solid var(--line); }
+figcaption { display: grid; gap: 4px; }
+figcaption .t { font: 600 12px/1.4 var(--mono); color: var(--accent); letter-spacing: .06em; }
+.shots { display: grid; gap: 36px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.pair > figure { min-width: 0; }
+ol.bugs { margin: 0; padding-left: 22px; display: grid; gap: 12px; max-width: 72ch; }
+ol.bugs li::marker { font-family: var(--mono); color: var(--muted); }
+.sev { font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; margin-right: 6px; }
+.sev.bad { color: var(--bad); } .sev.warn { color: var(--warn); } .sev.low { color: var(--muted); }
+.next { display: grid; gap: 10px; counter-reset: n; }
+.next div { padding: 14px 16px; border: 1px solid var(--line); display: grid; gap: 4px; }
+code { font-family: var(--mono); font-size: .9em; color: var(--accent); }
+@media (max-width: 640px) {
+  .stage { grid-template-columns: 1fr; }
+  .pair { grid-template-columns: 1fr; }
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="eyebrow">PMC War Room · Playtest · 14 Nov 2026 · main @ b0a30a4</span>
+  <h1>Operation Black Box, played twice</h1>
+  <p class="muted">Two full missions on the default seed, played through the on-screen controls in a desktop browser (1440 × 900). Run 1 played sharp: scan ahead, strike every ALERT. Run 2 scanned ahead the same way but never struck, leaving every fight to ALPHA. Assessed against the Hook model: trigger, action, variable reward, investment.</p>
+  <p class="verdict">The moment-to-moment triggers work. The loop doesn't close: one strategy solves the mission with no cost, the rewards repeat word for word, and nothing the player does carries into the next mission.</p>
+</header>
+
+<section>
+  <span class="eyebrow">The two runs</span>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th></th><th>Run 1 · strike every ALERT</th><th>Run 2 · let ALPHA decide</th></tr></thead>
+    <tbody>
+      <tr><td>Result</td><td>Mission success</td><td>Mission complete · casualties</td></tr>
+      <tr><td>Mission clock used</td><td class="num">4:51 of 10:00</td><td class="num">8:08 of 10:00</td></tr>
+      <tr><td>Operators lost</td><td class="num">0</td><td class="num">3 (replaced by resupply)</td></tr>
+      <tr><td>Fights ALPHA took</td><td class="num">0</td><td class="num">4 (3 of them ambushes)</td></tr>
+      <tr><td>Budget</td><td class="num">$9.6M → $10.23M</td><td class="num">$9.6M → $9.76M by 3:27</td></tr>
+      <tr><td>HQ decisions</td><td>3 drone strikes</td><td>1 resupply call</td></tr>
+      <tr><td>Last real decision</td><td class="num">1:12 in (then re-imaging and watching)</td><td class="num">3:27 in (resupply)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="hook">
+  <span class="eyebrow">Hook model</span>
+  <h2>Where the loop holds and where it breaks</h2>
+
+  <div class="stage">
+    <div class="name"><h3>1 · Trigger</h3><span class="pill ok">Strong outside, missing inside</span></div>
+    <div>
+      <p>External triggers are the best part of the game. The red ALERT band, ALPHA's resupply call docked at the team bar and the Listen prompt each pull the eye to one action. Only one ALERT flashes at a time, so the cue is never ambiguous.</p>
+      <ul>
+        <li>Dead air: in run 1 the last real decision came 1:12 in. After that HQ only re-imaged squares as they decayed, and from 3:00 just watched ALPHA walk to exfil. In run 2 nothing asked for HQ in the last 4:40 apart from Listen.</li>
+        <li>No internal trigger. Nothing makes the player want to open the game again tomorrow: no streak, no unfinished contract, no rank to defend.</li>
+      </ul>
+      <p class="fix"><b>Fix:</b> put a cue in every 30–45 s of mission time (a new contact, an intercept with a real lead, a weather window), and end every mission with an open thread for the next one.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="name"><h3>2 · Action</h3><span class="pill warn">Easy, but solved</span></div>
+    <div>
+      <p>Every action is one or two clicks: Analyze, ALERT then Drone, Send resupply. The ability side of Fogg's model is excellent.</p>
+      <ul>
+        <li>One dominant strategy: Drone on every ALERT. It never failed, cost nothing in net terms and finished in under half the clock. Sniper and Heli were never needed.</li>
+        <li>Strikes make money. Bounties outpay the $150K drone, so the budget rose from $9.6M to $10.23M. With no cost to a strike, it isn't a decision.</li>
+        <li>Listen is the only skill action, and its result never changes the mission (see below).</li>
+      </ul>
+      <p class="fix"><b>Fix:</b> make every strike a real trade (cost above bounty, collateral risk, a cooldown, or a ROE call on an alerted group). Give each weapon a target type only it handles.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="name"><h3>3 · Variable reward</h3><span class="pill bad">Weak</span></div>
+    <div>
+      <p>The map is rolled per seed, so where the groups stand varies. What they say and what the player gets back never does.</p>
+      <ul>
+        <li><b>Hunt:</b> every intercept decoded to “UNIT AT X HOLD POSITION” (7 of 7). Every kill site searched found “documents, maps, a phone” (5 of 5). Every analyst line had the same shape: “N dismounts, unaware”.</li>
+        <li><b>Self:</b> the wrap-up says “You've got what it takes.” for a flawless 4:51 run and for a run that lost three men. There's no score, no time, no money, no comparison.</li>
+        <li><b>Tribe:</b> nothing yet. No leaderboard, no shareable result, no recognition from the contractor.</li>
+      </ul>
+      <p class="fix"><b>Fix:</b> make intercepts and kill-site finds pay out variably (a patrol route, a weapons cache, a time window, a bonus target, sometimes nothing). Grade the wrap-up: time, casualties, spend, intel quality, with a headline that changes with performance.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="name"><h3>4 · Investment</h3><span class="pill bad">Missing</span></div>
+    <div>
+      <p>Nothing the player does stores value. The $630K run 1 earned disappears with Play again; the operators who survived aren't remembered; the intel gathered doesn't seed the next map.</p>
+      <ul>
+        <li>No persistent budget, roster, reputation or unlocks.</li>
+        <li>No loaded next trigger: the wrap-up offers Play again or Exit, never a next contract.</li>
+      </ul>
+      <p class="fix"><b>Fix:</b> carry the budget and roster into a short campaign; wounded or lost operators cost the next mission; a kill-site find unlocks or previews the next contract. That last one also gives Listen and the site searches a reason to exist.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Biggest finding</span>
+  <h2>HQ's intel doesn't reach ALPHA before contact</h2>
+  <p>In run 2, HQ analyzed E3, D3 and B1 well ahead of ALPHA, and the satellite badge read “5 posted”. ALPHA still walked into E3 and D3 as ambushes and lost men. ALPHA only pulls posted packages when it enters a new square or holds (<code>pullSystem</code>, <code>sim/intel.ts</code>). Contact range reaches across a square edge, so the fight starts before the pull, and the firefight checks only what ALPHA itself knows. The 60 s decay then wipes what it had. For the player this reads as: I did the work and the game ignored it. That breaks the core promise of the loop, that your intel decides how ALPHA does.</p>
+  <p class="fix"><b>Fix:</b> pull on contact (or have ALPHA pull whenever a package for a square on its route is posted), and don't let decay wipe a square ALPHA is about to enter.</p>
+</section>
+
+<section class="shots">
+  <span class="eyebrow">Run 1 · strike every ALERT</span>
+
+  <figure>
+    <img src="img/r1-start.jpg" alt="Mission start: ALPHA at the infil in G5, the objective at D3, ORION-3 panel on the right." loading="lazy">
+    <figcaption><span class="t">0:00 · OPEN</span><p>Clean opening. The objective, ALPHA and ORION-3 are readable at a glance. Analyze lit on the infil square is the first clear action.</p></figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/r1-listen.jpg" alt="The Listen intercept: two waves, theirs and yours, and a slider to match them." loading="lazy">
+    <figcaption><span class="t">0:12 · LISTEN</span><p>The one skill game. It ties up ORION-3 for about 20 s and always decodes to “UNIT HOLD POSITION”, so the reward never justifies the cost.</p></figcaption>
+  </figure>
+
+  <div class="pair">
+    <figure>
+      <img src="img/r1-alert.jpg" alt="ALERT band on E3 after imagery found 5 dismounts." loading="lazy">
+      <figcaption><span class="t">0:22 · ALERT E3</span><p>Strongest trigger in the game: one red band, one verb. Note the black box in the middle of the map (see bugs).</p></figcaption>
+    </figure>
+    <figure>
+      <img src="img/r1-strike.jpg" alt="Strike panel open with Drone, Sniper and Heli." loading="lazy">
+      <figcaption><span class="t">0:23 · STRIKE</span><p>Drone, Sniper, Heli with prices. Drone always works, so this choice was the same all three times.</p></figcaption>
+    </figure>
+  </div>
+
+  <div class="pair">
+    <figure>
+      <img src="img/r1-slew.jpg" alt="ORION-3 slewing to D3 while REAPER-1 finishes E3." loading="lazy">
+      <figcaption><span class="t">0:36 · NEXT SQUARE</span><p>The scan-ahead rhythm feels good: slew, Analyze, ALERT, strike. The ALERT band truncates to “ALERT RE…”.</p></figcaption>
+    </figure>
+    <figure>
+      <img src="img/r1-strike-b1.jpg" alt="Third strike panel on B1, the exfil LZ, budget at $9.46M." loading="lazy">
+      <figcaption><span class="t">1:12 · THIRD STRIKE</span><p>All three groups on the route are dead before ALPHA meets one. The mission is decided here, 1:12 in.</p></figcaption>
+    </figure>
+  </div>
+
+  <figure>
+    <img src="img/r1-idle.jpg" alt="Exfil phase, B1 flyout showing nine intel lines and BDA 6 hostile down, budget $10.21M." loading="lazy">
+    <figcaption><span class="t">3:28 · NOTHING LEFT TO DO</span><p>Budget is up to $10.21M from kills. The flyout repeats lines (Thermal ×2, Local ×3). The team bar still shows ALERTED in red with every group dead.</p></figcaption>
+  </figure>
+
+  <div class="pair">
+    <figure>
+      <img src="img/r1-exfil.jpg" alt="SKYHOOK-1 on the ground at B1." loading="lazy">
+      <figcaption><span class="t">4:17 · EXFIL</span><p>SKYHOOK-1's card is a nice beat, but HQ has been a spectator for over a minute.</p></figcaption>
+    </figure>
+    <figure>
+      <img src="img/r1-wrapup.jpg" alt="Wrap-up: Mission success, Welcome to the team. You've got what it takes." loading="lazy">
+      <figcaption><span class="t">4:51 · WRAP-UP</span><p>No time, spend or score. Same headline as run 2 below.</p></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="shots">
+  <span class="eyebrow">Run 2 · let ALPHA decide</span>
+
+  <figure>
+    <img src="img/r2-ambush.jpg" alt="ALPHA ambushed in E3 while the SATCOM badge shows 5 posted packages." loading="lazy">
+    <figcaption><span class="t">1:26 · AMBUSHED IN E3</span><p>E3 was analyzed a minute earlier and its package posted. The SATCOM badge bottom left reads “5 posted”: none pulled. Two ALERT bands overlap at E3 and D3.</p></figcaption>
+  </figure>
+
+  <div class="pair">
+    <figure>
+      <img src="img/r2-resupply.jpg" alt="ALPHA's resupply call: Send resupply ($40,000) or Move on without." loading="lazy">
+      <figcaption><span class="t">3:27 · RESUPPLY</span><p>The best decision prompt in the game: clear stakes, a price, two options. It came after a second ambush at D3 that ALPHA had already called out (“Too strong to take… Moving to engage”).</p></figcaption>
+    </figure>
+    <figure>
+      <img src="img/r2-wrapup.jpg" alt="Wrap-up: Mission complete, casualties. Same headline." loading="lazy">
+      <figcaption><span class="t">8:08 · WRAP-UP</span><p>Three operators down and still “You've got what it takes.” Only the tag and one line change.</p></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Bugs and rough edges</span>
+  <ol class="bugs">
+    <li><span class="sev bad">High</span>Posted intel isn't pulled before contact, so a scanned square can still be an ambush (above).</li>
+    <li><span class="sev bad">High</span>Strikes net a profit: budget rose $630K over three drone strikes. No trade-off.</li>
+    <li><span class="sev warn">Med</span>Wrap-up is the same for a flawless run and for three KIA; no stats.</li>
+    <li><span class="sev warn">Med</span>Rewards repeat verbatim: every intercept is “HOLD POSITION”, every kill site “documents, maps, a phone”.</li>
+    <li><span class="sev warn">Med</span>The HQ hint “CONTACT ON THE MAP · STRIKE ▸ ON ITS ALERT, OR LET ALPHA DECIDE” is logged as an HQ radio line in COMMS. Coaching on the radio breaks the comms standard.</li>
+    <li><span class="sev warn">Med</span>A solid black rectangle sits on the map in several frames (r1 0:22, 1:12, 3:28). This was a software renderer, so check it on a real GPU before acting.</li>
+    <li><span class="sev low">Low</span>Team bar keeps “ALERTED” in red after every group is cleared.</li>
+    <li><span class="sev low">Low</span>Flyout intel list repeats sources (Thermal ×2, Local ×3 on B1).</li>
+    <li><span class="sev low">Low</span>Two ALERT bands overlap when adjacent squares both have contacts (run 2, E3/D3). Closed band text truncates (“ALERT RE…”).</li>
+    <li><span class="sev low">Low</span>ALPHA's B1 kill-site search report arrives after SKYHOOK-1 is already inbound.</li>
+  </ol>
+</section>
+
+<section>
+  <span class="eyebrow">Suggested next milestone</span>
+  <h2>Close the loop</h2>
+  <div class="next">
+    <div><h3>Intel counts</h3><p class="muted">ALPHA pulls on contact; a scanned square is never an ambush.</p></div>
+    <div><h3>Every strike is a trade</h3><p class="muted">Cost above bounty, one weapon per target type, risk on alerted groups.</p></div>
+    <div><h3>Variable finds</h3><p class="muted">Intercepts and site searches pay out leads, caches, bonus targets or nothing.</p></div>
+    <div><h3>Graded wrap-up</h3><p class="muted">Time, casualties, spend, intel; headline follows the grade.</p></div>
+    <div><h3>Something carries over</h3><p class="muted">Budget and roster persist into the next contract; the wrap-up offers that contract.</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Method</span>
+  <p class="muted">Production build served locally (<code>vite preview</code>), headless Chromium at 1440 × 900. A script played through the visible controls: Analyze, Reposition after tapping the next unscanned route square, ALERT → Drone, Listen, and the first answer on any prompt. It read game state only to log the radio, to aim the Listen slider at the visible target wave, and to pick the next route square the fog shows. The software renderer ran the mission clock at about 0.4× real time, so each mission took 12–20 real minutes; mission times above are game time. One seed only (the default), so map-specific results may differ on other seeds.</p>
+</section>
+</div>
+</body>
+</html>
