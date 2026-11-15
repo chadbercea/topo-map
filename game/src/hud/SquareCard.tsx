@@ -334,7 +334,8 @@ function PackageLine({ s, square }: { s: GameState; square: string }) {
 // The intel ORION-3 has on the square now (ILI-1507): each report, one line, labelled by kind
 // (ILI-1510) and coloured by how much it says. The full text is on hover where a line runs long.
 function Reports({ s, square }: { s: GameState; square: string }) {
-  const items = squareReports(s, square);
+  // One line per report: a square analyzed twice doesn't list the same line twice (ILI-1561).
+  const items = squareReports(s, square).filter((r, i, all) => all.findIndex((x) => x.kind === r.kind && x.text === r.text) === i);
   if (!items.length) return null;
   return (
     <ul className="sc-reports" data-testid="square-reports">

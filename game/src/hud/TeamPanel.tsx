@@ -17,7 +17,7 @@ export function TeamPanel({ highlight, minimized = false, onToggle }: { highligh
   const callsign = useGame((s) => s.team.callsign);
   const activity = useGame((s) => s.team.activity);
   const fighting = useGame((s) => !!s.team.fight);
-  const alerted = useGame((s) => s.alerted);
+  const alerted = useGame((s) => s.alerted && s.contacts.some((c) => c.status === 'hidden' || c.status === 'revealed')); // gone once no group is left (ILI-1561)
   const operators = useGame((s) => s.team.operators);
   const worst = operators.map(condition).sort((a, b) => RANK[b] - RANK[a])[0];
   const open = !minimized || !onToggle;

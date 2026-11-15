@@ -21,13 +21,6 @@ export const BLACK_BOX: MissionDef = registerMission({
   schedule: [{ atMs: 5_000, id: 'insert', from: 'team', radio: 'HQ, ALPHA, on the ground at G5.' }],
 
   triggers: [
-    // The first contact found by imagery or an intercept (a marker on the map, not an
-    // ambush): HQ points at the options.
-    {
-      id: 'first-contact-hint',
-      when: (s) => s.events.some((e) => e.kind === 'contact' && e.id.startsWith('contact-')) && !s.team.fight,
-      then: (s) => say(s, 'HQ', 'hint-first-contact', 'CONTACT ON THE MAP · STRIKE ▸ ON ITS ALERT, OR LET ALPHA DECIDE', true),
-    },
     // A fight at the crash site while ALPHA recovers the drive.
     {
       id: 'crash-site-contact',

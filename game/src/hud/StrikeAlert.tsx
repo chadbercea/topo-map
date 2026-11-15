@@ -115,8 +115,9 @@ function Alert({ s, square, open, area, loud }: { s: GameState; square: string; 
   // the closed band gives way to an edge marker that pans the map to it. On a phone the open panel
   // is the strip along the map's foot.
   const compact = tier === 'compact';
-  const width = open ? (compact ? area.width - 16 : Math.max(sq.w, STRIKE_W * k)) : Math.max(sq.w, 96 * k);
-  const ht = h || (open ? 240 : 28);
+  // Closed, exactly its square's width: two alerts on neighbouring squares never overlap (ILI-1561).
+  const width = open ? (compact ? area.width - 16 : Math.max(sq.w, STRIKE_W * k)) : sq.w;
+  const ht = h || (open ? 240 : 40);
   const mapTop = area.y + 8;
   const mapFoot = area.y + area.height - 8;
   let left = sq.x + sq.w - width;

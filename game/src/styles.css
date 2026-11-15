@@ -2497,3 +2497,9 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .hud:has(.strike-alert:not([data-open]) .sa-band:not([data-work]), .prompt:not(.prompt-traffic)) :is(.satcom .thread .c-event[data-newest] .c-open, .satcom .thread .sending) { animation: none; }
 /* Only the loudest ALERT flashes (ILI-1556): the others hold steady red. */
 .strike-alert:not([data-open]):not([data-loud]) .sa-band:not([data-work]), .strike-alert:not([data-open]):not([data-loud]) .sa-band:not([data-work]) .sa-hazard { animation: none; }
+
+/* ILI-1561: the closed ALERT band is its square's width. ALERT and Strike ▸ on the first row, what's
+   happening on its own row under them, so nothing truncates; the hazard stripes are for the open panel. */
+.strike-alert:not([data-open]) .sa-band { flex-wrap: wrap; row-gap: 2px; padding: 4px 6px; }
+.strike-alert:not([data-open]) .sa-hazard { display: none; }
+.strike-alert:not([data-open]) .sa-band small { order: 3; flex: 1 0 100%; }

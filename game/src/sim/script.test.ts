@@ -28,11 +28,11 @@ describe('mission script', () => {
 
   it('a trigger fires once, the first tick its condition holds', () => {
     let s = walking();
-    s = reveal({ ...s, contacts: FIXTURE() }, ['E3']);
-    s = step(s, 100);
-    expect(s.script.fired).toContain('first-contact-hint');
-    expect(s.comms.messages.filter((m) => m.id === 'hint-first-contact')).toHaveLength(1);
-    expect(run(s, 1_000).comms.messages.filter((m) => m.id === 'hint-first-contact')).toHaveLength(1);
+    s = step({ ...s, timer: { ...s.timer, remainingMs: 300_000 } }, 100);
+    expect(s.script.fired).toContain('five-minutes');
+    const calls = (x: GameState) => x.comms.messages.filter((m) => /5 minutes remaining/.test(m.text)).length;
+    expect(calls(s)).toBe(1);
+    expect(calls(run(s, 1_000))).toBe(1);
   });
 
   it('outcomes branch on what happened: the one-minute call depends on the black box', () => {
