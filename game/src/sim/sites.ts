@@ -40,7 +40,7 @@ export function markSite(s: GameState, c: Contact): GameState {
 // the team's business, not a support call. What it finds is intel for the feed.
 export const siteSystem: System = (s) => {
   const { team } = s;
-  if (team.fight) return s;
+  if (team.fight || s.exfil) return s; // the bird's called: no sweep, it boards (ILI-1561)
   const here = squareAt(team.position.x, team.position.y);
   const site = s.events.find((e) => e.kind === 'site' && e.square === here && e.status !== 'resolved');
   if (!site) return s;
