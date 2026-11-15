@@ -5,7 +5,7 @@ import type { System } from './systems';
 import { BOARD } from './minigame';
 import { confirmKills, eyesOn, groupOrigin, unitSpot } from './imagery';
 import { makeNoise, NOISE } from './noise';
-import { spendWeapon, weaponBlocked } from './ordnance';
+import { dugIn, spendWeapon, weaponBlocked } from './ordnance';
 import { addBda, CASH_PER_STRIKE_KILL, earn, markSite } from './sites';
 
 // Air strikes: no mini game and no aiming. HQ picks the target and watches.
@@ -91,7 +91,14 @@ function plan(s: GameState, r: AirRun): { passes: Pass[]; kills: Kill[] } {
   const when = (p: Pass, x: number) => p.startMs + Math.round(((p.east ? x - west : west + CELL - x) / CELL) * CROSS_MS);
   if (r.weapon === 'drone') {
     const pass: Pass = { row: null, east: true, startMs: r.arriveMs };
-    return { passes: [pass], kills: all.map(({ row: _row, ...k }) => ({ ...k, atMs: when(pass, k.x) })).sort((a, b) => a.atMs - b.atMs) };
+    // A dug-in group (ILI-1562) loses only half to the drone, rounded down: the rest is under cover.
+    const hits = all.filter((f, i) => {
+      const c = s.contacts.find((x) => x.id === f.contactId);
+      if (!c || !dugIn(c)) return true;
+      const nth = all.slice(0, i).filter((x) => x.contactId === f.contactId).length;
+      return nth < Math.floor(c.units.length / 2);
+    });
+    return { passes: [pass], kills: hits.map(({ row: _row, ...k }) => ({ ...k, atMs: when(pass, k.x) })).sort((a, b) => a.atMs - b.atMs) };
   }
   // The heli strafes the rows HQ can see fighters in, the fullest first.
   const counts = new Map<number, number>();

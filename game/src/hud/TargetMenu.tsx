@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { WEAPON, WEAPONS, type Weapon } from '../sim/ordnance';
+import { dugIn, WEAPON, WEAPONS, type Weapon } from '../sim/ordnance';
 import { strikeBlocked } from '../sim/strike';
 import { game, useGame } from '../sim/store';
 import { eyesOn, type Eyes } from '../sim/imagery';
@@ -89,10 +89,10 @@ export function TargetMenu({ contactId, title, lead, trail }: { contactId: strin
           {WEAPONS.map((w) => {
             const blocked = strikeBlocked(state, w, c); // why it can't fire, on the button: never a dead click (ILI-1524)
             return (
-              <button key={w} disabled={!!blocked} title={blocked ?? undefined} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`} aria-label={WEAPON[w].name} data-cue={(state.team.waitFor?.square === c.square && !blocked) || undefined /* ALPHA asked for this (ILI-1318) */}>
+              <button key={w} disabled={!!blocked} title={blocked ?? (w === 'drone' && dugIn(c) ? 'Dug in: the drone takes only half' : undefined)} onClick={() => game.fire(c.id, w)} data-testid={`fire-${w}`} aria-label={WEAPON[w].name} data-cue={(state.team.waitFor?.square === c.square && !blocked) || undefined /* ALPHA asked for this (ILI-1318) */}>
                 <WeaponIcon w={w} ready={!blocked} />
                 <span>{SHORT[w]}</span>
-                <small>{blocked ? shortBlock(blocked) : cash(perCall(state, w))}</small>
+                <small>{blocked ? shortBlock(blocked) : w === 'drone' ? `${cash(perCall(state, w))} · ${state.ordnance.drone.uses} left${dugIn(c) ? ' · ½' : ''}` : cash(perCall(state, w))}</small>
               </button>
             );
           })}
