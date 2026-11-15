@@ -10,6 +10,7 @@ import { LOADOUT } from './team';
 import { knownTo } from './picture';
 import { nextRandom } from './firefight';
 import { stale } from './intel';
+import { firesLeft } from './ordnance';
 
 // Contacts hide on the map until imagery finds them (GDD grid scan outcomes, and the War
 // Room prototype's loop). The team stops short of any square nobody has imaged and asks
@@ -129,7 +130,7 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 // ALPHA decides for itself (ILI-1315, decision logic ILI-1312). It doesn't ask HQ what to do:
 // HQ changes the ground (scans, strikes, intel), ALPHA reads it and radios what it's doing.
 // A contact ALPHA knows of (picture.ts) on the square it's heading into gets weighed: take it, hold short for
-// HQ to soften it (for as long as it takes: no timer, ILI-1551), or go around. A square nobody imaged it
+// HQ to soften it (for as long as it takes: no timer, ILI-1551; unless HQ has no fires left), or go around. A square nobody imaged it
 // only enters on fresh intel (movement.ts, ILI-1532). The exfil
 // always has a way out: a fight ALPHA won't take there sends it to the alternate exfil.
 export const TAKE_AT = 0.6; // their strength over ours at or under this: take the fight
@@ -166,6 +167,9 @@ function assess(s: GameState, square: SquareId, c: Contact, units: number): Game
   const what = `CONTACT ${square}, ${c.label}.`;
   if (r <= TAKE_AT) return decideOn(say(s, `take-${c.id}-${s.elapsedMs}`, waiting ? `moving in on ${square}.` : `${what} Moving to engage.`), square, 'attack');
   if (r <= AVOID_ABOVE) {
+    // Nothing HQ could soften them with (drone spent, nothing else bought or buyable): waiting
+    // would never end, so it goes around now.
+    if (!firesLeft(s)) return goAround(s, square, `${what} Too strong to take, no fires left.`);
     if (!waiting) return say({ ...s, team: { ...s.team, waitFor: { square } } }, `soften-${c.id}-${s.elapsedMs}`, `${what} Too strong to take. Holding short, request fires on ${square}.`);
     return s; // it holds until HQ changes the ground (ILI-1551)
   }

@@ -56,6 +56,14 @@ describe('ALPHA decides (ILI-1315)', () => {
     expect(s.team.route).toContain('E3');
   });
 
+  it('close odds and HQ has no fires left: it goes around instead of waiting forever', () => {
+    let s = until(facing(contact([1, 5, 6, 9])), (x) => !!x.team.waitFor);
+    const spent = { ...s.ordnance, drone: { ...s.ordnance.drone, uses: 0 }, sniper: { ...s.ordnance.sniper, unlocked: false }, heli: { ...s.ordnance.heli, unlocked: false } };
+    s = until({ ...s, ordnance: spent, resources: { ...s.resources, budget: 0 } }, (x) => !x.team.waitFor);
+    expect(said(s, /no fires left/)).toBe(true);
+    expect(s.team.waitFor).toBeNull();
+  });
+
   it('support wipes them out while it holds: it moves through', () => {
     let s = until(facing(contact([1, 5, 6, 9])), (x) => !!x.team.waitFor);
     s = run({ ...s, contacts: s.contacts.map((c) => ({ ...c, status: 'cleared' as const, units: [] })) }, 200);
