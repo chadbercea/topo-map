@@ -10,7 +10,7 @@ test('the team panel is a bar at rest; a slot opens its table with them highligh
   const strip = page.getByTestId('heartbeat-strip');
   if (isMobile) {
     // On a phone the map takes the screen (ILI-1461): the TEAM target opens the team panel.
-    await expect(strip).toBeHidden();
+    await expect(strip).toBeVisible(); // in the phone's team bar (ILI-1538): it never folds
     await page.getByTestId('tab-team').click();
     await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
     return;
