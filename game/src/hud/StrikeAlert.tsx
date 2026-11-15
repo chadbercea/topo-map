@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { bus, EV, getMapRect } from '../game/events';
 import { game, useGame } from '../sim/store';
 import { AGE_LABEL, freshness } from '../sim/imagery';
@@ -16,35 +16,15 @@ import { AirPanel } from './AirPanel';
 import { cash } from './MissionBar';
 import { strikeWork } from './PromptLayer';
 
-const STRIKE_W = 288; // the strike panel's width at scale 1: three 80 px icons and their padding (ILI-1539)
-const MIN_H = 200; // the least room below its square the open panel needs before it rides up
+export const STRIKE_W = 288; // the strike options' width at scale 1: three 80 px icons and their padding (ILI-1539)
 
 // Strikes aren't intel and they aren't ORION-3 (ILI-1524): a square with fighters that threaten
-// ALPHA gets its own ALERT, a red hazard band on the square's bottom edge. A click focuses the
-// square and opens the band downward into the strike panel: the options, then the asset under way
-// and its time to target. The panel's home is always below its square, right-aligned with it, so
-// it and the square's flyout (always to the right) never cover each other; both float above
-// everything else on the map. Nothing opens on its own: the ALERT is a button the player clicks.
-
-// Which square's strike panel is open: the HUD's own state, not the sim's. A strike clears the
-// open event when it launches, and the panel has to stay up to show the asset.
-let openSquare: string | null = null;
-const subs = new Set<() => void>();
-const setOpen = (sq: string | null) => {
-  if (openSquare === sq) return;
-  openSquare = sq;
-  subs.forEach((f) => f());
-};
-export const closeStrike = () => setOpen(null);
-export const useStrikeOpen = () =>
-  useSyncExternalStore(
-    (f) => (subs.add(f), () => void subs.delete(f)),
-    () => openSquare,
-  );
+// ALPHA gets its own ALERT, a red hazard band on the square's bottom edge. One square, one panel
+// (ILI-1579): a click opens the square's card, which has the strike options (Threat) at its top.
+// Nothing opens on its own: the ALERT is a button the player clicks.
 
 export function StrikeAlerts() {
   const s = useGame((x) => x);
-  const open = useStrikeOpen();
   const [, redraw] = useState(0);
   useEffect(() => {
     const again = () => redraw((n) => n + 1);
@@ -56,12 +36,6 @@ export function StrikeAlerts() {
     };
   }, []);
   const squares = alertSquares(s);
-  // The panel belongs to the focused square: it closes when HQ focuses another one, closes the
-  // square, or the threat there is dealt with.
-  const stale = !!open && (s.map.selected !== open || !squares.includes(open));
-  useEffect(() => {
-    if (stale) closeStrike();
-  }, [stale]);
   const area = getMapRect();
   if (!area || s.phase === 'exited') return null;
   // One loud thing (ILI-1556): only the most urgent ALERT flashes, ALPHA's fight first.
@@ -69,7 +43,7 @@ export function StrikeAlerts() {
   return (
     <>
       {squares.map((sq) => (
-        <Alert key={sq} s={s} square={sq} open={open === sq && !stale} area={area} loud={sq === loudest} />
+        <Alert key={sq} s={s} square={sq} open={s.map.selected === sq} area={area} loud={sq === loudest} />
       ))}
     </>
   );
@@ -100,12 +74,11 @@ function Alert({ s, square, open, area, loud }: { s: GameState; square: string; 
   const n = st.marked.length;
   const fighting = s.team.fight?.square === square; // ALPHA in it: say so first (ILI-1553)
   const line = work ?? (fighting ? `${s.team.callsign} in contact · ${square}` : n ? `${n} tango · ${square}` : square);
+  // One square, one panel (ILI-1579): the ALERT is the square's badge; a click opens the square's
+  // card, and the strike options are in it.
   const toggle = () => {
-    if (open) return closeStrike();
-    // Focus the square too: its flyout comes up to the right, the strike panel below.
     if (st.strikes[0]) game.openEvent(st.strikes[0].id);
     else if (game.get().map.selected !== square) game.selectSquare(square);
-    setOpen(square);
   };
 
   // Its home (ILI-1524): hanging off the square's bottom edge, right-aligned with the square, so the
@@ -114,50 +87,27 @@ function Alert({ s, square, open, area, loud }: { s: GameState; square: string; 
   // panel goes to the square's left (ILI-1547 call B). Off the open map, or under a game UI panel,
   // the closed band gives way to an edge marker that pans the map to it. On a phone the open panel
   // is the strip along the map's foot.
-  const compact = tier === 'compact';
-  // Closed, exactly its square's width: two alerts on neighbouring squares never overlap (ILI-1561).
-  const width = open ? (compact ? area.width - 16 : Math.max(sq.w, STRIKE_W * k)) : sq.w;
-  const ht = h || (open ? 240 : 40);
-  const mapTop = area.y + 8;
-  const mapFoot = area.y + area.height - 8;
-  let left = sq.x + sq.w - width;
-  let top = sq.y + sq.h;
-  let maxHeight: number | undefined;
-  if (open && compact) {
-    maxHeight = Math.round(area.height * 0.6);
-    left = area.x + 8;
-    top = mapFoot - Math.min(ht, maxHeight);
-  } else if (open) {
-    // The flyout on the square's left: the panel hangs left-aligned instead, so the two never meet (ILI-1554).
-    const flyLeft = document.querySelector(`.square-card.anchor[data-square="${square}"]`)?.getAttribute('data-side') === 'left';
-    if (flyLeft) left = sq.x;
-    if (mapFoot - top < MIN_H) {
-      // No room below: beside the square, on the side the flyout isn't.
-      left = flyLeft ? sq.x + sq.w : sq.x - width;
-      top = sq.y;
-      if (!flyLeft && left < area.x + 8) left = sq.x + sq.w; // no room left either: the right side
-    }
-    left = Math.max(area.x + 8, Math.min(left, area.x + area.width - 8 - width));
-    top = Math.max(mapTop, Math.min(top, mapFoot - MIN_H));
-    maxHeight = mapFoot - top;
-  } else {
-    left = Math.max(area.x + 8, Math.min(left, area.x + area.width - 8 - width));
-    const off = top < area.y || top > area.y + area.height - ht || sq.x + sq.w < area.x || sq.x > area.x + area.width;
-    if (off || coveredBy({ x: left, y: top, w: width, h: ht }) > 0.5)
-      return <EdgeMarker square={square} target={{ x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 }} area={area} label="Alert" />;
-  }
+  // Exactly its square's width, hanging off its bottom edge: two alerts on neighbouring squares
+  // never overlap (ILI-1561). Off the open map, or under a game UI panel, an edge marker instead.
+  const width = sq.w;
+  const ht = h || 40;
+  const left = Math.max(area.x + 8, Math.min(sq.x + sq.w - width, area.x + area.width - 8 - width));
+  const top = sq.y + sq.h;
+  const off = top < area.y || top > area.y + area.height - ht || sq.x + sq.w < area.x || sq.x > area.x + area.width;
+  if (off || coveredBy({ x: left, y: top, w: width, h: ht }) > 0.5)
+    return <EdgeMarker square={square} target={{ x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 }} area={area} label="Alert" />;
 
   return (
     <section
       ref={ref}
       className="strike-alert"
       data-testid="strike-alert"
-      data-overlay={open ? 'strike' : 'alert'}
+      data-overlay="alert"
       data-square={square}
-      data-open={open || undefined}
+      data-focus={open || undefined}
       data-loud={loud || undefined}
       data-tier={tier}
-      style={{ left, top, width, maxHeight, '--k': k } as CSSProperties}
+      style={{ left, top, width, '--k': k } as CSSProperties}
       role="group"
       aria-label={`Alert ${square}`}
     >
@@ -166,25 +116,30 @@ function Alert({ s, square, open, area, loud }: { s: GameState; square: string; 
         <b>Alert</b>
         <small data-testid="alert-line">{line}</small>
         {/* The one thing to press, in the word for what it does (ILI-1534, option A). */}
-        {!open && !work && (
+        {!work && (
           <span className="sa-go" data-testid="alert-strike">
             Strike ▸
           </span>
         )}
         <i className="sa-hazard" aria-hidden />
       </button>
-      {open && (
-        <div className="sa-body" data-testid="strike-panel">
-          <Stages stage={st.running ? 'asset' : 'options'} order={STAGES}>
-            {st.running ? <StrikeAsset square={square} /> : <StrikeOptions s={s} square={square} />}
-          </Stages>
-        </div>
-      )}
     </section>
   );
 }
 
 const STAGES = ['options', 'asset'] as const;
+
+// The square card's THREAT section (ILI-1579): the ways to hit it, then the asset under way.
+export function Threat({ s, square }: { s: GameState; square: string }) {
+  const st = strikeState(s, square);
+  return (
+    <section className="sq-threat" data-testid="strike-panel" data-square={square} aria-label={`Threat on ${square}`}>
+      <Stages stage={st.running ? 'asset' : 'options'} order={STAGES}>
+        {st.running ? <StrikeAsset square={square} /> : <StrikeOptions s={s} square={square} />}
+      </Stages>
+    </section>
+  );
+}
 
 // The contact the strike is on, in a line: who, how many fighters marked, how fresh the look.
 export function contactLine(s: GameState, square: string) {
