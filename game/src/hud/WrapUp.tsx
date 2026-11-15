@@ -7,6 +7,14 @@ import { gameClock } from '../sim/gameTime';
 import { RaceBar, RookGlyph } from './MissionBar';
 import type { Shot } from '../site/content'; // a type only
 
+// The headline follows the grade on a job done (ILI-1563): only an A is "what it takes".
+const GRADED: Record<'A' | 'B' | 'C' | 'D', { title: string; em: string }> = {
+  A: { title: 'Welcome to the team.', em: 'You’ve got what it takes.' },
+  B: { title: 'Welcome to the team.', em: 'There’s room to improve.' },
+  C: { title: 'You’re on probation.', em: 'We expected better.' },
+  D: { title: 'You’re on probation.', em: 'Don’t make us regret this.' },
+};
+
 const HEADLINE = { win: 'MISSION SUCCESS', casualties: 'MISSION COMPLETE · CASUALTIES', failed: 'MISSION FAILED', bankrupt: 'BANKRUPT' } as const;
 
 // The report's voice (ILI-1528): Castle House talking to the new hire, deadpan, the way an
@@ -122,7 +130,7 @@ export function WrapUp() {
   if (!ended) return null;
   const w = wrapUp(state);
   const good = w.outcome === 'win' || w.outcome === 'casualties';
-  const copy = COPY[w.outcome];
+  const copy = w.grade === 'F' ? COPY[w.outcome] : { ...COPY[w.outcome], ...GRADED[w.grade] };
   const done = w.objectives.filter((o) => o.done).length;
   const extracted = !!state.exfil && exfilStage(state.exfil, state.elapsedMs) === 'done';
   const hero = good ? HERO : { ...HERO, color: RED, opacity: 0.7 };
@@ -143,7 +151,7 @@ export function WrapUp() {
             </div>
             <div className="aar-hero-text">
               <p className="aar-stamp" data-testid="outcome">
-                {HEADLINE[w.outcome]}
+                {HEADLINE[w.outcome]} · GRADE {w.grade}
                 {/* A job done can still lose money (ILI-1316). */}
                 {good && w.pnl < 0 && ' · AT A LOSS'}
               </p>
@@ -152,6 +160,15 @@ export function WrapUp() {
                 <em>{copy.em}</em>
               </h2>
               <p className="aar-lede">{w.reason}</p>
+              {/* The grade card (ILI-1563): what the grade was made of, above the fold. */}
+              <dl className="aar-card" data-testid="grade-card" data-grade={w.grade}>
+                {w.card.map((c) => (
+                  <div key={c.label}>
+                    <dt>{c.label}</dt>
+                    <dd>{c.value}</dd>
+                  </div>
+                ))}
+              </dl>
               <p className="aar-sign">
                 {copy.sign.map((l) => (
                   <span key={l}>{l}</span>
