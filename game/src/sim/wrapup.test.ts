@@ -87,6 +87,10 @@ describe('the grade (ILI-1563)', () => {
     expect(w.card.map((c) => c.label)).toEqual(['Time used', 'Men lost', 'Spent on support', 'Ambushes']);
     expect(w.card[0].value).toBe('4:00');
   });
+  it('nothing spent reads $0K, not $-0K (ILI-1569)', () => {
+    const w = wrapUp({ ...done, resources: { ...done.resources, ledger: { ...done.resources.ledger, spent: 0 } } });
+    expect(w.card[2].value).toBe('$0K');
+  });
   it('men lost pull the grade down: three down is a D, not "what it takes"', () => {
     expect(wrapUp({ ...down(1), elapsedMs: 240_000 }).grade).toBe('B');
     expect(wrapUp({ ...down(3), elapsedMs: 240_000 }).grade).toBe('D');
