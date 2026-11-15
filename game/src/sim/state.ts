@@ -64,6 +64,7 @@ export type GameState = {
     fight: Fight | null;
     treating: Treatment | null; // the medic at work
     decisions: Record<string, Decision>; // what HQ decided about squares on the route
+    decidedAt?: Record<string, number>; // when ALPHA last weighed each square (ILI-1552: a newer look re-weighs it)
     known: Picture; // ALPHA's own picture of the enemy: what it was sent or saw (ILI-1495)
   };
   map: { cols: number; rows: number; scanned: string[]; selected: string | null; blind: BlindLook[] };

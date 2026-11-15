@@ -155,6 +155,13 @@ export const approachSystem: System = (s) => {
   // Only what ALPHA knows (ILI-1495): intel HQ sent it, or its own eyes. Never the ground truth.
   const known = knownTo(s, next);
   if (known && team.decisions[next] !== 'attack') return assess(s, next, known.c, known.units);
+  // An attack it decided on is weighed again when a newer look at the square reaches it (ILI-1552):
+  // still a fight it takes, it carries on without a word; more than it can take, it decides again.
+  if (known && newerLook(s, next)) {
+    if (odds(s, known.c, known.units) <= TAKE_AT) return { ...s, team: { ...team, decidedAt: { ...team.decidedAt, [next]: s.elapsedMs } } };
+    const { [next]: _, ...decisions } = team.decisions;
+    return assess({ ...s, team: { ...team, decisions } }, next, known.c, known.units);
+  }
   // Held short of a contact that HQ's support has since wiped out: it moves through.
   if (team.waitFor?.square === next && !known)
     return decideOn(say(s, `clear-${next}-${s.elapsedMs}`, `${next} clear, moving through.`), next, 'push');
@@ -193,7 +200,13 @@ function goAround(s: GameState, square: SquareId, why: string): GameState {
   return via && via !== square ? say(next, `around-${s.elapsedMs}`, `${why} Moving around via ${via}.`) : decideOn(say(cleared, `through-${s.elapsedMs}`, `${why} No way around. Moving to engage.`), square, 'attack');
 }
 
-const decideOn = (s: GameState, square: SquareId, d: Decision): GameState => ({ ...s, team: { ...s.team, waitFor: null, decisions: { ...s.team.decisions, [square]: d } } });
+const decideOn = (s: GameState, square: SquareId, d: Decision): GameState => ({ ...s, team: { ...s.team, waitFor: null, decisions: { ...s.team.decisions, [square]: d }, decidedAt: { ...s.team.decidedAt, [square]: s.elapsedMs } } });
+
+// ALPHA has had a look at the square since it last weighed it.
+const newerLook = (s: GameState, square: SquareId) => {
+  const at = s.team.decidedAt?.[square] ?? -1;
+  return Object.values(s.team.known).some((k) => k.square === square && k.atMs > at);
+};
 
 // What ALPHA tells HQ: its decision, not a question.
 const say = (s: GameState, id: string, text: string): GameState => ({ ...s, comms: { ...s.comms, messages: [...s.comms.messages, radio(s, s.team.callsign, id, `HQ, ${s.team.callsign}, ${text}`)] } }); // called, then caller (ILI-1541)
@@ -215,7 +228,7 @@ export const blindSystem: System = (s) => {
 export type Effect = 'observe' | 'attack' | 'avoid' | 'blind' | 'push' | 'pass' | 'resupply' | 'divert';
 
 export function applyEffect(s: GameState, effect: Effect, square: SquareId): GameState {
-  const decide = (d: Decision) => ({ ...s.team, decisions: { ...s.team.decisions, [square]: d } });
+  const decide = (d: Decision) => ({ ...s.team, decisions: { ...s.team.decisions, [square]: d }, decidedAt: { ...s.team.decidedAt, [square]: s.elapsedMs } });
   const contact = contactIn(s, square);
   switch (effect) {
     case 'blind':

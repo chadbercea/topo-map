@@ -64,6 +64,24 @@ describe('ALPHA decides (ILI-1315)', () => {
     expect(s.team.waitFor).toBeNull();
   });
 
+  it('an attack is weighed again when a newer look shows more than it can take (ILI-1552)', () => {
+    let s = until(facing(contact([5, 6])), (x) => x.team.decisions.E3 === 'attack');
+    s = { ...s, team: { ...s.team, fight: null } };
+    // A new look: the group has grown. ALPHA hears it and holds short instead of walking in.
+    const grown = { ...s, contacts: s.contacts.map((c) => ({ ...c, units: [1, 5, 6, 9] })), team: { ...s.team, known: { tech: { square: 'E3', units: 4, atMs: s.elapsedMs + 1 } } } };
+    s = run(grown, 200);
+    expect(s.team.waitFor?.square).toBe('E3');
+    expect(said(s, /Too strong to take\. Holding short/)).toBe(true);
+  });
+
+  it('a newer look that still shows a fight it takes changes nothing and says nothing (ILI-1552)', () => {
+    let s = until(facing(contact([5, 6])), (x) => x.team.decisions.E3 === 'attack');
+    const lines = s.comms.messages.length;
+    s = run({ ...s, team: { ...s.team, known: { tech: { square: 'E3', units: 2, atMs: s.elapsedMs + 1 } } } }, 200);
+    expect(s.team.decisions.E3).toBe('attack');
+    expect(s.comms.messages.filter((m) => m.from === 'ALPHA').length).toBe(s.comms.messages.slice(0, lines).filter((m) => m.from === 'ALPHA').length);
+  });
+
   it('support wipes them out while it holds: it moves through', () => {
     let s = until(facing(contact([1, 5, 6, 9])), (x) => !!x.team.waitFor);
     s = run({ ...s, contacts: s.contacts.map((c) => ({ ...c, status: 'cleared' as const, units: [] })) }, 200);
