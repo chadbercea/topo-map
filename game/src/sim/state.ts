@@ -98,6 +98,7 @@ export type GameState = {
   seed: number; // the mission's seed: its dice (enemy.ts) and where the fight dice start, so a mission replays exactly (ILI-1454)
   rng: number; // chance in fights, kept in state so a mission replays exactly; starts at the seed
   beatAtMs?: number; // when the next group sets off (ILI-1565)
+  campaign: Campaign; // which contract of the three, and who's left (ILI-1566)
   settings: Settings; // survives restart
 };
 
@@ -115,8 +116,26 @@ export const MISSION_MS = MISSION.durationMs; // GDD started at six minutes; ten
 // the team walks from the first tick as before.
 // opening: Castle House's balance coming into the mission, carried from the last; unlocked:
 // the capabilities it carries in (ILI-1316).
-export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS, opening = 0, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = [], seed = MISSION_SEED): GameState {
-  const operators = roster().map((o) => ({ ...o, meds: Math.round(o.meds * medsFactor(upgrades)) })); // a field hospital (ILI-1317)
+// A campaign (ILI-1566): three contracts in a row, each on its own rolled map. The balance and the
+// team carry from one to the next; an operator lost stays lost (roles: who's still on the team).
+export const CONTRACTS = 3;
+export type Campaign = { contract: number; roles: string[] | null };
+export const FIRST_CONTRACT: Campaign = { contract: 1, roles: null };
+
+// The team for a contract: the full roster, or only the roles still on it.
+function team(roles: string[] | null) {
+  if (!roles) return roster();
+  const left = [...roles];
+  return roster().filter((o) => {
+    const i = left.indexOf(o.role);
+    if (i < 0) return false;
+    left.splice(i, 1);
+    return true;
+  });
+}
+
+export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: number = MISSION_MS, opening = 0, unlocked: readonly Weapon[] = [], upgrades: readonly string[] = [], seed = MISSION_SEED, campaign: Campaign = FIRST_CONTRACT): GameState {
+  const operators = team(campaign.roles).map((o) => ({ ...o, meds: Math.round(o.meds * medsFactor(upgrades)) })); // a field hospital (ILI-1317)
   return {
     tick: 0,
     elapsedMs: 0,
@@ -174,5 +193,6 @@ export function initialState(settings: Settings = DEFAULT_SETTINGS, missionMs: n
     seed,
     rng: seed,
     settings,
+    campaign,
   };
 }

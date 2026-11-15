@@ -1,4 +1,5 @@
 import { useGame } from '../sim/store';
+import { CONTRACTS } from '../sim/state';
 import { race } from '../sim/progress';
 import { objectiveText } from '../sim/mission';
 import { EnvWidget } from './EnvWidget';
@@ -23,6 +24,7 @@ export function MissionBar() {
   const phase = useGame((s) => s.phase);
   const tick = useGame((s) => s.tick);
   const mission = useGame((s) => s.mission);
+  const contract = useGame((s) => s.campaign.contract); // which of the campaign's three (ILI-1566)
   const remaining = timer.remainingMs;
   const warn = remaining <= 60_000 ? 'red' : remaining <= 300_000 ? 'amber' : undefined;
   return (
@@ -32,7 +34,9 @@ export function MissionBar() {
         <RookGlyph />
         <div>
           <small>Operation</small>
-          <b>{mission.name.replace(/^Operation\s+/, '')}</b>
+          <b>
+            {mission.name.replace(/^Operation\s+/, '')} <span className="mb-contract" data-testid="contract">{contract}/{CONTRACTS}</span>
+          </b>
         </div>
       </div>
       <div className="mb-cell timer-cell" data-testid="timer" data-phase={phase} data-warn={warn} aria-label="Client deadline">

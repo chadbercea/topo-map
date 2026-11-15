@@ -93,6 +93,17 @@ export const intro = {
     loggedIn = false;
     run([['map', MAP_MS], ['panels', PANELS_MS], ['live', 0]]);
   },
+  // The next contract, or the same one again (ILI-1566): the map boot, without the login.
+  next() {
+    pins.clear();
+    game.nextContract();
+    boot();
+  },
+  retry() {
+    pins.clear();
+    game.retryContract();
+    boot();
+  },
   // Exit, from the pause menu: the mission over, back to the title screen.
   home() {
     timers.forEach(clearTimeout);
@@ -101,5 +112,12 @@ export const intro = {
     set('title');
   },
 };
+
+function boot() {
+  if (!introOn) return;
+  game.standby();
+  loggedIn = false;
+  run([['map', MAP_MS], ['panels', PANELS_MS], ['live', 0]]);
+}
 
 export const useIntro = () => useSyncExternalStore(intro.subscribe, intro.get);
