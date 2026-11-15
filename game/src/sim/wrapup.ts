@@ -112,7 +112,7 @@ export function wrapUp(s: GameState): WrapUp {
     card: [
       { label: 'Time used', value: `${Math.floor(s.elapsedMs / 60_000)}:${String(Math.floor((s.elapsedMs % 60_000) / 1000)).padStart(2, '0')}` },
       { label: 'Men lost', value: String(down) },
-      { label: 'Spent on support', value: `$${Math.round(-ledger.spent / 1000).toLocaleString('en-US')}K` },
+      { label: 'Spent on support', value: `$${Math.max(0, Math.round(-ledger.spent / 1000)).toLocaleString('en-US')}K` },
       { label: 'Ambushes', value: String(ambushes) },
     ],
   };
