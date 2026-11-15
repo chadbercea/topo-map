@@ -2518,3 +2518,15 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* The square card's THREAT section (ILI-1579): the strike options lead the card, under a red rule. */
 .square-card .sq-threat { display: grid; grid-template-columns: minmax(0, 1fr); border-bottom: 1px solid #e5484d; }
 .strike-alert[data-focus] .sa-band { outline: 1px solid #fff; outline-offset: -1px; }
+/* Radio traffic's badge (ILI-1580): across the top of its square, the width of the square; a click opens its card. */
+.traffic-badge { position: fixed; z-index: 3; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; padding: 4px 6px; margin: 0; font: inherit; font-family: 'Fira Mono', 'JetBrains Mono', ui-monospace, monospace; text-align: left; color: var(--ink); background: rgba(11, 15, 13, 0.94); border: 1px solid #35d0a5; cursor: pointer; pointer-events: auto; }
+.traffic-badge b { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #35d0a5; }
+.traffic-badge small { order: 3; flex: 1 0 100%; font-size: 10px; letter-spacing: 0.04em; color: var(--dim); }
+.traffic-badge .tb-go { margin-left: auto; padding: 1px 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #0b0f0d; background: #35d0a5; }
+.traffic-badge:hover, .traffic-badge:focus-visible, .traffic-badge[data-focus] { background: rgba(20, 60, 50, 0.96); outline: none; }
+.sc-traffic-acts { display: grid; gap: 4px; margin-top: 4px; }
+.sc-traffic-acts .prompt-responses { display: flex; flex-wrap: wrap; gap: 4px; }
+.sc-traffic-acts button { font: inherit; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 8px; color: var(--ink); background: none; border: 1px solid var(--accent); cursor: pointer; }
+.sc-traffic-acts button:hover:not(:disabled) { background: rgba(53, 208, 165, 0.2); }
+.sc-traffic-acts button:disabled { opacity: 0.45; cursor: default; }
+.place-tag button.pt-open-card { font: inherit; padding: 0; color: inherit; cursor: pointer; }

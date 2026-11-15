@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { uiScale } from './scale';
 import { bus, EV, getMapRect } from '../game/events';
-import { BuildingTag, tagSquares } from './PromptLayer';
+import { BuildingTag, tagSquares, TrafficActions } from './PromptLayer';
 import { useGame } from '../sim/store';
 import { lockedOn, satName } from '../sim/satellite';
 import { isImageryRequest } from '../sim/imageryRequest';
@@ -258,7 +258,7 @@ function Report({ s, square }: { s: GameState; square: string }) {
           <div className="sc-tags" data-testid="docked-tags">
             {buildings.map((e) => (
               <div key={e.id} className="place-tag docked" data-testid="place-tag" data-kind="building" data-square={square}>
-                <BuildingTag id={e.id} still />
+                <BuildingTag id={e.id} />
               </div>
             ))}
           </div>
@@ -364,6 +364,7 @@ function TrafficItem({ s, id, square }: { s: GameState; id: string; square: stri
         Enemy radio traffic near {square}
         {going && <em> · {satName(s)} on its way to listen</em>}
       </span>
+      <TrafficActions id={id} />
     </div>
   );
 }
