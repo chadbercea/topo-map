@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { airGone, CROSS_MS, FLIGHT_MS, HELI_PASSES, LINGER_MS, TURN_MS } from './air';
 import { CASH_PER_STRIKE_KILL } from './sites';
+import { DUG_IN, weaponBlocked } from './ordnance';
 import type { GameState } from './state';
 import { lockedStore as createStore } from './testkit';
 import { run, walking } from './testkit';
@@ -24,6 +25,25 @@ const e3 = (look: number | null = 0): GameState => {
 };
 
 describe('drone strike (ILI-1252)', () => {
+  it('REAPER-1 carries two missiles a mission (ILI-1562)', () => {
+    const store = createStore(e3());
+    expect(store.get().ordnance.drone.uses).toBe(2);
+    store.fire('t', 'drone');
+    store.set(run(store.get(), 20_000));
+    expect(store.get().ordnance.drone.uses).toBe(1);
+    store.set({ ...store.get(), ordnance: { ...store.get().ordnance, drone: { ...store.get().ordnance.drone, uses: 0 } } });
+    expect(weaponBlocked(store.get(), 'drone')).toBe('Used');
+  });
+
+  it('a dug-in group loses only half to the drone; the rest is under cover (ILI-1562)', () => {
+    const s0 = e3();
+    const store = createStore({ ...s0, contacts: [{ ...s0.contacts[0], strength: DUG_IN }, s0.contacts[1]] });
+    store.fire('t', 'drone');
+    const s = run(store.get(), FLIGHT_MS + 3_000);
+    expect(s.contacts.find((c) => c.id === 't')!.units).toHaveLength(2);
+    expect(s.contacts.find((c) => c.id === 'h')!.units).toHaveLength(0); // the pair in the open: all of it
+  });
+
   it('flies in on a countdown: nothing happens until it reaches the square', () => {
     const store = createStore(e3());
     store.fire('t', 'drone');

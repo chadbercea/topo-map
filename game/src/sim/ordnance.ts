@@ -16,6 +16,12 @@ import { cooldownFactor } from './upgrades';
 
 export type Weapon = 'drone' | 'sniper' | 'heli';
 export const WEAPONS: Weapon[] = ['drone', 'sniper', 'heli'];
+// Each weapon has a job (ILI-1562). The drone: anything in the open, but two missiles a mission, and
+// a dug-in group only loses half. The heli: any group, rows HQ can see, then a cooldown. The sniper:
+// cheap, one fighter a shot, for small groups.
+export const DRONE_MISSILES = 2;
+export const DUG_IN = 1.5; // a group this strong or stronger is dug in: the drone takes half
+export const dugIn = (c: { strength: number }) => c.strength >= DUG_IN;
 
 export type WeaponState = { unlocked: boolean; uses: number | null; readyAtMs: number }; // uses null: unlimited
 export type Ordnance = Record<Weapon, WeaponState>;
@@ -29,7 +35,7 @@ export const WEAPON = {
 
 // Locked until bought (ILI-1316), and then as many calls as HQ will pay for.
 export const initialOrdnance = (unlocked: readonly Weapon[] = []): Ordnance => ({
-  drone: { unlocked: unlocked.includes('drone'), uses: null, readyAtMs: 0 },
+  drone: { unlocked: unlocked.includes('drone'), uses: DRONE_MISSILES, readyAtMs: 0 }, // REAPER-1 carries two (ILI-1562)
   sniper: { unlocked: unlocked.includes('sniper'), uses: null, readyAtMs: 0 }, // a fresh sniper every call (ILI-1253)
   heli: { unlocked: unlocked.includes('heli'), uses: null, readyAtMs: 0 },
 });
