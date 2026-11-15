@@ -22,10 +22,10 @@ test('the mission bar: the client deadline, what’s next and the budget', async
   await expect(page.getByTestId('conditions')).toContainText('High cloud');
   await expect(page.getByTestId('cloud-tile')).not.toHaveAttribute('data-warn', /./); // 60%: clear enough
   await expect(page.getByTestId('ground')).toHaveCount(0);
-  await lockOn(page, 'E2'); // a square's details show once ORION-3 is over it (ILI-1437)
-  await page.evaluate(() => window.game.selectSquare('E2'));
-  await expect(page.getByTestId('square-elevation')).toHaveText(/^\d+–\d+ m$/);
-  await expect(page.getByTestId('square-facts')).toContainText(/Features\s*town/);
+  await lockOn(page, 'E2'); // the ground under ORION-3 reads on its live picture (ILI-1504)
+  await page.evaluate(() => { const s = window.game.get(); window.game.set({ ...s, satellite: { ...s.satellite, state: 'onStation' } }); });
+  await expect(page.getByTestId('orion-elevation')).toHaveText(/^EL \d+ m$/);
+  await expect(page.getByTestId('orion-slope')).toContainText('%');
 });
 
 test('no start card blocks the game: the brief is on the satellite screen now (ILI-1445)', async ({ page }) => {

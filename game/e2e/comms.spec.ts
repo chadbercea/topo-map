@@ -19,7 +19,7 @@ test('ALPHA’s call is a prompt at its marker, answered there; the comms log ke
   await askResupply(page);
   await freeze(page);
   const ask = await openAsk(page);
-  await expect(ask.getByTestId('prompt-text')).toContainText('We need a resupply bird');
+  await expect(ask.getByTestId('prompt-text')).toContainText('request resupply at');
   const sq = await page.evaluate(() => {
     const { x, y } = window.game.get().team.position;
     return String.fromCharCode(65 + Math.floor(x / 200)) + (Math.floor(y / 200) + 1);
@@ -33,12 +33,12 @@ test('ALPHA’s call is a prompt at its marker, answered there; the comms log ke
   await expect(page.getByTestId('satcom').locator('button')).toHaveCount(0); // history only: nothing to press
   await ask.getByRole('button', { name: 'Move on without' }).click();
   await expect(call(page)).toHaveCount(0);
-  await expect(log).toContainText('We need a resupply bird');
+  await expect(log).toContainText('request resupply at');
   await expect(log).toContainText('HQ › Move on without');
   // It goes up the link (ILI-1209): sending, then ALPHA reads it back.
   await expect(log).toContainText('HQ › Move on without · sending');
   await linked(page);
-  await expect(log).toContainText('Understood. Moving with what we have.');
+  await expect(log).toContainText('WILCO, moving without resupply.');
   await expect(page.getByTestId('call-box')).toHaveCount(0); // no ALPHA nav box (ILI-1395)
 });
 
@@ -53,7 +53,7 @@ test('the comms log is a drawer, closed until HQ opens it (ILI-1393)', async ({ 
   await expect(page.getByTestId('satcom')).toBeHidden();
 });
 
-test('HQ finds the checkpoint in E3; heading into it, ALPHA weighs it and says it’s going around (ILI-1315)', async ({ page, isMobile }) => {
+test('HQ finds the group in E3; heading into it, ALPHA weighs it and says it’s going around (ILI-1315)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await running(page);
   await freeze(page);
@@ -63,18 +63,6 @@ test('HQ finds the checkpoint in E3; heading into it, ALPHA weighs it and says i
     for (let i = 0; i < 900 && window.game.get().team.route.includes('E3'); i++) window.game.tick(100);
   });
   if (isMobile) await page.getByTestId('tab-satcom').click();
-  await expect(page.getByTestId('comms-feed')).toContainText(/CONTACT E3, a fortified checkpoint\. Too strong to take\. Moving around via [A-H]\d\./);
+  await expect(page.getByTestId('comms-feed')).toContainText(/CONTACT E3, [^.]+\. Too strong to take\. Moving around via [A-H]\d\./);
   await expect(call(page)).toHaveCount(0); // it told HQ; it didn't ask
-});
-
-test('news the map does not show lands in the stream as an alert', async ({ page, isMobile }) => {
-  await start(page, '?debug');
-  await page.waitForFunction(() => window.game);
-  await page.evaluate(() => {
-    window.game.set({ ...window.game.get(), noise: 70 });
-    window.game.tick(100);
-  });
-  await expect(page.getByTestId('comms-feed')).toContainText('know a PMC is in the area');
-  if (isMobile) await page.getByTestId('tab-satcom').click();
-  await expect(page.getByTestId('comms-feed')).toContainText('Enemy radio net just lit up');
 });

@@ -1,10 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { freeze, lockOn, squarePoint, start, tapAt } from './helpers';
+import type { Page } from '@playwright/test';
+
+// Events show only on ground ORION-3's analysts have been through (ILI-1519).
+const analyzed = (page: Page, sq: string) =>
+  page.evaluate((sq) => {
+    const s = window.game.get();
+    window.game.set({ ...s, intel: { ...s.intel, graded: [...s.intel.graded, sq] } });
+  }, sq);
 
 test('a new event marks its square on the map; tapping the marker picks it: its details in ORION-3, its actions beside it (ILI-1228)', async ({ page, isMobile }) => {
   await start(page, '?debug');
   await page.waitForFunction(() => window.game);
   await lockOn(page, 'F4'); // ORION-3 over F4, so its actions show (ILI-1397)
+  await analyzed(page, 'F4');
   await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'F4', title: 'Test contact' }));
   await expect(page.getByTestId('alerts')).toHaveCount(0); // no strip under the header any more
 
@@ -17,7 +26,7 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
   await tapAt(page, isMobile, await squarePoint(page, 5, 3, 0.25, -0.25));
   const card = page.getByTestId('square-anchor');
   const act = page.getByTestId('intel-list'); // an item in the square's intel list (ILI-1487)
-  await expect(page.getByTestId('square-anchor').getByTestId('square-card')).toHaveAttribute('data-square', 'F4'); // its report: on the square's flyout (ILI-1475)
+  await expect(page.getByTestId('square-anchor')).toHaveAttribute('data-square', 'F4'); // its report: on the square's flyout (ILI-1475)
   await expect(act.getByTestId('intel-item')).toContainText('Test contact');
   await expect.poll(status).toBe('seen'); // seen, so no longer flagged
   await expect(page.getByTestId('selected-square')).toHaveText('F4'); // the event picks its square
@@ -32,7 +41,7 @@ test('a new event marks its square on the map; tapping the marker picks it: its 
     expect(Math.hypot(dx, dy)).toBeLessThan(220);
   }
 
-  await card.getByRole('button', { name: 'Close' }).click();
+  await tapAt(page, isMobile, await squarePoint(page, 5, 3, -0.25, 0.25)); // tapping the square again closes its card (no Close button)
   await expect(card).toHaveCount(0);
   await expect(act).toHaveCount(0); // unpicking the square closes its actions
 });
@@ -58,6 +67,7 @@ test('a click on a ping targets the ping: its square’s panel opens on that ite
   await page.waitForFunction(() => window.game);
   await freeze(page);
   await lockOn(page, 'F4');
+  await analyzed(page, 'F4');
   await page.evaluate(() => window.game.addEvent({ id: 't', kind: 'contact', square: 'F4', title: 'Test contact' }));
   const card = page.getByTestId('square-anchor');
   // From the open map: the ping opens F4's panel on its item, not just the square.

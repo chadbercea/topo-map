@@ -14,7 +14,7 @@ test('intel: no fresh intel on F4, ALPHA holds and the prompt asks for a look', 
   // It asks HQ for imagery (ILI-1349): the prompt on the map (ILI-1391).
   await expect(page.getByTestId('prompt')).toHaveAttribute('data-square', 'F4'); // on the grid square it needs (ILI-1450)
   await expect(page.getByTestId('prompt')).toHaveAttribute('data-step', 'click');
-  await expect(page.getByTestId('prompt-text')).toHaveText('ALPHA needs route intel · click F4');
+  await expect(page.getByTestId('prompt-text')).toHaveText('ALPHA requested imagery of F4 · tap F4') // ILI-1511 wording;
   await expect(page.getByTestId('prompt-response')).toHaveCount(0); // no button: the player works the grid (ILI-1451)
   await photo(page, 'F4');
   await expect.poll(fresh).toBe(true);

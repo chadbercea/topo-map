@@ -28,16 +28,14 @@ test('the team panel shows what the team is doing', async ({ page, isMobile }) =
   // The bar at rest, its table a drawer (ILI-1472): five heartbeats on the bar; the table opens over
   // the map and closes again, and the bar never moves.
   const panel = page.getByTestId('team-panel');
-  await expect(panel).toHaveAttribute('data-state', 'full'); // open by default (ILI-1501)
-  await page.getByTestId('team-minimize').click();
-  await expect(panel).toHaveAttribute('data-state', 'min');
+  await expect(panel).toHaveAttribute('data-state', 'min'); // folded to its bar at start (ILI-1547 call E)
   await expect(panel.getByTestId('heartbeat-strip').locator('svg.ecg')).toHaveCount(5);
   const bar = await page.getByTestId('heartbeat-strip').boundingBox();
   await page.getByTestId('team-expand').click();
   await expect(panel).toHaveAttribute('data-state', 'full');
   await expect(page.getByTestId('readout').locator('li')).toHaveCount(5);
-  expect(await page.getByTestId('heartbeat-strip').boundingBox()).toEqual(bar);
-  await page.keyboard.press('Escape');
+  await expect.poll(() => page.getByTestId('heartbeat-strip').boundingBox()).toEqual(bar); // once the drawer has settled
+  await page.getByTestId('team-minimize').click(); // Escape pauses now (ILI-1503)
   await expect(panel).toHaveAttribute('data-state', 'min');
 });
 
@@ -71,7 +69,7 @@ test('layout A: the map from the left edge with the timer and the comms log butt
   expect(strip.y + strip.height).toBeGreaterThan(view.height - 40);
   expect(strip.x).toBeGreaterThanOrEqual(team.x + team.width);
   expect(Math.abs(bar.x - map.x)).toBeLessThan(2);
-  expect(Math.abs(bar.x + bar.width - (map.x + map.width))).toBeLessThan(2);
+  expect(bar.x + bar.width).toBeLessThanOrEqual(map.x + map.width + 1); // only as wide as what's in it (MissionBar)
   expect(Math.abs(bar.y - map.y)).toBeLessThan(2);
   expect(bar.height).toBe(78); // 52 + 24, the weather along its foot (ILI-1473), and its border
   await expect(page.getByTestId('timer').getByTestId('clock')).toBeVisible();

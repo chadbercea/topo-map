@@ -1,5 +1,13 @@
 import { expect, test } from '@playwright/test';
 import { askResupply, fastForward, freeze, photo, running, start } from './helpers';
+import type { Page } from '@playwright/test';
+
+// Events show only on ground ORION-3's analysts have been through (ILI-1519): mark squares analyzed.
+const analyzed = (page: Page, squares: string[]) =>
+  page.evaluate((sq) => {
+    const s = window.game.get();
+    window.game.set({ ...s, intel: { ...s.intel, graded: [...s.intel.graded, ...sq] } });
+  }, squares);
 
 // COMMS as a card stack (option D, ILI-1347): what wants HQ is an event card that waits for it.
 // Intel lands in INTEL under ORION-3 (IA v2 draft A, ILI-1363).
@@ -21,6 +29,7 @@ test('an event is a card that waits, a record only: nothing on it starts anythin
   await start(page, '?debug');
   await running(page);
   await freeze(page);
+  await analyzed(page, ['C2', 'G4', 'F4']);
   await page.evaluate(() => {
     window.game.addEvent({ id: 'traffic-x', kind: 'signal', square: 'C2', title: 'Enemy radio traffic' });
     window.game.addEvent({ id: 'building-G4', kind: 'building', square: 'G4', title: 'A building worth a search' });
@@ -46,7 +55,7 @@ test('ALPHA asking is a card in the log; HQ answers at the prompt, and the card 
   await freeze(page);
   if (isMobile) await page.getByTestId('tab-satcom').click();
   else await page.getByTestId('log-toggle').click();
-  const ask = page.getByTestId('event-card-stack').filter({ hasText: 'We need a resupply bird' });
+  const ask = page.getByTestId('event-card-stack').filter({ hasText: 'request resupply' });
   await expect(ask).toHaveAttribute('data-kind', 'ask');
   await expect(ask).toContainText('ALPHA asks');
   await expect(ask).toContainText('waiting on HQ');
@@ -69,7 +78,7 @@ test('answering ALPHA somewhere else closes its card too (ILI-1348)', async ({ p
     window.game.respond(call.id, call.responses![0].id);
   });
   if (isMobile) await page.getByTestId('tab-satcom').click();
-  const ask = page.getByTestId('event-card-stack').filter({ hasText: 'We need a resupply bird' });
+  const ask = page.getByTestId('event-card-stack').filter({ hasText: 'request resupply' });
   await expect(ask.getByTestId('card-responses')).toHaveCount(0);
   await expect(ask).toContainText('sending');
 });

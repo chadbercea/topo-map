@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { fastForward, freeze, lockOn, running, squarePoint, start, tapAt, untilTraffic } from './helpers';
+import { fastForward, freeze, lockOn, running, squarePoint, start, tapAt } from './helpers';
 
 // The square's panel shows its details (ILI-1466); every satellite action is ORION-3's (ILI-1459):
-// a tap sends ORION-3, and Scan is in ORION-3, not on the square. The mini game still plays there.
+// a tap sends ORION-3, and Scan is in ORION-3, not on the square. The mini game has its own panel (ILI-1547).
 
 test('a tap opens the square\u2019s flyout and sends ORION-3; Scan is in ORION-3; the report lands on the square (ILI-1466, ILI-1475)', async ({ page, isMobile }) => {
   await start(page, '?debug');
@@ -11,7 +11,7 @@ test('a tap opens the square\u2019s flyout and sends ORION-3; Scan is in ORION-3
   await tapAt(page, isMobile, await squarePoint(page, 5, 3)); // F4
   const anchor = page.getByTestId('square-anchor');
   await expect(page.getByTestId('selected-square')).toHaveText('F4');
-  await expect(anchor.getByTestId('lock-status')).toHaveText(/ORION-3 on its way/); // its flyout opens at once (ILI-1475)
+  await expect(anchor.getByTestId('lock-status')).toHaveText(/^SLEWING · F4 · \d:\d\d$/); // its flyout opens at once (ILI-1475), counting ORION-3 in
   expect(await page.evaluate(() => window.game.get().satellite.aim)).toBe('F4'); // on its way
   await fastForward(page, 30_000);
   await expect(anchor).toHaveAttribute('data-locked', 'true');
@@ -55,21 +55,4 @@ test('ALPHA asking for imagery shows on the square, and cues Scan in ORION-3', a
   await expect(anchor).toContainText('ALPHA requests imagery');
   if (isMobile) await page.getByTestId('tab-orion').click();
   await expect(page.getByTestId('satellite').getByTestId('capture-scan')).toHaveAttribute('data-cue', 'true');
-});
-
-test('the radio mini game plays in its square’s menu, at C2', async ({ page }) => {
-  test.setTimeout(60_000);
-  await start(page, '?debug');
-  await page.waitForFunction(() => window.game);
-  await freeze(page);
-  await untilTraffic(page);
-  await page.evaluate(() => window.game.openEvent('traffic-c2')); // its line in C2's list, open on the choice (ILI-1491)
-  await page.getByTestId('square-anchor').locator('[data-response=satellite]').click(); // ORION-3 listens (ILI-1435)
-  await page.evaluate(() => {
-    for (let i = 0; i < 400 && !window.game.get().minigame; i++) window.game.tick(100);
-  });
-  const anchor = page.getByTestId('square-anchor');
-  await expect(anchor).toHaveAttribute('data-square', 'C2');
-  await expect(anchor).toHaveAttribute('data-minigame', 'signal');
-  await expect(anchor.getByTestId('minigame')).toContainText('LISTEN · C2');
 });

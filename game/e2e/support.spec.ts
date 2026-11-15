@@ -21,7 +21,7 @@ test('running low, ALPHA asks for a resupply; the bird flies in and refills them
   });
   await fastForward(page, 300);
   const ask = await openAsk(page);
-  await expect(ask.getByTestId('prompt-text')).toContainText('Running low on ammo. We need a resupply bird.');
+  await expect(ask.getByTestId('prompt-text')).toContainText('request resupply at G5. Ammo low.');
   await ask.getByRole('button', { name: /Send resupply/ }).click();
   await linked(page);
   // No Logistics panel (ILI-1231): the bird and the bill are in the game's state.
@@ -51,7 +51,7 @@ test('combat ineffective: ALPHA asks for a resupply bird, and replacements arriv
   });
   await fastForward(page, 300);
   const ask = await openAsk(page);
-  await expect(ask.getByTestId('prompt-text')).toContainText('Combat ineffective, 2 down. We need a resupply bird.');
+  await expect(ask.getByTestId('prompt-text')).toContainText('request resupply at G5. 2 KIA, URGENT.');
   await ask.getByRole('button', { name: /Send resupply/ }).click();
   await linked(page);
   await expect.poll(() => page.evaluate(() => window.game.get().inbound.length)).toBe(1);
