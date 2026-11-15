@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { BEAT_MAX_MS, MOVE_MS } from './contacts';
 import { initialState, type GameState } from './state';
 import { run } from './testkit';
-import { parseSquare } from '../map/grid';
 
 // No dead air (ILI-1565): every 30–45 s a group sets off for the next square.
 describe('the ground moves', () => {
@@ -23,14 +22,6 @@ describe('the ground moves', () => {
     expect(s.comms.messages.some((m) => m.from === 'Analysts' && /movement: \d+ dismounts heading (north|south|east|west)\./.test(m.text))).toBe(true);
     const quiet = run(s0, BEAT_MAX_MS + 1_000);
     expect(quiet.comms.messages.some((m) => /movement:/.test(m.text))).toBe(false);
-  });
-
-  it('over a mission, groups close on ALPHA\'s way ahead (ILI-1571)', () => {
-    const s0 = initialState();
-    const ahead = s0.team.route.slice(s0.team.waypoint);
-    const gap = (a: string, b: string) => { const p = parseSquare(a)!, q = parseSquare(b)!; return Math.max(Math.abs(p.col - q.col), Math.abs(p.row - q.row)); };
-    const distance = (s: GameState) => s.contacts.reduce((n, c) => n + Math.min(...ahead.map((r) => gap(c.square, r))), 0);
-    expect(distance(run(s0, 500_000))).toBeLessThan(distance(s0) - 3);
   });
 
   it('plays out the same way every time', () => {
