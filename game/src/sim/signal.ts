@@ -1,6 +1,6 @@
 import { postDecoded, SIGNAL_INTEL } from './intel';
 import { nextRandom } from './firefight';
-import { orionScanned, reveal } from './contacts';
+import { reveal } from './contacts';
 import type { Message } from './comms';
 import type { MiniGame } from './minigame';
 import type { GameState } from './state';
@@ -100,9 +100,9 @@ export function startIntercept(s: GameState, eventId: string, via?: ListenVia): 
   const c = s.contacts.find((x) => x.square === e.square && x.status === 'hidden') ?? s.contacts.find((x) => x.square === e.square) ?? nearest(s, e.square);
   const [r, rng] = nextRandom(s.rng);
   const target = round1(BAND.min + 5 + r * (BAND.max - BAND.min - 10));
-  // Where they are comes through only for ground ORION-3 has scanned (ILI-1493): anywhere else the
-  // intercept has their words, not a fix.
-  const fix = c && orionScanned(s, c.square) ? ` AT ${c.square}` : '';
+  // The intercept fixes the transmitter (ILI-1560): where they are comes through on any ground. That's
+  // its payoff: it finds a group the map hasn't shown, without an Analyze.
+  const fix = c ? ` AT ${c.square}` : '';
   const plain = c ? `${WORD[c.id] ?? 'UNIT'}${fix} ${c.intent ?? 'HOLD POSITION'}` : `NOTHING AT ${e.square}`;
   const signal: Signal = { target, dial: round1((BAND.min + BAND.max) / 2), nextHopMs: s.elapsedMs + HOP_MS, progress: 0, plain, contactId: c?.id };
   const game: MiniGame = {
@@ -158,12 +158,10 @@ export function finishSignal(s: GameState, _status: 'won' | 'lost'): GameState {
   const where = g.progress >= WHERE_AT;
   let next: GameState = { ...s, minigame: { ...m, status: plan ? 'won' : 'lost' } };
   const c = g.contactId ? next.contacts.find((x) => x.id === g.contactId) : undefined;
-  const fix = !!c && orionScanned(s, c.square); // a fix on them only on scanned ground (ILI-1493)
+  const fix = !!c; // a fix on the transmitter, scanned ground or not (ILI-1560)
   if (where && fix && c.status === 'hidden') next = reveal(next, [c.square]);
-  if (plan) {
-    // What gets decoded goes on the shelf for ALPHA to pull (ILI-1499); HQ never pushes it.
-    next = postDecoded({ ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } }, fix ? c.square : m.square, c?.id, SIGNAL_INTEL);
-  }
+  // Where they are, or their plan too, reaches ALPHA at once (ILI-1558).
+  if (where && fix) next = postDecoded(plan ? { ...next, stats: { ...next.stats, decoded: next.stats.decoded + 1 } } : next, c.square, c.id, SIGNAL_INTEL, plan);
   const report: Message = {
     id: `signal-${m.startedMs}`,
     from: 'SIGINT',

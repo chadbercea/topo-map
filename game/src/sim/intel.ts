@@ -160,7 +160,8 @@ function deliver(s: GameState, p: Push): GameState {
   let next: GameState = s;
   // A decoded intercept (ILI-1499): ALPHA learns their plan, and with a fix, where they are (ILI-1495).
   if (p.source === 'SIGINT' && p.contactId) {
-    next = { ...next, contacts: next.contacts.map((x) => (x.id === p.contactId ? { ...x, planKnown: true } : x)) };
+    const plan = p.items?.some((i) => i.text.startsWith('decoded'));
+    if (plan) next = { ...next, contacts: next.contacts.map((x) => (x.id === p.contactId ? { ...x, planKnown: true } : x)) };
     const c = next.contacts.find((x) => x.id === p.contactId);
     if (c && p.square && knownSquare(next, c) === p.square) next = learn(next, c, p.square);
     return next;
@@ -169,8 +170,9 @@ function deliver(s: GameState, p: Push): GameState {
 }
 
 // Decoded traffic goes on the shelf like any package (ILI-1499): HQ can't push it to ALPHA.
-export const postDecoded = (s: GameState, square: string, contactId: string | undefined, amount: number): GameState =>
-  send(s, { source: 'SIGINT', square, contactId, items: [{ kind: 'SIGINT', heat: 'hot', text: 'decoded: what they plan' }] }, amount);
+// plan: the whole message (their plan and where they are); otherwise only the fix (ILI-1560).
+export const postDecoded = (s: GameState, square: string, contactId: string | undefined, amount: number, plan = true): GameState =>
+  send(s, { source: 'SIGINT', square, contactId, items: [{ kind: 'SIGINT', heat: 'hot', text: plan ? 'decoded: what they plan' : 'fix: where they are' }] }, amount);
 
 // HQ's intel on a building goes on the shelf too (ILI-1517): HQ can't send ALPHA in, only post what
 // it knows of the place. The new package's id, for the building to keep.
