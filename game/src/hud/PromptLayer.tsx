@@ -172,8 +172,11 @@ function TrafficPrompt() {
   if (!p || !area || s.minigame?.status === 'active') return null;
   const sq = squareBox(p.square);
   if (!sq) return null;
+  // Where the badge is drawn, clamped inside the map: the cover check is on that box, so a badge
+  // pushed under a panel by the clamp becomes an edge marker instead.
+  const left = Math.max(area.x + 8, sq.x);
   const off = sq.y < area.y || sq.y > area.y + area.height - 24 || sq.x + sq.w < area.x || sq.x > area.x + area.width;
-  if (off || coveredBy({ x: sq.x, y: sq.y, w: sq.w, h: 24 }) > 0.5)
+  if (off || coveredBy({ x: left, y: sq.y, w: sq.w, h: 24 }) > 0.5)
     return <EdgeMarker square={p.square} target={{ x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 }} area={area} label="Traffic" />;
   const going = s.listen?.eventId === p.id;
   return (
@@ -183,7 +186,7 @@ function TrafficPrompt() {
       data-overlay="traffic"
       data-square={p.square}
       data-focus={s.map.selected === p.square || undefined}
-      style={{ left: Math.max(area.x + 8, sq.x), top: sq.y, width: sq.w }}
+      style={{ left, top: sq.y, width: sq.w }}
       onClick={() => game.selectSquare(p.square)}
       aria-label={`${p.square} ${p.text}`}
     >
