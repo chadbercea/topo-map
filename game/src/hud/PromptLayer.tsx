@@ -103,7 +103,7 @@ function MainPrompt({ which }: { which: 'intel' | 'call' }) {
   const width = Math.min(team ? Math.min(W + 60, team.width) : W, area.width - 16);
   // The prompt keeps clear of what never moves for it: the square's menu (flush with its square;
   // on a phone a strip along the map's foot), the toolbox, the timer and the log.
-  const strip = overlaysNamed(['asktag', 'traffic', 'actions', 'strike', 'alert', 'band', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']); // the square's menu, the toolbox, the timer (ILI-1392), the log (ILI-1393)
+  const strip = overlaysNamed(['asktag', 'traffic', 'actions', 'alert', 'band', 'toolbox', 'widget', 'logtoggle', 'log', 'heartbeats', 'team', 'recentre']); // the square's menu, the toolbox, the timer (ILI-1392), the log (ILI-1393)
   const at = team ? { x: team.left, y: team.top - 8 - (h || 96), w: width, h: h || 96 } : place(sq, area, width, h || 96, [alphaBox(s.team.position), ...strip, ...gameUiBoxes()]); // the open drawer too (ILI-1554)
   const target = sq ? { x: sq.x + sq.w / 2, y: sq.y + sq.h / 2 } : null;
   const near = target && { x: Math.max(at.x, Math.min(target.x, at.x + width)), y: Math.max(at.y, Math.min(target.y, at.y + (h || 96))) };
@@ -265,8 +265,8 @@ function PlaceTags() {
   };
   return (
     <>
-      {tagSquares(s).buildings.map((e) => {
-        const p = at(e.square, 0.5);
+      {tagSquares(s).buildings.filter((e) => e.square !== s.map.selected).map((e) => {
+        const p = at(e.square, 0.5); // the picked square's is in its card
         return (
           p && (
             <div key={e.id} className="place-tag" data-testid="place-tag" data-kind={e.kind} data-square={e.square} style={p}>
