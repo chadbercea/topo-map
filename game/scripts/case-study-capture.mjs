@@ -5,7 +5,7 @@
 //   python3 -m http.server 4510 --directory site
 // then (in game/): BASE=http://127.0.0.1:4510 node scripts/case-study-capture.mjs [group ...]
 //
-// Groups: pages, design, intro, game. No args runs them all. Output: case-study/assets/.
+// Groups: pages, design, intro, game, icons, video. No args runs them all. Output: case-study/assets/.
 import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
 
@@ -177,8 +177,93 @@ async function game() {
   await c2.close();
 }
 
+// The Three.js models, from the design system's 3D wireframes section: each one in each of its
+// states, plus the title's rook, globe and constellation.
+async function icons() {
+  await mkdir(`${OUT}icons`, { recursive: true });
+  const c = await ctx({ viewport: { width: W, height: H } });
+  const p = await c.newPage();
+  await p.goto(`${BASE}/game/design/#wireframes`);
+  await p.waitForTimeout(3000);
+  const slug = (t) => t.toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const castle = p.locator('#wireframes figure[data-wide] .ds-stage');
+  await castle.scrollIntoViewIfNeeded();
+  await p.waitForTimeout(4000);
+  await castle.screenshot({ path: `${OUT}icons/castle-house.jpg`, type: 'jpeg', quality: 85 });
+  console.log('   icons/castle-house');
+  const figs = p.locator('#wireframes .ds-wires figure');
+  const n = await figs.count();
+  for (let i = 0; i < n; i++) {
+    const f = figs.nth(i);
+    const name = slug(await f.locator('figcaption b').innerText());
+    await f.scrollIntoViewIfNeeded();
+    await p.waitForTimeout(2500);
+    const states = f.locator('.ds-states button');
+    const k = await states.count();
+    for (let j = 0; j < Math.max(1, k); j++) {
+      let label = 'on';
+      if (k) {
+        await states.nth(j).click();
+        label = slug(await states.nth(j).innerText());
+        await p.waitForTimeout(1500);
+      }
+      await f.locator('.ds-wire').first().screenshot({ path: `${OUT}icons/${name}-${label}.png`, omitBackground: true });
+      console.log(`   icons/${name}-${label}`);
+    }
+  }
+  await c.close();
+}
+
+// The hero recording: the way in, then a minute of play, at 1440x900, as WebM.
+async function video() {
+  await mkdir(`${OUT}video`, { recursive: true });
+  const c = await browser.newContext({ viewport: { width: W, height: H }, recordVideo: { dir: `${OUT}video/`, size: { width: W, height: H } } });
+  await c.addInitScript(() => {
+    addEventListener('DOMContentLoaded', () => {
+      const st = document.createElement('style');
+      st.textContent = '[data-testid=scene-status]{display:none!important}';
+      document.head.append(st);
+    });
+  });
+  const p = await c.newPage();
+  await p.goto(`${BASE}/game/?intro&debug`);
+  await p.waitForFunction(() => window.game);
+  await p.waitForTimeout(4000);
+  await p.getByTestId('title-start').click();
+  await p.getByTestId('intro-orion').waitFor();
+  await p.waitForTimeout(3000);
+  await p.getByTestId('intro-orion').click();
+  await p.getByTestId('intro-tasking').waitFor();
+  await p.waitForTimeout(2000);
+  await p.getByTestId('tasking-expand').click();
+  await p.waitForTimeout(2000);
+  await p.getByTestId('tasking-accept').click();
+  await p.getByTestId('intro').waitFor({ state: 'detached', timeout: 30_000 });
+  await p.waitForTimeout(4000);
+  // Task ORION-3 to the square ahead by clicking it, as a player would, then Analyze.
+  await p.evaluate(() => window.game.lookAt('F4'));
+  await p.waitForTimeout(6000);
+  await p.getByText(/^ANALYZE F4/i).first().click().catch(() => p.evaluate(() => window.game.capture('photo')));
+  await p.waitForTimeout(4000);
+  await p.evaluate(() => { window.game.closeLook(); window.game.lookAt('E3'); });
+  await p.waitForTimeout(6000);
+  await p.getByText(/^ANALYZE E3/i).first().click().catch(() => p.evaluate(() => window.game.capture('photo')));
+  await p.waitForTimeout(3500);
+  await p.evaluate(() => { window.game.closeLook(); window.game.selectSquare('E3'); });
+  await p.waitForTimeout(3500);
+  await p.evaluate(() => window.game.fire('group-e3', 'heli'));
+  await p.waitForTimeout(14000);
+  const path = await p.video().path();
+  await c.close();
+  const { rename } = await import('node:fs/promises');
+  await rename(path, `${OUT}video/hero.webm`);
+  console.log('   video/hero.webm');
+}
+
 if (want('pages')) await pages();
 if (want('design')) await design();
 if (want('intro')) await intro();
 if (want('game')) await game();
+if (want('icons')) await icons();
+if (want('video')) await video();
 await browser.close();

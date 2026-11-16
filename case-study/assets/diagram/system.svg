@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900" font-family="JetBrains Mono, Fira Mono, ui-monospace, monospace">
+  <!-- How War Room was built (ILI-1576): who decides, who builds, what carries the work.
+       Numbers from the ILI-1578 repo history (measured 2026-11-15). Figma, Context7 and Sentry
+       are left off: no evidence they were used on this build. -->
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#35d0a5"/>
+    </marker>
+    <marker id="o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 10 5 0 10z" fill="#f2a24e"/>
+    </marker>
+    <pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="rgba(53,208,165,0.06)"/>
+    </pattern>
+  </defs>
+  <style>
+    .t{fill:#cfe8dc;font-size:15px;letter-spacing:.06em}
+    .h{fill:#35d0a5;font-size:13px;letter-spacing:.18em}
+    .d{fill:#6f8a7d;font-size:12px;letter-spacing:.04em}
+    .n{fill:#35d0a5;font-size:22px}
+    .o{fill:#f2a24e}
+    .box{fill:rgba(11,15,13,.92);stroke:rgba(53,208,165,.45)}
+    .hot{fill:rgba(53,208,165,.08);stroke:#35d0a5}
+    .me{fill:rgba(242,162,78,.07);stroke:#f2a24e}
+    .ln{stroke:#35d0a5;stroke-width:1.2;fill:none}
+    .lo{stroke:#f2a24e;stroke-width:1.2;fill:none}
+    .dash{stroke-dasharray:4 5}
+  </style>
+  <rect width="1440" height="900" fill="#0b0f0d"/>
+  <rect width="1440" height="900" fill="url(#g)"/>
+
+  <text x="48" y="64" class="h">PMC WAR ROOM · HOW IT WAS BUILT</text>
+  <text x="48" y="92" class="d">Oct 24 – Nov 15 2026 · one designer, one main Claude Code session at a time, agents in parallel</text>
+
+  <!-- Chad -->
+  <rect x="48" y="150" width="270" height="190" class="me"/>
+  <text x="68" y="182" class="h o">CHAD · DESIGNER</text>
+  <text x="68" y="214" class="t">Decides, playtests,</text>
+  <text x="68" y="236" class="t">reviews every build</text>
+  <text x="68" y="272" class="d">9 playtests and reviews</text>
+  <text x="68" y="292" class="d">checks visuals on the</text>
+  <text x="68" y="312" class="d">deployed build, not CI</text>
+
+  <!-- Claude Code -->
+  <rect x="440" y="150" width="400" height="190" class="hot"/>
+  <text x="460" y="182" class="h">CLAUDE CODE · CLAUDE OPUS 5.5</text>
+  <text x="460" y="214" class="t">Main session: plans, writes the</text>
+  <text x="460" y="236" class="t">code and tests, files tickets</text>
+  <text x="460" y="272" class="d">15 main sessions · 496 commits</text>
+  <text x="460" y="292" class="d">memory: 34 notes carry decisions</text>
+  <text x="460" y="312" class="d">from one session to the next</text>
+
+  <!-- Subagents -->
+  <rect x="460" y="400" width="360" height="130" class="box"/>
+  <rect x="470" y="410" width="360" height="130" fill="none" stroke="rgba(53,208,165,.25)"/>
+  <rect x="480" y="420" width="360" height="130" fill="none" stroke="rgba(53,208,165,.15)"/>
+  <text x="480" y="432" class="h">SUBAGENTS · GIT WORKTREES</text>
+  <text x="480" y="462" class="t">One ticket each, own branch</text>
+  <text x="480" y="492" class="n">6</text><text x="510" y="492" class="d">at once at peak (Nov 13)</text>
+  <text x="480" y="516" class="d">43 runs · 29 in their own worktree</text>
+
+  <!-- MCPs -->
+  <text x="960" y="140" class="h">TOOLS · MCP</text>
+  <rect x="960" y="150" width="200" height="80" class="box"/>
+  <text x="978" y="180" class="t">LINEAR</text>
+  <text x="978" y="204" class="d">443 issues filed</text>
+  <rect x="1180" y="150" width="212" height="80" class="box"/>
+  <text x="1198" y="180" class="t">NOTION</text>
+  <text x="1198" y="204" class="d">design docs, research</text>
+  <rect x="960" y="250" width="200" height="80" class="box"/>
+  <text x="978" y="280" class="t">VERCEL</text>
+  <text x="978" y="304" class="d">deploys, previews</text>
+  <rect x="1180" y="250" width="212" height="80" class="box"/>
+  <text x="1198" y="280" class="t">GITHUB · gh</text>
+  <text x="1198" y="304" class="d">PRs, CI, auto-merge</text>
+
+  <!-- arrows: Chad <-> Claude Code, Claude Code -> agents, Claude Code <-> tools -->
+  <path d="M318 220H436" class="lo" marker-end="url(#o)"/>
+  <text x="332" y="208" class="d">decides</text>
+  <path d="M436 280H322" class="ln" marker-end="url(#a)"/>
+  <text x="332" y="302" class="d">reports, asks</text>
+  <path d="M640 340V396" class="ln" marker-end="url(#a)"/>
+  <path d="M840 220H956" class="ln" marker-end="url(#a)"/>
+  <path d="M840 300C900 300 900 290 956 290" class="ln" marker-end="url(#a)"/>
+
+  <!-- Pipeline -->
+  <text x="48" y="620" class="h">EVERY CHANGE</text>
+  <g>
+    <rect x="48" y="636" width="196" height="96" class="box"/>
+    <text x="64" y="666" class="t">LINEAR ISSUE</text>
+    <text x="64" y="690" class="d">ILI-NNNN, written</text>
+    <text x="64" y="708" class="d">for people to read</text>
+
+    <rect x="276" y="636" width="196" height="96" class="box"/>
+    <text x="292" y="666" class="t">BRANCH + PR</text>
+    <text x="292" y="690" class="d">420 PRs merged</text>
+    <text x="292" y="708" class="d">median 6.4 min open</text>
+
+    <rect x="504" y="636" width="196" height="96" class="box"/>
+    <text x="520" y="666" class="t">CI GATE</text>
+    <text x="520" y="690" class="d">typecheck + 348 unit</text>
+    <text x="520" y="708" class="d">6.8 → 3.8 → 0.6 min</text>
+
+    <rect x="732" y="636" width="196" height="96" class="box"/>
+    <text x="748" y="666" class="t">AUTO-MERGE</text>
+    <text x="748" y="690" class="d">stops only on a</text>
+    <text x="748" y="708" class="d">merge conflict</text>
+
+    <rect x="960" y="636" width="196" height="96" class="hot"/>
+    <text x="976" y="666" class="t">VERCEL DEPLOY</text>
+    <text x="976" y="690" class="d">861 deploys</text>
+    <text x="976" y="708" class="d">384 to production</text>
+
+    <rect x="1188" y="636" width="204" height="96" class="me"/>
+    <text x="1204" y="666" class="t o">PLAYTEST</text>
+    <text x="1204" y="690" class="d">findings become</text>
+    <text x="1204" y="708" class="d">the next issues</text>
+  </g>
+  <path d="M244 684H272" class="ln" marker-end="url(#a)"/>
+  <path d="M472 684H500" class="ln" marker-end="url(#a)"/>
+  <path d="M700 684H728" class="ln" marker-end="url(#a)"/>
+  <path d="M928 684H956" class="ln" marker-end="url(#a)"/>
+  <path d="M1156 684H1184" class="ln" marker-end="url(#a)"/>
+  <path d="M1290 732V790H146V736" class="lo dash" marker-end="url(#o)"/>
+  <text x="560" y="814" class="d">the loop: 23 days, 942 commits, Phaser 4 + React 19 + Three.js + TypeScript</text>
+</svg>
