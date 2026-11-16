@@ -24,6 +24,8 @@ import { sightings, type Sighting } from '../sim/sightings';
 import { SIGHT_M } from '../sim/sight';
 import { panelled, pins } from '../hud/pins';
 import { isImageryRequest } from '../sim/imageryRequest';
+import { alertSquares } from '../sim/strike';
+import { trafficPrompts } from '../sim/prompts';
 import { intro, MAP_BOOT } from '../hud/intro';
 import { setCellSize } from '../hud/scale';
 
@@ -36,6 +38,13 @@ const nextGap = () => 2000 + Math.random() * 3000;
 const WEDGE: [number, number][] = [[1.4, 0], [0.4, -1], [0.4, 1], [-0.7, -0.5], [-0.8, 0.6]];
 const EVENT_COLOR = { contact: 0xe5484d, request: 0xf2c14e, site: 0xb8c4bf, signal: 0x8fb8ff, building: 0xf2c14e } as const;
 const WATER = 0x5fa8d3;
+// The events that get a ping circle: not the ones whose square already carries a flag (ILI-1589),
+// radio traffic's badge (blue) or a strike's ALERT (red).
+const unflagged = (s: ReturnType<typeof game.get>) => {
+  const traffic = new Set(trafficPrompts(s).map((p) => p.id));
+  const alerts = new Set(alertSquares(s));
+  return shownEvents(s).filter((e) => !(e.kind === 'signal' && traffic.has(e.id)) && !(e.kind === 'contact' && alerts.has(e.square)));
+};
 // The rivers and streams, smoothed so they read as water, not as a staircase of samples; worked
 // out once, for the map's bake and ORION-3's (ILI-1483).
 let water: { river: boolean; pts: [number, number][] }[] | undefined;
@@ -707,7 +716,8 @@ export class MapScene extends Phaser.Scene {
     const r = (MARKER_R * DPR) / this.zoom;
     const st = game.get();
     const { openEvent, elapsedMs } = st;
-    const events = shownEvents(st); // only where ORION-3 has looked (ILI-1519)
+    // A square with a traffic badge or a strike ALERT is marked by that flag; no ping circle as well (ILI-1589).
+    const events = unflagged(st);
     const px = (DPR * 1) / this.zoom;
     for (const e of events) {
       if (e.status === 'resolved' || e.kind === 'site') continue; // a kill site's X marks are enough (ILI-1252)
@@ -880,7 +890,7 @@ export class MapScene extends Phaser.Scene {
     const open = (e: (typeof s.events)[number] | undefined) => (e && e.status !== 'resolved' && e.kind !== 'site' && !isImageryRequest(e) ? e : undefined);
     const hit = ((MARKER_R + 8) * DPR) / this.zoom; // a little more than drawn, so a near miss isn't a square click
     const shown = shownEvents(s); // only where ORION-3 has looked (ILI-1519)
-    const marker = shown.find((e) => open(e) && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit * 1.2);
+    const marker = unflagged(s).find((e) => open(e) && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit * 1.2);
     if (marker) return marker;
     const dot = shown.find((e) => {
       if (e.kind !== 'contact' || e.status === 'resolved') return false;
@@ -895,7 +905,7 @@ export class MapScene extends Phaser.Scene {
 
   private eventAt(x: number, y: number) {
     const hit = ((MARKER_R + 6) * DPR) / this.zoom; // a little bigger than drawn, for thumbs
-    return shownEvents(game.get()).find((e) => e.status !== 'resolved' && e.kind !== 'site' && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit);
+    return unflagged(game.get()).find((e) => e.status !== 'resolved' && e.kind !== 'site' && Math.hypot(this.markerPos(e.square).x - x, this.markerPos(e.square).y - y) <= hit);
   }
 
   // The larger square (ILI-1203): ORION-3's picture of the square it's tasked to (or last

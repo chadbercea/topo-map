@@ -2210,7 +2210,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* The focused square's flyout is the topmost thing on the map (ILI-1523): ALPHA's request tag,
    place tags, sightings, contact tags and prompts all go under it, so it's always seen whole.
    Only the pause menu and the intro sit above it. */
-.square-card.anchor { z-index: 2; }
+.square-card.anchor { z-index: 4; } /* over the flags on the map: traffic badges and ALERTs (ILI-1589) */
 
 /* The ALERT (ILI-1524): strikes live here, not in the intel list or ORION-3. A red hazard band
    hangs off the bottom edge of a square with fighters that threaten ALPHA, right-aligned with the
