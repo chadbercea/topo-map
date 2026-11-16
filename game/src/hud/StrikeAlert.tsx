@@ -16,7 +16,7 @@ import { AirPanel } from './AirPanel';
 import { cash } from './MissionBar';
 import { strikeWork } from './PromptLayer';
 
-export const STRIKE_W = 288; // the strike options' width at scale 1: three 80 px icons and their padding (ILI-1539)
+export const STRIKE_W = 240; // the strike options' width at scale 1: three tight tiles, the card's compact width (ILI-1588)
 
 // Strikes aren't intel and they aren't ORION-3 (ILI-1524): a square with fighters that threaten
 // ALPHA gets its own ALERT, a red hazard band on the square's bottom edge. One square, one panel
