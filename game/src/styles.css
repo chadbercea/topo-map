@@ -1114,7 +1114,7 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 .air[data-leaving] { animation: drone-out 400ms ease-in forwards; }
 .air h2 { grid-column: 1 / -1; display: flex; justify-content: space-between; color: #e5484d; }
 .air h2 .where { color: var(--ink); font-weight: 400; letter-spacing: 0.04em; }
-.air .d-model { position: relative; display: grid; place-items: center; height: 84px; }
+.air .d-model { position: relative; display: grid; place-items: center; height: 48px; }
 .air .d-model > canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .air .d-mark { width: 80%; fill: none; stroke: var(--accent); stroke-width: 1.5; }
 .air .d-clock { display: grid; align-content: center; gap: 2px; }
@@ -2431,23 +2431,21 @@ button.need:hover, button.need:focus-visible { background: color-mix(in srgb, cu
 /* The strike's graphic is the unit (ILI-1530): the turning model takes about 80% of each strike
    tile, the words a small line under it, about 20%. Same for the options and the strike under way. */
 :is(.strike-alert, .sq-threat) .sc-strike .target-menu .options button { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto; justify-items: center; align-items: center; row-gap: 0; padding: 2px 3px 3px; text-align: center; }
-:is(.strike-alert, .sq-threat) .sc-strike .target-menu .options button .w-icon { grid-row: 1; width: 100%; height: 56px; }
+:is(.strike-alert, .sq-threat) .sc-strike .target-menu .options button .w-icon { grid-row: 1; width: 100%; height: 40px; }
 :is(.strike-alert, .sq-threat) .sc-strike .target-menu .options button > span { font-size: 9px; line-height: 1.1; letter-spacing: 0.08em; }
 :is(.strike-alert, .sq-threat) .sc-strike .target-menu .options button small { font-size: 8px; line-height: 1.1; }
 :is(.strike-alert, .sq-threat) .air { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'm' 'h' 'c'; row-gap: 1px; padding: 3px 6px 4px; }
-:is(.strike-alert, .sq-threat) .air .d-model { height: 64px; }
+:is(.strike-alert, .sq-threat) .air .d-model { height: 48px; }
 :is(.strike-alert, .sq-threat) .air h2 { font-size: 9px; }
 :is(.strike-alert, .sq-threat) .air .d-clock b { font-size: 10px; }
 :is(.strike-alert, .sq-threat) .air .d-log { font-size: 9px; }
 :is(.strike-alert, .sq-threat) .sniper { grid-template-columns: minmax(0, 1fr); row-gap: 1px; padding: 3px 6px 4px; }
-:is(.strike-alert, .sq-threat) .sniper .s-model { order: -1; height: 64px; }
+:is(.strike-alert, .sq-threat) .sniper .s-model { order: -1; height: 48px; }
 :is(.strike-alert, .sq-threat) .sniper h3 { font-size: 9px; margin: 0; }
 :is(.strike-alert, .sq-threat) .sniper .s-read b { font-size: 9px; }
 
-/* The turning 3D icons are never smaller than 80 x 80 px, at any size or state (ILI-1539): the strike
-   tiles, the strike under way, resupply and the exfil transport. min-* wins over every height above. */
-:is(.d-model, .s-model, .w-icon) { min-width: 80px; min-height: 80px; }
-:is(.strike-alert, .sq-threat) .sc-strike .target-menu .options { grid-template-columns: repeat(3, minmax(86px, 1fr)); }
+/* Tight and tactical (ILI-1588, replaces ILI-1539's 80 x 80 px floor): strike tiles 40 px tall, the
+   strike under way 48 px, so the square card never scrolls. */
 
 /* Layers (ILI-1546), bottom to top: the map; its marks (leaders, place tags, ALPHA's ask tag) 1;
    the square's flyout 2; the ALERT 3; the prompt 4; the game UI panels 5 and up; edge markers 6;
